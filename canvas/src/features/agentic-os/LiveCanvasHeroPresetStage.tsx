@@ -21,6 +21,7 @@ const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas').then(modul
   },
 })))
 const DashboardSurface = React.lazy(() => import('@/components/DashboardCanvas/Surface'))
+const DroneCanvas = React.lazy(() => import('@/features/python-learning/LearningCanvasEmbed'))
 const preserveWorkspace = () => undefined
 
 export function LiveCanvasHeroPresetStage(props: {
@@ -48,6 +49,7 @@ export function LiveCanvasHeroPresetStage(props: {
   }, [selection?.id])
   const selectedDemo = demo?.id === selection?.id ? demo : null
   const backgroundUrl = embedUrl || (selectedDemo?.background === 'xr-physics' ? resolveCanonicalStartupCanvasEmbedRuntimeUrl() : undefined)
+  const droneBackground = !embedUrl && selectedDemo?.background === 'python-drone'
   const graph = React.useMemo(() => selection && selectedDemo ? buildLiveCanvasHeroPresetDemo(selection, selectedDemo) : null, [selection, selectedDemo])
   React.useEffect(() => {
     const select = (event: Event) => {
@@ -66,8 +68,8 @@ export function LiveCanvasHeroPresetStage(props: {
       <section
         className="absolute inset-0"
         data-kg-canvas-viewport-root="1"
-        aria-label={backgroundUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}
-        data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : 'prompt-preset'}
+        aria-label={backgroundUrl || droneBackground ? 'Shared interactive canvas background' : 'Prompt preset demo'}
+        data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : droneBackground ? 'python-drone' : 'prompt-preset'}
         data-kg-live-canvas-hero-preset={selection?.id}
       >
         {observation ? <React.Suspense fallback={<p role="status">Loading observability…</p>}>
@@ -78,7 +80,9 @@ export function LiveCanvasHeroPresetStage(props: {
             sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
             allow={AGENTIC_OS_XR_IFRAME_ALLOW} allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
             data-kg-live-canvas-hero-selected-embed="true" />
-        ) : graph?.nodes.length ? (
+        ) : droneBackground ? <React.Suspense fallback={<p role="status">Loading drone warehouse…</p>}>
+          <DroneCanvas />
+        </React.Suspense> : graph?.nodes.length ? (
           <React.Suspense fallback={<p role="status">Loading preset demo…</p>}>
             <FlowCanvas active graphDataOverride={graph} mutationSourceGraphDataOverride={null}
               graphDataRevisionOverride={props.visible ? 0 : 1}
@@ -87,7 +91,7 @@ export function LiveCanvasHeroPresetStage(props: {
               onNodeChange={preserveWorkspace} onNodePropertiesChange={preserveWorkspace} onNodeRemove={preserveWorkspace} />
           </React.Suspense>
         ) : <p className="p-6 text-sm text-[var(--kg-text-secondary)]" role={error ? 'alert' : 'status'}>{error || 'Loading preset demo…'}</p>}
-        {!backgroundUrl && selection?.id !== 'agent-observability' ? <div className="pointer-events-none absolute right-5 top-5 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-3 py-2 text-xs text-[var(--kg-text-secondary)]">
+        {!backgroundUrl && !droneBackground && selection?.id !== 'agent-observability' ? <div className="pointer-events-none absolute right-5 top-5 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-3 py-2 text-xs text-[var(--kg-text-secondary)]">
           Example outputs · No model call
         </div> : null}
       </section>

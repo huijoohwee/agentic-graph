@@ -39,6 +39,11 @@ export async function importGympgrph(): Promise<typeof import('gympgrph')> {
 }
 
 export async function preloadGeospatialMapRuntime(): Promise<void> {
+  if (
+    typeof window === 'undefined'
+    || typeof document === 'undefined'
+    || typeof window.requestAnimationFrame !== 'function'
+  ) return
   const module = await importGympgrph()
   await module.preloadMapLibreBasemapRuntime()
 }
@@ -177,4 +182,20 @@ export async function requestGeospatialFitToBounds(
     throw new Error('Geospatial bounds fit API is unavailable')
   }
   m.requestGeospatialFitToBounds(bounds)
+}
+
+export async function requestGeospatialFitToData(): Promise<void> {
+  const m = await importGympgrph()
+  if (typeof m.requestGeospatialFitToData !== 'function') {
+    throw new Error('Geospatial data fit API is unavailable')
+  }
+  m.requestGeospatialFitToData()
+}
+
+export async function requestGeospatialFitToSelection(): Promise<void> {
+  const m = await importGympgrph()
+  if (typeof m.requestGeospatialFitToSelection !== 'function') {
+    throw new Error('Geospatial selection fit API is unavailable')
+  }
+  m.requestGeospatialFitToSelection()
 }

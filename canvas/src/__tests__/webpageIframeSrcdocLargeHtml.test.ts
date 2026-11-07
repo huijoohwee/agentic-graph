@@ -1,12 +1,10 @@
 import { buildWebpageHtmlSrcdoc } from '@/lib/websites/webpageIframeSrcdoc'
+import { WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE, WEBPAGE_HTML_PREVIEW_MAX_BYTES } from '@/lib/websites/webpageHtmlPreviewBudget'
 
-export function testWebpageHtmlSrcdocShrinksLargeHtmlInsteadOfFailing() {
-  const hugeScript = `<script>${'x'.repeat(2_100_000)}</script>`
-  const html = `<!doctype html><html><head>${hugeScript}<style>${'a'.repeat(40_000)}</style></head><body><h1>Hi</h1></body></html>`
-  const built = buildWebpageHtmlSrcdoc({ html, baseHref: 'https://example.com/', scriptPolicy: 'strip' })
-  if (!built.includes('<h1>Hi</h1>')) throw new Error('expected body content to remain after shrinking')
-  if (built.includes('HTML too large for sandboxed srcdoc')) {
-    throw new Error('expected srcdoc builder to shrink first instead of emitting size error')
-  }
+export function testWebpageHtmlSrcdocBoundsLargeHtmlBeforeSanitizing() {
+  const html = `<div data-state="${'x'.repeat(2_100_000)}"><h1>Captured content</h1></div>`
+  const built = buildWebpageHtmlSrcdoc({ html, baseHref: 'https://example.invalid/', scriptPolicy: 'strip' })
+  if (!built.includes(WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE)) throw new Error('expected a visible preview limit with Markdown recovery')
+  if (built.includes('Captured content')) throw new Error('oversized HTML must not enter the iframe')
+  if (new TextEncoder().encode(built).byteLength > WEBPAGE_HTML_PREVIEW_MAX_BYTES) throw new Error('fallback must be bounded')
 }
-

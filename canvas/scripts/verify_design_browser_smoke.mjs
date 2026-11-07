@@ -1,3 +1,5 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -35,6 +37,21 @@ async function verify() {
   try {
     await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
+    await page.waitForFunction(async () => {
+      const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
+      const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
+      return readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
+        && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+    }, undefined, { timeout: 120000 })
+    // Finish seed activation, then dismiss overlays from front to back through rendered controls.
+    const floatingPanel = page.locator(`${BASE_FLOATING_PANEL_ROOT_SELECTOR}:not([data-kg-strybldr-bottom-timeline-panel])`).first()
+    await floatingPanel.waitFor({ state: 'visible' })
+    assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true, 'Expected seed floating panel must close through its rendered control')
+    const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
+    await timeline.getByRole('button', { name: 'Close', exact: true }).click()
+    await timeline.waitFor({ state: 'detached' })
     console.log('Design browser: canvas ready')
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
@@ -58,10 +75,7 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('design')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
-    // The existing mobile Timeline covers other panels until closed through its own control.
-    const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
-    await timeline.getByRole('button', { name: 'Close', exact: true }).click()
-    const panel = page.locator('[data-kg-floating-panel-root="true"]').getByRole('region', { name: 'Design panel', exact: true })
+    const panel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).getByRole('region', { name: 'Design panel', exact: true })
     await panel.getByRole('button', { name: 'Open Tokens', exact: true }).click()
     const review = panel.getByRole('region', { name: 'Design Tokens', exact: true })
     await review.getByRole('heading', { name: 'Design token review' }).waitFor()
@@ -72,11 +86,13 @@ async function verify() {
     console.log('Design browser: review ready')
     const initialGeometry = await geometry()
     const receipts = []
-    for (const [width, theme] of [[360, 'light'], [360, 'dark'], [1280, 'light'], [1280, 'dark']]) {
+    for (const [width, theme] of [[360, 'light'], [360, 'black'], [360, 'dark'], [1280, 'light'], [1280, 'black'], [1280, 'dark']]) {
       await page.setViewportSize({ width, height: 800 })
-      await page.evaluate(theme => {
-        document.documentElement.classList.toggle('dark', theme === 'dark')
-        document.documentElement.dataset.theme = theme
+      await page.evaluate(async theme => {
+        const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+        const store = useGraphStore.getState()
+        store.setDarkThemeVariant(theme === 'dark' ? 'dark-blue' : 'black')
+        store.setThemeMode(theme === 'light' ? 'light' : 'dark')
       }, theme)
       await review.getByText(new RegExp('^' + theme + ' ·')).waitFor()
       const projection = (await inspect()).design
@@ -87,8 +103,8 @@ async function verify() {
       assert.ok(dimensions.scroll <= dimensions.client + 1, 'Design review must not overflow horizontally')
       const viewport = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: innerWidth }))
       assert.ok(viewport.scroll <= viewport.width + 1, 'Design review must not cause page-level horizontal overflow')
-      const format = review.getByRole('combobox', { name: 'Export format' })
-      await format.selectOption('context-json')
+      const format = review.getByRole('button', { name: 'Export format' })
+      await selectMenuOption(format, 'context-json')
       const button = review.getByRole('button', { name: 'Export locally' })
       const box = await button.boundingBox(); assert.ok(box && box.height >= 44 && box.width >= 44)
       await button.focus()
@@ -126,7 +142,7 @@ async function verify() {
     const source = review.getByRole('button', { name: 'Inspect finding source' }).first()
     await source.tap()
     assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().selectedNodeId), 'design-card')
-    await review.getByRole('combobox', { name: 'Export format' }).selectOption('tokens-css')
+    await selectMenuOption(review.getByRole('button', { name: 'Export format' }), 'tokens-css')
     const offlineDownload = page.waitForEvent('download')
     await review.getByRole('button', { name: 'Export locally' }).tap()
     const download = await offlineDownload, css = await readFile(await download.path(), 'utf8')

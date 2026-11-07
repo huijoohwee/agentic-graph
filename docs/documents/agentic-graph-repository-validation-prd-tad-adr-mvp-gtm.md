@@ -1,18 +1,18 @@
 ---
 title: "Repository Validation PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
+version: "1.0.2"
 owner: "agentic-graph"
-date: "2026-09-17"
+date: "2026-10-10"
 lang: "en-US"
 frontmatter_contract: "required"
 load_policy: "on-demand"
 continuity_id: "GRAPH-VALIDATION-ADOPTION-001"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+prd_revision: "1.0.2"
+tad_revision: "1.0.2"
+adr_revision: "1.0.2"
+mvp_revision: "1.0.2"
+gtm_revision: "1.0.2"
 status: "implementation"
 ---
 
@@ -75,3 +75,46 @@ Do not raise the 15-minute aggregate budget or infer savings from worker count.
 Revert this command change if shared-fixture collisions or resource regressions
 appear. MVP scope is this scheduling repair; GTM/WTP and production proof remain
 unvalidated. CI receipts and diagnostic reports stay outside authored source.
+
+## Collaboration proof artifact transport
+
+The required Integration Gate previously uploaded the collaboration report and
+immediately downloaded it in the same job, then repeated that upload/download
+cycle for its validation envelope. PR #1641's gate failed after 5 minutes 36
+seconds because the just-uploaded report was not yet available to download; the
+canonical integration gate never started. This failure establishes an artifact
+publication race, not a report-validation or candidate-source failure.
+
+The workflow now validates the generated report in place, validates the result
+envelope against the exact report bytes and CI source revision, and retains both
+validated files in one seven-day artifact. The separate immutable release
+manifest upload/download proof remains unchanged. This removes one artifact
+upload and both same-job report downloads from the required path while retaining
+schema, digest, revision, upload-failure, and gate-order checks. It does not claim
+a specific time saving until a protected run is observed.
+
+Acceptance: the focused collaboration report contract test proves the local
+validation order, exact-byte pairing, combined retained artifact, and absence of
+same-job downloads for this report. The protected Integration Gate must run on
+the exact candidate before integration. Revert this workflow change and its
+contract/documentation updates if artifact retention or the canonical gate's
+source binding regresses. No production or cleanup authority is introduced.
+
+## Native release frontier historical refs
+
+PRD/TAD/ADR/MVP/GTM `1.0.2` (2026-10-10): frontier capture may observe historical
+lane records that share a reused worktree path but point to sibling refs. Requiring
+every recorded head to descend from the currently mounted branch rejects valid
+retained lanes. Capture now inventories exact local branch refs once per round,
+checks each recorded commit against its own retained ref, and includes those ref
+heads in the double-read digest. The mounted checkout head remains independently
+bound; missing, stale, or moving refs still fail closed.
+
+Acceptance: attached-successor and same-path-sibling regressions pass; the live
+read-only capture at Graph `2d338faa` observed six worktrees and 484,419,245 tracked
+bytes with metadata digest `ed6fd62f`. Focused post-transplant proof passed 2/2;
+the earlier complete frontier suite passed 17/17 before the final ancestry case.
+Existing worktree, path, file-size, round-byte, and effect-authority bounds are
+unchanged. No runtime module, dependency, deployment, or paid resource is added.
+Elapsed-time and cost savings remain unmeasured; retain the full frontier checks
+and protected gate. Roll back through a checked source revert that preserves refs.

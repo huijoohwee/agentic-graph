@@ -73,6 +73,15 @@ export function resolveThreeRendererLifecycleKey(mode: Canvas3dModeId): string {
   return `scene-canvas-${mode}`
 }
 
+/** Static inspection should not trade pixel detail for an idle animation frame rate. */
+export function resolveThreeSceneFrameLoop(input: Readonly<{
+  paused: boolean; immersiveMedia: boolean; gameplay: boolean; savedObjectView: boolean; learningScene?: boolean
+}>): 'demand' | 'always' {
+  // Lesson snapshots invalidate their poses; Fiber owns the independent WebXR session loop.
+  if (input.learningScene) return 'demand'
+  return !input.immersiveMedia && (input.paused || (input.savedObjectView && !input.gameplay)) ? 'demand' : 'always'
+}
+
 /** Pixel work follows sustained frame pressure; simulation and authored state remain untouched. */
 export function createThreeFrameResolutionBudget() {
   let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0

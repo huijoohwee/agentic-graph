@@ -173,8 +173,8 @@ export default function FlowMappingRowsTable({
                   id={typeId}
                   className={tableFieldClassName}
                   value={r.type}
-                  onChange={e => {
-                    const nextType = e.target.value as FlowMappingRowType
+                  onValueChange={selectedValueInput => {
+                    const nextType = selectedValueInput as FlowMappingRowType
                     const nextDirection: FlowMappingRowDirection =
                       nextType === 'port' ? (r.direction === 'default' ? 'output' : r.direction) : 'default'
                     onChange(r.id, { type: nextType, direction: nextDirection })
@@ -211,8 +211,8 @@ export default function FlowMappingRowsTable({
                   id={dirId}
                   className={tableFieldClassName}
                   value={r.direction}
-                  onChange={e => {
-                    const nextDirection = e.target.value as FlowMappingRowDirection
+                  onValueChange={selectedValueInput => {
+                    const nextDirection = selectedValueInput as FlowMappingRowDirection
                     const nextType = nextDirection === 'default' ? (r.type === 'port' ? 'text' : r.type) : 'port'
                     onChange(r.id, { direction: nextDirection, type: nextType })
                   }}

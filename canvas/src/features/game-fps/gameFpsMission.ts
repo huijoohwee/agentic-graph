@@ -39,6 +39,8 @@ const MISSION_REF = `game-fps:mission:${GAME_FPS_MISSION_ID}`
 const PLAYER_ENTITY_HEIGHT = 1.6
 const NPC_TARGET_HEIGHT = 1.1
 const NPC_MAX_HEALTH = 100
+const NPC_ATTACK_DISTANCE_METERS = 1.8
+const NPC_ATTACK_COOLDOWN_SECONDS = 1.6
 const PLAYER_MAX_HEALTH = 100
 const ACTION_HOLD = 0
 const ACTION_ALERT = 1
@@ -430,11 +432,11 @@ export function createGameFpsAuthoredMission(args: {
         context.read(entityId, 'NpcBrain', 'attackCooldown') - GAME_FPS_FIXED_STEP_SECONDS,
       )
       context.write(entityId, 'NpcBrain', 'attackCooldown', attackCooldown)
-      if (action !== ACTION_ENGAGE || distance > 2.2 || attackCooldown > 1e-6) continue
+      if (action !== ACTION_ENGAGE || distance > NPC_ATTACK_DISTANCE_METERS || attackCooldown > 1e-6) continue
       const previousPlayerHealth = context.read(playerEntityId, 'Health', 'current')
       const remainingHealth = Math.max(0, previousPlayerHealth - 10)
       context.write(playerEntityId, 'Health', 'current', remainingHealth)
-      context.write(entityId, 'NpcBrain', 'attackCooldown', 0.9)
+      context.write(entityId, 'NpcBrain', 'attackCooldown', NPC_ATTACK_COOLDOWN_SECONDS)
       emitDecision(
         context,
         'world_tick_result',
@@ -504,7 +506,10 @@ export function createGameFpsAuthoredMission(args: {
         Transform: { x: seed.x, z: seed.z, yaw: 0, pitch: 0 },
         Health: { current: health, maximum: NPC_MAX_HEALTH },
         Npc: { active: health > 0 ? 1 : 0 },
-        NpcBrain: { action: replay.npcActions.get(seed.id) ?? ACTION_HOLD, attackCooldown: 0 },
+        NpcBrain: {
+          action: replay.npcActions.get(seed.id) ?? ACTION_HOLD,
+          attackCooldown: NPC_ATTACK_COOLDOWN_SECONDS,
+        },
       },
     }))
   }

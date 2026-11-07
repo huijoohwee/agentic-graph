@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import type { GraphRecordColumnDoc, GraphRecordTableId } from '@/lib/graph-record-db'
 import type { GraphDataTableGridRow } from '@/features/graph-data-table/ui/graphDataTableTypes'
@@ -398,7 +399,7 @@ export const GraphDataTableKanbanView = React.memo(function GraphDataTableKanban
                         typography.microLabelClass,
                         cardDragVisualState.className,
                         kanbanDrag.draggingRowId !== row.id ? 'hover:-translate-y-[1px] active:translate-y-0' : '',
-                        selected ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
+                        selected ? uiSelectedRowStateClassName(true) : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
                         UI_THEME_TOKENS.panel.border,
                       ].join(' ')}
                       style={cardDragVisualState.style}
@@ -475,7 +476,7 @@ export const GraphDataTableKanbanView = React.memo(function GraphDataTableKanban
                             const displayValue = readMarkdownSigilDisplayText(entry.value)
                             return (
                               <section key={`${row.id}:${entry.id}`} className="rounded border border-black/5 bg-black/[0.025] px-2.5 py-2">
-                                <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                   {entry.label}
                                 </p>
                                 <CardInlineTextEditor

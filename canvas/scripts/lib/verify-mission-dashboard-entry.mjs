@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict'
 import { closeFloatingPanel } from './panel-close-helpers.mjs'
 import { waitForMissionAsync } from './mission-card-face.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR } from './panel-close-helpers.mjs'
 
 const SETTINGS_BODY_CONTROL = '#main-panel-settings-panel button[aria-label="Expand all sections"], #main-panel-settings-panel button[aria-label="Collapse all sections"]'
 const MAIN_PANEL_SHELL = '[data-kg-main-panel-shell="true"]'
+
+/** Retry only read-only module readiness across navigation; dispatch the effect exactly once. */
+export async function executeMissionEntry(page) {
+  const control = await page.waitForFunction(async () => import('/src/lib/canvas/canvasViewControlRuntime.ts'),
+    null, { timeout: 60000 })
+  try {
+    const result = await control.evaluate(runtime => runtime.executeCanvasViewControl({ optionId: 'agent-run:tree' }))
+    assert.equal(result.status, 'applied')
+    assert.equal(result.optionId, 'agent-run:tree')
+  } finally { await control.dispose() }
+}
 
 async function installEntryObservation(page) {
   await page.evaluate(() => {
@@ -60,10 +72,17 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForMissionAsync(page, async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
-    await closeFloatingPanel(page, page.locator('[data-kg-floating-panel-root="true"]'))
+    await closeFloatingPanel(page, page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR))
   }
   const before = await authoredSnapshot()
   await installEntryObservation(page)
+  const inactiveTabRequests = []
+  const observeInactiveTab = request => {
+    if (new URL(request.url()).pathname.endsWith('/src/features/panels/views/HelpView.tsx')) {
+      inactiveTabRequests.push(request.url())
+    }
+  }
+  page.on('request', observeInactiveTab)
   let status = 'failed'
   try {
     await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click({ timeout: 15000 })
@@ -79,24 +98,61 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
       assert.ok(timeout > 0, 'Settings lazy readiness deadline elapsed')
       await page.locator(selector).waitFor({ state: 'visible', timeout })
     }
+    assert.deepEqual(inactiveTabRequests, [], 'Settings opens directly without loading the inactive Help tab')
     await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('settings-body-ready'))
+    await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true, timeout: 15000 })
+    await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('dashboard-pointer-returned'))
+    await page.locator('[data-kg-dashboard-source="authored"]').waitFor({ state: 'visible', timeout: 60000 })
+    // A locked document must keep Settings open and expose the refusal; an unlocked
+    // document applies the Dashboard selection and closes the entry panel.
+    const dashboardEntry = await Promise.race([
+      page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 }).then(() => 'applied'),
+      page.locator('#main-panel-dashboard-panel [role="alert"]').waitFor({ state: 'visible', timeout: 15000 }).then(() => 'blocked'),
+    ])
+    if (dashboardEntry === 'blocked') {
+      const refusal = page.locator('#main-panel-dashboard-panel [role="alert"]')
+      assert.match(await refusal.textContent() || '', /baseline|locked/i, 'Locked Dashboard entry reports its refusal')
+      assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 1, 'Locked Dashboard entry keeps one MainPanel shell')
+      await page.getByRole('region', { name: 'Main panel', exact: true }).getByRole('button', { name: 'Close', exact: true }).click()
+      await page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 })
+    }
+    assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1, 'Settings opens one native Dashboard')
+    assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null,
+      'Settings Dashboard must not activate a Mission workspace')
+    assert.equal(await page.locator('[aria-label="Main panel"]').count(), 0, 'Dashboard entry closes MainPanel')
+    assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 0, 'Dashboard entry closes MainPanel shell')
+    const expected = JSON.parse(before)
+    expected.canvas2dRenderer = 'dashboard'; expected.canvasRenderMode = '2d'
+    assertAuthored(await authoredSnapshot(), JSON.stringify(expected), 'Settings Dashboard entry only changes the renderer')
     const returnView = await page.evaluate(async () => {
       const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
       return [state.workspaceViewMode, state.workspaceCanvasPaneOpen]
     })
-    await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true, timeout: 15000 })
-    await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('dashboard-pointer-returned'))
+    await executeMissionEntry(page)
     await waitForMission()
-    await page.locator('#main-panel-dashboard-tab').waitFor({ state: 'detached' })
-    await page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 })
-    assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1, 'Settings opens one native Dashboard')
-    assert.equal(await page.getByRole('region', { name: 'Agent Mission', exact: true }).count(), 1, 'Settings opens one Mission')
-    assert.equal(await page.locator('[aria-label="Main panel"]').count(), 0, 'Dashboard entry closes MainPanel')
-    assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 0, 'Dashboard entry closes MainPanel shell')
-    assertAuthored(await authoredSnapshot(), before, 'Settings Dashboard entry preserves authored state')
     status = 'passed'
     return returnView
   } finally {
+    page.off('request', observeInactiveTab)
     console.log('Mission Dashboard pointer entry:', JSON.stringify(await finishEntryObservation(page, status)))
   }
+}
+
+/** Generic toolbar selection must stay authored; Mission activation is a separate action. */
+export async function verifyCanvasDashboardEntry(page, waitForMission) {
+  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+  await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
+  await page.locator('[data-kg-dashboard-source="authored"]').waitFor({ state: 'visible', timeout: 60000 })
+  assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null,
+    'Generic toolbar Dashboard must not activate Mission inspection')
+  const returnView = await page.evaluate(async () => {
+    const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
+    return [state.workspaceViewMode, state.workspaceCanvasPaneOpen]
+  })
+  await executeMissionEntry(page)
+  if (waitForMission) await waitForMission()
+  assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
+  if (waitForMission) assert.equal(await page.locator('[aria-label="Agent runs"] table').count(), 1)
+  assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
+  return returnView
 }

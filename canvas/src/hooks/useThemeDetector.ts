@@ -12,7 +12,7 @@ export function useThemeDetector(): KgTheme {
     const observer = new MutationObserver(handleMutation)
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class', 'data-theme'],
+      attributeFilter: ['class', 'data-theme', 'data-dark-variant'],
     })
     return () => observer.disconnect()
   }, [])

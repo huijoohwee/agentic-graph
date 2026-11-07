@@ -40,14 +40,15 @@ export const testNativeCrawlerParsesCredentialSafeProxyPool = () => {
 export const testNativeCrawlerStoresArtifactsInSiblingSandbox = () => {
   const resolved = resolveWebsiteImportWorkspaceRoot({
     repoRoot: '/workspace/agentic-graph',
+    storeRoot: '/workspace/sandbox',
     outputDirRel: 'agentic-graph-workspace/website-imports',
   })
   if (resolved.ok !== true) throw new Error(resolved.error)
   if (resolved.abs !== path.resolve('/workspace/sandbox/agentic-graph-workspace/website-imports')) {
-    throw new Error(`expected sibling sandbox website store, received ${resolved.abs}`)
+    throw new Error(`expected explicitly configured sandbox website store, received ${resolved.abs}`)
   }
   if (resolved.rel !== 'agentic-graph-workspace/website-imports') throw new Error('expected logical artifact paths to remain portable')
-  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', outputDirRel: '.agentic-graph-workspace/website-imports' })
+  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', storeRoot: '/workspace/sandbox', outputDirRel: '.agentic-graph-workspace/website-imports' })
   if (legacy.ok !== true || legacy.abs !== resolved.abs || legacy.rel !== '.agentic-graph-workspace/website-imports') {
     throw new Error('expected existing dot-prefixed artifact references to resolve into the renamed physical store')
   }
@@ -84,7 +85,7 @@ export const testNativeCrawlerBuildsCanvasAndDownloadLinks = async () => {
       { nodeId: 'docs', url: 'https://example.invalid/docs', title: 'Docs', status: 'ok', artifacts: { rawHtmlRelPath: 'raw.html' } },
     ],
   })
-  for (const expected of ['kgCanvas2dRenderer: "flowchart"', 'page_home -->|links| page_docs', 'Download HTML', 'guide.pdf', 'hero.png', 'kind=download']) {
+  for (const expected of ['kgCanvas2dRenderer: "d3"', 'page_home -->|links| page_docs', 'Download HTML', 'guide.pdf', 'hero.png', 'kind=download']) {
     if (!text.includes(expected)) throw new Error(`missing Canvas crawl output: ${expected}`)
   }
   if (text.includes('secret@') || text.includes('proxy.example')) throw new Error('Canvas output must not expose proxy endpoints')
@@ -199,7 +200,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     if (!result.panelMarkdown?.includes('| Page | Status | Source URL | HTML | Markdown | Downloads | Error |')) {
       throw new Error('expected crawl output to reuse the canonical Markdown pipe-table format')
     }
-    if (!result.panelMarkdown.includes('kgDoc=%2Fwebsites%2Fexample.invalid%2F20260715T041633Z%2Findex.md')) {
+    if (!result.panelMarkdown.includes('kgDoc=%2Fwebsites%2Fexample.invalid%2Findex.md')) {
       throw new Error('expected crawl Markdown cells to target their persisted Source Files path')
     }
     if (!result.panelMarkdown.includes('kgCrawlArtifact=')) {
@@ -279,7 +280,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   if (!nativeCrawlerBranchSource.includes('...clearRichMediaOutputProperties(nodeProps)') || !nativeCrawlerBranchSource.includes('args.publishOutput({')) {
     throw new Error('expected native crawler runs to clear legacy source output while retaining Rich Media Panel publication')
   }
-  if (!workflowSource.includes('await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)')) {
+  if (!workflowSource.includes('await args.persistDraftGraphData(durableGraph, runSourcePersistence)')) {
     throw new Error('expected terminal Widget Card workflow state to await the required durable Markdown persistence path')
   }
   if (!nativeCrawlerRunSource.includes("loadingLabel: progressLabel")) {
@@ -324,18 +325,19 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     throw new Error('expected Widget Card crawler runs to retain the shared website-import fallback when the React bridge is unavailable')
   }
   const websiteImportActionSource = fs.readFileSync(path.resolve(process.cwd(), 'src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts'), 'utf8')
+  const websiteImportNodeWriterSource = fs.readFileSync(path.resolve(process.cwd(), 'src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts'), 'utf8')
   if (!websiteImportActionSource.includes('startedAtMs > 30 * 60_000')) {
     throw new Error('expected production-size native crawls to remain attached beyond the old ten-minute timeout')
   }
-  if (!websiteImportActionSource.includes('ensureWorkspaceFolderTreeIfMissing({ folderPath: normalized, fs })')) {
+  if (!websiteImportNodeWriterSource.includes('const ensureFolder = await createWorkspaceFolderTreeEnsurer(')
+    || !websiteImportNodeWriterSource.includes('ensureFolder(normalized)')) {
     throw new Error('expected repeat crawl materialization to reuse canonical persisted workspace folders')
   }
-  if (websiteImportActionSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
+  if (websiteImportNodeWriterSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
     throw new Error('website materialization must not blindly create numbered duplicate folders after restart')
   }
-  if (!websiteImportActionSource.includes('upsertWorkspaceTextDocument({ fs, parentPath: rootFolder')) {
-    throw new Error('expected same-token crawl documents to update canonical files instead of creating duplicate files')
-  }
+  // Same-capture idempotence and retained cross-capture history are exercised by
+  // websiteImportProgress.test through real workspace writes, independent of helper spelling.
   const workflowActionsSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowActions.ts'), 'utf8')
   if (!workflowActionsSource.includes('persistDraftGraphData: args.persistDraftGraphData')) {
     throw new Error('expected workflow actions to forward terminal graph persistence')
@@ -361,10 +363,12 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     throw new Error('expected restart recovery to read the terminal manifest without rematerializing every page')
   }
   const websiteImportServerSource = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/websites/server/websiteImportServer.ts'), 'utf8')
-  if (!websiteImportServerSource.includes("existingManifest.status === 'done' || existingRunIsFresh")) {
+  if (!websiteImportServerSource.includes('reserveWebsiteImportRun') || !websiteImportServerSource.includes('if (claim.existing)')) {
     throw new Error('expected repeated UTC-token runs to attach to the existing crawl instead of overwriting it')
   }
-  if (!websiteImportServerSource.includes('nodes: [...nodes], errors: [...errors]')) {
+  const websiteImportJobSource = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/websites/server/websiteImportJob.ts'), 'utf8')
+  if (!websiteImportServerSource.includes('void runWebsiteImportJob({')
+    || !websiteImportJobSource.includes('await updateManifest({ progress: nextProgress, nodes: [...nodes], errors: [...errors] })')) {
     throw new Error('expected crawl manifests to retain incremental nodes for interrupted-run recovery')
   }
 }

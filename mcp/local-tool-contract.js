@@ -1,4 +1,5 @@
 import { buildWidgetCommandToolDefinition } from "./widget-command-runtime.js";
+import { buildEvidenceAnalysisAgentReadyToolContracts } from "../canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs";
 import { BROWSER_API_TOOL } from "./browser-api-runtime.js"; import { buildOsStatusToolDefinition } from "./os-status-contract.js";
 import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contract.js";
 import { buildAgentGraphToolDefinitions } from "./agent-graph-tool-contract.js";
@@ -189,6 +190,7 @@ export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
   const defaultUiPort = Number(args.defaultUiPort || 5173);
 
   return [
+    ...buildEvidenceAnalysisAgentReadyToolContracts().map(({ name, webName, ...tool }) => withLocalMcpDescriptorDefaults({ ...tool, name: webName })),
     buildLocalPublishedSourceToolDefinition(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.search),
     buildLocalPublishedSourceToolDefinition(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fetch),
     withLocalMcpDescriptorDefaults({

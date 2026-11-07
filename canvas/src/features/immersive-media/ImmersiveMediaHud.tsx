@@ -19,7 +19,7 @@ export function ImmersiveMediaHud({
     readImmersiveMediaSnapshot,
     readImmersiveMediaSnapshot,
   )
-  if (!snapshot.active) return null
+  if (!snapshot.active || snapshot.source.photo) return null
   const hoveredMarker = snapshot.markers.find(marker => marker.id === snapshot.hoveredMarkerId)
   const selectedMarker = snapshot.markers.find(marker => marker.id === snapshot.selectedMarkerId)
   const tooltipMarker = selectedMarker || hoveredMarker
@@ -44,14 +44,14 @@ export function ImmersiveMediaHud({
         >
           <figcaption>
             <b className="block text-xs">{snapshot.overlay.title}</b>
-            <span className="block text-[10px]">{snapshot.overlay.description}</span>
+            <span className="block text-xs">{snapshot.overlay.description}</span>
           </figcaption>
         </figure>
       ) : null}
       {selectedMarker?.kind === 'youtube' && selectedMarker.mediaUrl ? (
         <aside
           className={cn(
-            'pointer-events-auto absolute right-4 top-4 z-30 w-[min(480px,45vw)] overflow-hidden rounded border p-2 shadow-xl backdrop-blur',
+            'pointer-events-auto absolute right-4 top-4 z-30 w-[min(480px,45vw)] overflow-hidden rounded border p-2 shadow-[var(--kg-shadow-overlay)] backdrop-blur',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
@@ -85,7 +85,7 @@ export function ImmersiveMediaHud({
           data-kg-immersive-media-tooltip={tooltipMarker.id}
         >
           <b className="block text-xs">{tooltipMarker.label}</b>
-          <span className={cn('block text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>
             {tooltipMarker.tooltip}
           </span>
         </aside>

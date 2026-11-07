@@ -44,13 +44,14 @@ export function Controls({
   gameplayCoordinateScale?: number
   onControlsChange?: () => void; learningSceneId?: string
 }) {
-  const { camera, gl, size } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
+  const { camera, gl, size, invalidate, set, get } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
   const controls = useMemo(() => {
     const c = new OrbitControls(camera, gl.domElement)
     c.enableDamping = true; c.minDistance = 0.05
     return c
   }, [camera, gl])
-  React.useLayoutEffect(() => { if (learningSceneId) applyLearningCameraPose(perspectiveCamera, controls, gl.domElement) }, [learningSceneId, perspectiveCamera, controls, gl, size.width, size.height])
+  React.useLayoutEffect(() => { const previous = get().controls; set({ controls }); return () => { if (get().controls === controls) set({ controls: previous }) } }, [controls, get, set])
+  React.useLayoutEffect(() => { if (learningSceneId && controls.enabled) applyLearningCameraPose(perspectiveCamera, controls, gl.domElement) }, [learningSceneId, perspectiveCamera, controls, gl, size.width, size.height])
   const threeCameraRequest = useGraphStore(s => s.threeCameraRequest)
   const data = useGraphStore(s => s.graphData)
   const fitToScreenMode = useGraphStore(s => s.fitToScreenMode)
@@ -91,7 +92,7 @@ export function Controls({
     coordinateScale: gameplayCoordinateScale,
     flightSimActive,
     renderer: gl,
-    suspended: !!paused || mode !== 'xr' || xrEmptyWorld
+    suspended: !!paused || mode !== 'xr' || xrEmptyWorld || immersiveMediaActive
       || cameraMarkPlaybackOwnsFraming || objectInputOwnership.active,
   })
   const expansionCfg = schema.behavior?.expansion || {}
@@ -150,10 +151,11 @@ export function Controls({
     }
   }, [controls])
   React.useEffect(() => {
-    if (!onControlsChange) return
+    if (!onControlsChange && !learningSceneId) return
     const handler = () => {
+      if (learningSceneId) invalidate()
       try {
-        onControlsChange()
+        onControlsChange?.()
       } catch {
         void 0
       }
@@ -170,10 +172,10 @@ export function Controls({
         void 0
       }
     }
-  }, [controls, onControlsChange])
+  }, [controls, onControlsChange, learningSceneId, invalidate])
   useFrame(() => {
     const objectDragActive = readThreeObjectInputOwnership().active
-    if (objectDragActive) return
+    if (objectDragActive || (learningSceneId && !controls.enabled)) return
     const voxelIdleAutoRotate = mode === 'voxel'
       && !paused
       && !modelAssetMode
@@ -184,7 +186,7 @@ export function Controls({
       && Date.now() - lastInteractionAtRef.current >= voxelIdleAutoRotateConfig.delayMs
     controls.autoRotate = voxelIdleAutoRotate
     controls.autoRotateSpeed = mode === 'voxel' ? voxelIdleAutoRotateConfig.speed : 0
-    if (paused) return
+    if (paused || immersiveMediaActive) return
     const voxelIntro = voxelIntroRef.current
     if (voxelIntro) {
       if (controlsUserInteractingRef.current) {
@@ -462,7 +464,7 @@ export function Controls({
     camera: perspectiveCamera,
     controls,
     mode,
-    paused: !!paused || !!learningSceneId,
+    paused: !!paused || !!learningSceneId || immersiveMediaActive,
     modelAssetRenderKey,
     modelAssetFit,
     xrEmptyWorld,
@@ -471,7 +473,7 @@ export function Controls({
     camera: perspectiveCamera,
     controls,
     mode,
-    paused: !!paused,
+    paused: !!paused || immersiveMediaActive,
     playing: timelineTransportPlaying,
     xrEmptyWorld,
   })
@@ -589,10 +591,6 @@ export function Controls({
     useGraphStore.getState().clearThreeCameraRequest()
     selectionPerfEnd('three', t0)
   }, [choreographyOwnsCamera, objectInputOwnership.active, paused, viewPinned, threeCameraRequest, data, selectedNodeId, selectedEdgeId, selectedGroupId, selectedNodeIds, selectedEdgeIds, selectedGroupIds, positions, perspectiveCamera, controls, zoomOnSelectionEnabled, mode, modelAssetFit, modelAssetRenderKey, learningSceneId, gl])
-  React.useEffect(() => {
-    return () => {
-      try { controls.dispose() } catch { void 0 }
-    }
-  }, [controls])
+  React.useEffect(() => () => { try { controls.dispose() } catch { void 0 } }, [controls])
   return null
 }

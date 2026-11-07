@@ -16,6 +16,7 @@ import {
 } from '@/features/agent-graph/agentGraphRepositoryUrl'
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
+import { presentLaunchImportedImage } from './launchImportedImagePresentation'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
@@ -158,14 +159,20 @@ export async function runLaunchImportLocalFiles(args: {
   }
   const bridgeImport = args.bridge.importLocalFiles
   if (typeof bridgeImport === 'function') {
+    let result: void | WorkspaceBridgeImportResult = undefined
     try {
-      const result = await bridgeImport(snapshot)
-      if (isHandledWorkspaceImport(result)) return result
+      result = await bridgeImport(snapshot)
     } catch {
       void 0
     }
+    if (isHandledWorkspaceImport(result)) {
+      await presentLaunchImportedImage({ files: snapshot, result })
+      return result
+    }
   }
-  return args.fallback(snapshot)
+  const result = await args.fallback(snapshot)
+  await presentLaunchImportedImage({ files: snapshot, result })
+  return result
 }
 
 export async function runLaunchImportLocalFolderPreview(args: {
@@ -300,10 +307,17 @@ export async function runLaunchImportUrl(args: {
     try {
       result = await bridgeImport(url, args.opts)
     } catch {
-      return args.fallback(url, args.opts)
+      const fallbackResult = await args.fallback(url, args.opts)
+      await presentLaunchImportedImage({ url, result: fallbackResult })
+      return fallbackResult
     }
     if (isAgentGraphImportResult(result)) return finishAgentGraphImport(result)
-    if (isHandledWorkspaceImport(result)) return result
+    if (isHandledWorkspaceImport(result)) {
+      await presentLaunchImportedImage({ url, result })
+      return result
+    }
   }
-  return args.fallback(url, args.opts)
+  const result = await args.fallback(url, args.opts)
+  await presentLaunchImportedImage({ url, result })
+  return result
 }

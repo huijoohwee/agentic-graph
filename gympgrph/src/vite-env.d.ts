@@ -1,4 +1,4 @@
-declare module 'maplibre-gl/dist/maplibre-gl.js' {
-  const maplibre: any
-  export default maplibre
+declare module 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url' {
+  const workerUrl: string
+  export default workerUrl
 }

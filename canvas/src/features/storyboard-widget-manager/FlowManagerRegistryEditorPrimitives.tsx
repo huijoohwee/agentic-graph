@@ -22,7 +22,7 @@ export function FlowManagerRegistrySectionHeader({
 }: FlowManagerRegistrySectionHeaderProps) {
   return (
     <section className={className}>
-      <h4 className={cn('text-xs font-semibold uppercase tracking-wider', UI_THEME_TOKENS.text.secondary)}>{title}</h4>
+      <h4 className={cn('text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.secondary)}>{title}</h4>
       <button type="button" className={`App-toolbar__btn ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`} onClick={onAction}>
         {actionLabel}
       </button>

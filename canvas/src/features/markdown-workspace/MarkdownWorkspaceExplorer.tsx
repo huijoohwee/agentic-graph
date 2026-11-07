@@ -1,6 +1,7 @@
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
 import { MarkdownExplorerSection } from './MarkdownExplorerSection'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
@@ -36,6 +37,8 @@ export type MarkdownWorkspaceExplorerProps = {
   entries: WorkspaceEntry[]
   filteredEntries: WorkspaceEntry[]
   sourcesByPath: WorkspaceSourceIndex | null
+  activeDocumentKey?: string
+  activeDocumentText?: string
   loading: boolean
   loadError: string
   expandedPaths: Set<string>
@@ -70,6 +73,7 @@ export type MarkdownWorkspaceExplorerProps = {
   onClearFile: (path: WorkspacePath) => void
   onRenameEntry: (path: WorkspacePath, nextName: string) => void
   onDeleteEntry: (path: WorkspacePath) => void
+  onRefreshFileFromSource?: (path: WorkspacePath, renderedPageRequestUrl?: string, options?: import('./useWorkspaceFileActions/types').WorkspaceRefreshOptions) => Promise<boolean> | void
 
   renderSourceFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }
@@ -83,6 +87,8 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     entries,
     filteredEntries,
     sourcesByPath,
+    activeDocumentKey,
+    activeDocumentText,
     loading,
     loadError,
     expandedPaths,
@@ -111,6 +117,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     onClearFile,
     onRenameEntry,
     onDeleteEntry,
+    onRefreshFileFromSource,
     renderSourceFileRight,
   } = props
   const panelTypography = usePanelTypography()
@@ -119,6 +126,33 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
   const tocSectionRef = React.useRef<HTMLElement | null>(null)
   const backlinksSectionRef = React.useRef<HTMLElement | null>(null)
   const [sectionHeightsPx, setSectionHeightsPx] = React.useState<MarkdownExplorerSectionHeightsPx | null>(null)
+  const [revealPath, setRevealPath] = React.useState<WorkspacePath | null>(null)
+  const revealActiveFile = () => {
+    if (!activePath) return
+    setSearch('')
+    setSourceFilesCollapsed(false)
+    for (const path of ancestorPathsForWorkspacePath(activePath)) {
+      if (!expandedPaths.has(path)) toggleExpanded(path)
+    }
+    setRevealPath(activePath)
+  }
+  React.useLayoutEffect(() => {
+    if (!revealPath) return
+    if (revealPath !== activePath) { setRevealPath(null); return }
+    if (search || sourceFilesCollapsed || loading) return
+    const row = Array.from(sourceFilesSectionRef.current?.querySelectorAll<HTMLButtonElement>('button[title]:not([aria-pressed])') ?? [])
+      .find(button => button.title === revealPath)
+    if (!row) return
+    row.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    const section = sourceFilesSectionRef.current
+    const headerBottom = section?.querySelector('header')?.getBoundingClientRect().bottom
+    if (section && headerBottom != null) {
+      const overlap = headerBottom - row.getBoundingClientRect().top
+      if (overlap > 0) section.scrollTop -= overlap
+    }
+    row.focus({ preventScroll: true })
+    setRevealPath(null)
+  }, [revealPath, activePath, search, sourceFilesCollapsed, loading, filteredEntries, expandedPaths])
 
   const readCurrentSectionHeightsPx = React.useCallback((): MarkdownExplorerSectionHeightsPx | null => {
     return readMarkdownExplorerSectionHeightsPx({
@@ -187,15 +221,18 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     >
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-explorer-toolbar-row gap-2 px-2 !py-0" ariaLabel="Explorer header">
         <section className="min-w-0 max-w-full flex-1 flex items-center gap-2 overflow-hidden" aria-label="Explorer title">
-          <h2 className={`${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary} ${UI_TEXT_TRUNCATE}`}>Explorer</h2>
+          <h2 className={`${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary} ${UI_TEXT_TRUNCATE}`}>Explorer</h2>
         </section>
         <MarkdownWorkspaceExplorerHeaderActions
           panelTextClass={panelTypography.panelTextClass}
           onRefresh={handleRefresh}
           search={search}
           setSearch={setSearch}
+          activePath={activePath}
+          onRevealActiveFile={revealActiveFile}
         />
       </WorkspaceHeaderRow>
+
 
       <section className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_CONTENT_CLASSNAME} aria-label="Explorer content">
         <MarkdownExplorerSection
@@ -207,6 +244,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('sourceFiles', sourceFilesCollapsed)}
           scrollMode="primary"
+          resizeAfter={!sourceFilesCollapsed && !tocCollapsed}
           right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount + (matchesAgentMissionSource(search) ? 1 + Number(!!missionInspection) : 0)}</span>}
         >
           <MarkdownWorkspaceSourceFilesList
@@ -217,6 +255,8 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
             entries={filteredEntries}
             expandedPaths={expandedPaths}
             activePath={activePath}
+            activeDocumentKey={activeDocumentKey}
+            activeDocumentText={activeDocumentText}
             toggleExpanded={toggleExpanded}
             onSelectFile={onSelectFile}
             onSelectFolder={onSelectFolder}
@@ -226,6 +266,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
             onClearFile={onClearFile}
             onRenameEntry={onRenameEntry}
             onDeleteEntry={onDeleteEntry}
+            onRefreshFileFromSource={onRefreshFileFromSource}
             renderFileRight={renderSourceFileRight}
           />
         </MarkdownExplorerSection>
@@ -249,6 +290,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('toc', tocCollapsed)}
           scrollMode={tocItems.length > 0 || sectionHeightsPx ? 'secondary' : 'auto'}
+          resizeAfter={!tocCollapsed && !backlinksCollapsed}
         >
           <MarkdownWorkspaceTocList
             items={tocItems}

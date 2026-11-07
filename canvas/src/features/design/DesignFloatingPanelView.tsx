@@ -78,7 +78,7 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
       <header className={cn(uiToolbarRowScrollClassName, 'justify-between gap-2 w-full select-none', UI_THEME_TOKENS.panel.divider)}>
         <section className="flex min-w-0 items-center gap-2 px-1 py-1">
           <section className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>2D Renderer: Design</section>
-          {lastLabel ? <section className={cn('min-w-0 truncate text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{lastLabel}</section> : null}
+          {lastLabel ? <section className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{lastLabel}</section> : null}
         </section>
         <nav className={`${uiToolbarRowScrollClassName} gap-1`} aria-label="Design panel controls">
           <button
@@ -164,7 +164,7 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
           >
             <Redo className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
           </button>
-          <span className={cn('ml-1 text-[10px] font-mono', snapGrid.enabled ? UI_THEME_TOKENS.text.primary : UI_THEME_TOKENS.text.tertiary)}>
+          <span className={cn('ml-1 text-xs font-mono', snapGrid.enabled ? UI_THEME_TOKENS.text.primary : UI_THEME_TOKENS.text.tertiary)}>
             Snap:{snapGrid.enabled ? 'On' : 'Off'}
           </span>
         </nav>

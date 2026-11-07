@@ -23,8 +23,8 @@ const CAMERA_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 function CameraSectionTitle({ label, value }: { label: string; value: string }) {
   return (
     <span className="flex min-w-0 items-center justify-between gap-2">
-      <span className="truncate text-[11px] font-semibold uppercase">{label}</span>
-      <output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{value}</output>
+      <span className="truncate text-xs font-semibold uppercase">{label}</span>
+      <output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{value}</output>
     </span>
   )
 }
@@ -58,13 +58,13 @@ export function StrybldrCameraFloatingPanelView() {
         <header className={cn('mb-1 grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-camera-catalog-summary="1">
           <section className="flex items-start gap-2">
             <span className={cn('grid size-10 shrink-0 place-items-center rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
-              <Camera className="size-5" strokeWidth={1.7} aria-hidden />
+              <Camera className="size-5" aria-hidden />
             </span>
             <section className="min-w-0 flex-1">
               <h3 className="text-xs font-semibold">Camera Runtime</h3>
-              <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>One shared Camera owner across 2D, 3D, and XR.</p>
+              <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One shared Camera owner across 2D, 3D, and XR.</p>
               <section
-                className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'mt-0.5 font-mono text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+                className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}
                 aria-label="Camera Runtime invocation tokens"
                 data-kg-camera-runtime-invocation-chip-renderer="shared-markdown-sigil"
               >
@@ -75,7 +75,7 @@ export function StrybldrCameraFloatingPanelView() {
               </section>
             </section>
             <section className="flex shrink-0 items-center gap-1">
-              <output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleSectionKeys.length} sections</output>
+              <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleSectionKeys.length} sections</output>
               <ExpandCollapseAllButton
                 allCollapsed={allCollapsed}
                 onExpandAll={expandAll}

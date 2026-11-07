@@ -62,6 +62,7 @@ export type LayoutPositionCacheKey = string;
 export type DocumentSemanticMode = 'document' | 'keyword'
 
 export type BottomSurfaceTab =
+  | 'activity'
   | 'stats'
   | 'history'
   | 'documentVersionGraph'

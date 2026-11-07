@@ -10,7 +10,6 @@ import { renderSettingInput } from '@/features/settings/ui'
 import { UI_ANCHORS } from '@/lib/config'
 import {
   CHAT_AGNES_MODEL_OPTIONS,
-  CHAT_DEERFLOW_MODEL_OPTIONS,
   CHAT_GEMINI_ENDPOINT_OPTIONS,
   CHAT_GEMINI_MODEL_OPTIONS,
   CHAT_GOOGLE_CLOUD_ENDPOINT_OPTIONS,
@@ -21,7 +20,6 @@ import {
   CHAT_QWEN_MODEL_OPTIONS,
   CHAT_OPENAI_MODEL_OPTIONS,
   CHAT_PROVIDER_AGNES,
-  CHAT_PROVIDER_DEERFLOW,
   CHAT_PROVIDER_BYTEPLUS,
   CHAT_PROVIDER_GEMINI,
   CHAT_PROVIDER_GOOGLE_CLOUD,
@@ -67,11 +65,6 @@ import {
   OPENAI_IMAGES_API_REQUEST_DOC_ENTRIES,
   getOpenAiImagesApiRowAnchorId,
 } from './openaiImagesApiDocs'
-import {
-  DEERFLOW_API_DOC_AREA,
-  DEERFLOW_API_REQUEST_DOC_ENTRIES,
-  getDeerFlowApiRowAnchorId,
-} from './deerflowApiDocs'
 import {
   MIROMIND_API_DOC_AREA,
   MIROMIND_API_DOC_ENTRIES,
@@ -222,15 +215,14 @@ const INTEGRATION_API_DOC_ENTRIES = [
   ...GEMINI_API_DOC_ENTRIES,
   ...OPENAI_CHAT_API_REQUEST_DOC_ENTRIES,
   ...OPENAI_IMAGES_API_REQUEST_DOC_ENTRIES,
-  ...DEERFLOW_API_REQUEST_DOC_ENTRIES,
 ] as const
 
 const INTEGRATION_JSON_OWNER_ROW_KEYS_BY_VALUE_KEY: Readonly<Record<string, ReadonlySet<string>>> = {
-  chatMessagesJson: new Set(['byteplusApi.messages', 'openaiApi.input', 'deerflowApi.input']),
+  chatMessagesJson: new Set(['byteplusApi.messages', 'openaiApi.input']),
   chatThinkingJson: new Set(['byteplusApi.thinking']),
-  chatResponseFormatJson: new Set(['byteplusApi.response_format', 'openaiApi.text', 'deerflowApi.text']),
-  chatToolsJson: new Set(['byteplusApi.tools', 'openaiApi.tools', 'deerflowApi.tools']),
-  chatToolChoiceJson: new Set(['byteplusApi.tool_choice', 'openaiApi.tool_choice', 'deerflowApi.tool_choice']),
+  chatResponseFormatJson: new Set(['byteplusApi.response_format', 'openaiApi.text']),
+  chatToolsJson: new Set(['byteplusApi.tools', 'openaiApi.tools']),
+  chatToolChoiceJson: new Set(['byteplusApi.tool_choice', 'openaiApi.tool_choice']),
   chatStreamOptionsJson: new Set(['byteplusApi.stream_options']),
 }
 
@@ -258,12 +250,6 @@ function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[n
     return {
       ...entry.meta,
       read: () => CHAT_PROVIDER_BYTEPLUS,
-    }
-  }
-  if (String(entry.meta.key || '').trim() === 'deerflowApi.provider') {
-    return {
-      ...entry.meta,
-      read: () => CHAT_PROVIDER_DEERFLOW,
     }
   }
   if (String(entry.meta.key || '').trim() === 'miromindApi.provider') {
@@ -313,12 +299,6 @@ function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[n
       return {
         ...mappedMeta,
         options: [...CHAT_OPENAI_MODEL_OPTIONS],
-      }
-    }
-    if (rowKey === 'deerflowApi.model') {
-      return {
-        ...mappedMeta,
-        options: [...CHAT_DEERFLOW_MODEL_OPTIONS],
       }
     }
     if (rowKey === 'miromindApi.model') {
@@ -376,7 +356,7 @@ function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[n
         options: [...CHAT_GEMINI_ENDPOINT_OPTIONS],
       }
     }
-    if (rowKey === 'openaiApi.reasoning_effort' || rowKey === 'deerflowApi.reasoning_effort') {
+    if (rowKey === 'openaiApi.reasoning_effort') {
       return {
         ...mappedMeta,
         options: [...INTEGRATION_REASONING_EFFORT_OPTIONS],
@@ -512,7 +492,6 @@ function resolveIntegrationEntryStateKey(entry: typeof INTEGRATION_API_DOC_ENTRI
     usesMappedDisplayValue,
   }
 }
-
 
 const PAYMENTS_API_DOC_ENTRIES = [
   ...STRIPE_PAYMENT_API_REQUEST_DOC_ENTRIES,
@@ -722,9 +701,6 @@ export function useSettingsView({
   const [grabMapsHealthOk, setGrabMapsHealthOk] = React.useState<boolean | null>(null)
   const [grabMapsHealthDetails, setGrabMapsHealthDetails] = React.useState<string | null>(null)
   const [isCheckingGrabMapsHealth, setIsCheckingGrabMapsHealth] = React.useState(false)
-  const [deerFlowHealthOk, setDeerFlowHealthOk] = React.useState<boolean | null>(null)
-  const [deerFlowHealthDetails, setDeerFlowHealthDetails] = React.useState<string | null>(null)
-  const [isCheckingDeerFlowHealth, setIsCheckingDeerFlowHealth] = React.useState(false)
   const [bytePlusVideoModelPreviewText, setBytePlusVideoModelPreviewText] = React.useState<string | null>(null)
   const [isCheckingBytePlusVideoModelPreview, setIsCheckingBytePlusVideoModelPreview] = React.useState(false)
   const bytePlusVideoPreviewRequestRef = React.useRef(0)
@@ -866,44 +842,6 @@ export function useSettingsView({
     }
   }, [values])
 
-  const checkDeerFlowHealth = React.useCallback(async () => {
-    const baseUrl = getChatDefaultEndpointUrlForProvider(CHAT_PROVIDER_DEERFLOW)
-    const healthUrl = resolveChatEndpointForHealth(baseUrl)
-    if (!healthUrl) {
-      setDeerFlowHealthOk(false)
-      setDeerFlowHealthDetails('DeerFlow endpoint is not configured.')
-      return
-    }
-    setIsCheckingDeerFlowHealth(true)
-    setDeerFlowHealthOk(null)
-    setDeerFlowHealthDetails(null)
-    try {
-      const res = await fetch(healthUrl, {
-        method: 'GET',
-        headers: buildChatProxyHeaders({
-          provider: CHAT_PROVIDER_DEERFLOW,
-          apiKey: null,
-          endpointUrl: baseUrl,
-          clientRequestId: `kg-deerflow-health-${Date.now().toString(36)}`,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json().catch(() => null)
-        setDeerFlowHealthOk(true)
-        const detail = data ? `OK: ${JSON.stringify(data)}` : 'OK'
-        setDeerFlowHealthDetails(detail)
-      } else {
-        setDeerFlowHealthOk(false)
-        setDeerFlowHealthDetails(`Error: ${res.status} ${res.statusText}`)
-      }
-    } catch (err: unknown) {
-      setDeerFlowHealthOk(false)
-      setDeerFlowHealthDetails(`Error: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setIsCheckingDeerFlowHealth(false)
-    }
-  }, [])
-
   const checkBytePlusVideoModelPreview = React.useCallback(async () => {
     const authMode = String(values.chatAuthMode || '').trim() === 'byok' ? 'byok' : 'serverManaged'
     const apiKey = authMode === 'byok' ? String(values.chatApiKey || '').trim() : ''
@@ -967,11 +905,8 @@ export function useSettingsView({
     if (normalizedProvider !== CHAT_PROVIDER_BYTEPLUS) {
       void checkBytePlusHealth()
     }
-    if (normalizedProvider === CHAT_PROVIDER_DEERFLOW) {
-      void checkDeerFlowHealth()
-    }
     void checkBytePlusVideoModelPreview()
-  }, [checkBytePlusVideoModelPreview, checkChatHealth, checkBytePlusHealth, checkDeerFlowHealth, mode, values.chatProvider])
+  }, [checkBytePlusVideoModelPreview, checkChatHealth, checkBytePlusHealth, mode, values.chatProvider])
 
   const didAutoCheckGrabMapsHealthRef = React.useRef(false)
   React.useEffect(() => {
@@ -1014,7 +949,6 @@ export function useSettingsView({
     return new Map<string, Record<string, unknown>>([
       [BYTEPLUS_SHARED_TEXT_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'byteplus', properties })],
       [OPENAI_CHAT_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'openai', properties })],
-      [DEERFLOW_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'deerflow', properties })],
       [MIROMIND_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'miromind', properties })],
       [AGNES_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'agnes', properties })],
       [SEALION_API_DOC_AREA, normalizeTextGenerationWidgetPropertiesForProviderFamily({ providerFamily: 'sealion', properties })],
@@ -1101,8 +1035,6 @@ export function useSettingsView({
             ? getOpenAiChatApiRowAnchorId(entry.meta.key)
             : area === OPENAI_IMAGES_API_DOC_AREA
               ? getOpenAiImagesApiRowAnchorId(entry.meta.key)
-            : area === DEERFLOW_API_DOC_AREA
-              ? getDeerFlowApiRowAnchorId(entry.meta.key)
             : undefined
       const displayValue =
         usesMappedDisplayValue && entry.valueKey && Object.prototype.hasOwnProperty.call(normalizedDisplayValues, entry.valueKey)
@@ -1305,11 +1237,6 @@ export function useSettingsView({
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === OPENAI_IMAGES_API_DOC_AREA,
         },
         {
-          title: DEERFLOW_API_DOC_AREA,
-          searchIndex: normalizeText('DeerFlow Gateway API OpenAI-compatible gateway local llm proxy cloudflare tunnel dev prod floatingpanel props panel text widget'),
-          match: entry => normalizeSettingsAreaLabel(entry.details.area) === DEERFLOW_API_DOC_AREA,
-        },
-        {
           title: BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA,
           searchIndex: normalizeText('BytePlus Video Generation API ModelArk FloatingPanel BytePlus Video Widget byteplusVideoApi.model byteplusVideoModel'),
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA,
@@ -1438,10 +1365,6 @@ export function useSettingsView({
     grabMapsHealthDetails,
     isCheckingGrabMapsHealth,
     checkGrabMapsHealth,
-    deerFlowHealthOk,
-    deerFlowHealthDetails,
-    isCheckingDeerFlowHealth,
-    checkDeerFlowHealth,
     bytePlusVideoModelPreviewText,
     isCheckingBytePlusVideoModelPreview,
     checkBytePlusVideoModelPreview,

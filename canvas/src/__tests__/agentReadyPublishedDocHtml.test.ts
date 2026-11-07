@@ -1,7 +1,35 @@
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
+import { AGENTIC_GRAPH_CSP, AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP } from '../../../cloudflare/pages/agentic-graph-security-headers.mjs'
 import { onRequest } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 
+export async function testAgenticGraphRootHtmlUsesCanonicalSecurityPolicy(): Promise<void> {
+  const appShellHtml = '<!doctype html><html><head><title>agentic-graph</title></head><body><main id="root"></main></body></html>'
+  const response = await onRequest({
+    request: new Request('https://airvio.co/agentic-graph/', { method: 'GET', headers: { accept: 'text/html' } }),
+    env: {},
+    next: async () => new Response(appShellHtml, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'content-security-policy-report-only': "default-src 'self'",
+        'x-frame-options': 'DENY',
+      },
+    }),
+  } as never)
+
+  if (!response.ok || response.headers.get('x-agentic-graph-route-tag') !== 'homepage-html') {
+    throw new Error(`expected app-root HTML route headers, got ${response.status} ${response.headers.get('x-agentic-graph-route-tag')}`)
+  }
+  if (response.headers.get('content-security-policy') !== AGENTIC_GRAPH_CSP) {
+    throw new Error('expected app-root route to enforce the canonical Graph CSP')
+  }
+  if (response.headers.has('content-security-policy-report-only') || response.headers.has('x-frame-options')) {
+    throw new Error('expected app-root framing policy to be owned by the canonical Graph CSP')
+  }
+}
+
 export async function testPublishedDocHtmlUsesAgenticGraphAppShellAsset(): Promise<void> {
+  await testAgenticGraphRootHtmlUsesCanonicalSecurityPolicy()
   const shareToken = encodePublishedDocShareToken({ canonicalPath: 'docs/shared.md' })
   const appShellHtml = '<!doctype html><html><head><title>agentic-graph</title></head><body><main id="root"></main></body></html>'
   const rootAliasHtml = '<!doctype html><html><head><meta http-equiv="refresh" content="0; url=/agentic-graph/" /></head><body></body></html>'
@@ -47,7 +75,7 @@ export async function testPublishedDocHtmlUsesAgenticGraphAppShellAsset(): Promi
   if (!html.includes('id="root"') || html.includes('url=/agentic-graph/')) {
     throw new Error(`expected published doc HTML route to return app shell without root refresh, got ${html.slice(0, 160)}`)
   }
-  if (response.headers.get('content-security-policy') !== 'frame-ancestors *') {
+  if (response.headers.get('content-security-policy') !== AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP) {
     throw new Error(`expected the opaque published document route to allow external iframe hosts, got ${response.headers.get('content-security-policy')}`)
   }
   if (response.headers.has('x-frame-options')) {

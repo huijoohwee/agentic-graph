@@ -63,7 +63,7 @@ function ProjectionSurface({
       <button
         type="button"
         className={cn(
-          'absolute left-1 top-1 z-10 flex items-center gap-1 rounded px-1 py-0.5 text-[9px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70',
+          'absolute left-1 top-1 z-10 flex items-center gap-1 rounded px-1 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70',
           selectedMarkerIndex >= 0 ? UI_THEME_TOKENS.status.info : UI_THEME_TOKENS.text.secondary,
         )}
         aria-label={`Cycle ${label} projection markers`}
@@ -77,9 +77,9 @@ function ProjectionSurface({
       >
         <Icon className="h-3 w-3" aria-hidden="true" /> {label}
       </button>
-      {id === 'compass' ? <span className={cn('absolute left-1/2 top-1 -translate-x-1/2 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>N</span> : null}
+      {id === 'compass' ? <span className={cn('absolute left-1/2 top-1 -translate-x-1/2 text-xs', UI_THEME_TOKENS.text.tertiary)}>N</span> : null}
       <span
-        className={cn('absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate text-[8px]', UI_THEME_TOKENS.text.tertiary)}
+        className={cn('absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate text-xs', UI_THEME_TOKENS.text.tertiary)}
         aria-live="polite"
       >
         {selectedMarkerIndex >= 0 ? markers[selectedMarkerIndex]?.label : `${markers.length} visible`}

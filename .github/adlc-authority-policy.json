@@ -1,0 +1,1 @@
+{"allowedMergeMethods":["squash"],"canonicalRef":"refs/heads/main","confirmationClass":"interactive-provider","evidencePathPrefix":"authority-evidence/","evidenceRefPrefix":"refs/heads/adlc/authority/","requiredStatusChecks":["Integration Gate"],"targetRepositoryPrefix":"github.com/huijoohwee/","validitySeconds":3600,"workflowPath":".github/workflows/adlc-authority.yml"}

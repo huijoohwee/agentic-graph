@@ -15,7 +15,7 @@ export function XrV2PostProcessFallbackStatus() {
   const active = snapshot.phase !== 'idle'
   return (
     <section
-      className={cn('grid gap-1 rounded border p-2 text-[8px]', UI_THEME_TOKENS.panel.border)}
+      className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border)}
       aria-label="XR post-process fallback"
       data-kg-xr-v2-post-process={snapshot.phase}
       data-kg-xr-v2-post-process-reason={snapshot.reason || 'none'}

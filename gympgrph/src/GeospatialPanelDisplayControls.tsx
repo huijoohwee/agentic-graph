@@ -367,6 +367,7 @@ export function GeospatialPanelDisplayControls(
                   disabled || currentLocationState === 'locating',
                 )}
                 disabled={disabled || currentLocationState === 'locating'}
+                title={currentLocationState === 'locating' ? 'Locating...' : 'Use current location'}
                 onClick={props.onUseCurrentLocation}
               >
                 {currentLocationState === 'locating' ? 'Locating...' : 'Use current location'}

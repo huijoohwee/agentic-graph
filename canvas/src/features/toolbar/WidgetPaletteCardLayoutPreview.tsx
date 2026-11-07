@@ -27,7 +27,7 @@ function CardLayout(props: { output: boolean }) {
   return (
     <section className="grid h-full grid-cols-[minmax(0,1fr)_minmax(4.25rem,36%)] gap-1.5 p-1.5">
       <section className={`${MINI_SURFACE_CLASS_NAME} p-1.5`}>
-        <span className="flex flex-wrap items-center gap-1 text-[8px] leading-none text-[color:var(--kg-text-secondary)]">
+        <span className="flex flex-wrap items-center gap-1 text-xs leading-none text-[color:var(--kg-text-secondary)]">
           {props.output ? (
             <>
               <span>P1</span>
@@ -44,7 +44,7 @@ function CardLayout(props: { output: boolean }) {
         <LayoutSkeleton />
       </section>
       <section
-        className={`${MINI_SURFACE_CLASS_NAME} flex items-center justify-center text-[10px] italic text-[color:var(--kg-text-secondary)]`}
+        className={`${MINI_SURFACE_CLASS_NAME} flex items-center justify-center text-xs italic text-[color:var(--kg-text-secondary)]`}
         data-kg-widget-palette-layout-slot={props.output ? 'output' : 'media'}
       >
         {props.output ? 'Add output' : <span className="text-lg not-italic">+</span>}
@@ -57,18 +57,18 @@ function MultiSelectCardLayout() {
   return (
     <section className="grid h-full grid-cols-[minmax(0,1fr)_minmax(4.25rem,36%)] gap-1.5 p-1.5">
       <section className={`${MINI_SURFACE_CLASS_NAME} p-1.5`}>
-        <span className="flex items-center gap-1 text-[8px] leading-none text-[color:var(--kg-text-secondary)]">
+        <span className="flex items-center gap-1 text-xs leading-none text-[color:var(--kg-text-secondary)]">
           <span>P1</span>
           <span className="rounded border border-[color:var(--kg-border)] px-1 py-0.5">PROBE</span>
           <span>TYPE 2</span>
         </span>
-        <span className="mt-1.5 grid gap-1 text-[8px] text-[color:var(--kg-text-secondary)]" aria-hidden="true">
+        <span className="mt-1.5 grid gap-1 text-xs text-[color:var(--kg-text-secondary)]" aria-hidden="true">
           <span>☑ 1. Option</span>
           <span>☐ 2. Option</span>
           <span>☐ Other</span>
         </span>
       </section>
-      <section className={`${MINI_SURFACE_CLASS_NAME} flex items-center justify-center text-[10px] italic text-[color:var(--kg-text-secondary)]`}>
+      <section className={`${MINI_SURFACE_CLASS_NAME} flex items-center justify-center text-xs italic text-[color:var(--kg-text-secondary)]`}>
         Add output
       </section>
     </section>
@@ -137,7 +137,7 @@ export function WidgetPaletteCardLayoutPreview(props: { variant: Pick<WidgetPale
       className="overflow-hidden rounded-md border border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/55"
       data-kg-widget-palette-layout={variant.id}
     >
-      <header className="truncate border-b border-[color:var(--kg-border)] px-2 py-1.5 text-[11px] font-semibold leading-4 text-[color:var(--kg-text-primary)]">
+      <header className="truncate border-b border-[color:var(--kg-border)] px-2 py-1.5 text-xs font-semibold leading-4 text-[color:var(--kg-text-primary)]">
         {variant.label}
       </header>
       <section className="p-1.5">

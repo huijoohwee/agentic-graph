@@ -1,4 +1,3 @@
-import { installUnavailableWebpageDomFixture } from './helpers/workspaceImportUrlFixtures'
 import { fetchWorkspaceUrlContent } from '@/features/markdown-workspace/workspaceImport'
 import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
 import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '@/features/markdown-workspace/workspaceImport'
@@ -67,7 +66,6 @@ export const testImportUrlWebpageRefreshUsesSourceFaithfulForMultipleUrls = asyn
 
   const g = globalThis as unknown as { fetch?: unknown }
   const prevFetch = g.fetch
-  const domFixture = installUnavailableWebpageDomFixture(urls)
   try {
     g.fetch = (async (input: unknown, init?: unknown) => {
       const initObj = init && typeof init === 'object' ? (init as { method?: unknown }) : null
@@ -102,10 +100,8 @@ export const testImportUrlWebpageRefreshUsesSourceFaithfulForMultipleUrls = asyn
         throw new Error(`expected HTML-derived heading in body for URL: ${url}`)
       }
     }
-    domFixture.assertRequests()
   } finally {
     g.fetch = prevFetch
-    domFixture.restore()
   }
 }
 

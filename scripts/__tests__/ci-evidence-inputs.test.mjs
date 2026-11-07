@@ -20,19 +20,19 @@ const sample = (event, paths, extra = {}) => ownerInputs({ contract,
   gitText: () => paths.map(p => `${p}\0`).join(''),
   resolveCi: () => ({ base: 'a'.repeat(40) }), versions: { python: '3.11', chrome: '140' }, ...extra })
 
-test('only isolated planning Markdown without executable impact omits the XR runtime gate', () => {
+test('the XR runtime gate follows the native affected scope', () => {
   const plan = 'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md'
   for (const event of ['pull_request', 'push']) {
     assert.equal(xrRuntimeGateRequired(sample(event, [plan]), event), false)
     for (const paths of [[], [plan, 'package.json'], ['docs/workspace-seeds/README.md'],
-      ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
-      ['canvas/src/lib/three/ThreeGraph.impl.tsx'], ['.github/workflows/integration.yml'],
-      ['docs/documents/../workspace-seeds/README.md']]) {
-      assert.equal(xrRuntimeGateRequired(sample(event, paths), event), true, JSON.stringify(paths))
-    }
+      ['canvas/src/features/sequence/SequenceInspector.tsx'], ['.github/workflows/integration.yml'],
+      ['docs/documents/../workspace-seeds/README.md']])
+      assert.equal(xrRuntimeGateRequired(sample(event, paths), event), false, JSON.stringify(paths))
+    assert.equal(xrRuntimeGateRequired(sample(event,
+      ['canvas/src/features/xr-v2/xrV2ConnectedPreviewViewerRuntime.ts']), event), true)
   }
-  assert.equal(xrRuntimeGateRequired(sample('workflow_dispatch', [plan]), 'workflow_dispatch'), true)
-  assert.equal(xrRuntimeGateRequired(sample('pull_request', [plan]), 'unknown'), true)
+  assert.equal(xrRuntimeGateRequired(sample('workflow_dispatch', [plan]), 'workflow_dispatch'), false)
+  assert.equal(xrRuntimeGateRequired(sample('pull_request', [plan]), 'unknown'), false)
   const selector = integration.find(step => step.id === 'xr_gate')
   assert.equal(selector.if, undefined)
   assert.match(selector.run, /--xr-gate >> "\$GITHUB_OUTPUT"/)
@@ -85,11 +85,32 @@ test('version evidence retries one bounded timeout and returns the exact observe
   assert.equal(calls[0][2].killSignal, 'SIGKILL')
 })
 
+test('Chrome timeout accepts only exact installed package metadata, never a guessed version', () => {
+  const failure = Object.assign(new Error('browser probe timed out'), { code: 'ETIMEDOUT' })
+  let calls = 0
+  const result = toolVersion('google-chrome', ['--version'], {
+    execute: () => { calls += 1; throw failure },
+    readPackageVersion: (command, args, options) => {
+      assert.equal(command, 'dpkg-query')
+      assert.deepEqual(args, ['-W', '-f=${Version}', 'google-chrome-stable'])
+      assert.equal(options.timeout, 5000)
+      return '140.0.7339.185-1\n'
+    },
+  })
+  assert.equal(calls, 2)
+  assert.equal(result, 'Google Chrome 140.0.7339.185-1 (installed package)')
+  for (const output of ['', '140 guessed', '1.2.3\nextra']) {
+    assert.throws(() => toolVersion('google-chrome', ['--version'], {
+      execute: () => { throw failure }, readPackageVersion: () => output,
+    }), error => error === failure)
+  }
+})
+
 test('repeated timeout and non-timeout probe failures cannot become reusable evidence', () => {
   for (const [code, attempts] of [['ETIMEDOUT', 2], ['ENOENT', 1], ['ENOBUFS', 1], [undefined, 1]]) {
     let calls = 0
     const failure = Object.assign(new Error('probe failed'), { code })
-    assert.throws(() => toolVersion('google-chrome', ['--version'], { execute: () => {
+    assert.throws(() => toolVersion('google-chrome', ['--version'], { readPackageVersion: () => { throw failure }, execute: () => {
       calls += 1
       throw failure
     } }), error => error === failure)
@@ -223,6 +244,9 @@ test('main reuse retains fresh canonical preflight and verifies once at the plan
   const script = read('scripts/run-affected-ci.mjs')
   assert.match(script, /runCiEvidence\(\['verify'/)
   assert.match(script, /reuse\?\.reused === true/)
+  assert.match(script, /await sourcePlanReuse\(partition, partitions\)/)
+  assert.equal(integration.find(step => step.name === 'Retain source-plan reuse decision').with.path,
+    '${{ runner.temp }}/ci-source-reuse-*.json')
   assert.match(script, /else await runValidationStages\(repoRoot, stages\)/)
   assert.ok(integration.findIndex(s => s.name === 'Seal PR source-plan evidence') > integration.findIndex(s => s.name === 'Run XR v2 runtime review-candidate gate'))
   assert.match(integration.find(s => s.id === 'validation_observation').run,

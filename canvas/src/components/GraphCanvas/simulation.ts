@@ -4,7 +4,7 @@ import { GraphSchema } from '@/lib/graph/schema';
 import { applyRadialClusterLayout } from './layout/radial';
 import { applyForceModeSeeds } from './layout/seeding';
 import { readMermaidAxisFromNodes } from './layout/mermaidDirection';
-import { createBboxCollideForce, getNodeCollisionRadius, type NodeHalfExtents } from './layout/overlap';
+import { getNodeCollisionRadius, type NodeHalfExtents } from './layout/overlap';
 import { createGroupBboxCollideForce } from './layout/groupOverlap';
 import { createGroupBboxCollideForceByDepth } from './layout/groupOverlapByDepth';
 import { createGroupKeyOfNode, type GroupKeyOfNode } from './layout/grouping';
@@ -36,6 +36,7 @@ import {
 import { isRadarFlowEdge, isRadarGraph as detectRadarGraph, isRadarSpokeEdge, readRadarForceConfig } from '@/lib/graph/radarForces'
 import { readFlowchartGridSizePx, readFlowchartLaneSeparationPx } from '@/lib/canvas/flowchartGrid'
 import { snapScalarToGrid } from '@/lib/canvas/gridSnap'
+import { createLayoutBboxForce2d, panelBoundsKey2d } from './layout/panelLayout2d'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 
 export type EdgeWithRuntime = GraphEdge & {
@@ -681,21 +682,8 @@ export const buildSimulation = (
       )
       .force(
         'bboxCollide',
-        !disjointEnabled && bboxCfg.enabled
-          ? createBboxCollideForce({
-              schema,
-              paddingX: bboxCfg.paddingX,
-              paddingY: bboxCfg.paddingY,
-              paddingZ: bboxCfg.paddingZ,
-              touchEpsilonPx: bboxCfg.touchEpsilonPx,
-              touchEpsilonXPx: bboxCfg.touchEpsilonXPx,
-              touchEpsilonYPx: bboxCfg.touchEpsilonYPx,
-              touchEpsilonZPx: bboxCfg.touchEpsilonZPx,
-              halfExtentsByNodeId: nodeHalfExtentsByNodeId,
-              strength: bboxStrength,
-              iterations: bboxIterations,
-            })
-          : null,
+        createLayoutBboxForce2d({ schema, halfExtents: nodeHalfExtentsByNodeId,
+          panelOnly: disjointEnabled, strength: bboxStrength, iterations: bboxIterations }),
       )
       .force(
         'groupBboxCollide',
@@ -969,7 +957,7 @@ export const updateForceSimulationPresentation = (args: {
   })()
 
   const bboxKey = (() => {
-    if (disjointEnabled || !bboxCfg.enabled) return ''
+    if (!bboxCfg.enabled) return ''
     const nums = [
       bboxCfg.paddingX,
       bboxCfg.paddingY,
@@ -981,7 +969,7 @@ export const updateForceSimulationPresentation = (args: {
       bboxStrength,
       bboxIterations,
     ]
-    return nums.map(v => (typeof v === 'number' && Number.isFinite(v) ? String(v) : '')).join(',')
+    return `${disjointEnabled}|${panelBoundsKey2d(nodeHalfExtentsByNodeId)}|${nums.join(',')}`
   })()
 
   const groupBboxKey = (() => {
@@ -1016,7 +1004,7 @@ export const updateForceSimulationPresentation = (args: {
     anchorStrength,
     centerX,
     centerY,
-    bboxEnabled: !disjointEnabled && bboxCfg.enabled,
+    bboxEnabled: bboxCfg.enabled && (!disjointEnabled || !!nodeHalfExtentsByNodeId),
     groupBboxEnabled: !disjointEnabled && collisionCfg.groupBbox.enabled,
     collideEnabled: !disjointEnabled,
     collideIterations,
@@ -1068,7 +1056,7 @@ export const updateForceSimulationPresentation = (args: {
   }
 
   const desiredCollideEnabled = !disjointEnabled
-  const desiredBboxEnabled = !disjointEnabled && bboxCfg.enabled
+  const desiredBboxEnabled = signature.bboxEnabled
   const desiredGroupBboxEnabled = !disjointEnabled && collisionCfg.groupBbox.enabled
 
   const shouldUpdateCollide = (() => {
@@ -1113,21 +1101,8 @@ export const updateForceSimulationPresentation = (args: {
   if (shouldUpdateBbox) {
     simulation.force(
       'bboxCollide',
-      desiredBboxEnabled
-        ? createBboxCollideForce({
-            schema,
-            paddingX: bboxCfg.paddingX,
-            paddingY: bboxCfg.paddingY,
-            paddingZ: bboxCfg.paddingZ,
-            touchEpsilonPx: bboxCfg.touchEpsilonPx,
-            touchEpsilonXPx: bboxCfg.touchEpsilonXPx,
-            touchEpsilonYPx: bboxCfg.touchEpsilonYPx,
-            touchEpsilonZPx: bboxCfg.touchEpsilonZPx,
-            halfExtentsByNodeId: nodeHalfExtentsByNodeId,
-            strength: bboxStrength,
-            iterations: bboxIterations,
-          })
-        : null,
+      createLayoutBboxForce2d({ schema, halfExtents: nodeHalfExtentsByNodeId,
+        panelOnly: disjointEnabled, strength: bboxStrength, iterations: bboxIterations }),
     )
   }
 

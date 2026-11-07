@@ -1,4 +1,6 @@
 import type * as d3 from 'd3'
+import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
+import { computeVectorPaintedOverlayScreenBox } from '@/lib/canvas/vectorPaintedOverlayProjection'
 
 import { applyMediaPanelCssVars, applyPanelBox, computeMediaPanelCssVars3d, computePanelRect } from '@/lib/render/mediaPanelLayout'
 import { computeMediaOverlaySizing, type MediaOverlaySizingConfig, type MediaOverlaySizing } from '@/lib/render/mediaOverlaySizing'
@@ -13,6 +15,7 @@ export type MarkdownOverlayPanelItem = {
 }
 
 export type MarkdownOverlayPanelLoop = {
+  flush: () => void
   schedule: () => void
   stop: () => void
 }
@@ -26,10 +29,9 @@ export function startMarkdownPanelOverlayLoop2d(args: {
   getElementForId: (id: string) => HTMLElement | null
   getDensity: () => MediaPanelDensity
   getSizingConfig: () => MediaOverlaySizingConfig
-  collectiveFitToViewport?: boolean
   clampToViewport?: { margin: number } | null
 }): MarkdownOverlayPanelLoop {
-  if (!args.enabled) return { schedule: () => void 0, stop: () => void 0 }
+  if (!args.enabled) return { flush: () => void 0, schedule: () => void 0, stop: () => void 0 }
 
   let rafOnce: number | null = null
   let rafLoop: number | null = null
@@ -53,7 +55,7 @@ export function startMarkdownPanelOverlayLoop2d(args: {
       density,
       viewportW: vw,
       viewportH: vh,
-      zoomK: k,
+      zoomK: 1,
       itemCount: Math.max(1, items.length),
       config: args.getSizingConfig(),
     })
@@ -83,7 +85,6 @@ export function startMarkdownPanelOverlayLoop2d(args: {
       layoutW: number
       layoutH: number
       scale: number
-      hasWorldSize: boolean
     }> = []
 
     for (let i = 0; i < items.length; i += 1) {
@@ -102,16 +103,12 @@ export function startMarkdownPanelOverlayLoop2d(args: {
       const hasWorldSize = Number.isFinite(worldW) && worldW > 1 && Number.isFinite(worldH) && worldH > 1
       const layoutW = hasWorldSize ? Math.max(2, worldW) : useSizing.panelW
       const layoutH = hasWorldSize ? Math.max(2, worldH) : useSizing.panelH
-      const scale = hasWorldSize ? k : 1
+      const scale = k
       const screenW = layoutW * scale
       const screenH = layoutH * scale
-      const rect = computePanelRect({
-        cx: sx,
-        cy: sy,
-        w: screenW,
-        h: screenH,
-        clamp: args.collectiveFitToViewport === true ? undefined : clamp,
-      })
+      const projected = computeVectorPaintedOverlayScreenBox({ centerWorld: { x: it.cx, y: it.cy },
+        transform: t, width: layoutW, height: layoutH })
+      const rect = clamp ? computePanelRect({ cx: sx, cy: sy, w: screenW, h: screenH, clamp }) : projected
       prepared.push({
         id,
         el,
@@ -122,61 +119,26 @@ export function startMarkdownPanelOverlayLoop2d(args: {
         layoutW,
         layoutH,
         scale,
-        hasWorldSize,
       })
     }
 
     if (prepared.length === 0) return
 
-    const collectiveFit = (() => {
-      if (args.collectiveFitToViewport !== true || !clamp || prepared.length <= 1) return null
-      let minX = Number.POSITIVE_INFINITY
-      let minY = Number.POSITIVE_INFINITY
-      let maxX = Number.NEGATIVE_INFINITY
-      let maxY = Number.NEGATIVE_INFINITY
-      for (let i = 0; i < prepared.length; i += 1) {
-        const item = prepared[i]!
-        minX = Math.min(minX, item.left)
-        minY = Math.min(minY, item.top)
-        maxX = Math.max(maxX, item.left + item.screenW)
-        maxY = Math.max(maxY, item.top + item.screenH)
-      }
-      if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return null
-      const boundsW = Math.max(1, maxX - minX)
-      const boundsH = Math.max(1, maxY - minY)
-      const margin = Math.max(0, Number(args.clampToViewport?.margin) || 0)
-      const targetW = Math.max(1, vw - margin * 2)
-      const targetH = Math.max(1, vh - margin * 2)
-      const fitScale = Math.min(1, targetW / boundsW, targetH / boundsH)
-      const sourceCenterX = minX + boundsW / 2
-      const sourceCenterY = minY + boundsH / 2
-      const targetCenterX = viewportLeft + vw / 2
-      const targetCenterY = viewportTop + vh / 2
-      return { fitScale, sourceCenterX, sourceCenterY, targetCenterX, targetCenterY }
-    })()
-
-    for (let i = 0; i < prepared.length; i += 1) {
-      const item = prepared[i]!
-      const rect = (() => {
-        if (!collectiveFit) return { left: item.left, top: item.top, w: item.screenW, h: item.screenH }
-        const cx = item.left + item.screenW / 2
-        const cy = item.top + item.screenH / 2
-        return computePanelRect({
-          cx: collectiveFit.targetCenterX + (cx - collectiveFit.sourceCenterX) * collectiveFit.fitScale,
-          cy: collectiveFit.targetCenterY + (cy - collectiveFit.sourceCenterY) * collectiveFit.fitScale,
-          w: item.screenW,
-          h: item.screenH,
-          clamp,
-        })
-      })()
-      applyMediaPanelCssVars(item.el, item.hasWorldSize ? unscaledPanelVars : useSizing.vars)
-      applyPanelBox(item.el, { left: rect.left, top: rect.top, w: item.layoutW, h: item.layoutH, display: 'block', scale: item.scale })
-      try {
-        ;(item.el as unknown as { dataset?: Record<string, string> }).dataset!.kgOverlayHasPos = '1'
-      } catch {
-        void 0
-      }
+    const order = new Map([...prepared].sort((a, b) => compareCanvasSurfaceArea(
+      { id: a.id, w: a.screenW, h: a.screenH }, { id: b.id, w: b.screenW, h: b.screenH },
+    )).map((item, index) => [item.id, index + 1]))
+    for (const item of prepared) {
+      applyMediaPanelCssVars(item.el, unscaledPanelVars)
+      applyPanelBox(item.el, { left: item.left, top: item.top, w: item.layoutW, h: item.layoutH,
+        display: 'block', scale: item.scale, positionMode: 'matrix', zIndex: order.get(item.id) })
+      if (item.el.dataset.kgOverlayHasPos !== '1') item.el.dataset.kgOverlayHasPos = '1'
     }
+  }
+
+  const flush = () => {
+    if (rafOnce != null) cancelAnimationFrame(rafOnce)
+    rafOnce = null
+    update()
   }
 
   const schedule = () => {
@@ -195,6 +157,7 @@ export function startMarkdownPanelOverlayLoop2d(args: {
   if (args.loop === 'always') rafLoop = requestAnimationFrame(loop)
 
   return {
+    flush,
     schedule,
     stop: () => {
       if (rafOnce != null) cancelAnimationFrame(rafOnce)

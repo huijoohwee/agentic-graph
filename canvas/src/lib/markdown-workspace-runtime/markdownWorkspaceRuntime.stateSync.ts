@@ -41,11 +41,12 @@ export const scheduleMarkdownWorkspaceAutosaveSync = (
   args: { path: string; text: string },
 ): void => {
   const signature = `autosave:${hashSignatureParts([
-    'v1',
+    'v2',
     String(args.path || ''),
     String(args.text || '').length,
-    String(args.text || '').slice(0, 128),
-    String(args.text || '').slice(-64),
+    // Every authored byte participates: same-size edits in the middle of a
+    // document must not be mistaken for an already persisted autosave.
+    String(args.text || ''),
   ])}`
   const taskKey = `${WORKSPACE_SYNC_TASK_MARKDOWN_WORKSPACE_AUTOSAVE}:${String(args.path || '')}`
   scheduleWorkspaceSyncTask(taskKey, fn, 0, {

@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import RichMediaPanel, { type RichMediaPanelProps } from '@/components/RichMediaPanel'
@@ -64,16 +65,15 @@ export async function testRichMediaPanelTextOutputVersionSelectorPublishesSelect
     const changes: Array<{ selectedOutputVersionId?: string }> = []
     const root = await renderVersionedPanel({ container, window: dom.window, changes })
 
-    const selector = container.querySelector('select[aria-label="Output version"]') as HTMLSelectElement | null
-    if (!selector || selector.value !== 'version-2' || selector.options.length !== 2) {
+    const selector = container.querySelector('button[data-kg-select][aria-label="Output version"]') as HTMLButtonElement | null
+    if (!selector || selector.value !== 'version-2' || readMenuOptions(selector).length !== 2) {
       throw new Error(`expected latest output version to be selected by default, html=${container.innerHTML}`)
     }
-    if (selector.options[0]?.textContent !== 'Version 2 (latest)' || selector.options[1]?.textContent !== 'Version 1') {
+    if (readMenuOptions(selector)[0]?.textContent !== 'Version 2 (latest)' || readMenuOptions(selector)[1]?.textContent !== 'Version 1') {
       throw new Error(`expected newest-first version labels, got ${selector.innerHTML}`)
     }
     await act(async () => {
-      selector.value = 'version-1'
-      selector.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(selector, 'version-1')
       await waitForTasks(1)
     })
     if (changes.at(-1)?.selectedOutputVersionId !== 'version-1') {
@@ -100,7 +100,7 @@ export async function testRichMediaPanelTextOutputVersionSelectorUsesStoryboardC
       changes,
     })
 
-    const selectors = container.querySelectorAll('select[aria-label="Output version"]')
+    const selectors = container.querySelectorAll('button[data-kg-select][aria-label="Output version"]')
     const header = container.querySelector('[data-kg-rich-media-storyboard-widget-header="1"]')
     const bodyControl = container.querySelector('[data-kg-rich-media-output-version-placement="body"]')
     if (selectors.length !== 1 || !header?.contains(selectors[0]) || bodyControl) {
@@ -144,7 +144,7 @@ export async function testRichMediaPanelTextOutputVersionSelectorUsesBubbleToolb
     }), { window: dom.window, frames: 20 })
 
     const toolbar = container.querySelector('[data-kg-bubble-toolbar="1"]')
-    const selector = container.querySelector('select[aria-label="Output version"]') as HTMLSelectElement | null
+    const selector = container.querySelector('button[data-kg-select][aria-label="Output version"]') as HTMLButtonElement | null
     const placement = container.querySelector('[data-kg-rich-media-output-version-placement="toolbar"]')
     if (!toolbar?.contains(selector) || !placement || selector?.value !== 'version-2') {
       throw new Error(`expected the output version selector inside the selected-node bubble toolbar, html=${container.innerHTML}`)
@@ -155,8 +155,7 @@ export async function testRichMediaPanelTextOutputVersionSelectorUsesBubbleToolb
       throw new Error('expected the bubble toolbar to preserve native select pointer activation')
     }
     await act(async () => {
-      selector.value = 'version-1'
-      selector.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(selector, 'version-1')
       await waitForTasks(1)
     })
     if (changes.at(-1)?.selectedOutputVersionId !== 'version-1') {

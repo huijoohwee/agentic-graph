@@ -84,13 +84,13 @@ export function XrNativeControllerDemoControls({
     >
       <header className="flex items-start justify-between gap-2">
         <span className="grid min-w-0 gap-0.5">
-          <strong className="text-[11px] uppercase">Native Controller Lab</strong>
-          <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <strong className="text-xs uppercase">Native Controller Lab</strong>
+          <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Procedural assets · deterministic {runtime.fixedRateHz} Hz · smooth follow camera
           </span>
         </span>
         <output
-          className={cn('shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase', active ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)}
+          className={cn('shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold uppercase', active ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)}
           data-kg-xr-native-controller-status="1"
         >
           {runtime.phase}
@@ -122,14 +122,14 @@ export function XrNativeControllerDemoControls({
         <DemoButton disabled={!sceneReady || runtime.phase === 'off'} marker="exit" onClick={() => dispatch('exit')}>Exit</DemoButton>
       </nav>
 
-      <section className={cn('grid grid-cols-2 gap-2 rounded p-1.5 text-[9px]', UI_THEME_TOKENS.panel.bg)} aria-label="Native XR controller input map">
+      <section className={cn('grid grid-cols-2 gap-2 rounded p-1.5 text-xs', UI_THEME_TOKENS.panel.bg)} aria-label="Native XR controller input map">
         <span><kbd>WASD</kbd> / arrows<br /><span className={UI_THEME_TOKENS.text.tertiary}>Move · tilt · boosters</span></span>
         <span><kbd>Space</kbd> + <kbd>Shift</kbd><br /><span className={UI_THEME_TOKENS.text.tertiary}>Jump/thrust · torque/stabilize</span></span>
         <span className="col-span-2 inline-flex items-center gap-1"><Gamepad2 className="size-3" aria-hidden />Standard gamepad: left stick · south button · shoulder</span>
       </section>
 
       <code
-        className={cn('block overflow-hidden text-ellipsis whitespace-nowrap rounded px-1.5 py-1 text-[8px]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.text.tertiary)}
+        className={cn('block overflow-hidden text-ellipsis whitespace-nowrap rounded px-1.5 py-1 text-xs', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.text.tertiary)}
         title={invocation}
         data-kg-xr-native-controller-invocation={invocation}
       >

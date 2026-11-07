@@ -11,7 +11,7 @@ import { AGENTIC_OS_STORAGE_API_VERSION, buildAgenticGraphStorageDocPath, hashAg
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-route-paths'
 import { AGENTIC_OS_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agentic-graph-storage-bounds'
 import { getClientFetch, parseStorageResponseJson, resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agentic-graph-storage-client-transport'
-import { readAgenticGraphStorageBrowserSession, AgenticGraphStorageSignInRequiredError } from '@/lib/storage/agentic-graph-storage-browser-session'
+import { readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
 import { exportAgenticGraphStorageWorkspacePages } from '@/lib/storage/agentic-graph-storage-client-export'
 import { buildPublishedDocShareUrl, buildPublishedDocShareUrlFromSource } from '@/features/canvas/canvasDocDeepLink'
 import { readEnvString } from '@/lib/config.env'
@@ -376,37 +376,39 @@ const readStorageDocumentTextMatches = (args: {
     let receivedBytes = 0
     let bodyError: unknown
     let failed = false
+    let matches = false
     try {
       if (signal.aborted) throw signal.reason
       while (true) {
         const next = await reader.read()
         if (signal.aborted) throw signal.reason
-        if (next.done) { complete = true; break }
+        if (next.done) { complete = true; matches = receivedBytes === expectedBytes.byteLength; break }
         if (receivedBytes + next.value.byteLength > expectedBytes.byteLength) {
           await cancel('Storage document exceeds the selected content length')
-          return false
+          break
         }
         for (let index = 0; index < next.value.byteLength; index += 1) {
           if (next.value[index] !== expectedBytes[receivedBytes + index]) {
             await cancel('Storage document differs from selected content')
-            return false
+            break
           }
         }
+        if (cancellation) break
         receivedBytes += next.value.byteLength
       }
-      return receivedBytes === expectedBytes.byteLength
     } catch (error) {
       failed = true
       bodyError = error
-      throw error
     } finally {
       signal.removeEventListener('abort', abort)
       try { if (!complete) await cancel('Storage document verification ended') }
       catch (error) {
-        if (failed) throw new AggregateError([bodyError, error], 'Document verification and reader cleanup failed')
-        throw error
+        bodyError = failed ? new AggregateError([bodyError, error], 'Document verification and reader cleanup failed') : error
+        failed = true
       } finally { reader.releaseLock() }
     }
+    if (failed) throw bodyError
+    return matches
   },
 })
 
@@ -476,14 +478,25 @@ export const publishWorkspaceEntryShareUrl = async (args: {
   readEntryText?: ReadWorkspaceEntryTextForStoragePublish
 }): Promise<string | null> => {
   if (args.entry.kind !== 'file') return null
-  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
-  const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(args.entry.path, { markdownOnly: false })
-  if (!workspaceId || !canonicalPath) return null
   const text = await readWorkspaceEntryResolvedTextForStoragePublish({
     entry: args.entry, readEntryText: args.readEntryText, storageFallbackByPath: new Map(),
     getWorkspaceFs: () => import('@/features/workspace-fs/workspaceFs').then(mod => mod.getWorkspaceFs()),
   })
   if (!text.trim()) return null
+  const localShareUrl = async () => {
+    const { buildLocalDocumentShareUrl } = await import('@/features/canvas/localDocumentShare')
+    const url = buildLocalDocumentShareUrl({
+      title: args.entry.name || args.entry.path.split('/').filter(Boolean).pop() || 'Shared document',
+      markdown: text,
+      baseUrl: typeof window !== 'undefined'
+        ? new URL(import.meta.env?.BASE_URL || '/', window.location.origin).href
+        : 'https://airvio.co/agentic-graph/',
+    })
+    if (!url) throw new Error('This document exceeds the 4 KiB limit for a self-contained share URL.')
+    return url
+  }
+  const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
+  const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(args.entry.path, { markdownOnly: false })
   const baseUrl = normalizeString(args.baseUrl) || normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
   const publicationUrl = resolveAgenticGraphStorageApiUrl(AGENTIC_OS_STORAGE_ROUTE_PATHS.publications, baseUrl)
   const origin = new URL(publicationUrl, typeof window !== 'undefined' ? window.location.href : undefined).origin
@@ -497,12 +510,16 @@ export const publishWorkspaceEntryShareUrl = async (args: {
       if (shareUrl && await readStorageDocumentTextMatches({ fetchImpl, url: sourceUrl.href, text, credentials: 'omit' })) return shareUrl
     }
   }
+  if (!workspaceId || !canonicalPath) return localShareUrl()
   // Preserve the existing memory-only local retention/refusal without starting transport.
   // A durable browser can authenticate before enqueuing any upload for the selected workspace.
   const persistence = (await getAgenticGraphStorageDb()).persistence.getState()
+  if (typeof window !== 'undefined' && (persistence.mode !== 'indexeddb' || persistence.status !== 'active')) {
+    return localShareUrl()
+  }
   if (typeof window !== 'undefined' && persistence.mode === 'indexeddb' && persistence.status === 'active') {
     const session = await withShareDeadline(signal => readAgenticGraphStorageBrowserSession({ workspaceId, baseUrl, fetchImpl, signal }))
-    if (session.status === 'unauthenticated' || session.status === 'access-denied') throw new AgenticGraphStorageSignInRequiredError(baseUrl)
+    if (session.status === 'unauthenticated' || session.status === 'access-denied') return localShareUrl()
     if (session.status !== 'authenticated') throw new Error(session.message || 'Cloud sharing is unavailable. Try again when connected.')
   }
   const result = await publishWorkspaceEntriesToAgenticGraphStorage({

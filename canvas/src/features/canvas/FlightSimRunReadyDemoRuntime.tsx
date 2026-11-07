@@ -15,6 +15,7 @@ import {
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { findComposedSourceFileByPath } from '@/features/source-files/composedSourceSelection'
 import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
@@ -29,6 +30,14 @@ export function FlightSimRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
+  const sourceFiles = useGraphStore(state => state.sourceFiles)
+  const source = findComposedSourceFileByPath({ sourceFiles, targetPath: markdownDocumentName })
+  const sourceReady = Boolean(source?.enabled && source.text === markdownDocumentText && source.status === 'parsed')
+  const sourceError = source?.status === 'error'
+    ? source.error || 'Flight Sim active SourceFile parsing failed.'
+    : !source || !source.enabled || source.text !== markdownDocumentText
+      ? 'Flight Sim requires the exact enabled active SourceFile text.'
+      : null
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
   const canvas3dMode = useGraphStore(state => state.canvas3dMode)
   const canvasRenderModeLastFree = useGraphStore(state => state.canvasRenderModeLastFree)
@@ -43,13 +52,36 @@ export function FlightSimRunReadyDemoRuntime() {
   const active = isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const [launchAttempt, setLaunchAttempt] = React.useState(0)
   const ownsDocumentLaunchRef = React.useRef(false)
+  const panelLaunchSourceRef = React.useRef<readonly [string | null, string | undefined] | null>(null)
   const launchGenerationRef = React.useRef(0)
+  const launchSource = { markdownDocumentName, markdownDocumentText, sourceId: source?.id, sourceRevision: source?.parsedGraphRevision, sourceText: source?.text, sourceEnabled: source?.enabled, sourceStatus: source?.status }
+  const launchSourceRef = React.useRef(launchSource)
   const previousCanvasSurfaceRef = React.useRef<FlightSimPreviousCanvasSurface>(
     captureFlightSimPreviousCanvasSurface(),
   )
 
   React.useLayoutEffect(() => {
+    const previousSource = launchSourceRef.current
+    if (previousSource.markdownDocumentName !== markdownDocumentName
+      || previousSource.markdownDocumentText !== markdownDocumentText
+      || previousSource.sourceId !== source?.id
+      || previousSource.sourceRevision !== source?.parsedGraphRevision
+      || previousSource.sourceText !== source?.text
+      || previousSource.sourceEnabled !== source?.enabled
+      || previousSource.sourceStatus !== source?.status) {
+      launchSourceRef.current = launchSource
+      launchGenerationRef.current += 1
+      if (ownsDocumentLaunchRef.current) {
+        ownsDocumentLaunchRef.current = false
+        exitFlightSimSurface({ restorePreviousSurface: false })
+      }
+      if (launchAttempt !== 0) {
+        setLaunchAttempt(0)
+        return
+      }
+    }
     if (!active) {
+      panelLaunchSourceRef.current = null
       launchGenerationRef.current += 1
       if (launchAttempt !== 0) setLaunchAttempt(0)
       previousCanvasSurfaceRef.current = Object.freeze({
@@ -68,10 +100,17 @@ export function FlightSimRunReadyDemoRuntime() {
       return
     }
     if (
-      !sourceFilesBootstrapReady
-      || ownsDocumentLaunchRef.current
+      ownsDocumentLaunchRef.current
       || launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT
     ) return
+    if (sourceError && (source?.status === 'error' || sourceFilesBootstrapReady)) {
+      setLaunchAttempt(FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT)
+      useGraphStore.getState().pushUiToast({ id: 'flight-sim:run-ready-launch:error', kind: 'error', message: sourceError })
+      return
+    }
+    // The document may publish before its native parser lifecycle finishes.
+    // Only a matching idle/loading record waits; malformed sources fail above.
+    if (!sourceFilesBootstrapReady || !sourceReady) return
     const generation = launchGenerationRef.current + 1
     const currentAttempt = launchAttempt + 1
     launchGenerationRef.current = generation
@@ -99,13 +138,21 @@ export function FlightSimRunReadyDemoRuntime() {
     void hydrateFlightSimSharedXrSceneSource()
       .then(hydrated => {
         const current = useGraphStore.getState()
+        const currentSource = findComposedSourceFileByPath({ sourceFiles: current.sourceFiles, targetPath: current.markdownDocumentName })
         if (
           launchGenerationRef.current !== generation
-          || !isFlightSimRunReadyDemoActive(
-            current.markdownDocumentName,
-            current.markdownDocumentText,
-          )
+          || !isFlightSimRunReadyDemoActive(current.markdownDocumentName, current.markdownDocumentText)
+        ) return null
+        if (
+          current.markdownDocumentName !== markdownDocumentName
+          || current.markdownDocumentText !== markdownDocumentText
+          || !currentSource?.enabled || currentSource.status !== 'parsed'
+          || currentSource.text !== markdownDocumentText
+          || currentSource.id !== source?.id
+          || currentSource.parsedGraphRevision !== source?.parsedGraphRevision
         ) {
+          ownsDocumentLaunchRef.current = false
+          setLaunchAttempt(0)
           return null
         }
         if (!hydrated) {
@@ -115,9 +162,13 @@ export function FlightSimRunReadyDemoRuntime() {
           )
           return null
         }
+        // Source refreshes re-admit Flight while retaining the latest panel intent.
+        const openPanel = panelLaunchSourceRef.current?.[0] !== markdownDocumentName
+          || panelLaunchSourceRef.current?.[1] !== source?.id
+        panelLaunchSourceRef.current = [markdownDocumentName, source?.id]
         return startFlightSim({
           geospatialComposite: true,
-          openPanel: true,
+          openPanel,
           previousCanvasSurface: previousCanvasSurfaceRef.current,
         })
       })
@@ -145,6 +196,11 @@ export function FlightSimRunReadyDemoRuntime() {
     floatingPanelView,
     geospatialModeEnabled,
     launchAttempt,
+    markdownDocumentName,
+    markdownDocumentText,
+    source,
+    sourceError,
+    sourceReady,
     sourceFilesBootstrapReady,
   ])
 

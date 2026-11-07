@@ -28,7 +28,7 @@ export function ErrorFeedback({ title, error, details, code, variant = 'default'
         )}
       >
         <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-        <section className="text-[11px] text-red-700 dark:text-red-300 truncate">
+        <section className="text-xs text-red-700 dark:text-red-300 truncate">
           {title ? title : 'Error'}: {safeError}
         </section>
       </section>
@@ -47,7 +47,7 @@ export function ErrorFeedback({ title, error, details, code, variant = 'default'
         <span>{title ? title : 'Error'}: {safeError}</span>
       </section>
       {details ? (
-        <section className="text-[11px] text-red-700/80 dark:text-red-300/80 mb-2 whitespace-pre-wrap">
+        <section className="text-xs text-red-700/80 dark:text-red-300/80 mb-2 whitespace-pre-wrap">
           {details}
         </section>
       ) : null}

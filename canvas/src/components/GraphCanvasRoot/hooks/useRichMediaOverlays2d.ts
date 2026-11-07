@@ -11,14 +11,14 @@ import { isSpacePanHeld } from '@/lib/canvas/space-pan'
 import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'
 import { clampCanvasInteractionSpeedMultiplier, clampCanvasPanSpeedMultiplier } from '@/lib/canvas/camera-options-2d'
 import { readSnapGridConfigFromSchema, snapPointToGrid } from '@/lib/canvas/gridSnap'
-import { applyPanelBox, readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
+import { applyPanelBox } from '@/lib/render/mediaPanelLayout'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import { computeRichMediaOverlayConnectedValuesByNodeId, listDisplayRichMediaOverlayNodes, normalizeRichMediaPanelDensity } from '@/lib/render/richMediaSsot'
 import { readNodeCenterWorld2d } from '@/lib/render/mediaAnchor'
 import { startMediaOverlayLayoutLoop2d } from '@/lib/render/mediaOverlayLayoutLoop2d'
 import { readOverlaySizingConfigForDensity, type OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
 import { emitMarkdownPanelMetric } from '@/features/metrics/uiMetrics'
 import { buildNodeMediaInventory, getNodeMediaSpec } from '@/components/GraphCanvas/helpers'
-import { createRafOnceScheduler } from '@/lib/react/rafOnceScheduler'
 import { readWidgetRegistryMetadataEntries } from '@/lib/config.storyboard-widget'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
@@ -91,15 +91,6 @@ export function useRichMediaOverlays2d(args: {
   })
   const mediaOverlayScheduleRef = useRef<(() => void) | null>(null)
   const mediaOverlaySchedulePendingRef = useRef<boolean>(false)
-  const mediaOverlayScheduleBootstrapRef = useRef(
-    createRafOnceScheduler(() => {
-      try {
-        mediaOverlayScheduleRef.current?.()
-      } catch {
-        void 0
-      }
-    }),
-  )
   const iframeOverlayRefFnByIdRef = useRef<Map<string, (el: HTMLElement | null) => void>>(new Map())
   const stickyOverlayNodeByIdRef = useRef<Map<string, ReturnType<typeof listDisplayRichMediaOverlayNodes>[number]>>(new Map())
   const stickyOverlayOrderRef = useRef<string[]>([])
@@ -122,13 +113,13 @@ export function useRichMediaOverlays2d(args: {
   const sceneGraphNodeById = sceneGraphLookup?.nodeById || null
 
   const requestMediaOverlaySchedule = useCallback(() => {
-    const schedule = mediaOverlayScheduleRef.current
-    if (schedule) {
-      schedule()
-      return
-    }
+    if (mediaOverlaySchedulePendingRef.current) return
     mediaOverlaySchedulePendingRef.current = true
-    mediaOverlayScheduleBootstrapRef.current.schedule()
+    // Run after node/cluster geometry commits, before paint; avoid a second RAF.
+    queueMicrotask(() => {
+      mediaOverlaySchedulePendingRef.current = false
+      mediaOverlayScheduleRef.current?.()
+    })
   }, [])
 
   const mediaOverlayNodes = useMemo(() => {
@@ -319,17 +310,6 @@ export function useRichMediaOverlays2d(args: {
   }, [active, mediaOverlayNodeIdsKey, mediaOverlayNodes, renderMediaAsNodes, sceneGraphData, threeIframeOverlayPoolMax])
 
   useEffect(() => {
-    const bootstrapScheduler = mediaOverlayScheduleBootstrapRef.current
-    return () => {
-      try {
-        bootstrapScheduler.cancel()
-      } catch {
-        void 0
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     const next = new Map<string, HTMLElement>()
     for (const n of mediaOverlayNodes) {
       const existing = iframeOverlayElsRef.current.get(n.id)
@@ -416,8 +396,8 @@ export function useRichMediaOverlays2d(args: {
       viewportW: sceneWidth,
       viewportH: sceneHeight,
       readLayoutViewport: readVisibleOverlayLayoutViewport,
-      schema: schemaRef.current,
-      collision: { enabled: true },
+      anchorToNode: true,
+      projectWithWorldTransformScale: true,
       aspectRatioMode: strybldrStoryboardCardAspectMode,
       readTransform: () => {
         const svgEl = svgRef.current
@@ -437,8 +417,8 @@ export function useRichMediaOverlays2d(args: {
           simulation: sim,
         })
         const n = nodeById.get(id) || null
-        const props = n?.properties && typeof n.properties === 'object' && !Array.isArray(n.properties) ? n.properties as Record<string, unknown> : null
-        return readStableRichMediaPanelSize(props, strybldrStoryboardCardAspectMode)
+        const size = readRichMediaOverlayFrameSize(n)
+        return size ? { w: size.width, h: size.height } : null
       },
       getNodeWorldCenterForId: id => {
         const graph = sceneGraphDataRef.current
@@ -454,20 +434,16 @@ export function useRichMediaOverlays2d(args: {
         const n = nodeById.get(id) || null
         return readNodeCenterWorld2d(n, { coords: 'center' })
       },
-      sizingConfig,
+      sizingConfig: { ...sizingConfig, quantizeStepPx: 1 },
       clampToViewport: null,
     })
 
-    mediaOverlayScheduleRef.current = loop.schedule
-    if (mediaOverlaySchedulePendingRef.current) {
-      mediaOverlaySchedulePendingRef.current = false
-      loop.schedule()
-    }
+    mediaOverlayScheduleRef.current = loop.flush
     loop.schedule()
 
     return () => {
       loop.stop()
-      if (mediaOverlayScheduleRef.current === loop.schedule) {
+      if (mediaOverlayScheduleRef.current === loop.flush) {
         mediaOverlayScheduleRef.current = null
       }
     }

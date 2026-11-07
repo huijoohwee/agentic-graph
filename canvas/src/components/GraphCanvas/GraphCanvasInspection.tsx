@@ -11,10 +11,12 @@ import { buildDagreLayout } from '@/components/FlowCanvas/layout'
 import { packDisjointPositions2d } from './layout/collectivePackPositions'
 import { applyRadialClusterLayout } from './layout/radial'
 import { readLayoutMode2d } from '@/lib/graph/layoutMode'
+import type { LayoutMode2d } from '@/lib/graph/layoutMode'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveMediaPreviewSurfaceSelectionProps } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { emitRendererPanelOpen } from '@/features/canvas/utils'
-import { focusRendererInspectionGraph, releaseRendererInspectionGraph, useRendererInspectionGraph } from '@/features/toolbar/floatingPanelBridge'
+import { focusRendererInspectionGraph, releaseRendererInspectionGraph, useFloatingPanelBridgeReady, useRendererInspectionGraph } from '@/features/toolbar/floatingPanelBridge'
+import { LayoutModeSelect } from '@/features/toolbar/ui/LayoutModeSelect'
 
 import { getStoryboardWidgetPanelSelectionChromeClassName, WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 
@@ -31,16 +33,22 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect,
   rendererControls?: boolean
 }) {
   const focusedGraph = useRendererInspectionGraph()
+  const floatingPanelReady = useFloatingPanelBridgeReady()
   const configuredSchema = useGraphStore(state => rendererControls ? state.schema : defaultSchema)
   const fitFill = useGraphStore(state => rendererControls ? state.viewportFitFillRatio : undefined)
+  const [standaloneLayoutMode, setStandaloneLayoutMode] = React.useState<LayoutMode2d>('radial')
+  const effectiveLayoutMode = rendererControls && !floatingPanelReady
+    ? standaloneLayoutMode
+    : readLayoutMode2d(configuredSchema)
   const inspectionSchema = React.useMemo(() => ({ ...configuredSchema, behavior: { ...configuredSchema.behavior,
-    selectMode: 'single' as const, allowNodeDrag: false, allowEdgeCreation: false } }), [configuredSchema])
+    selectMode: 'single' as const, allowNodeDrag: false, allowEdgeCreation: false },
+    layout: { ...configuredSchema.layout, mode: effectiveLayoutMode } }), [configuredSchema, effectiveLayoutMode])
   const configure = React.useCallback(() => { focusRendererInspectionGraph(graph); emitRendererPanelOpen() }, [graph])
   React.useEffect(() => () => releaseRendererInspectionGraph(graph), [graph])
   const selectionProps = React.useMemo(() => resolveMediaPreviewSurfaceSelectionProps({
-    enabled: rendererControls, ariaLabel: 'Configure codebase visualization', selectionPhase: 'click', claimClick: false,
+    enabled: rendererControls && floatingPanelReady, ariaLabel: 'Configure codebase visualization', selectionPhase: 'click', claimClick: false,
     onSelect: event => { if (!event.shiftKey && !event.ctrlKey && !event.metaKey) configure() },
-  }), [configure, rendererControls])
+  }), [configure, floatingPanelReady, rendererControls])
   const parent = React.useRef<HTMLDivElement>(null), svg = React.useRef<SVGSVGElement>(null)
   const refs = React.useMemo(() => Object.fromEntries(refKeys.map(key => [key, { current: null }])) as unknown as Pick<Scene, typeof refKeys[number]>, [])
   const selectSpan = React.useRef(onSelect); selectSpan.current = onSelect
@@ -109,12 +117,15 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect,
   React.useEffect(highlight, [highlight, selectedNodeId, highlightedNodeIds, highlightedEdgeIds])
   const zoom = (factor: number) => { if (svg.current && refs.zoomRef.current) select(svg.current).call(refs.zoomRef.current.scaleBy, factor) }
   const button = `rounded border px-3 py-2 text-sm ${UI_THEME_TOKENS.button.neutralMuted}`
-  return <section aria-label={label} data-renderer="d3" data-layout-mode={rendererControls ? readLayoutMode2d(inspectionSchema) : 'trace'} className="min-w-0">
+  return <section aria-label={label} data-renderer="d3" data-layout-mode={rendererControls ? effectiveLayoutMode : 'trace'} className="min-w-0">
     <div className="flex flex-wrap items-center gap-2 py-2"><span className="text-xs">2D Renderer: D3 · read-only snapshot</span>
       <button type="button" onClick={() => zoom(1.25)} className={button}>Zoom in</button>
       <button type="button" onClick={() => zoom(0.8)} className={button}>Zoom out</button>
       <button type="button" onClick={fit} className={button}>Fit topology</button>
-      {rendererControls && <button type="button" onClick={configure} className={button}>Renderer settings</button>}
+      {rendererControls && floatingPanelReady
+        ? <button type="button" onClick={configure} className={button}>Renderer settings</button>
+        : rendererControls && <LayoutModeSelect value={effectiveLayoutMode} onChange={setStandaloneLayoutMode}
+          description="Layout mode for this read-only D3 projection; the saved graph stays unchanged." />}
     </div>
     <div {...selectionProps} data-kg-card-media-interactive="1" ref={parent} tabIndex={rendererControls ? 0 : undefined} className={`w-full min-w-0 overflow-hidden rounded border ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(rendererControls && focusedGraph === graph)}`} style={{ height: 'clamp(360px, 60vh, 720px)' }}>
       <svg ref={svg} role="img" aria-label={description}

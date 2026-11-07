@@ -7,8 +7,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { buildPagesMirrorAgentReadyPlan } from '../pages-mirror-agent-ready.mjs'
-import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
+import {
+  buildOfflinePublicRoutePlan,
+  isBrowserRuntimeArtifactRelativePath,
+} from '../pages-mirror-sync.mjs'
+import { AGENTIC_GRAPH_CSP, buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
 import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
+import { offlinePrecacheEntries } from '../../canvas/vitePythonLearningOffline.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../production-runtime-readiness-build.mjs'
 import {
   assertSealedLegacyContentInventory,
@@ -22,6 +27,7 @@ import {
   XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
   XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
 } from '../xr-v2/production-publish-contract.mjs'
+import { createPagesMirrorFileOperations } from '../pages-mirror-file-operations.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const readScript = filename => fs.readFileSync(path.resolve(repoRoot, 'scripts', filename), 'utf8')
@@ -59,11 +65,36 @@ test('published durable tools use the source catalog with an older mirror harnes
   assert.doesNotMatch(await fsPromises.readFile(target, 'utf8'), /from ['"]agentic-os\//)
 })
 
+test('source-evidence Pages Function mirrors its R2 gate at the target-relative path', async t => {
+  const { mirrorRoot, plan } = await buildPlan(t)
+  const sourceEvidence = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence Pages Function')
+  const costVerifier = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence cost verifier')
+  const r2Gate = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence R2 cost gate helper')
+  const r2Quota = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence R2 free quota helper')
+  assert.ok(sourceEvidence)
+  assert.ok(costVerifier)
+  assert.ok(r2Gate)
+  assert.ok(r2Quota)
+  assert.equal(
+    path.relative(mirrorRoot, r2Gate.target).split(path.sep).join('/'),
+    'functions/agentic-os/api/shared/r2-cost-gate.mjs',
+  )
+  assert.equal(path.resolve(path.dirname(sourceEvidence.target), '../shared/r2-cost-gate.mjs'), r2Gate.target)
+  assert.match(await fsPromises.readFile(sourceEvidence.source, 'utf8'), /from ['"]\.\.\/shared\/r2-cost-gate\.mjs['"];/)
+  assert.match(await fsPromises.readFile(costVerifier.source, 'utf8'), /verifyProviderCostEvidenceBeforeCall/)
+  const { productionRuntimeFunctionTargetBody } = createPagesMirrorFileOperations({ isAllowedRelativePath: () => true })
+  const generatedGate = await productionRuntimeFunctionTargetBody(r2Gate)
+  const generatedQuota = await productionRuntimeFunctionTargetBody(r2Quota)
+  assert.match(generatedGate, /from ['"]\.\/json-contract\.mjs['"]\s*;?/)
+  assert.doesNotMatch(generatedGate, /agentic-os\/context\/json/)
+  assert.match(generatedQuota, /from ['"]\.\/json-contract\.mjs['"]\s*;?/)
+  assert.doesNotMatch(generatedQuota, /agentic-os\/context\/json/)
+})
+
 test('publish sync removes stale generated assets through a sealed legacy boundary', () => {
   assert.doesNotMatch(syncSource, /isRetainedAssetRelativePath/)
-  assert.match(syncSource, /const isPublicManagedRelativePath = relativePath => Boolean\(relativePath\)/)
   assert.match(syncSource, /filesToRemove\.push\(relativePath\)/)
-  assert.match(syncSource, /publicFilesToRemove\.push\(relativePath\)/)
+  assert.match(syncSource, /const publicFilesToRemove = publicRoutePlan\.removePaths/)
   assert.match(syncSource, /await createLegacyMigrationPlan\(\{ obsoleteGeneratedMirrorFiles \}\)/)
   assert.equal(
     syncSource.match(/await assertLegacyMirrorInventoryIsBounded\(\)/g)?.length,
@@ -76,6 +107,41 @@ test('publish sync removes stale generated assets through a sealed legacy bounda
   assert.match(inventorySource, /Legacy mirror root inventory drifted/)
   assert.match(inventorySource, /content drifted/)
   assert.match(inventorySource, /Legacy named-file inventory contains an unexpected, missing, or partially retired path/)
+})
+
+test('offline public fixtures are copied into the canonical service-worker scope', async () => {
+  const manifestPath = path.resolve(
+    repoRoot,
+    'canvas/src/features/evidence-analysis/profiles/offline-assets.json',
+  )
+  const declaredAssets = JSON.parse(await fsPromises.readFile(manifestPath, 'utf8'))
+  const entries = offlinePrecacheEntries(declaredAssets)
+  assert.ok(entries.length > 0, 'the offline fixture declaration must produce precache entries')
+  assert.deepEqual(entries.map(entry => entry.url), declaredAssets.map(asset => asset.path))
+  assert.ok(entries.every(entry => entry.url.startsWith('evidence-analysis/fixtures/')))
+  const offlinePaths = entries.map(entry => entry.url)
+  const sourceFiles = ['index.html', 'assets/app.js', ...offlinePaths]
+  const plan = buildOfflinePublicRoutePlan({
+    sourceFiles,
+    rootManagedPaths: ['agentic-graph-live-canvas-hero.md'],
+    existingPublicFiles: [
+      ...offlinePaths,
+      'evidence-analysis/fixtures/retired.json',
+      'evidence-analysis/other/retained.json',
+      'agentic-graph-live-canvas-hero.md',
+    ],
+    offlineAssetPaths: offlinePaths,
+  })
+  assert.deepEqual(plan.copyPaths, sourceFiles)
+  assert.ok(offlinePaths.every(relativePath => plan.copyPaths.includes(relativePath)))
+  assert.equal(isBrowserRuntimeArtifactRelativePath(offlinePaths[0]), false)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('assets/app.js'), true)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('sw.js'), true)
+  assert.deepEqual(plan.removePaths, ['evidence-analysis/fixtures/retired.json'])
+  assert.throws(() => buildOfflinePublicRoutePlan({
+    sourceFiles: ['index.html'],
+    offlineAssetPaths: [offlinePaths[0]],
+  }), /Missing declared offline public assets from the build output/)
 })
 
 test('legacy XR cleanup is sealed to the five protected-revision file digests', async () => {
@@ -205,6 +271,23 @@ test('published agent-ready dependency plan contains the browser and tool-contra
     'grph-shared/dist/payments/xrplClassicAddress.js',
   ]) {
     assert.ok(targets.has(relativePath), `missing published dependency ${relativePath}`)
+  }
+})
+
+test('agent-ready Pages mirror includes every split route helper in the handler import closure', async t => {
+  const { mirrorRoot, plan } = await buildPlan(t)
+  const targets = copyTargetPaths(plan, mirrorRoot)
+  for (const filename of [
+    'agentic-graph-agent-ready-responses.mjs',
+    'agentic-graph-agent-ready-github-write.mjs',
+    'agentic-graph-agent-ready-discovery-data.mjs',
+    'agentic-graph-agent-ready-webmcp.mjs',
+    'agentic-graph-security-headers.mjs',
+  ]) {
+    assert.ok(
+      targets.has(`functions/agentic-graph/${filename}`),
+      `the production Pages mirror must include ${filename}`,
+    )
   }
 })
 
@@ -359,11 +442,12 @@ test('generated headers preserve authored content policies and adjacent unrelate
   const unrelated = '/unrelated/*\n  X-Example: retained'
   const existing = ['/agenticgraph/*', report, unrelated, 'https://example.invalid/remote/*', '  X-Remote: retained', '/content/knowgrph/*', '  ! Content-Security-Policy', enforced, '/knowgrph/*', report, ''].join('\n')
   const output = generatePolicyHeaders(existing)
-  assert.ok(output.includes('/agentic-graph/*\n' + report))
+  assert.ok(output.includes(`/agentic-graph/*\n  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`))
   assert.ok(output.includes('/content/agentic-graph/*\n  ! Content-Security-Policy\n' + enforced))
   assert.ok(output.includes(unrelated))
   assert.ok(output.includes('https://example.invalid/remote/*\n  X-Remote: retained'))
-  assert.equal(output.split(report).length - 1, 1)
+  assert.equal(output.split(report).length - 1, 0)
+  assert.equal(output.split(`Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`).length - 1, 1)
   assert.doesNotMatch(output, /^\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*)/m)
 })
 
@@ -373,9 +457,10 @@ test('generated headers reject conflicting legacy policies and retain explicit c
   const legacy = ['/agenticgraph/*', a, '', '/knowgrph/*', b, ''].join('\n')
   assert.throws(() => generatePolicyHeaders(legacy), /conflicting legacy content policies/)
   const output = generatePolicyHeaders(legacy + '\n/agentic-graph/*\n' + b + '\n')
-  assert.ok(output.includes('/agentic-graph/*\n' + b))
+  assert.ok(output.includes(`/agentic-graph/*\n  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`))
   assert.ok(!output.includes(a))
-  assert.equal(output.split(b).length - 1, 1)
+  assert.ok(!output.includes(b))
+  assert.equal(output.split(`Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`).length - 1, 1)
 })
 
 test('generated headers have stable bytes immediately after first generation', () => {

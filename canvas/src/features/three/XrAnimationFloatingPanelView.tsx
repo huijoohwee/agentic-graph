@@ -9,9 +9,11 @@ import {
   CircleDot,
   Crosshair,
   CupSoda,
+  Footprints,
   Music2,
   Spade,
   Swords,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -68,6 +70,8 @@ import { resolveXrSceneDocumentReady } from './xrSceneDocumentReadiness'
 import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
 import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrV2WorkspaceReadinessPanel } from '@/features/xr-v2/XrV2WorkspaceReadinessPanel'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 const XR_ANIMATION_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 const XR_ANIMATION_REQUIRED_METADATA_TOKENS = Object.freeze([
@@ -87,6 +91,9 @@ const PRESET_ICON_BY_ID: Readonly<Record<XrAnimationPreset['id'], LucideIcon>> =
   'helicopter-orbit': CircleDot,
   'car-chase': Car,
   'collapsing-debris': Boxes,
+  'patrol-sweep': Footprints,
+  'pursuit-dash': Zap,
+  'street-cruise': Car,
 }
 
 function AnimationInvocationChips({
@@ -109,7 +116,7 @@ function AnimationInvocationChips({
     <code
       className={cn(
         UI_INLINE_CHIP_GROUP_CLASSNAME,
-        'min-w-0 overflow-hidden font-mono text-[9px]',
+        'min-w-0 overflow-hidden font-mono text-xs',
         surface === 'action' ? 'max-h-11 basis-full' : '',
         active ? UI_THEME_TOKENS.text.secondary : UI_THEME_TOKENS.text.tertiary,
       )}
@@ -155,7 +162,7 @@ function AnimationPresetCard({
       data-kg-animation-card-applied={appliedTo ? "1" : "0"}
     >
       <span className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')} role="img" aria-label={`${preset.label} procedural animation preview`}>
-        <Icon className="size-8" strokeWidth={1.45} aria-hidden />
+        <Icon className="size-8" aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-animation-card-row="title">
@@ -174,18 +181,18 @@ function AnimationPresetCard({
           </button>
         </header>
         <section className="grid min-w-0 gap-0.5" data-kg-animation-card-row="meta">
-          <p className={cn('m-0 line-clamp-2 text-[11px]', UI_THEME_TOKENS.text.secondary)}>{preset.description}</p>
-          <p className={cn('m-0 truncate text-[10px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)}>{preset.kind.replace('-', ' ')} · {preset.cycleSeconds}s · {preset.loop ? 'loop' : 'one shot'}</p>
+          <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{preset.description}</p>
+          <p className={cn('m-0 truncate text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{preset.kind.replace('-', ' ')} · {preset.cycleSeconds}s · {preset.loop ? 'loop' : 'one shot'}</p>
         </section>
         <footer className="flex min-w-0 flex-wrap items-center gap-1" data-kg-animation-card-row="action">
           <button type="button" className="App-toolbar__btn shrink-0" disabled={disabled || !compatible} onClick={onApply} data-kg-animation-card-apply={preset.id}>Apply</button>
-          {appliedTo ? <output className="text-[10px] text-emerald-700 dark:text-emerald-300" aria-label={`${preset.label} assignment`}>Applied to {appliedTo}</output> : null}
+          {appliedTo ? <output className="text-xs text-emerald-700 dark:text-emerald-300" aria-label={`${preset.label} assignment`}>Applied to {appliedTo}</output> : null}
           <AnimationInvocationChips invocation={invocation} surface="action" />
         </footer>
       </section>
       <section
         id={detailsId}
-        className={cn('col-span-2 grid gap-1 border-t pt-2 text-[10px]', UI_THEME_TOKENS.panel.border, collapsed ? 'hidden' : '')}
+        className={cn('col-span-2 grid gap-1 border-t pt-2 text-xs', UI_THEME_TOKENS.panel.border, collapsed ? 'hidden' : '')}
         data-kg-animation-card-details={preset.id}
       >
         <p className={UI_THEME_TOKENS.text.secondary}>Compatible: {preset.compatibleAssetIds.length ? preset.compatibleAssetIds.join(', ') : preset.compatibleCategories.join(', ') || 'graph cast'}</p>
@@ -247,6 +254,8 @@ export function XrAnimationFloatingPanelView() {
     timelinePlaying: state.timelineTransportPlaying,
   })))
   const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
+  const controlMode = React.useSyncExternalStore(subscribeCinematicControlMode, readCinematicControlMode, readCinematicControlMode)
+  const humanControlsEnabled = controlMode === 'human'
   React.useSyncExternalStore(subscribeXrSharedAssetControlRuntime, readXrSharedAssetControlRevision, readXrSharedAssetControlRevision)
   const selectedActorId = inspectXrSharedAssetControls().selectedKind === 'npc' ? '' : readBoundXrSelectedActorId()
   const animationInspection = inspectLocalAnimation()
@@ -273,23 +282,24 @@ export function XrAnimationFloatingPanelView() {
     pushUiToast({ id: result.ok ? 'xr:animation:updated' : 'xr:animation:error', kind: result.ok ? 'success' : sceneReady ? 'error' : 'warning', message: result.message })
     return result
   }, [pushUiToast, sceneReady])
+  const controlHumanAnimation = React.useCallback((input: Parameters<typeof controlLocalAnimation>[0]) => controlLocalAnimation(input, 'human'), [])
 
   const applyPreset = React.useCallback((preset: XrAnimationPreset) => {
-    toastResult(controlLocalAnimation({ operation: 'apply', trackKind: preset.kind, presetId: preset.id, targetId: 'selected-actor' }))
-  }, [toastResult])
+    toastResult(controlHumanAnimation({ operation: 'apply', trackKind: preset.kind, presetId: preset.id, targetId: 'selected-actor' }))
+  }, [controlHumanAnimation, toastResult])
 
   const clearSelectedAnimation = React.useCallback(() => {
     if (!selectedTrack?.animation) return
-    toastResult(controlLocalAnimation({ operation: 'clear', trackKind: selectedTrack.animation.kind, targetId: selectedTrack.actorId }))
-  }, [selectedTrack, toastResult])
+    toastResult(controlHumanAnimation({ operation: 'clear', trackKind: selectedTrack.animation.kind, targetId: selectedTrack.actorId }))
+  }, [controlHumanAnimation, selectedTrack, toastResult])
 
   const exportPackage = React.useCallback(() => {
-    const result = toastResult(controlLocalAnimation({ operation: 'export' }))
+    const result = toastResult(controlHumanAnimation({ operation: 'export' }))
     if (!result.ok || !result.package) return
     downloadBlob(xrMotionReferencePackageBlob(result.package), xrMotionReferencePackageFilename(result.package))
-  }, [toastResult])
+  }, [controlHumanAnimation, toastResult])
 
-  const panelDisabled = !sceneReady || !selectedActorId
+  const panelDisabled = !sceneReady || !selectedActorId || !humanControlsEnabled
   return (
     <section
       className={floatingPanelCatalogSurfaceClassName()}
@@ -307,19 +317,20 @@ export function XrAnimationFloatingPanelView() {
         dataAttributes={{ 'data-kg-animation-header': '1' }}
         actions={(
           <>
-            <button type="button" className="App-toolbar__btn" disabled={!sceneReady} onClick={() => toastResult(controlLocalAnimation({ operation: timelinePlaying ? 'pause' : 'play' }))} data-kg-animation-playback={timelinePlaying ? 'pause' : 'play'}>{timelinePlaying ? 'Pause' : 'Play'}</button>
-            <button type="button" className="App-toolbar__btn" disabled={!sceneReady || !selectedTrack?.animation} onClick={clearSelectedAnimation} data-kg-animation-clear="selected-actor">Clear</button>
+            <button type="button" className="App-toolbar__btn" disabled={!sceneReady || !humanControlsEnabled} onClick={() => toastResult(controlHumanAnimation({ operation: timelinePlaying ? 'pause' : 'play' }))} data-kg-animation-playback={timelinePlaying ? 'pause' : 'play'}>{timelinePlaying ? 'Pause' : 'Play'}</button>
+            <button type="button" className="App-toolbar__btn" disabled={!sceneReady || !humanControlsEnabled || !selectedTrack?.animation} onClick={clearSelectedAnimation} data-kg-animation-clear="selected-actor">Clear</button>
             <button type="button" className="App-toolbar__btn" disabled={!sceneReady} onClick={exportPackage} data-kg-animation-export="motion-reference">Export</button>
             <ExpandCollapseAllButton allCollapsed={allCollapsed} onExpandAll={expandAll} onCollapseAll={collapseAll} titleExpand="Expand All animation cards" titleCollapse="Collapse All animation cards" />
           </>
         )}
         searchControl={<FloatingPanelCatalogSearchControl id="xr-animation-search" buttonLabel="Search animation presets" panelLabel="Animation preset search" placeholder="Search motions and paths" state={search} />}
       />
+      <CinematicControlModeSelect />
       {!sceneReady || !nativeInvocationReady || !sourceMetadataReady ? <section className={cn('mb-2 grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-animation-runtime-status="shared-xr">
-        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to persist animation.</p> : null}
-        {!nativeInvocationReady ? <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Native Animation invocation runtime unavailable.</p> : null}
+        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to persist animation.</p> : null}
+        {!nativeInvocationReady ? <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Native Animation invocation runtime unavailable.</p> : null}
         {!sourceMetadataReady ? (
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             {sourceMetadataLoading
               ? `ACOS Animation invocation metadata is loading.${nativeInvocationReady ? ' Native Animation controls remain ready.' : ''}`
               : `ACOS Animation invocation metadata is unavailable.${nativeInvocationReady ? ' Native Animation controls remain ready.' : ''}`}
@@ -336,9 +347,9 @@ export function XrAnimationFloatingPanelView() {
           runtime={runtime}
           selectedActorId={selectedActorId}
         >
-        {visiblePaths.length ? <section className="grid gap-2" aria-label="Action paths" data-kg-animation-group="action-path"><header className="flex items-center justify-between"><h2 className="text-[11px] font-semibold uppercase">Action paths</h2><output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visiblePaths.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visiblePaths} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        {visiblePaths.length ? <section className="grid gap-2" aria-label="Action paths" data-kg-animation-group="action-path"><header className="flex items-center justify-between"><h2 className="text-xs font-semibold uppercase">Action paths</h2><output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePaths.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visiblePaths} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
         </XrChoreographyInspector>
-        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><header className="flex items-center justify-between"><h2 className="text-[11px] font-semibold uppercase">Character motions</h2><output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleCharacter.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><header className="flex items-center justify-between"><h2 className="text-xs font-semibold uppercase">Character motions</h2><output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleCharacter.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
 
         {!visiblePresets.length ? <p className={cn('p-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>No animation presets match this search.</p> : null}
         {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady={sceneReady} /> : null}

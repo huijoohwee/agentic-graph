@@ -28,6 +28,7 @@ type DashboardCanvasProps = {
   onRetainedSpan?: (id: string | null) => void
   children?: React.ReactNode
   overview?: React.ReactNode
+  insights?: React.ReactNode
 }
 
 const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()
@@ -110,6 +111,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
 
           {widgetConfiguration.dashboard?.mission && <p className="text-xs">Historical snapshot · {new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}</p>}
           {props.overview}
+          {props.insights}
 
           <section className="min-w-0" aria-label="Dashboard metrics" data-kg-dashboard-metrics-board="1">
             <DashboardWidgetBoard id="dashboard-metrics" columns={5} items={displayMetrics.map(metric => ({
@@ -138,6 +140,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
           {props.children}
           </>}
+          {widgetConfiguration.dashboard && !readOnly ? props.insights : null}
         </section>
       </section>
     </section>

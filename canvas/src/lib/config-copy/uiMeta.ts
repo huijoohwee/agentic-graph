@@ -88,6 +88,7 @@ export const UI_LABELS = {
   sidebar: 'Sidebar',
   propsPanel: 'Props Panel',
   skillsCommands: 'Skills & Commands',
+  blockLibrary: 'Block library',
   promptPresets: 'Prompt Presets',
   geo: 'Geo',
   gitGraph: 'GitGraph',

@@ -44,13 +44,10 @@ const requiredPaths = [
   `${flightFeatureRoot}/flightSimModel.ts`,
   `${flightFeatureRoot}/flightSimMotionControlAdapter.ts`,
   `${flightFeatureRoot}/flightSimPendingDecisions.ts`,
-  `${flightFeatureRoot}/flightSimRuntime.ts`,
-  `${flightFeatureRoot}/flightSimRuntimeCore.ts`,
-  `${flightFeatureRoot}/flightSimRuntimeState.ts`,
-  `${flightFeatureRoot}/flightSimSimulationClock.ts`,
+  `${flightFeatureRoot}/flightSimRuntime.ts`, `${flightFeatureRoot}/flightSimRuntimeCore.ts`,
+  `${flightFeatureRoot}/flightSimRuntimeState.ts`, `${flightFeatureRoot}/flightSimSimulationClock.ts`,
   `${flightFeatureRoot}/flightSimSpatialProfile.ts`, `${flightFeatureRoot}/flightSimStageRuntimeController.ts`,
-  `${flightFeatureRoot}/flightSimTrainingRuntime.ts`,
-  `${flightFeatureRoot}/flightSimTrainingScenario.ts`,
+  `${flightFeatureRoot}/flightSimTrainingRuntime.ts`, `${flightFeatureRoot}/flightSimTrainingScenario.ts`,
   `${flightFeatureRoot}/useFlightSimSurfaceControls.ts`,
   `${flightFeatureRoot}/index.ts`,
   'canvas/src/App.tsx',
@@ -79,14 +76,10 @@ const requiredPaths = [
   'gympgrph/src/flightGeoOverlayMapLibreLayers.ts',
   'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
   'gympgrph/src/GeospatialHost.tsx',
-  'canvas/src/__tests__/flightSimCore.test.ts',
-  'canvas/src/__tests__/flightSimDecisionStore.test.ts',
-  'canvas/src/__tests__/flightSimMcpRuntime.test.ts',
-  'canvas/src/__tests__/flightSimMapLibrePresentation.test.ts',
-  'canvas/src/__tests__/flightSimRuntime.test.ts',
-  'canvas/src/__tests__/flightSimSourceAuthority.test.ts',
-  'canvas/src/__tests__/flightSimTrainingProjection.test.ts',
-  'canvas/src/__tests__/flightSimTrainingRuntime.test.ts',
+  'canvas/src/__tests__/flightSimCore.test.ts', 'canvas/src/__tests__/flightSimDecisionStore.test.ts',
+  'canvas/src/__tests__/flightSimMcpRuntime.test.ts', 'canvas/src/__tests__/flightSimMapLibrePresentation.test.ts',
+  'canvas/src/__tests__/flightSimRuntime.test.ts', 'canvas/src/__tests__/flightSimSourceAuthority.test.ts',
+  'canvas/src/__tests__/flightSimTrainingProjection.test.ts', 'canvas/src/__tests__/flightSimTrainingRuntime.test.ts',
   'canvas/src/__tests__/flightSimXrAgenticEcsComposition.test.ts',
   'canvas/src/__tests__/xrAgenticEcsComposition.test.ts',
   'ecs/index.js',
@@ -154,7 +147,6 @@ for (const relativePath of requiredPaths) {
     throw error
   }
 }
-
 const featurePaths = (await listFiles(flightFeatureRoot))
   .filter(relativePath => /\.(?:tsx?|mjs|json)$/.test(relativePath))
 for (const legacyOwner of [
@@ -197,7 +189,6 @@ if (
     'Flight Sim may expose its fail-closed inference-attempt seam only in flightSimSystems.ts',
   )
 }
-
 const featureIndexSource = await readText(`${flightFeatureRoot}/index.ts`)
 requireMarkers(featureIndexSource, [
   "export * from './flightSimModel'",
@@ -208,7 +199,6 @@ requireMarkers(featureIndexSource, [
   "export { FlightSimMissionStage } from './FlightSimMissionStage'",
   "export { FlightSimHud } from './FlightSimHud'",
 ], 'Flight Sim public feature surface')
-
 const threeOwners = featureSources
   .filter(({ source }) => /from\s+['"](?:@react-three\/fiber|three(?:\/[^'"]*)?)['"]/.test(source))
   .map(({ relativePath }) => relativePath)
@@ -220,7 +210,6 @@ if (
     `Flight Sim Three runtime ownership must remain isolated in FlightSimMissionStage.tsx, received ${threeOwners.join(', ')}`,
   )
 }
-
 const ecsWorldOwners = featureSources
   .filter(({ source }) => /\bcreateWorld\s*\(/.test(source))
   .map(({ relativePath }) => relativePath)
@@ -285,7 +274,6 @@ requireMarkers(prdSource, [
 const physicsSeed = parseFrontmatter(await readText(physicsSeedPath), physicsSeedPath)
 const kiroReadiness = await assertFlightSimKiroReadiness({ repositoryRoot })
 await assertFlightSimCameraReadiness({ flightSeed: seed, physicsSeed, readText })
-
 const missionSource = await readText(`${flightFeatureRoot}/flightSimMission.ts`)
   + await readText(`${flightFeatureRoot}/flightSimSystems.ts`)
   + await readText(`${flightFeatureRoot}/flightSimDecisionAdmission.ts`)
@@ -321,7 +309,6 @@ requireMarkers(missionSource, [
   "cost.error !== 'blocked_inference'",
   'return FLIGHT_SIM_ZERO_COST_LOG',
 ], 'native Flight Sim ECS mission')
-
 const modelSource = await readText(`${flightFeatureRoot}/flightSimModel.ts`)
 requireMarkers(modelSource, [
   "from '../../../../packages/apple-spatial-input/src/flight'",
@@ -406,12 +393,14 @@ const simulationClockSource = await readText(
 )
 requireMarkers(simulationClockSource, [
   'export function createFlightSimSimulationClock',
-  'if (disposed || running || !requested || scheduled) return',
-  'lastStartedAt + options.minimumStepIntervalMs - now()',
-  '.then(options.runStep)',
+  'if (disposed || running || !requested) return',
+  'options.readMinimumStepIntervalMs?.() ?? options.minimumStepIntervalMs',
+  'const dueAt = lastStartedAt + minimumStepIntervalMs',
+  'if (delayMs > 0 && scheduled.dueAt === dueAt) return',
+  'if (scheduled !== pending) return',
+  '.then(() => { if (!disposed) return options.runStep() })',
   'if (scheduled) cancelScheduled(scheduled.handle)',
 ], 'serialized Flight Sim simulation clock')
-
 const spatialProfileSource = await readText(`${flightFeatureRoot}/flightSimSpatialProfile.ts`)
 requireMarkers(spatialProfileSource, [
   "from '@/features/three/xrCanonicalSceneSpatialSource'",
@@ -455,7 +444,6 @@ await assertFlightSimSeedReadiness({
   physicsSeedPath,
   readText,
 })
-
 const seedAuthoritySource = await readText('scripts/workspace-seed-authority.mjs')
 const projectionStart = seedAuthoritySource.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
 const projectionEnd = seedAuthoritySource.indexOf('])', projectionStart)
@@ -467,7 +455,6 @@ if (
 ) {
   throw new Error('Flight Sim must remain local-only until a separate protected Agentic projection')
 }
-
 const decisionStoreSource = await readText(`${flightFeatureRoot}/flightSimDecisionStore.ts`)
 requireMarkers(decisionStoreSource, [
   "from '@/features/workspace-fs/workspaceDecisionStore'",
@@ -489,7 +476,6 @@ requireMarkers(genericDecisionStoreSource, [
 if (/from\s+['"]node:|persistDecisions|persistDecision\s*\(/.test(genericDecisionStoreSource)) {
   throw new Error('generic Workspace Decision persistence must remain browser-safe')
 }
-
 const contractModule = await import(pathToFileURL(
   path.join(repositoryRoot, `${flightFeatureRoot}/flightSimMcpContract.mjs`),
 ).href)
@@ -511,7 +497,6 @@ if (
 ) {
   throw new Error('Flight Sim must retain one strict native invocation tuple and two WebMCP ids')
 }
-
 const agentReadyModule = await import(pathToFileURL(
   path.join(repositoryRoot, 'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs'),
 ).href)
@@ -529,10 +514,10 @@ if (
 ) {
   throw new Error('Flight Sim must expose exactly two browser-local Agent Ready tools')
 }
-const webMcpRuntimeSource = await readText('canvas/src/features/agent-ready/webMcpRuntime.ts')
+const webMcpRuntimeSource = await readText('canvas/src/features/agent-ready/webMcpRuntime.ts') + await readText('canvas/src/features/agent-ready/webMcpToolRegistry.ts')
 requireMarkers(webMcpRuntimeSource, [
   'FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS',
-  '...FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS',
+  '...FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS', "getAgenticGraphWebMcpToolRegistry()", "() => import('./flightSimWebMcpTools')",
 ], 'browser WebMCP registry')
 const flightMcpRuntimeSource = await readText(`${flightFeatureRoot}/flightSimMcpRuntime.ts`)
 requireMarkers(flightMcpRuntimeSource, [
@@ -543,7 +528,6 @@ requireMarkers(flightMcpRuntimeSource, [
 if (/\bpersistPendingFlightSimDecisions\b/.test(flightMcpRuntimeSource)) {
   throw new Error('Flight Sim MCP must save through the core runtime acknowledgement facade')
 }
-
 const serverSourcePaths = [
   ...(await listFiles('mcp')),
   ...(await listFiles('cloudflare/workers/agentic-graph-mcp')),
@@ -562,7 +546,6 @@ for (const relativePath of serverSourcePaths) {
     throw new Error(`Flight Sim must not register a stdio or HTTP tool in ${relativePath}`)
   }
 }
-
 const rootPackage = JSON.parse(await readText('package.json'))
 const canvasPackage = JSON.parse(await readText('canvas/package.json'))
 const boundaryCommand = rootPackage.scripts?.['game-flight-sim:boundary'] || ''
@@ -571,9 +554,9 @@ requireOrderedMarkers(boundaryCommand, [
   'node ./scripts/check-game-flight-sim-boundary.mjs',
 ], 'Flight Sim tracked clean-room boundary command')
 const prebuildCommand = canvasPackage.scripts?.prebuild || ''
-if (!prebuildCommand.startsWith('npm --prefix .. run game-flight-sim:boundary && ')) {
-  throw new Error('Canvas builds must begin with the tracked Flight Sim no-copy boundary')
-}
+requireOrderedMarkers(prebuildCommand,
+  ['npm --prefix .. run game-flight-sim:boundary', 'npm run prepare:linked-packages'],
+  'Canvas prebuild must enforce the tracked Flight boundary before linked package preparation')
 const dependencies = {
   ...rootPackage.dependencies,
   ...rootPackage.devDependencies,
@@ -585,7 +568,6 @@ for (const dependency of forbiddenDependencies) {
     throw new Error(`Flight Sim must not add external engine dependency ${dependency}`)
   }
 }
-
 const sourceTestCommand = canvasPackage.scripts?.['test:smoke:game-flight-sim:source'] || ''
 requireMarkers(sourceTestCommand, [
   '--test-concurrency=1',
@@ -604,7 +586,6 @@ requireMarkers(xrCompositionTestSource, [
 ], 'Flight Sim XR/Agentic ECS focused wrapper')
 
 await assertFlightSimVerificationReadiness({ readText })
-
 const sourceTestPaths = (await listFiles('canvas/src/__tests__'))
   .filter(relativePath => /\/flightSim.*\.test\.ts$/.test(relativePath))
 if (sourceTestPaths.length < 3) {

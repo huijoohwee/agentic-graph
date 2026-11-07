@@ -1,0 +1,76 @@
+/* Generated from agentic-design-system@66c35a12465d9d9b53f83b39474ad514bee23946; profile sha256 4830e6c273f8ab2f562c92caf919a169c09126ea0125b65fe852f7050f928c39. Do not edit. */
+:root, :host {
+  --agentic-icon-size-compact: 0.75rem;
+  --agentic-icon-size-default: 1rem;
+  --agentic-row-height: 38px;
+  --agentic-row-height-touch: 54px;
+  --agentic-font-size-body: 0.875rem;
+  --agentic-line-height-body: 1.25rem;
+  --agentic-font-sans: -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  --agentic-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --agentic-ktv-columns: minmax(10.5rem,11rem) 2rem minmax(8.75rem,1fr);
+  --agentic-ktv-columns-narrow: minmax(0,1fr) 2rem;
+  --agentic-ktv-stack-breakpoint: 22.25rem;
+  --agentic-ktv-panel-width: 26.25rem;
+  --agentic-control-height: 28px;
+  --agentic-control-height-touch: 48px;
+  --agentic-control-padding-inline: 0.5rem;
+  --agentic-control-padding-block: 0.25rem;
+  --agentic-control-radius: 0.375rem;
+  --agentic-control-focus-width: 2px;
+  --agentic-control-focus-offset: 2px;
+  --agentic-menu-min-width: 14rem;
+  --agentic-menu-edge-gap: 0.5rem;
+  --agentic-menu-padding: 0.25rem;
+  --agentic-menu-gap: 0.25rem;
+}
+.agentic-ktv-container { min-inline-size: 0; inline-size: 100%; container: agentic-ktv / inline-size; }
+@container agentic-ktv (width < 22.25rem) {
+  .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
+  .agentic-ktv-row > :last-child { grid-column: 1 / -1; }
+}
+.agentic-form-control, :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)) {
+  box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%;
+  block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height);
+  padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border-radius: var(--agentic-control-radius);
+  font-family: var(--agentic-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
+}
+textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
+  block-size: auto; padding-block: var(--agentic-control-padding-block); resize: vertical;
+}
+.agentic-form-control:focus-visible, :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)):focus-visible {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: var(--agentic-control-focus-offset);
+}
+.agentic-form-control:disabled, .agentic-form-control[aria-disabled="true"], :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)):disabled {
+  opacity: .5; cursor: not-allowed;
+}
+.agentic-menu {
+  box-sizing: border-box; margin: 0; padding: var(--agentic-menu-padding); list-style: none;
+  display: flex; flex-direction: column; gap: var(--agentic-menu-gap); min-inline-size: 0;
+  color: var(--agentic-base-text, var(--kg-text-primary, CanvasText));
+  background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas));
+  border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder));
+  border-radius: var(--agentic-control-radius); box-shadow: var(--kg-shadow-overlay, 0 8px 24px rgb(0 0 0 / .12));
+  font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
+  max-block-size: calc(100dvh - var(--agentic-menu-edge-gap) - var(--agentic-menu-edge-gap));
+  overflow: auto; overscroll-behavior: contain;
+}
+.agentic-menu > li { list-style: none; min-inline-size: 0; }
+.agentic-menu-option {
+  box-sizing: border-box; display: flex; align-items: center; gap: var(--agentic-control-padding-inline);
+  inline-size: 100%; text-align: start; cursor: pointer;
+  border: 1px solid transparent; color: inherit; background: transparent;
+}
+.agentic-menu-option:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, Highlight 8%, Canvas))); }
+.agentic-menu-option:is([aria-checked="true"], [aria-selected="true"], [data-selected="true"], .agentic-menu-selected) {
+  color: var(--kg-accent, LinkText); background: var(--agentic-base-selected, var(--kg-accent-soft-bg, color-mix(in srgb, Highlight 12%, Canvas)));
+  border-color: var(--agentic-base-focus, var(--kg-accent, Highlight));
+}
+.agentic-menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-inline-size: 0; }
+.agentic-menu-mark { inline-size: var(--agentic-icon-size-default); flex: 0 0 auto; text-align: center; }
+.agentic-select-source { display: none !important; }
+.agentic-select-trigger { border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder)); background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas)); color: inherit; display: inline-flex; align-items: center; gap: var(--agentic-control-padding-inline); inline-size: 100%; text-align: start; }
+.agentic-menu-popup { position: fixed; z-index: 2147483000; }
+@media (pointer: coarse), (max-width: 768px) {
+  :root, :host { --agentic-row-height: var(--agentic-row-height-touch); --agentic-control-height: var(--agentic-control-height-touch); }
+}

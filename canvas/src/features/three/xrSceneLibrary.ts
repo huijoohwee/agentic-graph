@@ -8,6 +8,11 @@ import type { RegionalPoiProfile } from 'grph-shared/geospatial/regionalPoiGeo'
 import type {
   RegionalPoiPresentationPolicy,
 } from '@/features/geospatial/regionalPoiPresentationStyle'
+import { SINGAPORE_POI_DETAIL_KITS } from './singaporePoiDetailKits'
+import {
+  HONG_KONG_ISLAND_REFERENCE_GROUP_COLORS,
+  HONG_KONG_ISLAND_REFERENCE_LOCATIONS,
+} from '../cinema/hongKongIslandGeoKit'
 
 export type XrMotionReferenceVector = readonly [number, number, number]
 
@@ -16,6 +21,7 @@ export type XrMotionReferenceStageId =
   | 'tropical-playground'
   | 'neutral-volume'
   | 'street-grid'
+  | 'hong-kong-cinema'
   | 'loading-bay'
   | 'downtown'
   | 'residential-street'
@@ -37,15 +43,50 @@ export type XrGreyBoxStructure = Readonly<{
   collidable?: boolean
 }>
 
+export type XrWalkableSurfacePreset = Readonly<{
+  id: string
+  kind: 'street' | 'path'
+  centerMeters: readonly [x: number, z: number]
+  sizeMeters: readonly [width: number, depth: number]
+  topMeters: number
+  thicknessMeters: number
+  color?: string
+}>
+
 export type XrMotionReferenceStagePreset = Readonly<{
   id: XrMotionReferenceStageId
   label: string
   description: string
   environmentKind: 'terrain' | 'environment'
+  /** Optional renderer profile for authored, reusable environment-kit geometry. */
+  visualProfile?: 'night-waterfront'
+  geospatialContext?: Readonly<{
+    label: string
+    bounds: readonly [west: number, south: number, east: number, north: number]
+    /** Presentation-only map focus for fictional local blocking; never a geotag. */
+    previewAnchor?: readonly [longitude: number, latitude: number]
+    purpose: 'regional-viewport-only'
+  }>
   regionalPoiProfile?: RegionalPoiProfile
   regionalPoiPresentationPolicy?: RegionalPoiPresentationPolicy
   sizeMeters: readonly [number, number]
+  /** Optional catalog scale note when the kit extends beyond its local rehearsal footprint. */
+  scaleSummary?: string
+  /** Optional story-relevant catalog assets offered first while this kit is active. */
+  featuredAssetIds?: readonly string[]
+  /** Optional authored geographic locations that can bind timeline shots and shared camera framing. */
+  referenceLocations?: readonly XrMotionReferenceStageLocation[]
   structures: readonly XrGreyBoxStructure[]
+  walkableSurfaces?: readonly XrWalkableSurfacePreset[]
+}>
+
+export type XrMotionReferenceStageLocation = Readonly<{
+  index: number
+  label: string
+  group: string
+  color: string
+  coordinate: readonly [longitude: number, latitude: number]
+  elevationMeters: number
 }>
 
 export const XR_MOTION_REFERENCE_DEFAULT_STAGE_ID: XrMotionReferenceStageId = 'singapore'
@@ -61,6 +102,27 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
       XR_SINGAPORE_REGIONAL_POI_PRESENTATION_POLICY,
     sizeMeters: XR_SINGAPORE_STAGE_SIZE_METERS,
     structures: XR_SINGAPORE_MAJOR_POI_SURFACES,
+    walkableSurfaces: [
+      {
+        id: 'transit-spine', kind: 'street', centerMeters: [0, 0.35],
+        sizeMeters: [5.8, XR_SINGAPORE_STAGE_SIZE_METERS[1] - 3.2],
+        topMeters: 0.18, thicknessMeters: 0.18, color: '#2a3948',
+      },
+      {
+        id: 'marina-promenade', kind: 'path',
+        centerMeters: [0, -XR_SINGAPORE_STAGE_SIZE_METERS[1] / 2 + 1.05],
+        sizeMeters: [XR_SINGAPORE_STAGE_SIZE_METERS[0] - 2.2, 1.8],
+        topMeters: 0.24, thicknessMeters: 0.24, color: '#f1e6cf',
+      },
+      {
+        id: 'west-garden-path', kind: 'path', centerMeters: [-7.4, 2.5],
+        sizeMeters: [9, 5.8], topMeters: 0.15, thicknessMeters: 0.15, color: '#dce9d2',
+      },
+      {
+        id: 'east-garden-path', kind: 'path', centerMeters: [7.7, 4.8],
+        sizeMeters: [9.6, 5.5], topMeters: 0.15, thicknessMeters: 0.15, color: '#b9d9a9',
+      },
+    ],
   },
   {
     id: 'tropical-playground',
@@ -96,6 +158,45 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
       { id: 'east-walk', position: [4.8, 0.15, 0], size: [1.4, 0.3, 13], tone: 'light' },
       { id: 'crossing', position: [0, 0.04, 1.8], size: [8.2, 0.08, 1.4], tone: 'accent' },
     ],
+    walkableSurfaces: [
+      { id: 'street-channel', kind: 'street', centerMeters: [0, 0], sizeMeters: [8.2, 13], topMeters: 0, thicknessMeters: 0 },
+      { id: 'west-walk', kind: 'path', centerMeters: [-4.8, 0], sizeMeters: [1.4, 13], topMeters: 0.3, thicknessMeters: 0.3 },
+      { id: 'east-walk', kind: 'path', centerMeters: [4.8, 0], sizeMeters: [1.4, 13], topMeters: 0.3, thicknessMeters: 0.3 },
+    ],
+  },
+  {
+    id: 'hong-kong-cinema',
+    label: 'Hong Kong SAR · Cinema Blockout',
+    description: 'Harbourfront blockout anchored on the Tsim Sha Tsui promenade; Hong Kong Island terrain and landmark massing are placed at real scale in the Geo+XR metric frame.',
+    environmentKind: 'environment',
+    visualProfile: 'night-waterfront',
+    geospatialContext: {
+      label: 'Hong Kong SAR · regional context only',
+      bounds: [113.8167, 22.1333, 114.5167, 22.5833],
+      previewAnchor: [114.1720, 22.29328],
+      purpose: 'regional-viewport-only',
+    },
+    sizeMeters: [30, 22],
+    scaleSummary: 'real-scale Hong Kong Island metric kit · 25 sheet locations · 30 × 22 m shot blocking',
+    featuredAssetIds: ['character-bionic-operative', 'character-security-android', 'character-corporate-executive', 'vehicle-sedan', 'prop-debris-cluster', 'prop-crate'],
+    referenceLocations: HONG_KONG_ISLAND_REFERENCE_LOCATIONS.map(location => Object.freeze({
+      ...location,
+      color: HONG_KONG_ISLAND_REFERENCE_GROUP_COLORS[location.group],
+    })),
+    structures: [
+      { id: 'hk-harbour-tower-west', position: [-10, 6.5, -7], size: [7, 13, 6], tone: 'dark' },
+      { id: 'hk-harbour-tower-east', position: [9, 8, -7], size: [8, 16, 6], tone: 'mid' },
+      { id: 'hk-market-block', position: [-9, 3, 1], size: [7, 6, 6], tone: 'mid' },
+      { id: 'hk-terminal-block', position: [7, 3, 0], size: [8, 6, 7], tone: 'light' },
+      { id: 'hk-causeway-block', position: [0, 4, 8], size: [18, 8, 5], tone: 'dark' },
+      { id: 'hk-pier-deck', position: [0, 0.25, 10], size: [13, 0.5, 4], tone: 'accent' },
+    ],
+    walkableSurfaces: [
+      { id: 'hk-street-channel', kind: 'street', centerMeters: [0, 0], sizeMeters: [9, 18], topMeters: 0, thicknessMeters: 0 },
+      { id: 'hk-west-walk', kind: 'path', centerMeters: [-5.4, 0], sizeMeters: [1.6, 18], topMeters: 0.12, thicknessMeters: 0.12 },
+      { id: 'hk-east-walk', kind: 'path', centerMeters: [5.4, 0], sizeMeters: [1.6, 18], topMeters: 0.12, thicknessMeters: 0.12 },
+      { id: 'hk-pier-walk', kind: 'path', centerMeters: [0, 8.2], sizeMeters: [13, 2.8], topMeters: 0.16, thicknessMeters: 0.16 },
+    ],
   },
   {
     id: 'loading-bay',
@@ -126,6 +227,11 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
       { id: 'crosswalk-x', position: [0, 0.04, 0], size: [10, 0.08, 2.2], tone: 'accent' },
       { id: 'crosswalk-z', position: [0, 0.05, 0], size: [2.2, 0.1, 10], tone: 'accent' },
     ],
+    walkableSurfaces: [
+      { id: 'central-avenue', kind: 'street', centerMeters: [0, 0], sizeMeters: [10, 24], topMeters: 0, thicknessMeters: 0 },
+      { id: 'crosswalk-north-south', kind: 'path', centerMeters: [0, 0], sizeMeters: [2.2, 10], topMeters: 0.1, thicknessMeters: 0.1 },
+      { id: 'crosswalk-east-west', kind: 'path', centerMeters: [0, 0], sizeMeters: [10, 2.2], topMeters: 0.08, thicknessMeters: 0.08 },
+    ],
   },
   {
     id: 'residential-street',
@@ -140,6 +246,11 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
       { id: 'home-east-b', position: [9, 2.2, 5], size: [6, 4.4, 5], tone: 'mid' },
       { id: 'sidewalk-west', position: [-4.6, 0.12, 0], size: [1.2, 0.24, 18], tone: 'light' },
       { id: 'sidewalk-east', position: [4.6, 0.12, 0], size: [1.2, 0.24, 18], tone: 'light' },
+    ],
+    walkableSurfaces: [
+      { id: 'neighborhood-road', kind: 'street', centerMeters: [0, 0], sizeMeters: [8, 18], topMeters: 0, thicknessMeters: 0 },
+      { id: 'west-sidewalk', kind: 'path', centerMeters: [-4.6, 0], sizeMeters: [1.2, 18], topMeters: 0.24, thicknessMeters: 0.24 },
+      { id: 'east-sidewalk', kind: 'path', centerMeters: [4.6, 0], sizeMeters: [1.2, 18], topMeters: 0.24, thicknessMeters: 0.24 },
     ],
   },
   {
@@ -233,9 +344,13 @@ export type XrSceneLibraryAsset = Readonly<{
   description: string
   shape: XrSceneLibraryShape
   dimensionsMeters: XrMotionReferenceVector
+  /** Intrinsic yaw that aligns the authored model's front with the shared +Z-forward convention. */
+  orientationOffsetYDegrees?: number
   defaultColor: string
   mobile: boolean
   keywords: readonly string[]
+  visualProfile?: 'bionic-operative' | 'corporate-executive' | 'security-android' | 'cinema-protagonist'
+  poiDetailKitId?: string
 }>
 
 export const XR_SCENE_LIBRARY_CATEGORY_LABELS: Readonly<Record<XrSceneLibraryCategory, string>> = {
@@ -254,16 +369,20 @@ export const XR_SCENE_LIBRARY_FEATURED_ASSET_IDS = Object.freeze([
 ] as const)
 
 export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
-  {"id": "character-pig", "referenceLabel": "pig", "label": "Pig performer", "category": "people", "description": "Round snout, curled tail and colorful overalls.", "shape": "humanoid", "dimensionsMeters": [0.82, 1.3, 0.6], "defaultColor": "#eb8c43", "mobile": true, "keywords": ["pig", "sailor", "story"]},
-  {"id": "character-wolf", "referenceLabel": "wolf", "label": "Wolf performer", "category": "people", "description": "Pointed ears, long muzzle and an expressive storybook silhouette.", "shape": "humanoid", "dimensionsMeters": [0.8, 1.9, 0.68], "defaultColor": "#526b85", "mobile": true, "keywords": ["wolf", "story"]},
-  {"id": "character-monkey", "referenceLabel": "monkey", "label": "Monkey performer", "category": "people", "description": "Round ears, a warm muzzle and a long curled tail.", "shape": "humanoid", "dimensionsMeters": [0.85, 1.55, 0.68], "defaultColor": "#9b6542", "mobile": true, "keywords": ["monkey", "story"]},
+  {"id": "character-pig", "referenceLabel": "pig", "label": "Pig performer", "category": "people", "description": "Round snout, curled tail and colorful overalls.", "shape": "humanoid", "dimensionsMeters": [0.82, 1.3, 0.6], "orientationOffsetYDegrees": 180, "defaultColor": "#eb8c43", "mobile": true, "keywords": ["pig", "sailor", "story"]},
+  {"id": "character-wolf", "referenceLabel": "wolf", "label": "Wolf performer", "category": "people", "description": "Pointed ears, long muzzle and an expressive storybook silhouette.", "shape": "humanoid", "dimensionsMeters": [0.8, 1.9, 0.68], "orientationOffsetYDegrees": 180, "defaultColor": "#526b85", "mobile": true, "keywords": ["wolf", "story"]},
+  {"id": "character-monkey", "referenceLabel": "monkey", "label": "Monkey performer", "category": "people", "description": "Round ears, a warm muzzle and a long curled tail.", "shape": "humanoid", "dimensionsMeters": [0.85, 1.55, 0.68], "orientationOffsetYDegrees": 180, "defaultColor": "#9b6542", "mobile": true, "keywords": ["monkey", "story"]},
   {"id": "vehicle-sailboat", "label": "Sailboat", "category": "vehicles", "description": "Wooden hull, cream sail and deck for a sea journey.", "shape": "sailboat", "dimensionsMeters": [3.4, 4, 5.2], "defaultColor": "#a66743", "mobile": true, "keywords": ["boat", "sea", "journey"]},
-  {"id": "prop-house-straw", "referenceLabel": "straw", "label": "Straw house", "category": "props", "description": "Golden thatch and bundled straw walls.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#eec86d", "mobile": false, "keywords": ["straw", "house", "story"]},
-  {"id": "prop-house-stick", "referenceLabel": "sticks", "label": "Stick house", "category": "props", "description": "Timber posts, log walls and pitched wooden roof.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#bb8050", "mobile": false, "keywords": ["stick", "house", "story"]},
-  {"id": "prop-house-brick", "referenceLabel": "brick", "label": "Brick house", "category": "props", "description": "Brick courses, solid roof and a chimney by the sea.", "shape": "crate", "dimensionsMeters": [2.2, 2.4, 2.2], "defaultColor": "#c66b50", "mobile": false, "keywords": ["brick", "house", "story"]},
+  {"id": "prop-house-straw", "referenceLabel": "straw", "label": "Straw house", "category": "props", "description": "Golden thatch and bundled straw walls.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "orientationOffsetYDegrees": 180, "defaultColor": "#eec86d", "mobile": false, "keywords": ["straw", "house", "story"]},
+  {"id": "prop-house-stick", "referenceLabel": "sticks", "label": "Stick house", "category": "props", "description": "Timber posts, log walls and pitched wooden roof.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "orientationOffsetYDegrees": 180, "defaultColor": "#bb8050", "mobile": false, "keywords": ["stick", "house", "story"]},
+  {"id": "prop-house-brick", "referenceLabel": "brick", "label": "Brick house", "category": "props", "description": "Brick courses, solid roof and a chimney by the sea.", "shape": "crate", "dimensionsMeters": [2.2, 2.4, 2.2], "orientationOffsetYDegrees": 180, "defaultColor": "#c66b50", "mobile": false, "keywords": ["brick", "house", "story"]},
   {"id": "prop-soup-pot", "referenceLabel": "pot of hot soup", "label": "Soup pot", "category": "props", "description": "Open metal pot with warm soup and a rim.", "shape": "crate", "dimensionsMeters": [1.8, 1.6, 1.8], "defaultColor": "#445464", "mobile": false, "keywords": ["soup", "pot", "story"]},
-  { id: 'person-adult', label: 'Adult', category: 'people', description: 'Neutral standing performer at human scale.', shape: 'humanoid', dimensionsMeters: [0.65, 1.75, 0.45], defaultColor: '#38bdf8', mobile: true, keywords: ['cast', 'actor', 'human'] },
-  { id: 'person-child', label: 'Child', category: 'people', description: 'Smaller neutral performer for family blocking.', shape: 'humanoid', dimensionsMeters: [0.52, 1.25, 0.38], defaultColor: '#f97316', mobile: true, keywords: ['cast', 'actor', 'human'] },
+  { id: 'person-adult', label: 'Adult', category: 'people', description: 'Neutral standing performer at human scale.', shape: 'humanoid', dimensionsMeters: [0.65, 1.75, 0.45], orientationOffsetYDegrees: 180, defaultColor: '#38bdf8', mobile: true, keywords: ['cast', 'actor', 'human'] },
+  { id: 'character-bionic-operative', label: 'Bionic operative', category: 'people', description: 'Animatable long-haired performer in a fitted black evening dress with bare arms, silver jewelry, and restrained cyan interface details; shaped from the local character sheet.', shape: 'humanoid', visualProfile: 'bionic-operative', dimensionsMeters: [0.62, 1.76, 0.42], orientationOffsetYDegrees: 180, defaultColor: '#29c4df', mobile: true, keywords: ['actor', 'bionic', 'operative', 'cinema'] },
+  { id: 'character-corporate-executive', label: 'Corporate executive', category: 'people', description: 'Animatable broad-shouldered executive in a tailored dark suit, white shirt, and muted red tie; a fictional 3D proxy for the supplied antagonist sheet.', shape: 'humanoid', visualProfile: 'corporate-executive', dimensionsMeters: [0.68, 1.82, 0.46], orientationOffsetYDegrees: 180, defaultColor: '#c38a4c', mobile: true, keywords: ['actor', 'executive', 'suit', 'cinema'] },
+  { id: 'character-cinema-protagonist', label: 'Cinema protagonist', category: 'people', description: 'Animatable dark-haired performer in a rain-darkened long coat, built to match the recurring Hong Kong night-story lead in the supplied shot sheet.', shape: 'humanoid', visualProfile: 'cinema-protagonist', dimensionsMeters: [0.7, 1.82, 0.48], orientationOffsetYDegrees: 180, defaultColor: '#526777', mobile: true, keywords: ['actor', 'protagonist', 'raincoat', 'cinema'] },
+  { id: 'character-security-android', label: 'Security android', category: 'people', description: 'Animatable IFC-style security machine with articulated pale armour, black helmet, and cyan sensor visor based on the local robot sheet.', shape: 'humanoid', visualProfile: 'security-android', dimensionsMeters: [0.72, 1.92, 0.54], orientationOffsetYDegrees: 180, defaultColor: '#d7e2eb', mobile: true, keywords: ['actor', 'robot', 'android', 'security', 'cinema'] },
+  { id: 'person-child', label: 'Child', category: 'people', description: 'Smaller neutral performer for family blocking.', shape: 'humanoid', dimensionsMeters: [0.52, 1.25, 0.38], orientationOffsetYDegrees: 180, defaultColor: '#f97316', mobile: true, keywords: ['cast', 'actor', 'human'] },
   { id: 'animal-dog', label: 'Dog', category: 'animals', description: 'Medium quadruped with a clear facing direction.', shape: 'quadruped', dimensionsMeters: [0.45, 0.72, 1.05], defaultColor: '#a78bfa', mobile: true, keywords: ['pet', 'cast'] },
   { id: 'animal-cat', label: 'Cat', category: 'animals', description: 'Small quadruped for close domestic staging.', shape: 'quadruped', dimensionsMeters: [0.3, 0.42, 0.72], defaultColor: '#ec4899', mobile: true, keywords: ['pet', 'cast'] },
   { id: 'vehicle-sedan', label: 'Car', category: 'vehicles', description: 'Four-seat road car at practical scale.', shape: 'car', dimensionsMeters: [1.82, 1.45, 4.55], defaultColor: '#60a5fa', mobile: true, keywords: ['car', 'sedan', 'traffic'] },
@@ -275,16 +394,58 @@ export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
   { id: 'furniture-table', label: 'Table', category: 'furniture', description: 'Four-seat rectangular table.', shape: 'table', dimensionsMeters: [1.6, 0.76, 0.9], defaultColor: '#94a3b8', mobile: false, keywords: ['dining', 'desk', 'interior'] },
   { id: 'furniture-sofa', label: 'Sofa', category: 'furniture', description: 'Three-seat sofa with clear front and back.', shape: 'sofa', dimensionsMeters: [2.1, 0.9, 0.9], defaultColor: '#14b8a6', mobile: false, keywords: ['couch', 'seat', 'interior'] },
   { id: 'prop-shopping-cart', label: 'Shopping Cart', category: 'props', description: 'Retail trolley for aisle and checkout movement.', shape: 'cart', dimensionsMeters: [0.65, 1.05, 1.1], defaultColor: '#e2e8f0', mobile: true, keywords: ['supermarket', 'trolley'] },
-  { id: 'prop-tree', label: 'Tree', category: 'props', description: 'Simple trunk and canopy spatial marker.', shape: 'tree', dimensionsMeters: [2.8, 5.5, 2.8], defaultColor: '#84cc16', mobile: false, keywords: ['outdoor', 'landscape'] },
+  { id: 'prop-tree', label: 'Tree', category: 'props', description: 'Branched trunk with a layered, clustered foliage canopy.', shape: 'tree', dimensionsMeters: [2.8, 5.5, 2.8], defaultColor: '#84cc16', mobile: false, keywords: ['outdoor', 'landscape'] },
   { id: 'prop-streetlight', label: 'Streetlight', category: 'props', description: 'Tall street fixture and pool-of-light marker.', shape: 'lamp', dimensionsMeters: [0.55, 4.5, 0.55], defaultColor: '#facc15', mobile: false, keywords: ['exterior', 'lamp'] },
   { id: 'prop-crate', label: 'Crate', category: 'props', description: 'Meter-scale obstacle and practical hand prop.', shape: 'crate', dimensionsMeters: [1, 1, 1], defaultColor: '#fb7185', mobile: false, keywords: ['box', 'obstacle'] },
   { id: 'prop-debris-cluster', label: 'Debris Cluster', category: 'props', description: 'Procedural loose fragments for collapse, impact, and settle paths.', shape: 'debris', dimensionsMeters: [2.4, 2.2, 2.2], defaultColor: '#94a3b8', mobile: true, keywords: ['debris', 'collapse', 'impact', 'fragments'] },
   { id: 'prop-pool-umbrella', label: 'Pool Umbrella', category: 'props', description: 'Patio umbrella with a wide overhead footprint.', shape: 'umbrella', dimensionsMeters: [2.6, 2.5, 2.6], defaultColor: '#f43f5e', mobile: false, keywords: ['backyard', 'patio', 'shade'] },
+  ...SINGAPORE_POI_DETAIL_KITS.map(kit => ({
+    id: kit.assetId,
+    label: kit.label,
+    category: 'props' as const,
+    description: kit.description,
+    shape: 'crate' as const,
+    dimensionsMeters: kit.dimensionsMeters,
+    defaultColor: kit.defaultColor,
+    mobile: false,
+    keywords: [...kit.keywords, 'procedural', 'poi detail'],
+    poiDetailKitId: kit.poiId,
+  })),
 ]
 
 export function resolveXrMotionReferenceStage(stageId: XrMotionReferenceStageId): XrMotionReferenceStagePreset {
   return XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === stageId)
     || XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)!
+}
+
+export function resolveXrMotionReferenceStagePreviewBounds(
+  stageId: XrMotionReferenceStageId,
+): readonly [west: number, south: number, east: number, north: number] | null {
+  const stage = resolveXrMotionReferenceStage(stageId)
+  const context = stage.geospatialContext
+  if (context?.purpose !== 'regional-viewport-only') return null
+
+  const [west, south, east, north] = context.bounds
+  const [longitude, latitude] = context.previewAnchor || [
+    (west + east) / 2,
+    (south + north) / 2,
+  ]
+  const paddingMeters = 10
+  const halfWidthMeters = stage.sizeMeters[0] / 2 + paddingMeters
+  const halfDepthMeters = stage.sizeMeters[1] / 2 + paddingMeters
+  const metersPerLongitudeDegree = 111_320 * Math.max(
+    0.01,
+    Math.abs(Math.cos(latitude * Math.PI / 180)),
+  )
+  const longitudeRadius = halfWidthMeters / metersPerLongitudeDegree
+  const latitudeRadius = halfDepthMeters / 111_320
+
+  return Object.freeze([
+    longitude - longitudeRadius,
+    latitude - latitudeRadius,
+    longitude + longitudeRadius,
+    latitude + latitudeRadius,
+  ] as const)
 }
 
 export function resolveXrMotionReferenceColliderStructures(

@@ -7,7 +7,8 @@ import { IndexedCollectionDexie } from '@/lib/storage/indexedDbCollectionSchema'
 import { createIndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
 import { createWorkspaceFsDb, WORKSPACE_FS_LEGACY_KEY } from '@/features/workspace-fs/workspaceFsIndexedDb'
 import { createWorkspacePersistedFs } from '@/features/workspace-fs/workspaceFsPersisted'
-import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { WorkspaceSourceTextConflictError, type WorkspaceEntry } from '@/features/workspace-fs/types'
+import { createResilientWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 
 const note = (path = '/notes/draft.md', text = '# Draft\n\n保留 🧭\r\n'): WorkspaceEntry => ({
   path, parentPath: '/notes', kind: 'file', name: path.split('/').at(-1)!, text, updatedAtMs: 7,
@@ -77,6 +78,15 @@ export async function testWorkspaceIndexedDbConcurrentMigrationAndStaleRows() {
       })))
       assert.equal(new Set(paths).size, 2, 'simultaneous creates must retain both files')
       assert.deepEqual(await Promise.all(paths.map(path => firstFs.readFileText(path))), ['tab-0', 'tab-1'])
+      const exact = await Promise.allSettled([firstFs, secondFs].map((fs, index) => createResilientWorkspaceFs(fs).createFile({
+        parentPath: '/notes', name: 'exact.md', text: `winner-${index}`, mirrorToHost: false, requireExactPath: true,
+      })))
+      assert.equal(exact.filter(result => result.status === 'fulfilled').length, 1, 'one exact-path writer wins across tabs')
+      const loser = exact.find(result => result.status === 'rejected') as PromiseRejectedResult
+      assert.match(loser.reason.message, /destination already exists/)
+      assert.equal((await firstFs.listEntries()).filter(entry => entry.name.startsWith('exact')).length, 1, 'no fallback file or shadow copy')
+      const winner = exact.findIndex(result => result.status === 'fulfilled')
+      assert.equal(await secondFs.readFileText('/notes/exact.md'), `winner-${winner}`)
       const folders = await Promise.all([firstFs, secondFs].map(fs => fs.createFolder({
         parentPath: '/notes', name: 'same-folder', mirrorToHost: false,
       })))
@@ -87,6 +97,34 @@ export async function testWorkspaceIndexedDbConcurrentMigrationAndStaleRows() {
         assert.equal(await raw.records.where('collection').equals('migrations').count(), 1)
         assert.equal((await raw.records.get(`entries\u0000${old.path}`))?.value.path, old.path)
       } finally { raw.close() }
+    } finally { await first.db.close(); await second.db.close() }
+  })
+}
+
+export async function testWorkspaceConditionalSaveKeepsOneWinnerAcrossTabs() {
+  await fixture(async (storage, databaseName) => {
+    const old = note('/notes/two-tab.py', 'score = 1\n')
+    storage.setItem(WORKSPACE_FS_LEGACY_KEY, JSON.stringify({ entries: { [old.path]: old } }))
+    const first = await createWorkspaceFsDb({ databaseName })
+    const second = await createWorkspaceFsDb({ databaseName })
+    try {
+      const tabs = [first, second].map(db => createResilientWorkspaceFs(createWorkspacePersistedFs(() => Promise.resolve(db))))
+      assert.deepEqual(await Promise.all(tabs.map(fs => fs.readFileText(old.path))), [old.text, old.text])
+      const results = await Promise.allSettled(tabs.map((fs, index) => fs.writeFileText(old.path, `score = ${index + 2}\n`, {
+        expectedText: old.text, mirrorToHost: false,
+      })))
+      assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
+      const rejected = results.find(result => result.status === 'rejected')
+      assert(rejected?.status === 'rejected' && rejected.reason instanceof WorkspaceSourceTextConflictError)
+      const winner = results.findIndex(result => result.status === 'fulfilled')
+      assert.equal(await tabs[0]!.readFileText(old.path), `score = ${winner + 2}\n`)
+      await assert.rejects(tabs[1 - winner]!.writeFileText(old.path, 'score = 9\n', {
+        expectedText: old.text, mirrorToHost: false,
+      }), WorkspaceSourceTextConflictError)
+      assert.equal(await tabs[0]!.readFileText(old.path), `score = ${winner + 2}\n`)
+      await tabs[winner]!.writeFileText(old.path, `score = ${winner + 2}\n`, {
+        expectedText: old.text, mirrorToHost: false,
+      })
     } finally { await first.db.close(); await second.db.close() }
   })
 }

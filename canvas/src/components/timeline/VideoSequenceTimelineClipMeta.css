@@ -11,10 +11,10 @@
   gap: 4px;
   overflow: hidden;
   color: rgb(255 255 255 / 0.82);
-  font-size: 7px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 9px;
+  letter-spacing: normal;
+  line-height: var(--kg-text-xs-line);
 }
 
 .timeline-video-sequence-clip-meta span,

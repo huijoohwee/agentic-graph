@@ -9,7 +9,7 @@ import {
   ZOOM_SPEED_TOOLTIP,
   PAN_SPEED_TOOLTIP,
 } from '@/features/panels/views/ThreeViewTuningTooltips'
-import { THREE_VIEW_FIELD_GRID_CLASS_NAME } from '@/features/panels/views/threeViewResponsiveClasses'
+import { ThreeViewFieldSection } from '@/features/panels/views/threeViewResponsiveClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 interface ThreeViewCameraSectionProps {
@@ -35,7 +35,7 @@ export default function ThreeViewCameraSection({
       headerClassName="px-0"
       stickyOffsetClassName="top-6"
     >
-      <section className={THREE_VIEW_FIELD_GRID_CLASS_NAME}>
+      <ThreeViewFieldSection>
         <PanelKeyTypeRangeValueRow
           density="compact"
           keyNode={<span className={keyLabelClassName}>Camera Damping</span>}
@@ -100,7 +100,7 @@ export default function ThreeViewCameraSection({
             </Tooltip>
           )}
         />
-      </section>
+      </ThreeViewFieldSection>
     </CollapsibleSection>
   )
 }

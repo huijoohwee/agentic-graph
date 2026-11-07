@@ -102,8 +102,8 @@ export default function FieldLocalSchemaSectionBody({
         <section className="flex items-center gap-2">
           <GraphFieldsComfortableFieldSelect
             value={localSchemaScope}
-            onChange={e => {
-              const nextScope = e.target.value === 'edge' ? 'edge' : 'node'
+            onValueChange={selectedValueInput => {
+              const nextScope = selectedValueInput === 'edge' ? 'edge' : 'node'
               const nextCandidates =
                 nextScope === 'node' ? localSchemaNodeTypes : localSchemaEdgeLabels
               setSelectedGlobalView(prev => {
@@ -122,8 +122,8 @@ export default function FieldLocalSchemaSectionBody({
           </GraphFieldsComfortableFieldSelect>
           <GraphFieldsComfortableFieldSelect
             value={localSchemaOwnerKey}
-            onChange={e => {
-              const v = e.target.value
+            onValueChange={selectedValueInput => {
+              const v = selectedValueInput
               setSelectedGlobalView(prev => {
                 if (!prev || prev.kind !== 'localSchema') return prev
                 return { ...prev, ownerKey: v }

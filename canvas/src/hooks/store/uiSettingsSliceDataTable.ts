@@ -108,12 +108,6 @@ export const createUiSettingsDataTableSlice = (set: SetGraph)=> ({
   webpageViewerScriptPolicy: 'allow' as const,
   setWebpageViewerScriptPolicy: (v: 'strip' | 'allow') => set({ webpageViewerScriptPolicy: v === 'allow' ? 'allow' : 'strip' }),
 
-  webpageArtifactFidelityMaxLevel: 4,
-  setWebpageArtifactFidelityMaxLevel: (v: number) => {
-    const n = Number.isFinite(v) ? Math.floor(Number(v)) : 4
-    set({ webpageArtifactFidelityMaxLevel: n < 1 ? 1 : n > 4 ? 4 : n })
-  },
-
   websiteImportDiscoverSitemap: true,
   setWebsiteImportDiscoverSitemap: (v: boolean) => set({ websiteImportDiscoverSitemap: !!v }),
 

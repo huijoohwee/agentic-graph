@@ -23,6 +23,16 @@ export type CityGeoParcelState = Readonly<{
   zone: CityGeoZone
 }>
 
+export type CityGeoGameplayState = Readonly<{
+  completedTasks: number
+  playerCoordinate?: readonly [longitude: number, latitude: number]
+  playerPoiId: string
+  playerSelected?: boolean
+  profileId: string
+  revision: number
+  taskPoiId: string
+}>
+
 export type CityGeoZoneStyle = Readonly<{
   fillColor: string
   outlineColor: string
@@ -52,6 +62,7 @@ export type CityGeoOverlaySnapshot = Readonly<{
   revision: string
   rows: number
   selectedParcelId: string | null
+  gameplay?: CityGeoGameplayState | null
 }>
 
 export type CityGeoOverlayListener = (
@@ -192,6 +203,7 @@ export function createCityGeoOverlaySnapshot(
       || input.columns !== 0
       || input.parcels.length !== 0
       || input.selectedParcelId !== null
+      || input.gameplay != null
     ) {
       throw new Error('Inactive City Geo overlay state must not retain profile or parcel data.')
     }
@@ -239,6 +251,37 @@ export function createCityGeoOverlaySnapshot(
   ) {
     throw new Error('Selected City Geo parcel must exist in the live parcel state.')
   }
+  if (input.gameplay != null) {
+    const gameplay = input.gameplay
+    if (
+      !parcelIds.has(gameplay.playerPoiId)
+      || !parcelIds.has(gameplay.taskPoiId)
+      || gameplay.profileId !== profile.regionalPoiProfile.id
+      || gameplay.playerPoiId === gameplay.taskPoiId
+      || !Number.isSafeInteger(gameplay.completedTasks)
+      || gameplay.completedTasks < 0
+      || !Number.isSafeInteger(gameplay.revision)
+      || gameplay.revision < 0
+    ) {
+      throw new Error('City Geo gameplay must reference distinct live POIs and non-negative counters.')
+    }
+    if (gameplay.playerSelected !== undefined && typeof gameplay.playerSelected !== 'boolean') {
+      throw new Error('City Geo player selection must be a boolean when provided.')
+    }
+    if (gameplay.playerCoordinate !== undefined) {
+      const [longitude, latitude] = gameplay.playerCoordinate
+      if (
+        !Number.isFinite(longitude)
+        || !Number.isFinite(latitude)
+        || longitude < -180
+        || longitude > 180
+        || latitude < -90
+        || latitude > 90
+      ) {
+        throw new Error('City Geo player coordinates must be finite geographic coordinates.')
+      }
+    }
+  }
   return Object.freeze({
     active: true,
     columns: input.columns,
@@ -247,6 +290,18 @@ export function createCityGeoOverlaySnapshot(
     revision: input.revision,
     rows: input.rows,
     selectedParcelId: input.selectedParcelId,
+    ...(input.gameplay === undefined
+      ? {}
+      : {
+          gameplay: input.gameplay == null
+            ? null
+            : Object.freeze({
+                ...input.gameplay,
+                ...(input.gameplay.playerCoordinate
+                  ? { playerCoordinate: Object.freeze([...input.gameplay.playerCoordinate]) as readonly [number, number] }
+                  : {}),
+              }),
+        }),
   })
 }
 

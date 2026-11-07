@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React, { forwardRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -91,7 +92,7 @@ const SearchPanel = forwardRef<HTMLElement, SearchPanelProps>(({ onClose }, ref)
           aria-selected={index === activeIdx}
           data-kg-search-result-id={r.id}
           data-kg-search-result-kind={r.kind}
-          className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} cursor-pointer ${index === activeIdx ? 'bg-[var(--kg-panel-action-bg-hover)]' : ''}`}
+          className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} cursor-pointer ${uiSelectedRowStateClassName(index === activeIdx)}`}
           onMouseEnter={() => setActiveIdx(index)}
           onMouseDown={event => event.preventDefault()}
           onClick={() => commitSearchSelection(r)}

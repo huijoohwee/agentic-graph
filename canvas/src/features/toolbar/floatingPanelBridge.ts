@@ -6,10 +6,16 @@ import type { GraphData } from '@/lib/graph/types'
 // Ephemeral renderer focus for an embedded read-only D3 surface; never replaces authored graph data.
 let rendererInspectionGraph: GraphData | null = null
 const rendererInspectionListeners = new Set<() => void>()
+const floatingPanelBridgeListeners = new Set<() => void>()
 const subscribeRendererInspection = (listener: () => void) => {
   rendererInspectionListeners.add(listener)
   return () => { rendererInspectionListeners.delete(listener) }
 }
+const subscribeFloatingPanelBridge = (listener: () => void) => {
+  floatingPanelBridgeListeners.add(listener)
+  return () => { floatingPanelBridgeListeners.delete(listener) }
+}
+const notifyFloatingPanelBridgeListeners = () => floatingPanelBridgeListeners.forEach(listener => listener())
 export const useRendererInspectionGraph = () => useSyncExternalStore(subscribeRendererInspection, () => rendererInspectionGraph, () => null)
 export function focusRendererInspectionGraph(graph: GraphData): void {
   if (rendererInspectionGraph === graph) return
@@ -42,17 +48,23 @@ declare global {
 export function installFloatingPanelBridge(bridge: FloatingPanelBridge): () => void {
   if (typeof window === 'undefined') return () => void 0
   window[FLOATING_PANEL_BRIDGE_KEY] = bridge
+  notifyFloatingPanelBridgeListeners()
   for (const callback of floatingPanelBridgeReadyCallbacks) callback()
   floatingPanelBridgeReadyCallbacks.clear()
   return () => {
     if (window[FLOATING_PANEL_BRIDGE_KEY] === bridge) {
       delete window[FLOATING_PANEL_BRIDGE_KEY]
+      notifyFloatingPanelBridgeListeners()
     }
   }
 }
 
 export function isFloatingPanelBridgeReady(): boolean {
   return typeof window !== 'undefined' && Boolean(window[FLOATING_PANEL_BRIDGE_KEY])
+}
+
+export function useFloatingPanelBridgeReady(): boolean {
+  return useSyncExternalStore(subscribeFloatingPanelBridge, isFloatingPanelBridgeReady, () => false)
 }
 
 export function whenFloatingPanelBridgeReady(callback: () => void): () => void {

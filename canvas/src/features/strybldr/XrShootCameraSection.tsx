@@ -21,10 +21,12 @@ import {
   readXrMotionReferenceRuntime,
   setXrMotionReferenceCameraMark,
   setXrMotionReferenceCameraRig,
+  setXrMotionReferenceCameraSettingsAtPlayhead,
   setXrMotionReferenceCastMarkArmed,
   subscribeXrMotionReferenceRuntime,
   toggleXrMotionReferenceCastMarkArmed,
 } from '@/features/three/xrMotionReferenceRuntime'
+import { sampleXrMotionReferenceCameraSettings } from '@/features/three/xrMotionReferenceModel'
 import { controlXrSharedAssetControls, inspectXrSharedAssetControls, readXrSharedAssetControlRevision, subscribeXrSharedAssetControlRuntime } from '@/features/three/xrSharedAssetControlRuntime'
 import { XrRehearsalStatus } from '@/features/three/XrRehearsalStatus'
 import { buildXrShotTargets } from '@/features/three/xrShotTargets'
@@ -39,6 +41,7 @@ import {
   selectXrNativeControllerCameraMode,
   subscribeXrNativeControllerCamera,
 } from '@/features/three/xrNativeControllerCameraRuntime'
+import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 const RIG_LABELS: Readonly<Record<XrMotionReferenceCameraRig, string>> = {
   dolly: 'Dolly',
@@ -65,6 +68,8 @@ export function XrShootCameraSection() {
     readXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
   )
+  const controlMode = React.useSyncExternalStore(subscribeCinematicControlMode, readCinematicControlMode, readCinematicControlMode)
+  const humanControlsEnabled = controlMode === 'human'
   const nativeController = React.useSyncExternalStore(
     subscribeXrNativeControllerCamera,
     readXrNativeControllerCamera,
@@ -84,12 +89,20 @@ export function XrShootCameraSection() {
     readCameraFramingRuntime,
     readCameraFramingRuntime,
   )
+  React.useEffect(() => {
+    if (controlMode !== 'human' && runtime.castMarkArmed) setXrMotionReferenceCastMarkArmed(false)
+  }, [controlMode, runtime.castMarkArmed])
+  const hasTimelineCamera = xrActive && runtime.plan.camera.length > 0
+  const timelineCameraSettings = hasTimelineCamera
+    ? sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
+    : null
+  const effectiveCameraSettings = timelineCameraSettings || framing.settings
 
   React.useEffect(() => {
     if (!xrActive) return undefined
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isTextEditingTarget(event.target)) return
-      if (event.key.toLowerCase() === 'm' && selectedTrack) {
+      if (readCinematicControlMode() === 'human' && event.key.toLowerCase() === 'm' && selectedTrack) {
         event.preventDefault()
         toggleXrMotionReferenceCastMarkArmed()
       } else if (event.key === 'Escape' && runtime.castMarkArmed) {
@@ -101,27 +114,27 @@ export function XrShootCameraSection() {
   }, [runtime.castMarkArmed, selectedTrack, xrActive])
 
   const publishShotFraming = React.useCallback((settingsValue: unknown) => {
-    if (!selectedShotTarget || cameraPlaybackActive) return
-    publishCameraFramingRuntime({
-      anchorId: selectedShotTarget.id,
-      settings: readStrybldrCameraSettings(settingsValue),
-      source: 'panel',
-    })
-  }, [cameraPlaybackActive, selectedShotTarget])
+    if (readCinematicControlMode() !== 'human' || !selectedShotTarget || cameraPlaybackActive) return
+    const settings = readStrybldrCameraSettings(settingsValue)
+    if (hasTimelineCamera) {
+      setXrMotionReferenceCameraSettingsAtPlayhead(settings)
+      return
+    }
+    publishCameraFramingRuntime({ anchorId: selectedShotTarget.id, settings, source: 'panel' })
+  }, [cameraPlaybackActive, hasTimelineCamera, selectedShotTarget])
 
   const autoFrameMedium = React.useCallback(() => {
-    if (!selectedShotTarget) return
-    const current = readCameraFramingRuntime()
-    publishShotFraming({ ...current.settings, shot: 'medium' })
+    if (readCinematicControlMode() !== 'human' || !selectedShotTarget) return
+    publishShotFraming({ ...effectiveCameraSettings, shot: 'medium' })
     pushUiToast({
       id: 'xr:shoot:medium-shot',
       kind: 'success',
-      message: `MS framed ${selectedShotTarget.label} at ${current.settings.focalLengthMm}mm.`,
+      message: `MS framed ${selectedShotTarget.label} at ${effectiveCameraSettings.focalLengthMm}mm.`,
     })
-  }, [publishShotFraming, pushUiToast, selectedShotTarget])
+  }, [effectiveCameraSettings, publishShotFraming, pushUiToast, selectedShotTarget])
 
   const armCastMarkPlacement = React.useCallback(() => {
-    if (!selectedShotTarget || !selectedTrack) return
+    if (readCinematicControlMode() !== 'human' || !selectedShotTarget || !selectedTrack) return
     const state = useGraphStore.getState()
     state.setBottomSurfaceTab('timeline')
     state.setBottomSurfaceCollapsed(false)
@@ -130,22 +143,22 @@ export function XrShootCameraSection() {
   }, [selectedShotTarget, selectedTrack])
 
   const dropCameraMark = React.useCallback(() => {
-    if (!selectedShotTarget) return
-    const current = readCameraFramingRuntime()
+    if (readCinematicControlMode() !== 'human' || !selectedShotTarget) return
     setXrMotionReferenceCameraMark({
       timeSeconds: runtime.playheadSeconds,
       anchorId: selectedShotTarget.id,
       rig: runtime.selectedCameraRig,
-      settings: { ...current.settings },
+      settings: { ...effectiveCameraSettings },
     })
     pushUiToast({
       id: 'xr:shoot:camera-mark',
       kind: 'success',
       message: `Camera mark ${readXrMotionReferenceRuntime().plan.camera.length} linked to ${selectedShotTarget.label} at ${runtime.playheadSeconds.toFixed(2)}s.`,
     })
-  }, [pushUiToast, runtime.playheadSeconds, runtime.selectedCameraRig, selectedShotTarget])
+  }, [effectiveCameraSettings, pushUiToast, runtime.playheadSeconds, runtime.selectedCameraRig, selectedShotTarget])
 
   const selectCameraSource = React.useCallback((mode: XrNativeControllerCameraMode) => {
+    if (readCinematicControlMode() !== 'human') return
     selectXrNativeControllerCameraMode(mode)
     pushUiToast({
       id: 'xr:shoot:camera-source',
@@ -165,24 +178,25 @@ export function XrShootCameraSection() {
     >
       <header className="flex items-start justify-between gap-2">
         <section className="flex min-w-0 items-center gap-2">
-          <Clapperboard className="size-4 shrink-0" strokeWidth={1.8} aria-hidden />
+          <Clapperboard className="size-4 shrink-0" aria-hidden />
           <section>
-            <h3 className="text-xs font-black tracking-[0.16em]">SHOOT</h3>
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Scene/object links, cast marks, rig, camera track.</p>
+            <h3 className="text-xs font-black tracking-normal">SHOOT</h3>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Scene/object links, cast marks, rig, camera track.</p>
           </section>
         </section>
-        <output className={cn('text-right text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+        <output className={cn('text-right text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {runtime.playheadSeconds.toFixed(2)}s<br />{runtime.plan.camera.length} camera marks
         </output>
       </header>
       <XrRehearsalStatus />
 
-      <label className="grid gap-1 text-[10px]">
+      <label className="grid gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Camera source</span>
         <PanelSelect
           aria-label="XR camera source"
           value={nativeController.mode}
-          onChange={event => selectCameraSource(event.target.value as XrNativeControllerCameraMode)}
+          disabled={!humanControlsEnabled}
+          onValueChange={selectedValueInput => selectCameraSource(selectedValueInput as XrNativeControllerCameraMode)}
           data-kg-xr-camera-source="1"
         >
           {XR_NATIVE_CONTROLLER_CAMERA_MODES.map(mode => (
@@ -194,14 +208,14 @@ export function XrShootCameraSection() {
         </span>
       </label>
 
-      <label className="grid gap-1 text-[10px]">
+      <label className="grid gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Shot target</span>
         <PanelSelect
           aria-label="SHOOT scene or 3D object target"
           value={selectedShotTarget?.id || ''}
           disabled={!shotTargets.length}
-          onChange={event => {
-            const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
+          onValueChange={selectedValueInput => {
+            const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: selectedValueInput })
             if (!result.ok) pushUiToast({ id: 'xr:shoot:select-target', kind: 'error', message: result.message })
           }}
           data-kg-xr-shoot-target="scene-or-object"
@@ -219,7 +233,7 @@ export function XrShootCameraSection() {
         type="button"
         className={cn('App-toolbar__btn flex w-full items-center justify-center gap-2', uiSelectedRowStateClassName(runtime.castMarkArmed))}
         aria-pressed={runtime.castMarkArmed}
-        disabled={!selectedTrack}
+        disabled={!selectedTrack || !humanControlsEnabled}
         onClick={() => {
           if (runtime.castMarkArmed) {
             setXrMotionReferenceCastMarkArmed(false)
@@ -230,40 +244,41 @@ export function XrShootCameraSection() {
         data-kg-xr-shoot-cast-mark="1"
       >
         <MapPin className="size-3.5" aria-hidden />
-        <kbd className="rounded border px-1 text-[9px]">M</kbd>
+        <kbd className="rounded border px-1 text-xs">M</kbd>
         {runtime.castMarkArmed ? 'Click the XR floor' : 'Place cast marks'}
       </button>
-      <p className={cn('m-0 text-[10px]', runtime.castMarkArmed ? 'text-emerald-600 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)} aria-live="polite">
+      <p className={cn('m-0 text-xs', runtime.castMarkArmed ? 'text-emerald-600 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)} aria-live="polite">
         {selectedTrack
           ? `${selectedTrack.label} · ${selectedTrack.marks.length} numbered mark${selectedTrack.marks.length === 1 ? '' : 's'}${runtime.castMarkArmed ? ' · placement armed; Esc cancels' : ''}`
           : `${selectedShotTarget?.label || 'Scene'} · camera target only; select a mobile 3D Object to place cast marks.`}
       </p>
 
       <section className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
-        <label className="grid gap-1 text-[10px]">
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Rig</span>
           <PanelSelect
             aria-label="SHOOT camera rig"
             value={runtime.selectedCameraRig}
-            onChange={event => setXrMotionReferenceCameraRig(event.target.value as XrMotionReferenceCameraRig)}
+            disabled={!humanControlsEnabled}
+            onValueChange={selectedValueInput => setXrMotionReferenceCameraRig(selectedValueInput as XrMotionReferenceCameraRig)}
             data-kg-xr-shoot-rig="1"
           >
             {XR_MOTION_REFERENCE_CAMERA_RIGS.map(rig => <option key={rig} value={rig}>{RIG_LABELS[rig]}</option>)}
           </PanelSelect>
         </label>
-        <section className="grid gap-1 text-[10px]" aria-label="SHOOT camera optics projection" data-kg-camera-optics-projection="xr-shoot">
+        <section className="grid gap-1 text-xs" aria-label="SHOOT camera optics projection" data-kg-camera-optics-projection="xr-shoot">
           <span className={UI_THEME_TOKENS.text.tertiary}>Optics · edit in Camera</span>
           <output className={cn('min-w-0 rounded border px-2 py-1.5 font-semibold', UI_THEME_TOKENS.panel.border)}>
-            {formatCameraOptics(framing.settings)}
+            {formatCameraOptics(effectiveCameraSettings)}
           </output>
         </section>
       </section>
 
       <section className="grid grid-cols-2 gap-2">
-        <button type="button" className="App-toolbar__btn font-bold" disabled={!selectedShotTarget || cameraPlaybackActive || nativeController.mode === 'fixed-follow'} onClick={autoFrameMedium} data-kg-xr-shoot-medium-shot="1">
+        <button type="button" className="App-toolbar__btn font-bold" disabled={!humanControlsEnabled || !selectedShotTarget || cameraPlaybackActive || nativeController.mode === 'fixed-follow'} onClick={autoFrameMedium} data-kg-xr-shoot-medium-shot="1">
           MS · Medium shot
         </button>
-        <button type="button" className="App-toolbar__btn flex items-center justify-center gap-1 font-bold" disabled={!selectedShotTarget || cameraPlaybackActive} onClick={dropCameraMark} data-kg-xr-shoot-camera-mark="1">
+        <button type="button" className="App-toolbar__btn flex items-center justify-center gap-1 font-bold" disabled={!humanControlsEnabled || !selectedShotTarget || cameraPlaybackActive} onClick={dropCameraMark} data-kg-xr-shoot-camera-mark="1">
           <Video className="size-3.5" aria-hidden />
           Drop camera mark
         </button>
@@ -272,7 +287,8 @@ export function XrShootCameraSection() {
       <XrCameraMovePresetControl
         anchorId={selectedShotTarget?.id || ''}
         anchorLabel={selectedShotTarget?.label || ''}
-        disabled={!selectedShotTarget || cameraPlaybackActive}
+        settings={effectiveCameraSettings}
+        disabled={!humanControlsEnabled || !selectedShotTarget || cameraPlaybackActive}
       />
     </section>
   )

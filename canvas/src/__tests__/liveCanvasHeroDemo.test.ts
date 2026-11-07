@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseLiveCanvasHeroDemos, buildLiveCanvasHeroDemoReply, LIVE_CANVAS_HERO_DEMO_SOURCE } from '@/features/agentic-os/liveCanvasHeroDemoSource'
+import {
+  parseLiveCanvasHeroDemos,
+  buildLiveCanvasHeroDemoReply,
+  FLIGHT_SIM_HERO_DEMO_SOURCE_PATH,
+  LIVE_CANVAS_HERO_DEMO_SOURCE,
+} from '@/features/agentic-os/liveCanvasHeroDemoSource'
 import { buildLiveCanvasHeroDemoDocument, handoffLiveCanvasHeroDemoHistory } from '@/features/agentic-os/activateLiveCanvasHeroDemo'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { buildHistoryKey, getCachedChatHistory, putChatHistoryCache } from '@/features/chat/floatingPanelChat/floatingPanelChatRuntime'
@@ -13,12 +18,45 @@ import { agentGraphResult, SOURCE_BACKED_INVOCATION } from './agentGraphWorkspac
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
+import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promise<void> {
   const demos = parseLiveCanvasHeroDemos(readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8'))
+  if (demos.find(demo => demo.id === 'programmatic-drone-flight')?.background !== 'python-drone') {
+    throw new Error('The drone preset must preview its native warehouse Canvas')
+  }
+  const flightSim = demos.find(demo => demo.id === 'flight-sim')
+  if (flightSim?.sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH) {
+    throw new Error('The Flight Sim demo must reference its single canonical workspace seed')
+  }
+  const flightSeed = readFileSync(resolve(process.cwd(), '..', flightSim.sourcePath.slice(1)), 'utf8')
+  if (!isFlightSimRunReadyDemoActive(flightSim.sourcePath, flightSeed)) {
+    throw new Error('The Flight Sim catalog entry must resolve to the source-authored run-ready seed')
+  }
+  const runtimeReadiness = demos.find(demo => demo.id === 'production-runtime-readiness')
+  if (!runtimeReadiness?.demoOnlyPrompt || !runtimeReadiness.demoOnlyPrompt.includes('no model request')) {
+    throw new Error('The runtime-readiness option must be a Graph-owned, display-only demo')
+  }
+  const runtimeDocument = buildLiveCanvasHeroDemoDocument({
+    id: runtimeReadiness.id, prompt: runtimeReadiness.demoOnlyPrompt,
+  }, runtimeReadiness, 'test-demo-production-runtime-readiness')
+  if (!runtimeDocument.text.includes(`prompt_source: ${LIVE_CANVAS_HERO_DEMO_SOURCE}`)) {
+    throw new Error('The display-only demo must cite its Graph-owned source, not the shared prompt catalog')
+  }
+  const sourceBackedPreview = buildLiveCanvasHeroDemoDocument({
+    id: 'software-forensics',
+    prompt: '/software.forensics @application @working-directory @agent @runtime-proof #reverse-engineering #vcc operation=inspect',
+  }, undefined, 'test-demo-software-forensics')
+  const sourceBackedGraph = tryParseMarkdownFrontmatterFlowGraph('demo.md', sourceBackedPreview.text)
+  if (!sourceBackedGraph || !sourceBackedPreview.text.includes('No model call, remote write, or target execution')
+    || !sourceBackedPreview.text.includes('preset_id: software-forensics')
+    || sourceBackedGraph.graphData.nodes.some(node => node.properties.command)) {
+    throw new Error('A source-backed preset without a Graph-owned example must open as a local, non-executing preview')
+  }
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
-  if (catalog.presets.length !== demos.length) throw new Error('Every catalog preset needs exactly one demo')
+  // Unique demo ids are enforced by the source parser. Additional demos may precede paired catalog integration.
+  // The loop still requires exactly one source-backed demo for every preset in this fixture.
   const historyKeys = new Set<string>()
   for (const preset of catalog.presets) {
     const demo = demos.find(value => value.id === preset.id)
@@ -107,9 +145,19 @@ export function testLiveCanvasHeroDemoSourceRejectsInvalidRecords(): void {
   const text = readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8')
   for (const invalid of [text.replace('demo_only: true', 'demo_only: false'), text.replace('id: launch-copilot', 'id: xr-physics'),
     text.replace('repository: https://github.com/anthropics/commerce-agents', 'repository: file:///tmp/private'),
-    text.replace('background: xr-physics', 'background: https://example.com'), 'x'.repeat(40_001)]) {
+    text.replace('background: xr-physics', 'background: https://example.com'),
+    text.replace('background: python-drone', 'background: xr-physics'),
+    text.replace('background: xr-physics', 'background: python-drone'), 'x'.repeat(40_001)]) {
     let rejected = false
     try { parseLiveCanvasHeroDemos(invalid) } catch { rejected = true }
     if (!rejected) throw new Error('Invalid source must not become a demo')
+  }
+  for (const invalid of [
+    text.replace('/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', '/docs/other-flight.md'),
+    text.replace('id: flight-sim', 'id: other-demo'),
+  ]) {
+    let rejected = false
+    try { parseLiveCanvasHeroDemos(invalid) } catch { rejected = true }
+    if (!rejected) throw new Error('Flight Sim must not admit copied or alternate seed paths')
   }
 }

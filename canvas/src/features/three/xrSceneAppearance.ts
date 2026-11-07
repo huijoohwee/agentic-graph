@@ -16,6 +16,7 @@ export const XR_SCENE_APPEARANCE_PRESETS = Object.freeze([
   { id: 'coast', label: 'Coast', skyColor: '#8ed5f3', fogColor: '#c5e8ed', groundColor: '#e7dec1', waterColor: '#229fad', lightColor: '#fff1d0', lightIntensity: 1.8, sunAzimuthDegrees: 35, fogDistanceMeters: 92, detail: 'standard', shadows: true },
   { id: 'golden', label: 'Golden hour', skyColor: '#edc4a9', fogColor: '#f3d8ba', groundColor: '#d8c99c', waterColor: '#527d94', lightColor: '#ffd49a', lightIntensity: 1.6, sunAzimuthDegrees: 105, fogDistanceMeters: 75, detail: 'standard', shadows: true },
   { id: 'studio', label: 'Studio', skyColor: '#cddbe6', fogColor: '#dce5eb', groundColor: '#a9bac6', waterColor: '#6a96ad', lightColor: '#ffffff', lightIntensity: 1.3, sunAzimuthDegrees: -35, fogDistanceMeters: 120, detail: 'low', shadows: true },
+  { id: 'night', label: 'Night', skyColor: '#0b1324', fogColor: '#1a2238', groundColor: '#20262e', waterColor: '#0e3a4c', lightColor: '#9fb8ff', lightIntensity: 0.7, sunAzimuthDegrees: -120, fogDistanceMeters: 70, detail: 'standard', shadows: true },
 ] as const)
 export const DEFAULT_XR_SCENE_APPEARANCE: XrSceneAppearance = readXrSceneAppearance({})
 

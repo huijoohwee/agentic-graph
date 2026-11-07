@@ -22,6 +22,7 @@ import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { useMermaidGitGraphDocument } from './useMermaidGitGraphDocument'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { getIconSizeClass } from '@/lib/ui'
+import { selectDocumentVersionHistory } from './versionHistoryGitGraph'
 
 const GITGRAPH_COMMAND_LABELS: Record<MermaidGitGraphAddKind, string> = {
   commit: 'Commit',
@@ -51,6 +52,7 @@ export function GitGraphFloatingPanelView() {
     history,
     historyIndex,
     restoreHistory,
+    markdownDocumentName,
   } = useGraphStore(
     useShallow(state => ({
       gitGraphSelectedCommandLineIndex: state.gitGraphSelectedCommandLineIndex,
@@ -62,11 +64,13 @@ export function GitGraphFloatingPanelView() {
       history: state.history,
       historyIndex: state.historyIndex,
       restoreHistory: state.restoreHistory,
+      markdownDocumentName: state.markdownDocumentName,
     })),
   )
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const { code, commitGitGraphCode, gitGraphModel, graphData } = useMermaidGitGraphDocument()
-  const usesRuntimeHistory = !code && history.length > 0
+  const documentHistory = React.useMemo(() => selectDocumentVersionHistory(history, markdownDocumentName), [history, markdownDocumentName])
+  const usesRuntimeHistory = !code && documentHistory.length > 0
   const gitGraphDiagramModel = React.useMemo(() => parseMermaidDiagramCodeModel(code, 'gitgraph'), [code])
   const { handleDiagramSelectedRowKeyChange } = useStoryboardWidgetDiagramSelectionBridge({
     graphData,
@@ -173,9 +177,9 @@ export function GitGraphFloatingPanelView() {
           <span className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</span>
           <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
         </header>
-        {history.length ? (
+        {documentHistory.length ? (
           <ol className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]" aria-label="Version history list">
-            {history.map((entry, index) => (
+            {documentHistory.map(({ entry, index }, versionIndex) => (
               <li key={entry.id}>
                 <button
                   type="button"
@@ -188,7 +192,7 @@ export function GitGraphFloatingPanelView() {
                   data-kg-version-history-index={index}
                 >
                   <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                  <span className={UI_THEME_TOKENS.text.tertiary}>v{index + 1}</span>
+                  <span className={UI_THEME_TOKENS.text.tertiary}>v{versionIndex + 1}</span>
                 </button>
               </li>
             ))}
@@ -212,7 +216,7 @@ export function GitGraphFloatingPanelView() {
       <header className="flex items-center justify-between gap-2 px-1">
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</section>
-          <section className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
+          <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
             {buildCommandDescription(selectedCommand)}
           </section>
         </section>
@@ -278,8 +282,8 @@ export function GitGraphFloatingPanelView() {
           canEdit={!!selectedCommand}
           editActivation="click"
           editRequestKey={editRequestKey}
-          displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--kg-text-primary)]"
-          editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--kg-text-primary)]"
+          displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
+          editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
           emptyClassName="text-[var(--kg-text-secondary)]"
           onCommit={updateSelectedCommand}
         />
@@ -299,14 +303,11 @@ export function GitGraphFloatingPanelView() {
               className={[
                 'flex w-full items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
                 selected
-                  ? 'text-[var(--kg-text-primary)] shadow-[inset_3px_0_0_var(--kg-canvas-accent)] ring-2 ring-inset ring-[var(--kg-canvas-accent)]'
+                  ? uiSelectedRowStateClassName(true)
                   : selectedCommand
                     ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:bg-[var(--kg-panel-bg-hover)] hover:opacity-90'
                     : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
               ].join(' ')}
-              style={selected ? {
-                backgroundColor: 'color-mix(in srgb, var(--kg-canvas-accent) 16%, var(--kg-panel-bg))',
-              } : undefined}
               data-kg-gitgraph-command-row="1"
               data-kg-gitgraph-command-kind={command.kind}
               data-kg-gitgraph-command-line={command.lineIndex}
@@ -315,14 +316,14 @@ export function GitGraphFloatingPanelView() {
               data-kg-gitgraph-command-dimmed={selectedCommand && !selected ? '1' : undefined}
               onClick={() => selectCommand(command)}
             >
-              <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal">{command.kind}</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{command.label}</span>
-              <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
+              <span className="w-16 shrink-0 text-xs uppercase tracking-normal">{command.kind}</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-xs">{command.label}</span>
+              <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
             </button>
           )
         })}
       </section>
-      <section className="truncate px-1 text-[11px] text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
+      <section className="truncate px-1 text-xs text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
         {editStatus || `${gitGraphModel.commands.length} commands`}
       </section>
     </section>

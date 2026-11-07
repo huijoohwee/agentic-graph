@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { Pause, Play, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -5,9 +6,10 @@ import {
   TIMELINE_TRANSPORT_PLAYBACK_RATES,
   resolveTimelineTransportPlaybackRate,
   type TimelineTransportPlaybackRate,
-} from './timelineTransport'
+} from './timelineTransportMath'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
+import './TimelineTransportLane.css'
 
 export type TimelineTransportControlsProps = {
   ariaLabel: string
@@ -120,7 +122,6 @@ export function TimelineTransportTimeAxisClip({
         className,
       )}
       aria-label={rootProps['aria-label'] || 'Timeline time-axis control lane'}
-      data-kg-timeline-clip-compact="1"
       data-kg-timeline-time-axis-clip={laneStyle}
     >
       <section className="timeline-transport-inline-clip-content timeline-transport-time-axis-clip-content">
@@ -130,15 +131,55 @@ export function TimelineTransportTimeAxisClip({
   )
 }
 
+const timeAxisMarkHandlers = new WeakMap<HTMLElement, TimelineTransportTimeAxisMarkProps>()
+
+function nearestTimeAxisMark(root: HTMLElement, clientX: number): HTMLElement {
+  let nearest = root
+  let distance = Infinity
+  for (const sibling of Array.from(root.parentElement?.children || [])) {
+    if (!(sibling instanceof HTMLElement) || !timeAxisMarkHandlers.has(sibling) || sibling.getAttribute('aria-disabled') === 'true') continue
+    const bounds = sibling.getBoundingClientRect()
+    const next = Math.abs(clientX - bounds.left - bounds.width / 2)
+    if (next < distance) { nearest = sibling; distance = next }
+  }
+  return nearest
+}
+
 export function TimelineTransportTimeAxisMark({
   children,
   className,
   laneStyle,
   ...rootProps
 }: TimelineTransportTimeAxisMarkProps) {
+  const markRef = React.useRef<HTMLElement>(null)
+  React.useLayoutEffect(() => {
+    const mark = markRef.current
+    if (!mark) return
+    timeAxisMarkHandlers.set(mark, { children, laneStyle, ...rootProps })
+    return () => { timeAxisMarkHandlers.delete(mark) }
+  })
   return (
     <article
       {...rootProps}
+      ref={markRef}
+      onKeyDown={rootProps.onKeyDown || (event => {
+        if (rootProps.role !== 'button' || rootProps['aria-disabled'] === true || rootProps['aria-disabled'] === 'true') return
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        if (!event.repeat) event.currentTarget.click()
+      })}
+      onPointerDown={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
+        const mark = nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onPointerDown?.(event)
+      }}
+      onClick={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
+        const mark = event.detail === 0 ? event.currentTarget : nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onClick?.(event)
+      }}
       className={cn(
         'timeline-transport-track-clip',
         `timeline-transport-track-clip--lane-${laneStyle}`,
@@ -178,7 +219,7 @@ export function TimelineTransportMiniActionBar({
             onClick={action.onClick}
             data-kg-timeline-mini-action={action.id}
           >
-            <Icon className="size-3" aria-hidden />
+            <Icon className="size-3" role="img" aria-label={action.ariaLabel} />
           </button>
         )
       })}
@@ -208,6 +249,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
     onTogglePlayback,
     onValueChange,
   } = props
+  const { panelTextClass } = usePanelTypography()
   const progressPercent = React.useMemo(() => {
     const span = Math.max(0, max - min)
     if (span <= 0) return 0
@@ -221,11 +263,11 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
   }, [playbackRate, playbackRates])
   return (
     <section
-      className={cn('timeline-transport-shell', shellClassName)}
+      className={cn('timeline-transport-shell', shellClassName, panelTextClass)}
       data-kg-timeline-transport="shared"
       style={{ '--kg-timeline-progress': `${progressPercent}%` } as React.CSSProperties}
     >
-      <section className="timeline-player">
+      <section className="timeline-player" aria-label="Timeline playback controls">
         <button
           type="button"
           className="play-control"
@@ -234,13 +276,13 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
           disabled={disabled}
           onClick={onTogglePlayback}
         >
-          {playing ? <Pause className="h-4 w-4" strokeWidth={2} aria-hidden={true} /> : <Play className="h-4 w-4" strokeWidth={2} aria-hidden={true} />}
+          {playing ? <Pause className="h-4 w-4" role="img" aria-label="Pause" /> : <Play className="h-4 w-4" role="img" aria-label="Play" />}
         </button>
         <section className="time timeline-timecode" aria-live="polite">
           <time className="timeline-timecode-current">{currentLabel}</time>
           {totalLabel ? (
             <>
-              <span className="timeline-timecode-divider" aria-hidden="true">
+              <span className="timeline-timecode-divider">
                 /
               </span>
               <time className="timeline-timecode-total">{totalLabel}</time>
@@ -280,7 +322,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
       </section>
       {showRange ? (
         <section className={cn('timeline-player-range', rangeClassName)}>
-          <section className="timeline-player-range-rail" aria-hidden="true"></section>
+          <meter className="timeline-player-range-rail" aria-label="Timeline position" min={0} max={100} value={progressPercent} />
           <input
             aria-label={ariaLabel}
             className="timeline-player-range-input"
@@ -315,7 +357,8 @@ export function TimelineTransportChrome(props: TimelineTransportChromeProps) {
     titleLabel,
     ...transportProps
   } = props
-  const rootClassName = cn('timeline-transport-chrome', chromeClassName)
+  const { panelTextClass } = usePanelTypography()
+  const rootClassName = cn('timeline-transport-chrome', chromeClassName, panelTextClass)
   const rulerRootClassName = cn('timeline-transport-ruler', rulerClassName)
   const inlineHeaderAside = !titleLabel && !subtitleLabel ? headerAside : null
   const headerAsideContent = inlineHeaderAside ? null : headerAside

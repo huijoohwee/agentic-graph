@@ -11,9 +11,7 @@ import { WorkspaceHeaderRow } from '@/components/ui/WorkspaceHeader'
 import { CollapsibleToolbar } from '@/components/ui/CollapsibleToolbar'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { PanelCheckbox } from '@/lib/ui/panelFormControls'
-import { WorkspaceModeSelect } from './WorkspaceModeSelect'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
@@ -76,16 +74,8 @@ export type MarkdownWorkspaceToolbarProps = {
   onToggleFullscreen: () => void
   presentationApiRef: React.MutableRefObject<MarkdownPresentationApi | null>
 
-  webpageSignalSummary?: {
-    nav: number
-    cta: number
-    price: number
-    time: number
-  } | null
-
   webpageWorkspaceMeta?: WebpageFrontmatterMeta | null
   onWebpageChangeView?: (view: WebpageViewMode) => void
-  onWebpageUpdateMeta?: (patch: { fidelityLevel?: 1 | 2 | 3 | 4 }) => void
   contentFormat?: 'markdown' | 'json' | null
   onContentFormatChange?: (format: 'markdown' | 'json') => void | Promise<void>
   forceMarkdownEditorInEditorMode?: boolean
@@ -168,15 +158,12 @@ export function MarkdownWorkspaceToolbar({
   onExportSvg,
   onToggleFullscreen,
   presentationApiRef,
-  webpageSignalSummary,
   webpageWorkspaceMeta,
   onWebpageChangeView,
-  onWebpageUpdateMeta,
   contentFormat,
   onContentFormatChange,
   forceMarkdownEditorInEditorMode,
 }: MarkdownWorkspaceToolbarProps) {
-  const panelTypography = usePanelTypography()
   const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
   const setWorkspaceViewState = useGraphStore(s => s.setWorkspaceViewState)
   const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
@@ -204,26 +191,16 @@ export function MarkdownWorkspaceToolbar({
   const webpageControls = React.useMemo(() => {
     const meta = webpageWorkspaceMeta
     if (!meta || !meta.url) return null
-    const view = meta.view
-    const fidelityMode: 'inherit' | '1' | '2' | '3' | '4' =
-      meta.fidelityLevel === 1
-        ? '1'
-        : meta.fidelityLevel === 2
-          ? '2'
-          : meta.fidelityLevel === 3
-            ? '3'
-            : meta.fidelityLevel === 4
-              ? '4'
-              : 'inherit'
-    return { view, fidelityMode }
+    return { view: meta.view }
   }, [webpageWorkspaceMeta])
   const visiblePaneCount = React.useCallback((current: MarkdownWorkspacePaneVisibility) => (
     Number(!!current.python && !!effectivePaneAvailability.python) +
+    Number(!!current.block && !!effectivePaneAvailability.block) +
     Number(current.json && effectivePaneAvailability.json) +
     Number(current.markdown && effectivePaneAvailability.markdown) +
     Number(current.viewer && effectivePaneAvailability.viewer) +
     Number(current.html && effectivePaneAvailability.html && !!webpageControls)
-  ), [effectivePaneAvailability.python, effectivePaneAvailability.html, effectivePaneAvailability.json, effectivePaneAvailability.markdown, effectivePaneAvailability.viewer, webpageControls])
+  ), [effectivePaneAvailability.python, effectivePaneAvailability.block, effectivePaneAvailability.html, effectivePaneAvailability.json, effectivePaneAvailability.markdown, effectivePaneAvailability.viewer, webpageControls])
   const resolveViewerEditPaneVisibility = React.useCallback((current: MarkdownWorkspacePaneVisibility): MarkdownWorkspacePaneVisibility => {
     if ((current.markdown && effectivePaneAvailability.markdown) || (current.json && effectivePaneAvailability.json)) return current
     if (contentFormat === 'json' && effectivePaneAvailability.json) return { ...current, json: true }
@@ -232,19 +209,21 @@ export function MarkdownWorkspaceToolbar({
     if (effectivePaneAvailability.json) return { ...current, json: true }
     return current
   }, [contentFormat, effectivePaneAvailability.json, effectivePaneAvailability.markdown])
-  const toggleSplitPane = React.useCallback((key: 'python' | 'json' | 'markdown' | 'viewer') => {
+  const toggleSplitPane = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     const current = effectiveSplitPanes
+    if (key === 'python' && current.block && current.python) return
     const enabledCount = visiblePaneCount(current)
     if (current[key] && enabledCount <= 1) return
     const next = { ...current, [key]: !current[key] }
+    if (key === 'block' && next.block) next.python = true
     setSplitPaneVisibility(
       key === 'viewer' && next.viewer
         ? resolveViewerEditPaneVisibility(next)
         : next,
     )
   }, [effectiveSplitPanes, resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
-  const handleSplitPaneToggle = React.useCallback((key: 'python' | 'json' | 'markdown' | 'viewer') => {
+  const handleSplitPaneToggle = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
     if (layoutMode !== 'split') {
@@ -255,6 +234,10 @@ export function MarkdownWorkspaceToolbar({
   const handleContentPaneToggle = React.useCallback((key: 'json' | 'markdown') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
+    if (effectivePaneAvailability.python) {
+      handleSplitPaneToggle(key)
+      return
+    }
     const current = effectiveSplitPanes
     const isVisible = Boolean(current[key])
     const hasFormatSwitch = !!contentFormat && !!onContentFormatChange
@@ -304,43 +287,6 @@ export function MarkdownWorkspaceToolbar({
     onWebpageChangeView('html')
   }, [effectivePaneAvailability.viewer, effectiveSplitPanes, htmlPaneAvailable, htmlPaneChecked, layoutMode, onWebpageChangeView, setLayoutMode, setSplitPaneVisibility, visiblePaneCount, webpageControls?.view])
 
-  const webpageSignalsNode = React.useMemo(() => {
-    const s = webpageSignalSummary
-    if (!s) return null
-    const allItems: Array<{ label: string; value: number; tone: 'nav' | 'cta' | 'price' | 'time' }> = [
-      { label: 'NAV', value: s.nav, tone: 'nav' },
-      { label: 'CTA', value: s.cta, tone: 'cta' },
-      { label: 'PRICE', value: s.price, tone: 'price' },
-      { label: 'TIME', value: s.time, tone: 'time' },
-    ]
-    const items = allItems.filter(it => it.value > 0)
-    if (!items.length) return null
-
-    const pillClass = `inline-flex items-center gap-1 h-6 rounded-full border px-2 ${panelTypography.microLabelClass}`
-    const toneClass = (tone: 'nav' | 'cta' | 'price' | 'time') => {
-      if (tone === 'cta') return 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      if (tone === 'nav') return 'border-blue-200 bg-blue-50 text-blue-700'
-      if (tone === 'price') return 'border-amber-200 bg-amber-50 text-amber-700'
-      if (tone === 'time') return 'border-violet-200 bg-violet-50 text-violet-700'
-      return `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.secondary}`
-    }
-
-    return (
-      <span
-        className={`${uiToolbarRowScrollInlineClassName} gap-1`}
-        aria-label="Webpage signals"
-        title="Derived from the current markdown: link labels (NAV/CTA) plus detected price/time tokens."
-      >
-        {items.map(it => (
-          <span key={it.label} className={`${pillClass} ${toneClass(it.tone)}`}>
-            <span className="font-semibold">[{it.label}]</span>
-            <span>{it.value}</span>
-          </span>
-        ))}
-      </span>
-    )
-  }, [panelTypography.microLabelClass, webpageSignalSummary])
-
   const paneToggleLabelClass = (available: boolean): string =>
     `kg-workspace-pane-toggle ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} ${available ? 'cursor-pointer' : 'cursor-not-allowed opacity-45'}`
   const paneToggleTitle = (label: string, available: boolean): string =>
@@ -350,38 +296,7 @@ export function MarkdownWorkspaceToolbar({
 
   return (
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-toolbar-row !py-0" ariaLabel="Markdown toolbar row">
-        {webpageSignalsNode ? (
-          <span className="kg-markdown-workspace-toolbar-leading flex min-w-0 max-w-full items-center overflow-hidden">
-            <span className="sr-only">Workspace editor</span>
-            {webpageSignalsNode}
-          </span>
-        ) : (
-          <span className="sr-only">Workspace editor</span>
-        )}
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
-          {webpageControls && onWebpageChangeView && onWebpageUpdateMeta ? (
-            <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Webpage">
-            <li className="list-none">
-              <WorkspaceModeSelect<'inherit' | '1' | '2' | '3' | '4'>
-                ariaLabel="Webpage fidelity level"
-                value={webpageControls.fidelityMode}
-                isActive={true}
-                options={[
-                  { value: 'inherit', label: 'Fid: Auto' },
-                  { value: '1', label: 'Fid: 1' },
-                  { value: '2', label: 'Fid: 2' },
-                  { value: '3', label: 'Fid: 3' },
-                  { value: '4', label: 'Fid: 4' },
-                ]}
-                onChange={next => {
-                  const level = next === 'inherit' ? undefined : (Number.parseInt(next, 10) as 1 | 2 | 3 | 4)
-                  onWebpageUpdateMeta({ fidelityLevel: level })
-                }}
-              />
-            </li>
-          </menu>
-        ) : null}
-
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
             <fieldset
@@ -411,13 +326,24 @@ export function MarkdownWorkspaceToolbar({
               />
               <WorkspacePaneToggle
                 label="Python"
-                title={paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
+                title={effectivePaneVisibility.block ? 'Close Block before hiding Python' : paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
                 ariaLabel="Show Python editor pane"
                 checked={!!effectivePaneVisibility.python}
-                disabled={!effectivePaneAvailability.python}
-                ariaDisabled={!effectivePaneAvailability.python}
+                disabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
+                ariaDisabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
                 onChange={() => handleSplitPaneToggle('python')}
                 labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.python)}
+                textClassName={paneToggleTextClassName}
+              />
+              <WorkspacePaneToggle
+                label="Block"
+                title={paneToggleTitle('Block editor pane', !!effectivePaneAvailability.block)}
+                ariaLabel="Show Block editor pane"
+                checked={!!effectivePaneVisibility.block}
+                disabled={!effectivePaneAvailability.block}
+                ariaDisabled={!effectivePaneAvailability.block}
+                onChange={() => handleSplitPaneToggle('block')}
+                labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.block)}
                 textClassName={paneToggleTextClassName}
               />
               <WorkspacePaneToggle
@@ -457,7 +383,7 @@ export function MarkdownWorkspaceToolbar({
                   onChange={event => setDocumentVersionGraphOpen?.(event.currentTarget.checked)}
                   labelClassName={`kg-workspace-pane-toggle relative z-[260] ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} cursor-pointer`}
                   textClassName={paneToggleTextClassName}
-                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} aria-hidden="true" />}
+                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" />}
                   labelProps={{ 'data-kg-markdown-workspace-document-version-graph-toggle': '1' }}
                 />
               ) : null}
@@ -507,7 +433,7 @@ export function MarkdownWorkspaceToolbar({
               title="Presentation"
               onClick={() => setLayoutMode('presentation')}
             >
-              <LayoutPanelTop className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <LayoutPanelTop className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
         </menu>
@@ -528,7 +454,7 @@ export function MarkdownWorkspaceToolbar({
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Actions">
           <li className="list-none">
             <button type="button" className={TOOLBAR_BUTTON_CLASSNAME} title="Fullscreen" onClick={onToggleFullscreen}>
-              <Maximize2 className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <Maximize2 className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
           <li className="list-none">
@@ -546,7 +472,7 @@ export function MarkdownWorkspaceToolbar({
                 })
               }}
             >
-              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
         </menu>

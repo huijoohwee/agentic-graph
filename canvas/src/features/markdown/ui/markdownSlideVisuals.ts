@@ -27,7 +27,7 @@ export const normalizeThemeStyle = (raw: string): 'default' | 'academic' => {
 
 const getThemeBaseSlideClass = (themeStyle: string) => {
   if (themeStyle === 'academic') {
-    return `${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} tracking-tight`
+    return `${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} tracking-normal`
   }
   return ''
 }

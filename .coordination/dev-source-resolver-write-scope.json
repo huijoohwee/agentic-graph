@@ -1,0 +1,8 @@
+{
+  "schema": "agentic-declared-write-scope/v1",
+  "semanticScope": "dev-source-resolver",
+  "paths": [
+    "scripts/__tests__/worktree-policy.test.mjs",
+    "scripts/worktree-policy.mjs"
+  ]
+}

@@ -55,8 +55,6 @@
   - `json`: editor shows conversion JSON (read-only override); viewer/presentation/slides render sandboxed JSON via iframe `srcdoc`
 - `webpageViewerScriptPolicy` (`strip` | `allow`)
   - Baseline script policy for the HTML Viewer. Effective per-page behavior remains auto by default: shared rich-media + iframe heuristics decide when scripts are needed for DOM export versus when they should be stripped. Most work should leave this at its safe default.
-- `webpageArtifactFidelityMaxLevel` (1..4)
-  - Caps the generated Webpage Markdown Artifact detail level so imports remain bounded and readable.
 
 ---
 

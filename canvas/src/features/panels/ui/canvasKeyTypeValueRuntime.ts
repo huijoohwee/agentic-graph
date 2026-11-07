@@ -1,7 +1,9 @@
 import React from 'react'
+import type { KeyTypeValueStaticRowProps } from 'grph-shared/react/keyTypeValueRow'
+import { prepareMainPanelRowHelp, type MainPanelFieldHelp } from './mainPanelRowHelp'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 
 export interface CanvasKeyTypeValueRuntime {
   uiPanelKeyValueTextSizeClass: string
@@ -11,6 +13,7 @@ export interface CanvasKeyTypeValueRuntime {
 }
 
 export interface CanvasKeyTypeValueStaticRowSharedProps {
+  presentCells: NonNullable<KeyTypeValueStaticRowProps['presentCells']>
   textSizeClassName: string
   fontClassName: string
   densityClassName: string
@@ -26,12 +29,7 @@ export const resolveCanvasKeyTypeValueDensityClassName = (
     : runtime.uiPanelRowDensityDefaultClass
 
 export function useCanvasKeyTypeValueRuntime(): CanvasKeyTypeValueRuntime {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   const uiPanelRowDensityDefaultClass = useGraphStore(
     s => s.uiPanelRowDensityDefaultClass || 'py-1',
   )
@@ -50,16 +48,22 @@ export function useCanvasKeyTypeValueRuntime(): CanvasKeyTypeValueRuntime {
 export function useCanvasKeyTypeValueStaticRowProps(
   density: 'default' | 'compact' = 'default',
   activeClassName = UI_THEME_TOKENS.table.rowHoverHighlight,
+  help?: MainPanelFieldHelp,
 ): CanvasKeyTypeValueStaticRowSharedProps {
   const runtime = useCanvasKeyTypeValueRuntime()
   const densityClassName = resolveCanvasKeyTypeValueDensityClassName(runtime, density)
 
+  const presentCells = React.useCallback<NonNullable<KeyTypeValueStaticRowProps['presentCells']>>(
+    cells => prepareMainPanelRowHelp(cells, help), [help],
+  )
   return React.useMemo(() => ({
+    presentCells,
     textSizeClassName: runtime.uiPanelKeyValueTextSizeClass,
     fontClassName: runtime.uiPanelTextFontClass,
     densityClassName,
     activeClassName,
   }), [
+    presentCells,
     activeClassName,
     densityClassName,
     runtime.uiPanelKeyValueTextSizeClass,

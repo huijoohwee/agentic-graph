@@ -412,7 +412,7 @@ const MarkdownTokenRenderer = React.memo(function MarkdownTokenRenderer(props: M
                 {shouldInject ? (
                   <section className="my-3">
                     <pre
-                      className={`overflow-x-auto whitespace-pre ${uiPanelMonospaceTextClass} text-[10px] leading-4 rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3 select-none`}
+                      className={`overflow-x-auto whitespace-pre ${uiPanelMonospaceTextClass} text-xs leading-4 rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3 select-none`}
                       aria-label="Webpage layout wireframe"
                       data-kg-webpage-wireframe="1"
                       data-kg-derived="1"

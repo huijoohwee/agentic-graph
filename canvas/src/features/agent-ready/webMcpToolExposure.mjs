@@ -1,4 +1,5 @@
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS as ids } from './agenticGraphAgentReadyToolIds.mjs'
+import { EVIDENCE_ANALYSIS_TOOL_IDS } from './evidenceAnalysisAgentReadyContract.mjs'
 import { PYTHON_LEARNING_TOOL_IDS } from '../python-learning/learningToolContract.mjs'
 
 // Browser discovery policy only. Shared contracts/executors remain the invocation authority.
@@ -16,12 +17,12 @@ export const WEB_MCP_TOOL_SCOPES = Object.freeze(Object.fromEntries(Object.entri
   chat: [ids.inspectLocalChatPipelineState, ids.inspectLocalMainPanelChatCanvasPipeline],
   pythonLearning: Object.values(PYTHON_LEARNING_TOOL_IDS),
   settings: [ids.inspectLocalSettingsChatReadiness, ids.inspectLocalMainPanelState, ids.inspectAgentSurface],
-  xr: [ids.inspectLocalXrSceneAssets, ids.controlLocalXrScene, ids.inspectLocal3dCameraPose, ids.inspectLocal3dLayoutPositions],
+  xr: [ids.inspectLocalXrSceneAssets, ids.controlLocalXrScene, ids.inspectLocalSemanticSpace, ids.controlLocalSemanticSpace, ids.inspectLocal3dCameraPose, ids.inspectLocal3dLayoutPositions],
   camera: [ids.inspectLocalCamera, ids.controlLocalCamera],
   animation: [ids.inspectLocalAnimation, ids.controlLocalAnimation],
   motionControl: [ids.inspectLocalMotionControl, ids.controlLocalMotionControl],
   gameMode: [ids.inspectLocalGameMode, ids.controlLocalGameMode],
-  flightSim: [ids.inspectLocalFlightSim, ids.controlLocalFlightSim],
+  flightSim: [ids.inspectLocalFlightSim, ids.controlLocalFlightSim, ...Object.values(EVIDENCE_ANALYSIS_TOOL_IDS)],
   media: [ids.inspectLocalImmersiveMedia, ids.controlLocalImmersiveMedia],
   cityBuilder: [ids.inspectLocalCitySim, ids.controlLocalCitySim],
   storage: [ids.inspectLocalGitRepository, ids.controlLocalGitRepository, ids.inspectLocalFileSync, ids.controlLocalFileSync],
@@ -45,7 +46,7 @@ export function createWebMcpToolExposure(registry, selectScope) {
   const selector = Object.freeze({
     name: WEB_MCP_SCOPE_TOOL_NAME,
     title: 'Select browser tool scope',
-    description: 'Expose core tools plus one workspace group. Changes discovery only; executes no domain action. Discover tools again after selection.',
+    description: 'Select a workspace tool group; changes discovery only. Rediscover tools after selection.',
     inputSchema: Object.freeze({ type: 'object', additionalProperties: false,
       required: ['scope'], properties: { scope: { type: 'string', enum: Object.keys(WEB_MCP_TOOL_SCOPES) } } }),
     annotations: Object.freeze({ readOnlyHint: true, idempotentHint: true, openWorldHint: false }),

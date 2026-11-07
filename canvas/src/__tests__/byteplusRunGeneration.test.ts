@@ -1,6 +1,4 @@
 import {
-  CHAT_DEERFLOW_ENDPOINT_URL,
-  CHAT_PROVIDER_DEERFLOW,
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
   CHAT_BYTEPLUS_IMAGE_MODEL_DEFAULT,
   CHAT_BYTEPLUS_TEXT_MODEL_DEFAULT,
@@ -16,10 +14,6 @@ import {
 import {
   generateRunMarkdownWithProvider,
 } from '@/features/chat/byteplusRunGeneration'
-import {
-  generateRunImageWithDeerFlow,
-  generateRunVideoWithDeerFlow,
-} from '@/features/chat/deerflowRunGeneration'
 
 export {
   testGenerateRunImageWithBytePlusDoesNotFallbackWhenModelExplicit,
@@ -226,101 +220,6 @@ export async function testGenerateRunMarkdownWithProviderStreamsOpenAiResponsesT
     }
     if (chunks.join(' | ') !== '# Final | # Final Output\n\nSpecific answer.') {
       throw new Error(`unexpected streamed responses snapshots: ${chunks.join(' | ')}`)
-    }
-  } finally {
-    globalThis.fetch = originalFetch
-  }
-}
-
-export async function testGenerateRunImageWithDeerFlowStreamsArtifactFromThreadPath() {
-  const originalFetch = globalThis.fetch
-  try {
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url === '/__chat_proxy/api/runs/stream') {
-        const stream = new ReadableStream<Uint8Array>({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode('data: {"event":"run.started","thread_id":"thread-1"}\n\n'))
-            controller.enqueue(new TextEncoder().encode('data: {"event":"run.artifact","thread_id":"thread-1","artifact_path":"scene.jpg","model":"seedream-4-0-250828"}\n\n'))
-            controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
-            controller.close()
-          },
-        })
-        return new Response(stream, {
-          status: 200,
-          headers: { 'content-type': 'text/event-stream' },
-        })
-      }
-      if (url === '/__chat_proxy/api/threads/thread-1/artifacts/scene.jpg') {
-        return new Response(Uint8Array.from([0, 1, 2, 3]), {
-          status: 200,
-          headers: { 'content-type': 'image/jpeg' },
-        })
-      }
-      throw new Error(`unexpected fetch request: ${url}`)
-    }) as typeof fetch
-
-    const result = await generateRunImageWithDeerFlow({
-      config: {
-        provider: CHAT_PROVIDER_DEERFLOW,
-        endpointUrl: CHAT_DEERFLOW_ENDPOINT_URL,
-        apiKey: '',
-      },
-      prompt: 'Generate image',
-      options: {
-        model: 'seedream-4-0-250828',
-      },
-    })
-    if (!result || result.blob.type !== 'image/jpeg' || result.blob.size === 0) {
-      throw new Error('expected DeerFlow image helper to stream and resolve a thread artifact blob')
-    }
-    if (result.renderUrl !== '/__chat_proxy/api/threads/thread-1/artifacts/scene.jpg') {
-      throw new Error(`expected DeerFlow image render URL to stay on proxied thread artifact path, got ${String(result.renderUrl)}`)
-    }
-  } finally {
-    globalThis.fetch = originalFetch
-  }
-}
-
-export async function testGenerateRunVideoWithDeerFlowDownloadsDirectArtifactUrlViaAssetProxy() {
-  const originalFetch = globalThis.fetch
-  try {
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url === '/__chat_proxy/api/runs/stream') {
-        return new Response(JSON.stringify({
-          artifact_url: 'https://example.com/deerflow/video.mp4',
-          model: 'seedance-1-0-pro-fast-251015',
-        }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      }
-      if (url === '/__chat_asset_proxy?url=https%3A%2F%2Fexample.com%2Fdeerflow%2Fvideo.mp4') {
-        return new Response(Uint8Array.from([0, 1, 2, 3]), {
-          status: 200,
-          headers: { 'content-type': 'video/mp4' },
-        })
-      }
-      throw new Error(`unexpected fetch request: ${url}`)
-    }) as typeof fetch
-
-    const result = await generateRunVideoWithDeerFlow({
-      config: {
-        provider: CHAT_PROVIDER_DEERFLOW,
-        endpointUrl: CHAT_DEERFLOW_ENDPOINT_URL,
-        apiKey: '',
-      },
-      prompt: 'Generate video',
-      options: {
-        model: 'seedance-1-0-pro-fast-251015',
-      },
-    })
-    if (!result || result.blob.type !== 'video/mp4' || result.blob.size === 0) {
-      throw new Error('expected DeerFlow video helper to fetch video artifacts through shared asset proxy')
-    }
-    if (result.renderUrl !== '/__chat_asset_proxy?url=https%3A%2F%2Fexample.com%2Fdeerflow%2Fvideo.mp4') {
-      throw new Error(`expected DeerFlow video render URL to use shared asset proxy, got ${String(result.renderUrl)}`)
     }
   } finally {
     globalThis.fetch = originalFetch

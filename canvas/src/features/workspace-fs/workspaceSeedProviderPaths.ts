@@ -220,14 +220,16 @@ export const resolveWorkspaceDocsMirrorAbsolutePath = (workspacePath: string): s
   const chatLogRoot = readWorkspaceInitializationChatLogAbsRoot()
   const baseRoot = readWorkspaceMirrorBaseAbsRoot()
   const loweredRootSegment = rootSegment.toLowerCase()
-  const root = loweredRootSegment === 'docs'
+  const root = loweredRootSegment === 'websites'
+    ? `${readWorkspaceInitializationOutputDocsAbsRoot()}/websites`
+    : loweredRootSegment === 'docs'
     ? docsRoot
     : loweredRootSegment === 'chat-log'
       ? chatLogRoot
       : baseRoot
         ? `${baseRoot}/${rootSegment}`
         : ''
-  if (!root) return null
+  if (!root || (loweredRootSegment === 'websites' && !readWorkspaceInitializationOutputDocsAbsRoot())) return null
   const relPath = normalizeMirrorRelPath(parts.slice(1).join('/'))
   if (!relPath) return root
   return `${root}/${relPath}`

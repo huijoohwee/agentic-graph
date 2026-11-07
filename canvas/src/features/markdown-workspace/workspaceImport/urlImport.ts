@@ -1,3 +1,6 @@
+import { findSavedUrlImport, recordUrlImport, type SavedUrlImport } from './incrementalImport'
+import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
+import { readWorkspaceImportMarkdownSourceUrl, workspaceImportSourceUrlsMatch } from './sourceUrlIdentity'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { parseGitHubRepoUrl } from '../githubRepoApi'
@@ -13,6 +16,9 @@ import {
 } from './shareUrlExport'
 import { persistImportedWebpageUrlArtifact } from './webpageUrlExport'
 import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
+import { saveWorkspaceWebsiteLocalCopy } from '@/features/workspace-fs/workspaceRevealInFileManager'
 import { buildCorpusImportManifest, buildCorpusSourceUnit } from '@/features/queryable-corpus/sourceFilesCorpusManifest'
 import {
   buildStrybldrStoryboardDocument,
@@ -34,6 +40,96 @@ export function isWorkspaceRepositoryImportUrl(rawUrl: string): boolean {
   return parseGitHubRepoUrl(String(rawUrl || '').trim()) !== null
 }
 
+async function writeImportedPageToExactDestination(args: {
+  fs: WorkspaceFs
+  path: WorkspacePath
+  sourceUrl: string
+  text: string
+  mirrorToHost?: boolean
+}): Promise<WorkspacePath> {
+  const path = normalizeWorkspacePath(args.path)
+  if (!String(args.path).startsWith('/') || path === '/' || path !== args.path
+    || path.split('/').some(part => part === '.' || part === '..')) {
+    throw new Error('An in-place import requires an exact workspace file path.')
+  }
+  if (!workspaceImportSourceUrlsMatch(readWorkspaceImportMarkdownSourceUrl(args.text), args.sourceUrl)) {
+    throw new Error('The imported page did not retain its source URL; the selected destination was left unchanged.')
+  }
+  const parentPath = normalizeWorkspacePath(path.slice(0, path.lastIndexOf('/')) || '/')
+  const pathParts = path.split('/').filter(Boolean)
+  const name = pathParts[pathParts.length - 1]
+  if (!name) throw new Error('An in-place import requires a file name.')
+  await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: parentPath })
+  const existing = await args.fs.readFileText(path)
+  if (existing === null) {
+    await args.fs.createFile({ parentPath, name, text: args.text, requireExactPath: true })
+  } else {
+    const existingUrl = readWorkspaceImportMarkdownSourceUrl(existing)
+    if (!workspaceImportSourceUrlsMatch(existingUrl, args.sourceUrl)) {
+      throw new Error(`Website destination belongs to another document: ${path}`)
+    }
+    await args.fs.writeFileText(path, args.text, { expectedText: existing })
+  }
+  if (args.mirrorToHost !== false) {
+    if (path.startsWith('/websites/')) await saveWorkspaceWebsiteLocalCopy(path, args.text)
+    else {
+      await ensureWorkspaceDocsMirrorFolder({ workspacePath: parentPath })
+      await upsertWorkspaceDocsMirrorText({ workspacePath: path, text: args.text })
+    }
+  }
+  return path
+}
+
+async function acceptsSavedVideoAgentImport(saved: SavedUrlImport, requestedUrl: string, requireOwned: boolean): Promise<boolean> {
+  if (!workspaceImportSourceUrlsMatch(saved.source.url, requestedUrl)) return true
+  const header = extractYamlFrontmatterHeaderBlock(saved.text)
+  if (!header || readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentImport') !== 'true') return !requireOwned
+  if (saved.text.length > 500_000
+    || !/^kgVideoSequenceAnnotations:[ \t]*(?:\r?$|\[)/m.test(header.rawBlock)) return false
+  if (new TextEncoder().encodeInto(saved.text, new Uint8Array(500_000)).read !== saved.text.length) return false
+  const [{ readVideoSequenceSourceAnnotations, resolveVideoSequenceSourceAnnotations },
+    { readVideoSequenceTimelineModelFromMarkdown }, { parseMarkdownFrontmatter, splitMarkdownLines },
+    { isPlainObject }, { buildMermaidGanttTimelineModel }, { readMermaidGanttFrameSamples }, { getNodeMediaSpec }] = await Promise.all([
+    import('@/components/timeline/videoSequenceSourceAnnotations'), import('@/components/timeline/videoSequenceTimeline'),
+    import('@/lib/markdown'), import('@/lib/graph/value'), import('@/lib/mermaid/mermaidGanttTimelineModel'),
+    import('@/lib/mermaid/mermaidGanttFrameThumbnailToken'),
+    import('@/lib/canvas/graph-elements/mediaSpec'),
+  ])
+  const parsed = parseMarkdownFrontmatter(splitMarkdownLines(saved.text), { maxNodes: 12000, maxDepth: 32 })
+  const diagrams = isPlainObject(parsed.meta.flow_diagrams) ? parsed.meta.flow_diagrams.value : null
+  const diagram = isPlainObject(diagrams) ? diagrams.video_media_timeline : null
+  const typedNodes = isPlainObject(parsed.meta.flow_nodes) ? parsed.meta.flow_nodes.value : undefined
+  const rawNodes = isPlainObject(parsed.meta.flow) ? parsed.meta.flow.nodes : undefined
+  const nodes = typedNodes ?? rawNodes
+  if (parsed.warnings.length || !isPlainObject(diagram) || diagram.type !== 'mermaid_gantt'
+    || typeof diagram.value !== 'string' || !Array.isArray(nodes) || nodes.length > 64
+    || (typedNodes !== undefined && rawNodes !== undefined)) return false
+  const associations = readVideoSequenceSourceAnnotations(saved.text)
+  const sources = readVideoSequenceTimelineModelFromMarkdown(saved.text)?.sources || []
+  const groups = resolveVideoSequenceSourceAnnotations({ associations, sources,
+    taskSpans: buildMermaidGanttTimelineModel(diagram.value).taskSpans })
+  return groups.length > 0 && groups.length === associations.length && groups.every(group => {
+    const targets = nodes.filter(node => isPlainObject(node) && node.id === group.association.frameAnalysisNodeId)
+    const source = sources.find(item => item.id === group.association.sourceId)
+    if (!(group.samples.length > 0 && readMermaidGanttFrameSamples(group.annotationSpan.raw).length <= 16
+      && !!source && workspaceImportSourceUrlsMatch(source.sourceUrl, requestedUrl)
+      && targets.length === 1 && isPlainObject(targets[0].properties)
+      && targets[0].type === 'RichMediaPanel' && targets[0].properties.kind === 'video-agent-frame-analysis'
+      && targets[0].properties['flow:widgetFormId'] === 'richMediaPanel'
+      && typeof targets[0].properties.sourceUrl === 'string'
+      && workspaceImportSourceUrlsMatch(targets[0].properties.sourceUrl, requestedUrl))) return false
+    const media = getNodeMediaSpec(targets[0] as Parameters<typeof getNodeMediaSpec>[0])
+    const html = media?.kind === 'iframe' ? media.srcDoc || '' : ''
+    return /<section\b[^>]*data-kg-video-agent-frame-analysis="1"[^>]*data-kg-video-agent-frame-analysis-exact-samples="1"/.test(html)
+      && /<img\b[^>]*data-kg-video-agent-frame-src="[^"]+"/.test(html)
+      && /<section\b[^>]*data-kg-video-agent-frame-box-layer="1"/.test(html)
+      && /<mark\b[^>]*data-kg-video-agent-detection-index=/.test(html)
+      && Array.from(html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)).some(script =>
+        script[1].includes('var frames=[') && script[1].includes('function updateFrameImage(')
+        && script[1].includes("'agentic-graph:render-frame'"))
+  })
+}
+
 export async function importWorkspaceUrl(args: {
   fs: WorkspaceFs
   urlRaw: string
@@ -43,12 +139,25 @@ export async function importWorkspaceUrl(args: {
   documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
   viewHint?: 'markdown' | 'json' | 'html'
   preferDirectFetch?: boolean
+  browserSessionId?: string
+  destinationPath?: WorkspacePath
   fetchUrlContent?: typeof fetchWorkspaceUrlContent
   mirrorToHost?: boolean
 }): Promise<WorkspaceImportResult> {
   const rawUrl = String(args.urlRaw || '').trim()
   if (!rawUrl) return { createdPaths: [], sources: [], skipped: [], failed: [] }
   const parentPath = args.parentPath || WORKSPACE_ROOT_PATH
+
+  if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
+    const saved = await findSavedUrlImport(args.fs, rawUrl,
+      saved => acceptsSavedVideoAgentImport(saved, rawUrl, !!getYouTubeId(rawUrl)))
+    if (saved) {
+      args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Reused saved source; Refresh from source checks for updates' })
+      return { createdPaths: [saved.path], sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
+        corpusManifest: buildCorpusImportManifest({ sourceUnits: [buildCorpusSourceUnit({ workspacePath: saved.path,
+          relativePath: saved.path, originalName: saved.path, text: saved.text, status: 'cached', importMode: 'url' })], skipped: [], failed: [] }) }
+    }
+  }
 
   const repoRef = parseGitHubRepoUrl(rawUrl)
   if (repoRef) {
@@ -108,6 +217,8 @@ export async function importWorkspaceUrl(args: {
     canvas2dRenderer: args.canvas2dRenderer,
     documentSemanticMode: args.documentSemanticMode,
     preferDirectFetch: args.preferDirectFetch,
+    browserSessionId: args.browserSessionId,
+    bypassCache: Boolean(args.browserSessionId),
     onProgress: p => {
       try {
         args.onProgress?.({ phase: 'fetching', current: p, total: 100, label: 'Fetching' })
@@ -130,9 +241,16 @@ export async function importWorkspaceUrl(args: {
     importedText: fetched.text,
   })
   const sharePrimaryPath = sharePrimaryPaths?.exportMarkdownPath || null
+  if (args.destinationPath && (sharePrimaryPath || fetched.sourceMediaKind === 'video'
+    || args.canvas2dRenderer || args.documentSemanticMode)) {
+    throw new Error('This URL produces multiple import artifacts and cannot be saved to one page destination.')
+  }
+  const exactDestinationPath = args.destinationPath ? normalizeWorkspacePath(args.destinationPath) : ''
   const webpageUrlArtifact = sharePrimaryPath
     ? null
-    : await persistImportedWebpageUrlArtifact({
+    : exactDestinationPath
+      ? null
+      : await persistImportedWebpageUrlArtifact({
         fs: args.fs,
         url: sourceUrl,
         importedName: fetched.name,
@@ -140,15 +258,26 @@ export async function importWorkspaceUrl(args: {
         mirrorToHost: args.mirrorToHost,
       })
   const webpageUrlArtifactPath = webpageUrlArtifact?.exportMarkdownPath || null
+  const exactDestination = exactDestinationPath
+    ? await writeImportedPageToExactDestination({
+        fs: args.fs,
+        path: exactDestinationPath,
+        sourceUrl,
+        text: fetched.text,
+        mirrorToHost: args.mirrorToHost,
+      })
+    : null
   const createdPath = sharePrimaryPath
     ? (await writeWorkspaceFileTextEnsuringFile({
         fs: args.fs,
         path: sharePrimaryPath,
         text: fetched.text,
       }), sharePrimaryPath)
-    : webpageUrlArtifactPath
-      ? webpageUrlArtifactPath
-    : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
+    : exactDestination
+      ? exactDestination
+      : webpageUrlArtifactPath
+        ? webpageUrlArtifactPath
+        : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
   try {
     args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Writing' })
   } catch {
@@ -285,6 +414,8 @@ export async function importWorkspaceUrl(args: {
       effectiveApplyToGraph = true
     }
   }
+  // Multi-output format owners retain their own replay semantics; a single row cannot represent that set.
+  if (/^https?:\/\//i.test(sourceUrl) && createdPaths.length === 1) await recordUrlImport(args.fs, createdPaths[0], sourceUrl)
   return {
     createdPaths,
     sources,

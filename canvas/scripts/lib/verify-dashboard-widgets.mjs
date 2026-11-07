@@ -1,3 +1,5 @@
+import { selectMenuOption } from './select-menu-option.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR } from './panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 
 export async function verifyFullCanvas(page) {
@@ -11,26 +13,32 @@ export async function verifyFullCanvas(page) {
     'Full sizing is the default for the shared renderer container')
 }
 
-export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
+export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored, waitForAuthoredWorkspaceSource) {
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   // Cold module loading may remount the shell before the source inventory is ready.
-  // Share one existing startup budget across the shell and its complete inventory.
+  // Share one startup budget across the shell and its required session evidence.
   const deadline = Date.now() + 60000
   const remaining = () => Math.max(1, deadline - Date.now())
   await shell.waitFor({ state: 'visible', timeout: remaining() })
   await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check({ timeout: remaining() })
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
-  await Promise.all(['.workspace', 'docs'].map(name => files.getByRole('button', {
-    name: `Folder ${name}`, exact: true,
-  }).waitFor({ state: 'visible', timeout: remaining() })))
+  const manifest = files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true })
+  await Promise.all([
+    files.getByRole('button', { name: 'Folder .workspace', exact: true }).waitFor({ state: 'visible', timeout: remaining() }),
+    manifest.waitFor({ state: 'visible', timeout: remaining() }),
+  ])
   await verifyFullCanvas(page)
+  // The first editor mount must finish active-file materialization and native inventory reconciliation.
+  await waitForAuthoredWorkspaceSource(remaining())
+  // Empty authored roots are valid. Observe persisted paths only after the native refresh settles.
+  const sourcePaths = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts'))
+    .getWorkspaceFs()).listEntries().then(entries => entries.map(entry => entry.path).sort()))
   const before = await authoredSnapshot()
-  await files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true }).click()
+  await manifest.click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   assert.equal(await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).count(), 1)
   assert.equal(await page.getByText('Agent observability', { exact: true }).count(), 0)
-  await editor.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
   await verifyFullCanvas(page)
@@ -41,9 +49,12 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   const persisted = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).listEntries())
   assert.equal(persisted.some(entry => entry.path.startsWith('/.workspace/')), false, 'Session evidence must not enter persistent Source Files')
+  assert.deepEqual(persisted.map(entry => entry.path).sort(), sourcePaths, 'Manifest inspection must preserve the actual persistent source inventory')
 }
 
 async function configureWidget(frame, keyboard = false) {
+  // A saved/removed card can update before its asynchronous configuration close.
+  await frame.locator('section.kg-dashboard-widget-face[data-kg-widget-face="front"]').waitFor()
   if (keyboard) await frame.press('Enter')
   else await frame.click()
   assert.equal(await frame.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Selection must reveal actions, not configuration')
@@ -63,7 +74,7 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').count(), 1)
   assert.equal(await dashboard.getByRole('button', { name: 'Props Panel', exact: true }).count(), 0)
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
-  const floating = page.locator('[data-kg-floating-panel-root="true"]')
+  const floating = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await floating.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   assert.equal(await floating.count(), 1)
   await floating.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
@@ -90,9 +101,9 @@ export async function verifyDashboardWidgets(page) {
   const templateBackSize = await templateFront.boundingBox()
   assert.equal(templateBackSize.width, templateSize.width)
   assert.equal(templateBackSize.height, templateSize.height, 'Flipping a template must preserve its dimensions')
-  await template.getByLabel('Widget', { exact: true }).selectOption('graph:node-types')
+  await selectMenuOption(template.getByLabel('Widget', { exact: true }), 'graph:node-types')
   await template.getByLabel('Title', { exact: true }).fill('My node types')
-  await template.getByLabel('Display', { exact: true }).selectOption('table')
+  await selectMenuOption(template.getByLabel('Display', { exact: true }), 'table')
   await template.getByRole('button', { name: 'Save widget', exact: true }).click()
   const card = dashboard.getByRole('group', { name: 'Dashboard card My node types', exact: true })
   await card.waitFor()
@@ -107,7 +118,7 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(cardBackSize.height, cardSize.height, 'Flipping a placed card must preserve its dimensions')
   const back = dashboard.getByRole('form', { name: 'Widget configuration', exact: true })
   await back.getByLabel('Title', { exact: true }).fill('Node Types')
-  await back.getByLabel('Display', { exact: true }).selectOption('bar')
+  await selectMenuOption(back.getByLabel('Display', { exact: true }), 'bar')
   await back.getByRole('button', { name: 'Save widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Dashboard card Node Types', exact: true }).waitFor()
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
@@ -118,15 +129,17 @@ export async function verifyDashboardWidgets(page) {
   const metricBackSize = await metricFrame.boundingBox()
   assert.equal(metricBackSize.width, metricSize.width)
   assert.equal(metricBackSize.height, metricSize.height, 'Compact metric backs must scroll within the original size')
-  await metric.getByLabel('Data source', { exact: true }).selectOption('graph:nodes')
+  await selectMenuOption(metric.getByLabel('Data source', { exact: true }), 'graph:nodes')
   await metric.getByLabel('Title', { exact: true }).fill('My metric')
+  const metricCount = await dashboard.locator('[data-kg-dashboard-metric]').count()
   await metric.getByRole('button', { name: 'Add widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor()
-  assert.equal(await dashboard.locator('[data-kg-dashboard-metric]').count(), 6)
+  assert.equal(await dashboard.locator('[data-kg-dashboard-metric]').count(), metricCount + 1)
   await configureWidget(metricFrame)
-  await metric.getByLabel('Widget', { exact: true }).selectOption({ label: 'My metric' })
+  await selectMenuOption(metric.getByLabel('Widget', { exact: true }), { label: 'My metric' })
   await metric.getByRole('button', { name: 'Remove widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor({ state: 'detached' })
+  assert.equal(await dashboard.locator('[data-kg-dashboard-metric]').count(), metricCount)
   const source = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).readFileText('/notes/dashboard.widgets.json'))
   assert.equal(JSON.parse(source).widgets['graph:node-types'].title, 'Node Types')
   assert.equal(source.includes('agent-run-inspection/v1'), false)

@@ -10,10 +10,12 @@ type Job = {
   identity: LearningRunIdentity; simulation: LearningSimulation; evaluator: PythonEvaluator
   iterator: AsyncGenerator<SourceSpan, void, void>; state: LearningRunState; sequence: number
   span: SourceSpan; busy: boolean; continuous: boolean; disposed: boolean; computeMs: number; segmentStart: number
-  pauseRequested: boolean; resume: (() => void) | null
+  pauseRequested: boolean; resume: (() => void) | null; frameDeadline: number; frameTicks: number
 }
+export type LearningPlayback = { wait: (milliseconds: number) => Promise<void> }
+const FRAME_MS = 1000 / 30
 const waitTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0))
-export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot | { kind: 'protocol-error'; message: string }) => void, now = () => performance.now()) {
+export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot | { kind: 'protocol-error'; message: string }) => void, now = () => performance.now(), playback?: LearningPlayback) {
   let current: Job | null = null
   const active = (job: Job) => current === job && !job.disposed
   const dispose = () => {
@@ -36,23 +38,25 @@ export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot |
       grade: gradeLearningLesson(learningLesson(job.identity.lessonId), scene, job.evaluator.metrics, job.state === 'completed'),
       computeMs: job.computeMs, error, ...(terminal ? { trace: job.simulation.trace } : {}) })
   }
-  const yieldTurn = async (job: Job) => {
+  const yieldTurn = async (job: Job, delay = 0) => {
     checkBudget(job)
     job.computeMs += now() - job.segmentStart
     publish(job)
-    await waitTurn()
+    // Display time is not evaluator compute. The dedicated worker owns both ticks and pacing.
+    await (delay > 0 && playback ? playback.wait(delay) : waitTurn())
     job.segmentStart = now(); checkBudget(job)
     while (job.pauseRequested) {
       job.state = 'paused'
       // Retain the in-flight iterator/physics statement; paused wall time is not active compute.
       await new Promise<void>(resolve => { job.resume = resolve; publish(job) })
+      job.frameDeadline = now()
       job.segmentStart = now(); checkBudget(job)
     }
     job.state = 'running'
   }
   const pump = async (job: Job) => {
     if (job.busy || !active(job)) return
-    job.busy = true; job.state = 'running'; job.segmentStart = now()
+    job.busy = true; job.state = 'running'; job.segmentStart = now(); job.frameDeadline = now()
     publish(job)
     try {
       do {
@@ -85,9 +89,15 @@ export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot |
         const evaluator = new PythonEvaluator(request.source, { call: (name, args, span) => job.simulation.call(name, args, span) })
         const simulation = new LearningSimulation(lesson, async () => {
           checkBudget(job)
+          if (playback && lesson.vehicle === 'drone' && job.continuous && ++job.frameTicks % 2 === 0) {
+            // Two fixed physics ticks per frame. Late frames never accumulate catch-up work.
+            job.frameDeadline = Math.max(job.frameDeadline + FRAME_MS, now())
+            await yieldTurn(job, job.pauseRequested ? 0 : job.frameDeadline - now())
+            return
+          }
           if (job.pauseRequested || now() - job.segmentStart >= PYTHON_LIMITS.batchMs) await yieldTurn(job)
         })
-        job = { identity, simulation, evaluator, iterator: evaluator.run(), state: 'ready', sequence: 0, span: { line: 1, column: 1 }, busy: false, continuous: request.mode === 'run', pauseRequested: false, resume: null, disposed: false, computeMs: 0, segmentStart: now() }
+        job = { identity, simulation, evaluator, iterator: evaluator.run(), state: 'ready', sequence: 0, span: { line: 1, column: 1 }, busy: false, continuous: request.mode === 'run', pauseRequested: false, resume: null, disposed: false, computeMs: 0, segmentStart: now(), frameDeadline: now(), frameTicks: 0 }
         current = job; publish(job)
         if (request.mode !== 'validate') void pump(job)
       } else if (request.kind === 'control') {
@@ -108,6 +118,7 @@ export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot |
 }
 // The same host is exercised in Node tests; only the actual dedicated worker installs an event handler.
 if (typeof self !== 'undefined' && typeof document === 'undefined') {
-  const host = createPythonWorkerHost(snapshot => self.postMessage(snapshot))
+  const host = createPythonWorkerHost(snapshot => self.postMessage(snapshot), undefined,
+    { wait: milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) })
   self.onmessage = event => host.receive(event.data)
 }

@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { buildAgenticOsInvocationChipTitle, readAgenticOsInvocationTokenKind } from '@/features/agentic-os/agenticOsInvocationChips'
 import React from 'react'
 import { Search } from 'lucide-react'
@@ -136,7 +137,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
   return (
     <section aria-label={props.ariaLabel}>
       <label className={`mb-2 flex items-center gap-1 rounded border px-2 ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border}`}>
-        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.6} aria-hidden />
+        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden />
         <input
           ref={inputRef}
           className={`${props.inputClassName} border-0 px-0`}
@@ -167,12 +168,12 @@ export const MarkdownBlockContainerCommandMenu = (props: {
             : props.itemClassName
           return (
             <React.Fragment key={item.id}>
-              {showGroup ? <li className={`list-none px-2 pt-2 pb-1 text-[10px] uppercase ${UI_THEME_TOKENS.text.tertiary}`}>{item.group}</li> : null}
+              {showGroup ? <li className={`list-none px-2 pt-2 pb-1 text-xs uppercase ${UI_THEME_TOKENS.text.tertiary}`}>{item.group}</li> : null}
               <li className="list-none">
                 <button
                   id={`${props.ariaLabel}-${item.id}`}
                   type="button"
-                  className={`${className} ${selected ? 'bg-black/5 dark:bg-white/10' : ''}`}
+                  className={`${className} ${uiSelectedRowStateClassName(selected)}`}
                   disabled={item.disabled}
                   title={item.title || (readAgenticOsInvocationTokenKind(item.label) ? buildAgenticOsInvocationChipTitle(item.label) : [item.label, item.description].filter(Boolean).join("\n"))}
                   role="option"
@@ -199,7 +200,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
                   ) : null}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{item.label}</span>
-                    {item.description ? <span className={`block truncate text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>{item.description}</span> : null}
+                    {item.description ? <span className={`block truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{item.description}</span> : null}
                   </span>
                 </button>
               </li>

@@ -1,4 +1,4 @@
-import type { WorkspaceEntry, WorkspaceFs, WorkspaceFsMutationOptions, WorkspacePath } from './types'
+import { WorkspaceSourceTextConflictError, type WorkspaceEntry, type WorkspaceFs, type WorkspaceFsMutationOptions, type WorkspaceFsWriteOptions, type WorkspacePath } from './types'
 import { WORKSPACE_ROOT_PATH, joinWorkspacePath, normalizeWorkspacePath } from './path'
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
@@ -23,6 +23,7 @@ import {
   ensureWorkspaceDocsMirrorFolder,
   readCanonicalWorkspaceSeedMirrorEntries,
   readWorkspaceInitializationDocsMirrorEntries,
+  isExplicitRepoLocalDocsProjectionConfigured,
   upsertWorkspaceDocsMirrorText,
   upsertWorkspaceInitializationSeedText,
 } from './workspaceSeedProvider'
@@ -181,7 +182,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     const docsOnlyMode = readWorkspaceSourceFilesDocsOnlySetting()
     const sourceDocsMirrorEntries = !docsOnlyMode
       ? []
-      : isWorkspaceRepoLocalRunReadyBootstrap()
+      : isWorkspaceRepoLocalRunReadyBootstrap() && !isExplicitRepoLocalDocsProjectionConfigured()
         ? await readCanonicalWorkspaceSeedMirrorEntries()
         : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const docsMirrorEntries = docsOnlyMode
@@ -440,18 +441,27 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     return String(row.get('text') ?? '')
   }
 
-  const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsMutationOptions) => {
-    const { collections } = await resolveDb()
+  const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsWriteOptions) => {
+    const db = await resolveDb(), { collections } = db
     const p = normalizeWorkspacePath(path)
     const row = await collections.entries.findOne(p).exec()
-    if (!row || row.get('kind') !== 'file') return
+    const conditional = options !== undefined && Object.hasOwn(options, 'expectedText')
+    if (!row || row.get('kind') !== 'file') {
+      if (conditional) throw new WorkspaceSourceTextConflictError()
+      return
+    }
     const nextText = String(text ?? '')
     const previousText = String(row.get('text') ?? '')
+    if (conditional && previousText !== options.expectedText && previousText !== nextText) throw new WorkspaceSourceTextConflictError()
     if (previousText === nextText) return
-    await row.incrementalPatch({
-      text: nextText,
-      updatedAtMs: Date.now(),
-    })
+    const patch = { text: nextText, updatedAtMs: Date.now() }
+    if (conditional) {
+      const previous = row.toJSON()
+      const committed = await db.compareAndWrite([
+        { kind: 'upsert', collectionName: 'entries', record: { ...previous, ...patch } },
+      ], [{ collectionName: 'entries', selector: { path: p }, records: [previous] }])
+      if (!committed) throw new WorkspaceSourceTextConflictError()
+    } else await row.incrementalPatch(patch)
     const seedBasename = options?.mirrorToHost === false ? null : readWorkspaceSeedBasenameForPath(p)
     if (seedBasename) {
       void upsertWorkspaceInitializationSeedText({
@@ -469,7 +479,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: p })
   }
 
-  const createEntry = async (entry: WorkspaceEntry): Promise<WorkspaceEntry> => {
+  const createEntry = async (entry: WorkspaceEntry, requireExactPath = false): Promise<WorkspaceEntry> => {
     const db = await resolveDb()
     const extIndex = entry.kind === 'file' ? entry.name.lastIndexOf('.') : -1
     const stem = extIndex > 0 ? entry.name.slice(0, extIndex) : entry.name
@@ -480,6 +490,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
       const record = { ...entry, name, path }
       if (await db.compareAndWrite([{ kind: 'upsert', collectionName: 'entries', record }],
         [{ collectionName: 'entries', selector: { path }, records: [] }])) return record
+      if (requireExactPath) throw new Error(`Workspace destination already exists: ${path}`)
     }
     throw new Error('No available workspace name after 999 attempts; existing files were retained.')
   }
@@ -499,13 +510,13 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     return path
   }
 
-  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; mirrorToHost?: boolean }) => {
+  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; mirrorToHost?: boolean; requireExactPath?: boolean }) => {
     await ensureRoot()
     const parent = normalizeWorkspacePath(args.parentPath)
     const { path } = await createEntry({
       path: '', parentPath: parent, kind: 'file', name: String(args.name ?? '').trim() || 'file.md',
       text: String(args.text ?? ''), updatedAtMs: Date.now(),
-    })
+    }, args.requireExactPath)
     if (args.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(parent)) {
       scheduleWorkspaceDocsMirrorFolderEnsure(parent)
     } else if (args.mirrorToHost !== false && isWorkspaceChatMirrorPath(parent)) {

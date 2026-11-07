@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createMapLibreInitialCameraAlignment } from 'gympgrph/testkit/features/geospatial/mapLibreInitialCameraAlignment'
-import { readGeospatialPresentationCameraOwner } from 'gympgrph/testkit/features/geospatial/geospatialPresentationCameraOwner'
+import {
+  readGeospatialPresentationCameraOwner,
+} from 'gympgrph/testkit/features/geospatial/geospatialPresentationCameraOwner'
+import { resolveGeospatialPresentationCameraOwner } from '../../../gympgrph/src/features/geospatial/geospatialPresentationCameraOwner.js'
 import { readSingaporeCanvasCameraPolicy } from 'gympgrph/testkit/features/geospatial/singaporeMapPolicy'
 import { createCityGeoOverlayMapLibreController } from 'gympgrph/testkit/cityGeoOverlayMapLibreController'
 import {
@@ -113,6 +116,13 @@ test('a synchronous overlay publication claims the camera before the React owner
       ...createSyntheticCityGeoOverlaySnapshot(),
       revision: 'city-published-before-react-commit',
     })
+
+    assert.equal(resolveGeospatialPresentationCameraOwner({
+      cityOverlayActive: true,
+      flightOverlayActive: false,
+      flightOverlayOwner: null,
+      pendingOwner: 'game-mode',
+    }), 'game-mode')
 
     align() // delayed load observes the store, while the prop is still null
     assert.equal(harness.fitBoundsCalls.length, 0)

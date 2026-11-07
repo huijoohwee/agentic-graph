@@ -7,14 +7,12 @@ from lib.game_flight_sim_smoke_city_semantic_media import (
 from lib.game_flight_sim_smoke_geo_view_cases import (
     GEO_XR_VIEW_CASES,
     GeoXrViewCase,
-    select_geo_xr_view,
     wait_for_surface_contract,
 )
 from lib.game_flight_sim_smoke_geo_xr_layout import (
     read_geo_xr_layout_occlusion,
 )
 from lib.game_flight_sim_smoke_geo_xr_requirements import (
-    unmet_view_requirements,
     wait_for_view,
 )
 
@@ -23,31 +21,26 @@ def _read_view(page: Page) -> dict[str, Any]:
     view = page.evaluate(
         """
         async () => {
-          const graph = await window.__kgFlightSimBrowserProof.importModule(
-            'graphStore',
-          )
-          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
-            'gympgrphStore',
-          )
-          const camera = await window.__kgFlightSimBrowserProof.importModule(
-            'flightSimCameraRuntime',
-          )
-          const cameraSource = await window.__kgFlightSimBrowserProof.importModule(
-            'xrNativeControllerCameraRuntime',
-          )
-          const flight = await window.__kgFlightSimBrowserProof.importModule(
-            'flightSimRuntime',
-          )
-          const motion = await window.__kgFlightSimBrowserProof.importModule(
-            'xrMotionReferenceRuntime',
-          )
-          const sceneLibrary = await window.__kgFlightSimBrowserProof.importModule(
-            'xrSceneLibrary',
-          )
+          const graph = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
+          const camera = await window.__kgFlightSimBrowserProof.importModule('flightSimCameraRuntime')
+          const cameraSource = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
+          const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
+          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+          const sceneLibrary = await window.__kgFlightSimBrowserProof.importModule('xrSceneLibrary')
           const graphState = graph.useGraphStore.getState()
           const gympgrphState = gympgrph.useGympgrphStore.getState()
           const flightSnapshot = flight.readFlightSimSnapshot()
           const motionRuntime = motion.readXrMotionReferenceRuntime()
+          const authoredStage = sceneLibrary.resolveXrMotionReferenceStage(motionRuntime.plan.stageId)
+          const regionalSurfaces = authoredStage.regionalPoiProfile?.surfaces || []
+          const localStructures = authoredStage.structures.filter(item => !authoredStage.regionalPoiProfile || item.kind !== 'poi')
+          const authoredEnvironmentStage = {
+            id: motionRuntime.plan.stageId, resolvedId: authoredStage.id, sizeMeters: authoredStage.sizeMeters,
+            surfaceCount: 1 + localStructures.length + regionalSurfaces.length + motionRuntime.plan.subjects.length,
+            poiIds: Array.from(new Set([...regionalSurfaces, ...localStructures.filter(item => item.kind === 'poi')]
+              .map(item => item.poiId || '').filter(Boolean))).sort(),
+          }
           const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
@@ -463,7 +456,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
                 .map(feature => feature?.properties?.kgPoiId || '')
                 .filter(Boolean))).sort(),
-            authoredEnvironmentSubjects,
+            authoredEnvironmentStage, authoredEnvironmentSubjects,
             environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
@@ -478,9 +471,9 @@ def _read_view(page: Page) -> dict[str, Any]:
               .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
                 .map(feature => feature?.properties?.kgPoiId || '')
                 .filter(Boolean))).sort(),
-            renderedEnvironmentSubjectIds: renderedEnvironment
+            renderedEnvironmentSubjectIds: Array.from(new Set(renderedEnvironment
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
-              .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
+              .map(feature => feature?.properties?.kgSurfaceId || ''))).sort(),
             renderedKinds,
             sourceKinds,
             renderedFeatureCount: renderedFeatures.length,
@@ -546,43 +539,9 @@ def _read_view(page: Page) -> dict[str, Any]:
     return view
 
 
-def _unmet_view_requirements(
-    last: dict[str, Any],
-    *,
-    expected_provider_host: str,
-    expected_view: str,
-    expected_projection: str,
-    expected_style_url: str,
-    require_visual_layout: bool,
-) -> list[str]:
-    return unmet_view_requirements(
-        last,
-        expected_provider_host=expected_provider_host,
-        expected_view=expected_view,
-        expected_projection=expected_projection,
-        expected_style_url=expected_style_url,
-        require_visual_layout=require_visual_layout,
-    )
+def _wait_for_view(page: Page, **requirements: Any) -> dict[str, Any]:
+    return wait_for_view(page, read_view=_read_view, **requirements)
 
-
-def _wait_for_view(
-    page: Page,
-    *,
-    expected_provider_host: str,
-    expected_view: str,
-    expected_projection: str,
-    expected_style_url: str,
-    require_visual_layout: bool = False,
-) -> dict[str, Any]:
-    return wait_for_view(
-        page,
-        read_view=_read_view,
-        expected_provider_host=expected_provider_host,
-        expected_view=expected_view,
-        expected_projection=expected_projection,
-        expected_style_url=expected_style_url,
-        require_visual_layout=require_visual_layout,
-    )
 
 def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:
     baseline = _read_view(page)

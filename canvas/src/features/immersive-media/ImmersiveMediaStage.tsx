@@ -1,4 +1,6 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import React from 'react'
+import { PHOTO_DISTANCE, photoDimensions } from './immersivePhotoProjection'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
   BackSide,
@@ -9,10 +11,10 @@ import {
   LineBasicMaterial,
   LineLoop,
   MathUtils,
+  MeshBasicMaterial,
   RepeatWrapping,
   SRGBColorSpace,
   SpriteMaterial,
-  ShaderMaterial,
   Texture,
   TextureLoader,
   VideoTexture,
@@ -61,10 +63,10 @@ function createProceduralPanorama(snapshot: ImmersiveMediaSnapshot): CanvasTextu
     context.stroke()
   }
   context.fillStyle = 'rgba(255,255,255,0.9)'
-  context.font = '600 34px system-ui, sans-serif'
+  context.font = `600 36px ${UI_FONT_SANS}`
   context.fillText(snapshot.title, 48, 72)
   context.fillStyle = 'rgba(207,250,254,0.74)'
-  context.font = '20px system-ui, sans-serif'
+  context.font = `20px ${UI_FONT_SANS}`
   context.fillText('Local procedural panorama · zero network', 48, 108)
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
@@ -162,10 +164,10 @@ function createMarkerTexture(marker: ImmersiveMediaMarker): CanvasTexture | null
     context.lineWidth = 6
     context.strokeRect(7, 7, canvas.width - 14, canvas.height - 14)
     context.fillStyle = marker.color
-    context.font = '700 22px system-ui, sans-serif'
+    context.font = `700 24px ${UI_FONT_SANS}`
     context.fillText(['video', 'youtube'].includes(marker.kind) ? '▶' : marker.kind === 'element' ? '◆' : '●', 18, 48)
     context.fillStyle = '#f8fafc'
-    context.font = '600 17px system-ui, sans-serif'
+    context.font = `600 18px ${UI_FONT_SANS}`
     context.fillText(marker.label.slice(0, 18), 18, 88)
   }
   const texture = new CanvasTexture(canvas)
@@ -250,12 +252,12 @@ function MarkerSurface({
           <shaderMaterial
             transparent
             uniforms={{
-              map: { value: texture },
+              markerTexture: { value: texture },
               opacity: { value: opacity },
               keyColor: { value: new Color('#00ff00') },
             }}
             vertexShader="varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }"
-            fragmentShader="uniform sampler2D map; uniform vec3 keyColor; uniform float opacity; varying vec2 vUv; void main(){ vec4 c=texture2D(map,vUv); if(distance(c.rgb,keyColor)<0.38) discard; gl_FragColor=vec4(c.rgb,c.a*opacity); }"
+            fragmentShader="uniform sampler2D markerTexture; uniform vec3 keyColor; uniform float opacity; varying vec2 vUv; void main(){ vec4 c=texture2D(markerTexture,vUv); if(distance(c.rgb,keyColor)<0.38) discard; gl_FragColor=vec4(c.rgb,c.a*opacity); }"
           />
         </mesh>
       </group>
@@ -317,7 +319,8 @@ export function ImmersiveMediaStage() {
     readImmersiveMediaSnapshot,
   )
   const texture = usePanoramaTexture(snapshot)
-  const materialRef = React.useRef<ShaderMaterial | null>(null)
+  const materialRef = React.useRef<MeshBasicMaterial | null>(null)
+  const appliedTextureRef = React.useRef<Texture | null>(null)
   const transitionRef = React.useRef({
     revision: snapshot.transitionRevision,
     startedAt: 0,
@@ -332,18 +335,30 @@ export function ImmersiveMediaStage() {
   }, [snapshot.transitionRevision])
   useFrame(({ clock }) => {
     if (!snapshot.active || !materialRef.current) return
+    if (texture && appliedTextureRef.current !== texture) {
+      materialRef.current.map = texture
+      materialRef.current.needsUpdate = true
+      appliedTextureRef.current = texture
+    }
     const transition = transitionRef.current
     if (!transition.startedAt) transition.startedAt = clock.elapsedTime
     const durationSeconds = Math.max(0.001, snapshot.transitionDurationMs / 1000)
     const progress = Math.min(1, (clock.elapsedTime - transition.startedAt) / durationSeconds)
-    materialRef.current.uniforms.opacity.value = progress
-    materialRef.current.uniforms.lensStrength.value = snapshot.view.lensStrength
+    materialRef.current.opacity = progress
     if (progress >= 1 && !transition.completed) {
       transition.completed = true
       completeImmersiveMediaTransition(transition.revision)
     }
   })
   if (!snapshot.active || !texture) return null
+  const photo = snapshot.source.photo
+  if (photo) {
+    const size = photoDimensions(photo)
+    return <mesh name="SemanticSpacePhoto" position={[0, 0, -PHOTO_DISTANCE]}>
+      <planeGeometry args={[size.width, size.height]} />
+      <meshBasicMaterial ref={materialRef} map={texture} toneMapped={false} transparent depthWrite={false} />
+    </mesh>
+  }
   const phiStart = MathUtils.degToRad(snapshot.crop.horizontalStartDegrees)
   const phiLength = MathUtils.degToRad(snapshot.crop.horizontalSpanDegrees)
   const thetaStart = MathUtils.degToRad(snapshot.crop.verticalStartDegrees)
@@ -356,15 +371,10 @@ export function ImmersiveMediaStage() {
     <group name="agentic_os_immersive_media_stage">
       <mesh rotation={[0, Math.PI, 0]}>
         <sphereGeometry args={[86, 64, 36, phiStart, phiLength, thetaStart, thetaLength]} />
-        <shaderMaterial
+        <meshBasicMaterial
           ref={materialRef}
-          uniforms={{
-            map: { value: texture },
-            opacity: { value: 0 },
-            lensStrength: { value: snapshot.view.lensStrength },
-          }}
-          vertexShader="varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }"
-          fragmentShader="uniform sampler2D map; uniform float opacity; uniform float lensStrength; varying vec2 vUv; void main(){ vec2 centered=vUv-0.5; float radial=dot(centered,centered); vec2 uv=vec2(fract(0.5+centered.x*(1.0+lensStrength*radial*0.72)), clamp(0.5+centered.y*(1.0+lensStrength*radial*0.72),0.001,0.999)); vec4 color=texture2D(map,uv); gl_FragColor=vec4(color.rgb,color.a*opacity); }"
+          map={texture}
+          opacity={0}
           side={BackSide}
           transparent
           depthWrite={false}

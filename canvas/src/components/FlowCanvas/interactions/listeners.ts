@@ -32,7 +32,7 @@ import { readFlowPanInteractionSpeed } from '@/components/FlowCanvas/interaction
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 
-const FLOATING_PANEL_PROXY_EXCLUDE_SELECTOR = '[data-kg-floating-panel-root="true"]'
+const FLOATING_PANEL_PROXY_EXCLUDE_SELECTOR = '[data-kg-floating-panel-root="true"], [data-agentic-base-floating-panel="true"]'
 
 export function bindFlowNativeInteractionListeners(args: {
   ctx: FlowNativeInteractionsContext

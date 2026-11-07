@@ -58,7 +58,7 @@ export function DesignCanvasEditorChrome(props: {
   return (
     <section className={UI_RESPONSIVE_DESIGN_CANVAS_EDITOR_CHROME_CLASSNAME} aria-label="Design editor chrome">
       <nav
-        className={cn('pointer-events-auto flex shrink-0 flex-col gap-1 rounded border p-1 shadow-sm', UI_THEME_TOKENS.panel.overlayBg, UI_THEME_TOKENS.panel.border)}
+        className={cn('pointer-events-auto flex shrink-0 flex-col gap-1 rounded border p-1 shadow-[var(--kg-shadow-raised)]', UI_THEME_TOKENS.panel.overlayBg, UI_THEME_TOKENS.panel.border)}
         aria-label="Design tools"
       >
         <button
@@ -115,7 +115,7 @@ export function DesignCanvasEditorChrome(props: {
       </nav>
       <section
         className={cn(
-          'pointer-events-none flex min-w-0 items-center gap-2 rounded border px-2 py-1 shadow-sm',
+          'pointer-events-none flex min-w-0 items-center gap-2 rounded border px-2 py-1 shadow-[var(--kg-shadow-raised)]',
           UI_RESPONSIVE_CANVAS_STATUS_ROW_CLASSNAME,
           UI_THEME_TOKENS.panel.overlayBg,
           UI_THEME_TOKENS.panel.border,
@@ -123,10 +123,10 @@ export function DesignCanvasEditorChrome(props: {
         )}
         aria-label="Design status"
       >
-        <span className={cn('text-[10px] font-semibold', UI_THEME_TOKENS.text.primary)}>Design</span>
-        <span className="font-mono text-[10px]">{mode}</span>
-        <span className="font-mono text-[10px]">{props.selectedCount} selected</span>
-        <span className="hidden font-mono text-[10px] sm:inline">{props.layerCount} layers</span>
+        <span className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Design</span>
+        <span className="font-mono text-xs">{mode}</span>
+        <span className="font-mono text-xs">{props.selectedCount} selected</span>
+        <span className="hidden font-mono text-xs sm:inline">{props.layerCount} layers</span>
       </section>
     </section>
   )

@@ -9,6 +9,7 @@ export const WORKSPACE_EDITOR_MODE_LABELS: Readonly<Record<WorkspaceEditorMode, 
   table: MARKDOWN_DATA_VIEW_COPY.tableViewLabel,
   multiDimTable: MARKDOWN_DATA_VIEW_COPY.titleDefault,
   kanban: MARKDOWN_DATA_VIEW_COPY.kanbanViewLabel,
+  calendar: 'Calendar View',
 }
 
 export const WORKSPACE_TABLE_VIEW_MODE_LABELS: Readonly<Record<WorkspaceTableViewMode, string>> = {

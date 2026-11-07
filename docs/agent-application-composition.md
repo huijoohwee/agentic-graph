@@ -13,7 +13,7 @@ external_framework_dependency: "forbidden"
 
 agentic-graph turns one source-backed manifest into an exact, typed, provider-neutral application plan and executes that plan as a bounded dependency sequence. Versioned ports and capabilities allow independently owned components to cooperate while agents, integrations, approvals, transports, and receipts remain with their existing owners.
 
-The work is an independent implementation of the pinned Agentic Canvas OS composition contract. The [LangChain repository](https://github.com/langchain-ai/langchain) influenced only the high-level goal of replaceable application building blocks. No LangChain code, prose, prompt, API, schema, fixture, test, package, service, or runtime dependency is copied or required. The composition independence guard checks its owned text/import graph, repository package manifests, lock package keys and dependency sections, requirements, VCS/version locators, and installed package names; separately owned legacy LangGraph or DeerFlow lanes are neither imported nor modified by this subsystem.
+The work is an independent implementation of the pinned Agentic Canvas OS composition contract. The [LangChain repository](https://github.com/langchain-ai/langchain) influenced only the high-level goal of replaceable application building blocks. No LangChain code, prose, prompt, API, schema, fixture, test, package, service, or runtime dependency is copied or required. The composition independence guard checks its owned text/import graph, repository package manifests, lock package keys and dependency sections, requirements, VCS/version locators, and installed package names.
 
 ## Invocation and MCP surface
 

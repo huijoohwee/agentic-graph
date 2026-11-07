@@ -7,9 +7,16 @@ import type { GraphData } from '@/lib/graph/types'
 export type WorkspaceImportUrlOpts = {
   canvas2dRenderer?: Canvas2dRendererId | null
   documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
+  preserveActiveDocument?: boolean
+  browserSessionId?: string
+  destinationPath?: string
 }
 
 export type WorkspaceImportWebsiteOpts = {
+  /** Exact page selection. When present, link following is disabled. */
+  selectedUrls?: string[]
+  /** Save one explicitly selected discovered page at its existing row; fail if occupied. */
+  destinationPath?: string
   generateArtifactDocs?: boolean
   browserEnhance?: boolean
   headless?: boolean

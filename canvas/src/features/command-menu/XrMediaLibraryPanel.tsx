@@ -62,12 +62,16 @@ import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+
+const CinemaReferenceAssetsPanel = React.lazy(() => import('@/features/cinema/CinemaShotTimeline').then(module => ({ default: module.CinemaReferenceAssetsPanel })))
+
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
 const XR_LIBRARY_SECTION_KEYS = ['environments', 'subjects-props', 'simulation'] as const
 const XR_SCENE_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 
-export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
+export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { searchText: string; presentation?: 'full' | 'outliner' }) {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: XR_SCENE_GRAMMAR_SIGILS })
   const {
@@ -91,7 +95,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   const [subjectView, setSubjectView] = React.useState<'catalog' | 'scene'>('scene')
   const [categoryFilter, setCategoryFilter] = React.useState<XrSceneLibraryFilter>('all')
   const [nextLabel, setNextLabel] = React.useState('')
-  const [selectedAssetId, setSelectedAssetId] = React.useState<string>(XR_SCENE_LIBRARY_DEFAULT_ASSET_ID)
+  const [selectedAssetId, setSelectedAssetId] = React.useState<string>('')
   const [assetTransitions, setAssetTransitions] = React.useState<Record<string, XrSceneTransition>>({})
   const {
     allCollapsed: allLibrarySectionsCollapsed,
@@ -125,7 +129,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   )
   const sourceMetadataReady = isXrMediaInvocationMetadataReady(grammarCatalog)
   const runControl = React.useCallback((input: XrSceneControlInput) => {
-    const result = controlLocalXrScene(input)
+    const result = controlLocalXrScene(input, 'human')
     pushUiToast({
       id: result.ok ? 'media:xr-library:updated' : 'media:xr-library:error',
       kind: result.ok ? 'success' : sceneReady ? 'error' : 'warning',
@@ -160,8 +164,8 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     ? runtime.selectedShotTargetId
     : ''
 
-  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
-  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments } = catalog
+  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId, selectedStageId: runtime.plan.stageId }), [categoryFilter, searchText, selectedAssetId, runtime.plan.stageId])
+  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments, visiblePoiDetailAssets } = catalog
   const stageObjects = resolveXrStageObjects(runtime.plan.stageId).filter(object => (categoryFilter === 'all' || object.category === categoryFilter) && object.label.toLowerCase().includes(searchText.trim().toLowerCase()))
   const sceneObjectCount = runtime.plan.subjects.length + resolveXrStageObjects(runtime.plan.stageId).length
   const visibleSubjects = runtime.plan.subjects.filter(subject => (categoryFilter === 'all' || subject.category === categoryFilter)
@@ -170,18 +174,21 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   return (
     <section
       className="grid min-w-0 gap-3"
-      aria-label="3D for XR library"
+      aria-label="Shared 3D for XR library"
       data-kg-media-xr-library="1"
+      data-kg-media-xr-catalog-scope="shared"
+      data-kg-media-xr-composition-scope="source-document"
       data-kg-media-xr-assets-mcp="agentic-graph.control_local_xr_scene"
       data-kg-media-xr-scene-ready={sceneReady ? '1' : '0'}
       data-kg-media-xr-metadata-status={grammarCatalog.hydration.status}
       data-kg-media-xr-metadata-version={String(grammarCatalog.version)}
     >
-      <header className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+      {presentation === 'full' && <><header className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+        <CinematicControlModeSelect />
         <section className="flex items-start gap-2">
           <XrMediaLibrarySummary metadataReady={sourceMetadataReady} metadataStatus={grammarCatalog.hydration.status} />
           <section className="flex shrink-0 items-center gap-1">
-            <output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} placed</output>
+            <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} placed</output>
             <ExpandCollapseAllButton
               allCollapsed={allLibrarySectionsCollapsed}
               onExpandAll={expandAllLibrarySections}
@@ -191,17 +198,17 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
             />
           </section>
         </section>
-        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to place and persist XR scene media.</p> : null}
-        <label className="grid gap-1 text-[10px]">
+        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to place and persist XR scene media.</p> : null}
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Label next subject</span>
           <PanelTextInput value={nextLabel} maxLength={80} placeholder="Optional subject label, e.g. THIEF" onChange={event => setNextLabel(event.target.value)} data-kg-media-xr-next-label="1" />
         </label>
         <section className="grid grid-cols-2 gap-2" aria-label="XR terrain and featured asset controls">
-          <label className="grid min-w-0 gap-1 text-[10px]">
+          <label className="grid min-w-0 gap-1 text-xs">
             <span className={UI_THEME_TOKENS.text.tertiary}>Terrain / Environment</span>
             <PanelSelect
               value={runtime.plan.stageId}
-              onChange={event => runInvocation(buildXrStageInvocation(event.target.value))}
+              onValueChange={selectedValueInput => runInvocation(buildXrStageInvocation(selectedValueInput))}
               aria-label="Change XR terrain or environment"
               data-kg-media-xr-terrain-selector="1"
               data-kg-media-xr-default-terrain={XR_MOTION_REFERENCE_DEFAULT_STAGE_ID}
@@ -211,11 +218,11 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
               ))}
             </PanelSelect>
           </label>
-          <label className="grid min-w-0 gap-1 text-[10px]">
+          <label className="grid min-w-0 gap-1 text-xs">
             <span className={UI_THEME_TOKENS.text.tertiary}>Add 3D Object / Asset</span>
             <PanelSelect
               value={selectedAsset?.id || XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}
-              onChange={event => setSelectedAssetId(event.target.value)}
+              onValueChange={selectedValueInput => setSelectedAssetId(selectedValueInput)}
               aria-label="Select featured XR 3D object or asset"
               data-kg-media-xr-featured-asset-selector="1"
               data-kg-media-xr-default-asset={XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}
@@ -243,7 +250,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       <XrSceneAppearanceControls disabled={!sceneReady} />
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('environments')}
         onToggle={collapsed => setLibrarySectionCollapsed('environments', collapsed)}
         defaultCollapsed={false}
@@ -263,7 +270,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                   color={active ? '#38bdf8' : '#94a3b8'}
                   label={stage.label}
                   description={stage.description}
-                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'procedural island' : stage.id === 'singapore' ? 'procedural city' : 'grey-box stage'}`}
+                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.scaleSummary || `${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'island terrain' : stage.id === 'singapore' ? 'urban waterfront' : 'rehearsal environment'}`}`}
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
@@ -277,9 +284,35 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           </section>
         </section>
       </CollapsibleSection>
+      {visiblePoiDetailAssets.length ? <CollapsibleSection
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Regional POI Details</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output></span>}
+        defaultCollapsed={false}
+        flushTop
+        headerClassName="px-0"
+        className="mt-1 border-t pt-1"
+        id="xr-media-regional-poi-detail-assets"
+      >
+        <section className="grid gap-2" aria-label="Regional procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+            Local scale details accompany the selected regional profile; mapped facility footprints remain the spatial reference.
+          </p>
+          {visiblePoiDetailAssets.map(asset => (
+            <XrLibraryCard
+              key={asset.id}
+              Icon={Building2}
+              color={asset.defaultColor}
+              label={asset.label}
+              description={asset.description}
+              metadata={`regional detail · ${asset.dimensionsMeters.join(' × ')} m · local`}
+              dataAttributes={{ 'data-kg-media-xr-poi-detail-asset': asset.id }}
+              footer={<XrInvocationButton invocation={buildXrPlaceInvocation(asset.id, 'hold')} disabled={!sceneReady} onInvoke={runInvocation} />}
+            />
+          ))}
+        </section>
+      </CollapsibleSection> : null}</>}
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('subjects-props')}
         onToggle={collapsed => setLibrarySectionCollapsed('subjects-props', collapsed)}
         defaultCollapsed={false}
@@ -288,9 +321,9 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
         id="xr-media-subjects-props"
       >
         <section className="grid gap-2" aria-label="XR subject library" data-kg-media-xr-subject-library="1">
-          <nav className="flex gap-2" aria-label="Subjects and props view">
+          {presentation === 'full' && <nav className="flex gap-2" aria-label="Subjects and props view">
             {(['scene', 'catalog'] as const).map(view => <button key={view} type="button" className="App-toolbar__btn" aria-pressed={subjectView === view} onClick={() => setSubjectView(view)}>{view === 'scene' ? `In scene (${sceneObjectCount})` : 'Add from library'}</button>)}
-          </nav>
+          </nav>}
           <header className="grid gap-2">
             <nav className="flex max-w-full gap-1 overflow-x-auto pb-1" aria-label="XR library categories">
               {(['all', 'people', 'animals', 'vehicles', 'furniture', 'props'] as const).map(category => {
@@ -300,8 +333,8 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
               })}
             </nav>
           </header>
-          {subjectView === 'catalog' ? <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section> : null}
-          {subjectView === 'scene' ? (
+          {presentation === 'full' && subjectView === 'catalog' ? <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section> : null}
+          {(presentation === 'outliner' || subjectView === 'scene') ? (
             <section className="grid gap-2 border-t pt-2" aria-label="Placed XR subjects" data-kg-media-xr-placed-subjects="subjects-props">
               {!visibleSubjects.length && !stageObjects.length ? <p className="text-xs opacity-70">No matching subjects in this scene. Add from the library or change the filter.</p> : null}
               {visibleSubjects.map(subject => {
@@ -366,8 +399,12 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
         </section>
       </CollapsibleSection>
 
+      {presentation === 'full' && <>
+      <React.Suspense fallback={<p role="status" className="text-xs opacity-70">Opening local cinema assets…</p>}>
+        <CinemaReferenceAssetsPanel sourceText={markdownDocumentText} />
+      </React.Suspense>
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('simulation')}
         onToggle={collapsed => setLibrarySectionCollapsed('simulation', collapsed)}
         defaultCollapsed={false}
@@ -377,7 +414,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       >
         <XrSimulationWorkbench sceneReady={sceneReady} runControl={runControl} />
       </CollapsibleSection>
-      <SpatialAssetToolsPanel />
+      <SpatialAssetToolsPanel /></>}
     </section>
   )
 }

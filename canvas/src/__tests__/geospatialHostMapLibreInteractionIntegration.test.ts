@@ -25,32 +25,16 @@ export const testGeospatialPoiClickWiresHostActionAndRichMediaPanel = () => {
   if (!viewportText.includes('const renderPoiInRichMediaPanel = React.useCallback')) {
     throw new Error('Expected CanvasViewport to define the shared POI -> Rich Media Panel handoff')
   }
-  if (!viewportText.includes('openWidgetNodeIdsByRenderer?.storyboard')) {
-    throw new Error('Expected CanvasViewport to resolve POI targets against Storyboard Widget-panel ids in geospatial mode')
+  if (!viewportText.includes('buildGrabMapsPoiRichMediaPreviewPayload({')) {
+    throw new Error('Expected CanvasViewport to resolve POI targets through the shared Rich Media preview helper')
   }
-  if (!viewportText.includes('const srcDoc = buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)')) {
-    throw new Error('Expected CanvasViewport to build a single shared POI srcdoc payload for Rich Media rendering')
+  if (!viewportText.includes('publishGrabMapsPoiRichMediaPreview(payload)')) {
+    throw new Error('Expected CanvasViewport to publish the single shared POI preview payload')
   }
-  if (!viewportText.includes("richMediaActiveTab: 'poi'")) {
-    throw new Error('Expected CanvasViewport POI handoff to auto-switch the canonical Rich Media Panel into POI Viewer mode')
-  }
-  if (!viewportText.includes('richMediaPoiLabel: String(detail.label || \'\').trim() || \'POI\'')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist a canonical POI label for Rich Media Panel viewer selection')
-  }
-  if (!viewportText.includes('richMediaPoiAddress: poiAddress')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist resolved POI address metadata for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiCategory: poiCategory')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist resolved POI category metadata for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiProperties: poiProperties')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist normalized source properties for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiCoordinates:')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist normalized POI coordinate metadata')
-  }
-  if (!viewportText.includes('outputSrcDoc: srcDoc')) {
-    throw new Error('Expected CanvasViewport to write the shared POI srcdoc payload into Rich Media Panel output')
+  const helperText = readUtf8(path.resolve(process.cwd(), 'src', 'features', 'geospatial', 'grabMapsPoiRichMedia.ts'))
+  if (!helperText.includes('openWidgetNodeIds: args.openWidgetNodeIds')
+    || !helperText.includes('storyboardWidgetOpenWidgetNodeIds: args.storyboardWidgetOpenWidgetNodeIds')) {
+    throw new Error('Expected the shared POI preview helper to prefer the existing open Rich Media panel')
   }
   if (!viewportText.includes('renderPoiInRichMediaPanel')) {
     throw new Error('Expected geospatial overlay handlers to expose Rich Media Panel POI rendering upstream')
@@ -64,8 +48,78 @@ export const testGeospatialPoiClickWiresHostActionAndRichMediaPanel = () => {
   if (!viewportText.includes('storyboardWidgetOpenWidgetNodeIds')) {
     throw new Error('Expected CanvasViewport POI resolution to reuse Storyboard Widget ids explicitly')
   }
-  if (!viewportText.includes('gympgrphBridge.addNode(buildRichMediaPanelNode')) {
-    throw new Error('Expected CanvasViewport POI handoff to auto-create a Rich Media Panel when none exists')
+  if (!helperText.includes("export const GEOSPATIAL_POI_PREVIEW_NODE_ID = 'geospatial-poi-rich-media-preview'")) {
+    throw new Error('Expected CanvasViewport POI handoff to reuse one stable transient panel when no authored panel exists')
+  }
+  if (viewportText.includes('gympgrphBridge.addNode(') || viewportText.includes('gympgrphBridge.updateNode(')) {
+    throw new Error('Expected the shared POI preview to reuse panel runtime state without adding or mutating graph nodes')
+  }
+  if (!hostText.includes('const activateGraphMapFeature = React.useCallback((feature: unknown) => {')
+    || !hostText.includes('readGraphFeaturePoiDetail(feature as unknown as FeatureCollection[\'features\'][number])')
+    || !hostText.includes('if (detail) handlePoiClick(detail)')) {
+    throw new Error('Expected a graph feature click to populate the existing Rich Media Panel through the shared POI handler')
+  }
+}
+
+export const testGeoDirectoryAndCanvasSelectionShareSourceFeature = () => {
+  const toolbarText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx'))
+  const directoryText = readUtf8(path.resolve(process.cwd(), 'src', 'features', 'maps', 'LocalPoiDirectory.tsx'))
+  const viewportText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx'))
+  const hostText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx'))
+  const basemapText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts'))
+  const mapLayersText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'maplibreLayers.ts'))
+  const selectedFeatureIdsText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'selectedGraphFeatureIds.ts'))
+  const nearestFeatureText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'pickNearestPointFeature.ts'))
+  const toolbarContract = [
+    'const selectedNodeId = String(gympgrphBridge.selectedNodeId || \'\').trim()',
+    'record.kgSourceFeatureId ?? richMediaRecord?.kgSourceFeatureId',
+    'selectedMapFeatureId={selectedMapFeatureId}',
+    "gympgrphBridge.setSelectionSource('toolbar')",
+    'gympgrphBridge.selectNode(String(targetNode.id))',
+    'publishGrabMapsPoiRichMediaPreview(buildGrabMapsPoiRichMediaPreviewPayload({',
+    'generation !== mapFeatureSelectionGenerationRef.current',
+    'requestGeospatialFitToSelection()',
+  ]
+  const missingToolbarContracts = toolbarContract.filter(contract => !toolbarText.includes(contract))
+  if (missingToolbarContracts.length) {
+    throw new Error(`Expected Geo directory and Canvas selection to share source feature IDs: ${missingToolbarContracts.join(', ')}`)
+  }
+  if (!directoryText.includes('selectedMapFeatureId')
+    || !directoryText.includes('setSelectedId(current => current === nextId ? current : nextId)')) {
+    throw new Error('Expected Local POI Directory selection to follow the selected Canvas source feature')
+  }
+  if (!hostText.includes("setSelectionSource?.('canvas')")
+    || !hostText.includes('selectNode(nodeId)')
+    || !hostText.includes('activateGraphMapFeature(first)')) {
+    throw new Error('Expected map marker selection to activate the source feature and keep the Geo directory on shared selection')
+  }
+  if (!hostText.includes('pickNearestPointFeature(')
+    || !nearestFeatureText.includes('GRAPH_POINT_PICK_RADIUS_PX = 24')
+    || !hostText.includes('map.on(\'click\', onClick)')) {
+    throw new Error('Expected point clicks missed by layer hit-testing to resolve against the nearest active graph feature')
+  }
+  if (!basemapText.includes('const isCoarseRegionFeature = (feature: unknown): boolean =>')
+    || !basemapText.includes('!isCoarseRegionFeature(f)')) {
+    throw new Error('Expected coarse regions to remain map context rather than intercept point selection')
+  }
+  if (!selectedFeatureIdsText.includes('richMediaPoiProperties')
+    || !hostText.includes('resolveSelectedGeoGraphNodeIds(snapshotGraphData, getSnapshotSelectedNodeIds(props.snapshot))')) {
+    throw new Error('Expected selected Rich Media source IDs to resolve to their graph-backed map features')
+  }
+  if (!hostText.includes('kgSelected: selectedNodeIds.has(featureId)')
+    || !mapLayersText.includes("['==', ['get', 'kgSelected'], true]")) {
+    throw new Error('Expected the selected source feature to be visibly highlighted on the shared MapLibre map')
+  }
+  const affordanceText = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'graphFeatureAffordances.ts'))
+  if (!hostText.includes('bindGraphFeatureAffordances({')
+    || !affordanceText.includes("doc.createElement('button')")
+    || !affordanceText.includes("surface.setAttribute('role', 'group')")
+    || !affordanceText.includes("button.setAttribute('aria-pressed'")
+    || !affordanceText.includes('button.dataset.kgSourceFeature = id')) {
+    throw new Error('Expected map points to expose keyboard-operable semantic controls for accessibility and selection tooling')
+  }
+  if (affordanceText.includes("createElement('div')") || affordanceText.includes('aria-hidden')) {
+    throw new Error('Expected map feature controls to avoid generic or aria-hidden wrappers')
   }
 }
 
@@ -177,11 +231,11 @@ export const testGeospatialHostGraphNodeClickCyclesOverlappingFeaturesWithoutHov
   if (!text.includes('const pickFeatureForClick = (features: unknown[], point: unknown): unknown | null => {')) {
     throw new Error('Expected GeospatialHost click path to resolve a deterministic feature pick for overlapping point hits')
   }
-  if (!text.includes('const first = Array.isArray(features) ? pickFeatureForClick(features, point) : null')) {
+  if (!text.includes('let first = Array.isArray(features) ? pickFeatureForClick(features, point) : null')) {
     throw new Error('Expected GeospatialHost click picking to use click-cycle feature resolution instead of first-hit only')
   }
-  if (!text.includes('renderGraphNodeClickInRichMediaPanel(first)')) {
-    throw new Error('Expected GeospatialHost click picking to render the selected point into Rich Media Panel')
+  if (!text.includes('activateGraphMapFeature(first)') || !text.includes('selectGraphNodeFromMapFeature(feature)')) {
+    throw new Error('Expected GeospatialHost map clicks to select the source feature and populate the existing Rich Media Panel')
   }
   if (text.includes("map.on('mousemove', onMove)")) {
     throw new Error('Expected GeospatialHost to avoid hover-driven Rich Media Panel writeback churn')
@@ -207,14 +261,18 @@ export const testGeospatialHostPreservesFeaturePropertiesForRichPoiRendering = (
   if (!hostText.includes('...properties,') || !hostText.includes('properties,')) {
     throw new Error('Expected GeospatialHost to carry source properties through map features and Rich Media details')
   }
-  if (!hostText.includes('resolveGeoPoiAddressFromProperties(properties)') || !hostText.includes('resolveGeoPoiCategoryFromProperties(properties)')) {
-    throw new Error('Expected GeospatialHost to derive address/category via shared POI heuristics')
+  if (!basemapText.includes('category: readPoiCategoryFromFeature(picked)')) {
+    throw new Error('Expected basemap-native POI data to retain its shared category metadata')
   }
   if (!basemapText.includes('properties: readPoiPropertiesFromFeature(picked)')) {
     throw new Error('Expected basemap-native POI clicks to forward normalized feature properties upstream')
   }
-  if (!basemapText.includes('!isGraphOverlayFeature(f) && readPoiLabelFromFeature(f)')) {
+  if (!basemapText.includes('!isGraphOverlayFeature(f)\n                && !isCoarseRegionFeature(f)')) {
     throw new Error('Expected basemap-native POI picking to avoid duplicate graph-overlay Rich Media writes')
+  }
+  if (!basemapText.includes('nearbyFeatures.some(isGraphOverlayFeature)')
+    || !basemapText.includes('GRAPH_POINT_PICK_RADIUS_PX')) {
+    throw new Error('Expected basemap POI picking to yield within the shared graph-point hit radius')
   }
   if (!richMediaText.includes('buildGeoPoiRichMediaRows') || !richMediaText.includes('buildGeoPoiRichMediaSemanticKey')) {
     throw new Error('Expected GrabMaps POI srcdoc rendering to reuse shared metadata rows and semantic keys')

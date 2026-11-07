@@ -2,6 +2,7 @@ import { buildVideoAgentUrlImportMarkdown } from '@/features/markdown-workspace/
 import { formatWorkspaceImportTranscriptStatusLine } from '@/features/markdown-workspace/workspaceImport/transcriptImportText'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
+import { testVideoAgentImportResourceBudget } from './videoAgentImportResourceBudget.test'
 
 const unwrapKtvValue = (value: unknown): unknown => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value
@@ -16,6 +17,7 @@ const readJsonObject = (value: unknown): Record<string, unknown> => {
 }
 
 export async function testVideoAgentImportUrlKeepsTranscriptStatusOutOfCueContent() {
+  await testVideoAgentImportResourceBudget()
   const videoId = 'Fallback01Z'
   const sourceUrl = ['https://www.', 'youtube.com/watch?v=', videoId].join('')
   const rawUpstreamError = 'Error processing YouTube video: Transcript unavailable via native fetch'

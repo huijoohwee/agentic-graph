@@ -1,9 +1,35 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
+import { usePanelStack } from '@/lib/ui/usePanelStack'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import MainPanelContainer from './MainPanelContainer'
 import TabHeader, { type TabIconComponent } from './TabHeader'
+import HeaderActions from './HeaderActions'
+
+export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutRef<'section'>) {
+  const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const panelStack = usePanelStack('main', floatingPanelZIndex)
+  const layer = <section
+    {...props}
+    data-kg-panel-layer="main"
+    onPointerDownCapture={event => { panelStack.onPointerDownCapture(event); props.onPointerDownCapture?.(event) }}
+    onFocusCapture={event => { panelStack.onFocusCapture(event); props.onFocusCapture?.(event) }}
+    data-kg-canvas-pointer-ignore="1"
+    data-kg-canvas-wheel-ignore="1"
+    style={{ ...style, zIndex: panelStack.zIndex }}
+  />
+  return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
+}
+
+export function MainPanelLoadingFallback({ onClose }: { onClose: () => void }) {
+  return (
+    <MainPanelFrame ariaLabel="Main panel loading" rightSlot={<HeaderActions onClose={onClose} />}>
+      <p role="status" data-kg-main-panel-loading="1" className="p-3">Loading panel…</p>
+    </MainPanelFrame>
+  )
+}
 
 interface MainPanelFrameProps {
   ariaLabel: string
@@ -21,7 +47,6 @@ interface MainPanelFrameProps {
   onTabChange?: (key: string) => void
   tabIdBase?: string
   footer?: React.ReactNode
-  tabVariant?: 'text' | 'icon'
   tabIconByKey?: Partial<Record<string, TabIconComponent>>
 }
 
@@ -41,7 +66,6 @@ export default function MainPanelFrame({
   onTabChange,
   tabIdBase,
   footer,
-  tabVariant,
   tabIconByKey,
 }: MainPanelFrameProps) {
   const uiHeaderRowHeightClass = useGraphStore(
@@ -52,7 +76,7 @@ export default function MainPanelFrame({
   )
 
   return (
-    <MainPanelContainer ariaLabel={ariaLabel} className={collapsed ? 'h-auto' : 'h-full'}>
+    <MainPanelContainer minimized={collapsed} ariaLabel={ariaLabel} className={collapsed ? 'h-auto' : 'h-full'}>
       <section className="flex h-full min-w-0 max-w-full flex-col overflow-hidden" aria-label={ariaLabel}>
         <TabHeader
           collapsed={collapsed}
@@ -67,7 +91,6 @@ export default function MainPanelFrame({
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
           rightSlot={rightSlot}
-          tabVariant={tabVariant}
           tabIconByKey={tabIconByKey}
         />
         {!collapsed && (

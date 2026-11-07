@@ -63,7 +63,6 @@ export const CHAT_GOOGLE_CLOUD_MODEL_OPTIONS = [
   'google/gemini-2.5-flash-preview-09-2025',
   'google/gemini-2.5-flash-lite-preview-09-2025',
 ] as const
-export const CHAT_DEERFLOW_MODEL_OPTIONS = CHAT_OPENAI_MODEL_OPTIONS
 export const CHAT_LOCAL_MODEL_OPTIONS = ['qwen/qwen3.5-9b@q4_k_m'] as const
 export const CHAT_GEMINI_VIDEO_MODEL_DEFAULT = 'veo-3.1-generate-preview'
 export const CHAT_GEMINI_VIDEO_MODEL_OPTIONS = [

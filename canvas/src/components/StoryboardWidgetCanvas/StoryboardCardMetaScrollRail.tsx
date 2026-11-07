@@ -77,7 +77,7 @@ export function StoryboardCardMetaScrollRail(props: {
   return (
     <header
       ref={metaRef}
-      className="flex min-w-0 max-w-full shrink-0 items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-contain border-b pb-1 text-[8px] leading-3 text-[color:var(--kg-text-tertiary)] [scrollbar-gutter:stable]"
+      className="flex min-w-0 max-w-full shrink-0 items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-contain border-b pb-1 text-xs leading-3 text-[color:var(--kg-text-tertiary)] [scrollbar-gutter:stable]"
       data-kg-canvas-pointer-ignore="true"
       data-kg-canvas-wheel-ignore="true"
       data-kg-media-scroll-surface="1"
@@ -97,8 +97,8 @@ export function StoryboardCardMetaScrollRail(props: {
           canEdit={typeof onCommitLane === 'function'}
           editActivation="click"
           onCommit={nextValue => onCommitLane?.(card, nextValue)}
-          displayClassName="max-w-[5.75rem] shrink-0 truncate rounded border px-1 py-0.5 text-[8px] font-semibold uppercase tracking-normal text-[color:var(--kg-text-secondary)]"
-          editorClassName="min-w-[4.5rem] rounded border bg-[color:var(--kg-input-bg)] px-1 py-0.5 text-[8px] font-semibold text-[color:var(--kg-text-primary)]"
+          displayClassName="max-w-[5.75rem] shrink-0 truncate rounded border px-1 py-0.5 text-xs font-semibold uppercase tracking-normal text-[color:var(--kg-text-secondary)]"
+          editorClassName="min-w-[4.5rem] rounded border bg-[color:var(--kg-input-bg)] px-1 py-0.5 text-xs font-semibold text-[color:var(--kg-text-primary)]"
         />
         <CardInlineTextEditor
           value={card.typeLabel}
@@ -107,8 +107,8 @@ export function StoryboardCardMetaScrollRail(props: {
           canEdit={typeof onCommitType === 'function'}
           editActivation="click"
           onCommit={nextValue => onCommitType?.(card, nextValue)}
-          displayClassName="max-w-[8.75rem] shrink-0 truncate rounded border px-1 py-0.5 text-[8px] font-semibold tracking-normal text-[color:var(--kg-text-secondary)]"
-          editorClassName="min-w-[4.5rem] rounded border bg-[color:var(--kg-input-bg)] px-1 py-0.5 text-[8px] font-semibold text-[color:var(--kg-text-primary)]"
+          displayClassName="max-w-[8.75rem] shrink-0 truncate rounded border px-1 py-0.5 text-xs font-semibold tracking-normal text-[color:var(--kg-text-secondary)]"
+          editorClassName="min-w-[4.5rem] rounded border bg-[color:var(--kg-input-bg)] px-1 py-0.5 text-xs font-semibold text-[color:var(--kg-text-primary)]"
         />
       </> : null}
       <StoryboardCardSourceReferenceChips references={sourceReferences} onActivate={onSourceReferenceActivate} />

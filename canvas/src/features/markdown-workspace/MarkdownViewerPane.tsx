@@ -122,7 +122,7 @@ export function MarkdownViewerPane(props: MarkdownViewerPaneProps) {
         <aside
           className={[
             uiPanelKeyValueTextSizeClass,
-            `px-2 py-1 border-b ${UI_THEME_TOKENS.panel.divider} ${UI_THEME_TOKENS.panel.headerBg} text-[10px] ${UI_THEME_TOKENS.text.tertiary}`,
+            `px-2 py-1 border-b ${UI_THEME_TOKENS.panel.divider} ${UI_THEME_TOKENS.panel.headerBg} text-xs ${UI_THEME_TOKENS.text.tertiary}`,
           ].join(' ')}
           role="note"
         >
@@ -133,7 +133,7 @@ export function MarkdownViewerPane(props: MarkdownViewerPaneProps) {
         <aside
           className={[
             uiPanelKeyValueTextSizeClass,
-            `px-2 py-1 border-b ${UI_THEME_TOKENS.panel.divider} ${UI_THEME_TOKENS.panel.headerBg} text-[10px] ${UI_THEME_TOKENS.text.tertiary}`,
+            `px-2 py-1 border-b ${UI_THEME_TOKENS.panel.divider} ${UI_THEME_TOKENS.panel.headerBg} text-xs ${UI_THEME_TOKENS.text.tertiary}`,
           ].join(' ')}
           role="note"
         >

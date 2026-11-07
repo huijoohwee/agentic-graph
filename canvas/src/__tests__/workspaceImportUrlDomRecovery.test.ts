@@ -2,6 +2,7 @@ import { fetchWorkspaceUrlContent } from '@/features/markdown-workspace/workspac
 import { setWorkspaceWebpageDomExportForTests } from '@/features/markdown-workspace/workspaceImport/urlContent'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
 import { restoreWebpageMarkdownSyntaxFidelity } from '@/lib/markdown/webpageMarkdownSyntaxFidelity'
+import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '@/features/markdown-workspace/workspaceImport/webpageEntryText'
 import { resetWorkspaceUrlContentCacheForTests } from '@/features/markdown-workspace/workspaceImport/urlContentCache'
 import { type GlobalWithFetch, installWebpageProxyFetch } from './helpers/workspaceImportUrlFixtures'
 
@@ -424,5 +425,95 @@ export async function testWorkspaceImportUrlRestoresVisibleMarkdownSyntaxTokens(
   }
   if (!restored.includes('````\nvalue\n````')) {
     throw new Error(`expected indented fence delimiters to be normalized without indent, got:\n${restored}`)
+  }
+
+  const quotedMarkdown = restoreWebpageMarkdownSyntaxFidelity(plainTextToMarkdown([
+    '&gt; Got it - the report is ready.',
+    '&gt;',
+    '&amp;gt; The report includes the findings.',
+    'Inline text keeps &gt; as an entity.',
+    '```md',
+    '&gt; A code example remains literal.',
+    '```',
+  ].join('\n')))
+  if (!quotedMarkdown.includes('> Got it - the report is ready.\n>\n> The report includes the findings.')) {
+    throw new Error(`expected encoded quote lines and their blank separator to remain one Markdown blockquote, got:\n${quotedMarkdown}`)
+  }
+  if (!quotedMarkdown.includes('Inline text keeps &gt; as an entity.')) {
+    throw new Error(`expected an inline greater-than entity to remain unchanged, got:\n${quotedMarkdown}`)
+  }
+  if (!quotedMarkdown.includes('```md\n&gt; A code example remains literal.\n```')) {
+    throw new Error(`expected encoded greater-than text inside fenced code to remain unchanged, got:\n${quotedMarkdown}`)
+  }
+
+  const repeatedQuotePayload = 'A quoted paragraph that an HTML converter emitted twice without any separator.'
+  const recoveredRepeatedQuote = restoreWebpageMarkdownSyntaxFidelity(`> ${repeatedQuotePayload}${repeatedQuotePayload}`)
+  if (recoveredRepeatedQuote !== `> ${repeatedQuotePayload}`) {
+    throw new Error(`expected an exact delimiter-free duplicate blockquote payload to collapse once, got:\n${recoveredRepeatedQuote}`)
+  }
+  if (restoreWebpageMarkdownSyntaxFidelity(`> go go`) !== '> go go') {
+    throw new Error('expected ordinary repeated words inside a quote to remain unchanged')
+  }
+  if (restoreWebpageMarkdownSyntaxFidelity('> haha') !== '> haha') {
+    throw new Error('expected a repeated short interjection inside a quote to remain unchanged')
+  }
+  const repeatedUnicodeQuote = 'A cat is a 🐈'
+  if (restoreWebpageMarkdownSyntaxFidelity(`> ${repeatedUnicodeQuote}${repeatedUnicodeQuote}`) !== `> ${repeatedUnicodeQuote}`) {
+    throw new Error('expected exact repeated quote payloads to collapse across Unicode code points')
+  }
+
+  const savedPage = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
+    upstreamMarkdown: [
+      '# Example page',
+      '',
+      '**Good**',
+      '',
+      '&gt; A quoted reply remains a blockquote.',
+      '',
+      '**Bad**',
+      '',
+      '&gt; A second quoted paragraph.',
+      '&gt;',
+      '&amp;gt; The next line stays in the same blockquote.',
+      '',
+      'Inline text keeps &gt; as an entity.',
+      '',
+      '```md',
+      '&gt; A code example remains literal.',
+      '```',
+    ].join('\n'),
+    url: 'https://example.test/dimensions',
+    view: 'markdown',
+    preserveBodyFidelity: true,
+  })
+  if (!savedPage.includes('> A quoted reply remains a blockquote.')) {
+    throw new Error(`expected saved webpage Markdown to store blockquotes with literal markers, got:\n${savedPage}`)
+  }
+  if (!savedPage.includes('> A second quoted paragraph.\n>\n> The next line stays in the same blockquote.')) {
+    throw new Error(`expected saved webpage Markdown to preserve blockquote continuation lines, got:\n${savedPage}`)
+  }
+  const bodyOutsideCode = savedPage.replace(/```[\s\S]*?```/gu, '')
+  if (/^[\t ]*&(?:amp;)*(?:gt|#0*62|#x0*3e);/imu.test(bodyOutsideCode)) {
+    throw new Error(`expected saved webpage Markdown to contain no encoded line-leading quote markers, got:\n${savedPage}`)
+  }
+  if (!savedPage.includes('Inline text keeps > as an entity.')) {
+    throw new Error(`expected saved webpage Markdown to preserve inline greater-than text, got:\n${savedPage}`)
+  }
+  if (!savedPage.includes('```md\n&gt; A code example remains literal.\n```')) {
+    throw new Error(`expected saved webpage Markdown to preserve encoded text inside code fences, got:\n${savedPage}`)
+  }
+
+  const richSection = '<section class="status"><p><strong>Good</strong></p><ul><li>Full source structure</li></ul></section>'
+  const faithfulSavedPage = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
+    upstreamMarkdown: [richSection, '', '&gt; Quoted source text.'].join('\n'),
+    url: 'https://example.test/structured',
+    view: 'markdown',
+    preserveBodyFidelity: true,
+  })
+  if (!faithfulSavedPage.includes(richSection)) {
+    throw new Error(`expected high-fidelity imports to retain sanitized structural HTML, got:\n${faithfulSavedPage}`)
+  }
+  if (!faithfulSavedPage.includes('\n> Quoted source text.')) {
+    throw new Error(`expected high-fidelity imports to save valid Markdown blockquotes, got:\n${faithfulSavedPage}`)
   }
 }

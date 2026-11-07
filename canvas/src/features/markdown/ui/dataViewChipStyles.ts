@@ -31,7 +31,7 @@ const fixedChipClasses: Record<string, string> = {
 
 const DATA_VIEW_CHIP_BASE_CLASSNAME = `${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} min-w-0 max-w-full overflow-hidden px-2 rounded border font-medium`
 
-export const DATA_VIEW_CHIP_ROW_CLASSNAME = `${DATA_VIEW_CHIP_BASE_CLASSNAME} py-0.5 text-[10px] leading-[15px]`
+export const DATA_VIEW_CHIP_ROW_CLASSNAME = `${DATA_VIEW_CHIP_BASE_CLASSNAME} py-0.5 text-xs leading-[15px]`
 
 export const DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME = `${DATA_VIEW_CHIP_BASE_CLASSNAME} ${UI_INLINE_TEXT_PILL_HEIGHT_CLASSNAME} [font-size:inherit]`
 

@@ -39,7 +39,7 @@ export async function testWorkspaceImportUrlRejectsApiNativeBrowserSessionSource
     } catch (e) {
       rejected = true
       const message = e && typeof e === 'object' && 'message' in e ? String((e as { message?: unknown }).message || '') : ''
-      if (!/authenticated browser session required/i.test(message)) throw e
+      if (!/authentication or loading shell/i.test(message)) throw e
     }
     if (!rejected) throw new Error('expected mismatched API-native browser content to be rejected before persistence')
   } finally {

@@ -17,7 +17,6 @@ interface IconButtonProps extends BaseButtonProps {
   title: string;
   children: React.ReactNode;
   showTooltip?: boolean;
-  hoverRingClass?: string;
   tooltipContent?: string;
   ariaLabel?: string;
   suppressTitleAttribute?: boolean;
@@ -35,7 +34,6 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       className = '',
       children,
       showTooltip = false,
-      hoverRingClass,
       tooltipContent,
       ariaLabel,
       suppressTitleAttribute = false,
@@ -63,7 +61,6 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         : uiIconHoverBgClass && uiIconHoverBgClass.trim().length > 0
           ? uiIconHoverBgClass
           : UI_THEME_TOKENS.button.hoverBg,
-      isMinimal || !hoverRingClass ? '' : cn('hover:ring-2 ring-offset-1', hoverRingClass),
     );
 
     const inner = hasMultipleChildren ? (
@@ -139,6 +136,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         className={cn(
           'kg-icon-button group relative select-none rounded justify-center',
+          UI_THEME_TOKENS.button.iconControl,
           UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
           paddingClass,
           isDisabled

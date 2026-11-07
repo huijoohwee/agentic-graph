@@ -361,15 +361,13 @@ export function upsertFrontmatterFlowMarkdownText(
   const suffix = text.slice(block.rawBlock.length)
   const nextText = `---\n${nextYaml}\n---${suffix}`
   const timelineSectionValue = readFrontmatterTimelineSectionValue(graphData)
-  return upsertTopLevelFrontmatterSectionMarkdownText({
-    rawText: upsertTopLevelFrontmatterSectionMarkdownText({
-      rawText: nextText,
-      sectionKey: 'kgXrMotionReference',
-      sectionValue: graphData.metadata?.kgXrMotionReference,
-    }),
-    sectionKey: 'timeline',
-    sectionValue: timelineSectionValue,
-  })
+  let authored = nextText
+  for (const sectionKey of ['kgXrMotionReference', 'kgXrPhysicsWorld', 'kgSpatialWorkspaceReview']) {
+    authored = upsertTopLevelFrontmatterSectionMarkdownText({
+      rawText: authored, sectionKey, sectionValue: graphData.metadata?.[sectionKey],
+    })
+  }
+  return upsertTopLevelFrontmatterSectionMarkdownText({ rawText: authored, sectionKey: 'timeline', sectionValue: timelineSectionValue })
 }
 
 export function sourceFileShouldWriteFrontmatterFlow(file: GraphState['sourceFiles'][number]): boolean {

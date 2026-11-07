@@ -76,7 +76,7 @@ export async function exportWebpageLayoutViaHiddenIframe(args: {
   maxChars?: number
   maxElements?: number
   scrollCrawl?: boolean
-  expandFaq?: boolean
+  expandDisclosures?: boolean
   waitForNetworkIdle?: boolean
   networkIdleMs?: number
   minWaitAfterLoadMs?: number
@@ -91,7 +91,7 @@ export async function exportWebpageLayoutViaHiddenIframe(args: {
     maxChars: clampInt(args.maxChars, 6_000_000, 64_000, 8_000_000),
     maxElements: clampInt(args.maxElements, 1400, 200, 3500),
     scrollCrawl: !!args.scrollCrawl,
-    expandFaq: args.expandFaq !== false,
+    expandDisclosures: args.expandDisclosures !== false,
     waitForNetworkIdle: args.waitForNetworkIdle !== false,
     networkIdleMs: clampInt(args.networkIdleMs, 600, 150, 2500),
     minWaitAfterLoadMs: clampInt(args.minWaitAfterLoadMs, 350, 0, 5000),

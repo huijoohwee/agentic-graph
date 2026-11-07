@@ -1,7 +1,7 @@
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import type { MarkdownWorkspaceLoadedSnapshot, MarkdownWorkspaceExplorerPresentationArgs } from './markdownWorkspaceRuntime.types'
 import React from 'react'
-import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
+import { bindMarkdownExplorerResize } from '@/features/markdown-workspace/bindMarkdownExplorerResize'
 import { LS_KEYS } from '@/lib/config'
 import { lsSetBool, lsSetInt } from '@/lib/persistence'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
@@ -12,6 +12,7 @@ import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
+import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import {
   projectWorkspaceEntriesToSourceFilesExplorer,
   resolveWorkspaceSourceRootPaths,
@@ -60,7 +61,6 @@ import {
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
 import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
-
 type ExplorerRefreshOptions = { silent?: boolean; reconcileSeed?: boolean }
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
@@ -93,6 +93,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   const seedSyncInFlightRef = React.useRef(false)
   const workspaceSeedSyncSignatureRef = React.useRef('')
   const workspaceRefreshSemanticKeyRef = React.useRef('')
+  const inventoryWarningRef = React.useRef('')
   const [workspaceSyncSettingsRev, setWorkspaceSyncSettingsRev] = React.useState(0)
   const chatLocalStorageRootPath = useGraphStore(state => state.chatLocalStorageRootPath)
   const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])
@@ -114,7 +115,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     setWorkspaceSeedSyncPollMs(readWorkspaceSeedSyncPollMsSetting())
     setWorkspaceSeedSyncIdleMaxMs(readWorkspaceSeedSyncIdleMaxMsSetting())
   }, [workspaceSyncSettingsRev])
-
   const getFs = React.useCallback(async () => {
     const existing = workspaceFsRef.current
     if (existing) return existing
@@ -122,10 +122,8 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     workspaceFsRef.current = fs
     return fs
   }, [])
-
   const runtimeRef = React.useRef(args)
   runtimeRef.current = args
-
   const scheduleApplyComposedFromSourceFiles = React.useCallback(async () => {
     try {
       const mod = (await import('@/features/source-files/applyComposedGraphFromSourceFiles')) as typeof import('@/features/source-files/applyComposedGraphFromSourceFiles')
@@ -174,7 +172,22 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       const currentActivePath = runtime.activePathRef.current
       const fs = await getFs()
       if (opts?.reconcileSeed !== false) await fs.ensureSeed()
-      const list = await fs.listEntries()
+      let list = await fs.listEntries()
+      const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+      const { useWebsiteImportSelectionSession } = await import('@/features/source-files/websiteImportSelectionSession')
+      const discoveries = useWebsiteImportSelectionSession.getState().session?.pages || []
+      let inventoryWarning = ''
+      try {
+        if (await persistImportInventory(fs, discoveries.map(page => ({ source: page.url, status: 'not imported' })), list)) list = await fs.listEntries()
+      } catch (error) {
+        inventoryWarning = `Import index update: ${String((error as { message?: unknown })?.message ?? error)}`
+        list = await fs.listEntries()
+      }
+      runtime.setLoadError('')
+      if (inventoryWarning && (!silent || inventoryWarning !== inventoryWarningRef.current))
+        applyMarkdownWorkspaceErrorStatus({ setStatusError: runtime.setStatusError,
+          prefix: 'Files refreshed; import index preserved', error: inventoryWarning, includeDetail: true })
+      inventoryWarningRef.current = inventoryWarning
       const hydratedList = await hydrateWorkspaceEntriesInlineText({
         fs,
         workspaceEntries: list,
@@ -226,7 +239,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
         void 0
       }
       if (!silent) runtime.setLoading(false)
-      if (!silent) {
+      if (!silent && !inventoryWarning) {
         applyMarkdownWorkspaceInfoStatus({
           setStatusInfo: runtime.setStatusInfo,
           label: 'Ready',
@@ -238,6 +251,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       })
     } catch (e) {
       const currentRuntime = runtimeRef.current
+      currentRuntime.setLoadError(String((e as { message?: unknown })?.message ?? e))
       if (!silent) {
         currentRuntime.setLoading(false)
         currentRuntime.setLoadError(String((e as { message?: unknown })?.message ?? e))
@@ -302,6 +316,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       const changedPath = typeof detail?.path === 'string' && detail.path ? detail.path : null
       const operation = typeof detail?.op === 'string' ? detail.op : ''
       if (operation === 'ensureSeed') return
+      if (isWebsiteImportExplorerUpdate(changedPath)) return
       if (isDirty && (!changedPath || changedPath === activePath)) return
       if (operation === 'writeFileText' && activePath && changedPath && changedPath !== activePath) return
       scheduleMarkdownWorkspaceRefreshSync(() => {
@@ -339,15 +354,19 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       })
       idleStreak = next.nextIdleStreak
       if (stopped) return
+      if (timer != null) window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         timer = null
         void ensureSeedTick()
       }, next.nextDelayMs)
     }
     const ensureSeedTick = async () => {
-      if (stopped || seedSyncInFlightRef.current) return
+      if (stopped) return
       const runtime = runtimeRef.current
-      if (runtime.viewerInlineEditActiveRef.current) return
+      if (seedSyncInFlightRef.current || runtime.viewerInlineEditActiveRef.current) {
+        scheduleNextSeedSync(false, ensureSeedTick)
+        return
+      }
       const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
       if (!finishSeedSyncTask) {
         scheduleNextSeedSync(false, ensureSeedTick)
@@ -421,7 +440,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       document.removeEventListener('visibilitychange', onWake)
     }
   }, [args.active, getFs, refresh, workspaceAutoRefreshEnabled, workspaceSeedSyncEnabled, workspaceSeedSyncPollMs, workspaceSeedSyncIdleMaxMs])
-
   const persistWorkspacePrefsPendingRef = React.useRef<{
     sidebarWidthPx: number
     explorerOpen: boolean
@@ -514,27 +532,11 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   React.useEffect(() => {
     const el = resizeHandleEl
     if (!el) return
-    const onDown = (ev: PointerEvent) => {
-      if (ev.button !== undefined && ev.button !== 0) return
-      const startX = ev.clientX
-      const startWidth = sidebarWidthPxRef.current
-      let pending = startWidth
-      startPointerDrag({
-        ev,
-        cursor: 'col-resize',
-        shouldStart: down => (down.button === undefined || down.button === 0),
-        onMove: mv => {
-          const dx = mv.clientX - startX
-          const next = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, Math.round(startWidth + dx)))
-          pending = next
-          setSidebarWidthPx(next)
-        },
-        onEnd: () => setSidebarWidthPx(pending),
-        onCancel: () => setSidebarWidthPx(pending),
-      })
-    }
-    el.addEventListener('pointerdown', onDown)
-    return () => el.removeEventListener('pointerdown', onDown)
+    return bindMarkdownExplorerResize({
+      el, minWidth: SIDEBAR_MIN_PX, maxWidth: SIDEBAR_MAX_PX,
+      readWidth: () => sidebarWidthPxRef.current,
+      setWidth: next => { sidebarWidthPxRef.current = next; setSidebarWidthPx(next) },
+    })
   }, [resizeHandleEl, setSidebarWidthPx])
 
   const sourceFilesExplorerEntries = React.useMemo(() => {

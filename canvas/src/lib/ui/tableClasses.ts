@@ -11,7 +11,6 @@ export const UI_TABLE = {
   cell: cn('px-3 py-2', UI_THEME_TOKENS.table.textSecondary),
   rowHover: UI_THEME_TOKENS.table.rowHover,
   rowSelected: UI_THEME_TOKENS.table.rowSelected,
-  rowSelectedBorder: UI_THEME_TOKENS.table.rowSelectedBorder,
   text: UI_THEME_TOKENS.table.text,
   textSecondary: UI_THEME_TOKENS.table.textSecondary,
 } as const

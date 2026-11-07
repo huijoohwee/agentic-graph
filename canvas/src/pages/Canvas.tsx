@@ -88,7 +88,9 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     })),
   )
 
-  const queryRequestsEditorWorkspace = shouldOpenEditorWorkspaceFromSearch(location.search)
+  const queryParams = React.useMemo(() => new URLSearchParams(String(location.search || '')), [location.search])
+  const supplyChainOverviewRequested = queryParams.get('kgSupplyChain') === '1' || queryParams.get('kgSupplyChain') === 'overview'
+  const queryRequestsEditorWorkspace = shouldOpenEditorWorkspaceFromSearch(location.search) || supplyChainOverviewRequested
   const launchSpotlightShortcutEnabled = !previewOnly && workspaceViewMode !== 'editor'
   const consumedEditorWorkspaceQueryRef = React.useRef(false)
 
@@ -126,7 +128,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     if (workspaceViewMode !== 'editor') setToolbarHeaderElevated(false)
   }, [workspaceViewMode])
 
-  const { workspacePreviewWidthPx, setResizeHandleEl } = useCanvasWorkspacePaneRuntime()
+  const { workspacePreviewWidthPx, setResizeHandleEl } = useCanvasWorkspacePaneRuntime({ compactForOverview: supplyChainOverviewRequested })
   const activePath = useMarkdownExplorerStore(s => s.activePath)
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const workspaceCanvasPaneVisible = workspaceEditorOverlayOpen && workspaceCanvasPaneOpen
@@ -262,7 +264,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
           </main>
         ) : (
           <>
-            {workspaceCanvasPaneVisible && !liveCanvasHeroOwnsWorkspace ? (
+            {(workspaceCanvasPaneVisible || workspaceEditorOverlayOpen) && !liveCanvasHeroOwnsWorkspace ? (
               <header
                 ref={toolbarHeaderRef}
                 className={`absolute inset-0 pointer-events-none ${toolbarHeaderLayerClassName}`}
@@ -271,7 +273,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               >
                 <nav
                   className={`${UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME} ${canvasToolbarDockSpansViewport ? '[&_button]:min-h-11 [&_button]:!min-w-11' : ''}`}
-                  style={workspaceToolbarBoundaryStyle}
+                  style={{ ...workspaceToolbarBoundaryStyle, display: workspaceCanvasPaneVisible ? undefined : 'none' }}
                   aria-label="Canvas Toolbar"
                   role="navigation"
                 >
@@ -295,7 +297,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               </header>
             ) : null}
 
-            <main className="flex-1 flex overflow-hidden" aria-label="Canvas Workspace">
+            <main className="agentic-input-controls flex-1 flex overflow-hidden" aria-label="Canvas Workspace">
               <section className="flex-1 flex flex-col overflow-hidden" aria-label="Workspace stage">
                 <section className="relative flex-1 min-h-0 overflow-hidden" aria-label="Workspace overlay stage">
                   <section
@@ -348,7 +350,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >
                       <section
-                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'border-r border-[var(--kg-border)] shadow-2xl' : ''}`}
+                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'shadow-[var(--kg-shadow-overlay)]' : ''}`}
                         style={{ width: workspaceCanvasPaneVisible ? workspacePaneBoundaryCss : '100%' }}
                         aria-label="Workspace left pane"
                         data-kg-workspace-left-pane="1"
@@ -365,7 +367,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                         <VerticalResizeSeparatorHr
                           ref={setResizeHandleEl}
                           ariaLabel="Resize canvas"
-                          visualStyle="centerGrip"
+                          visualStyle="line"
                           className="absolute inset-y-0 left-0 z-[301] h-full -translate-x-1/2 pointer-events-auto"
                           style={{ left: workspacePaneBoundaryCss }}
                         />

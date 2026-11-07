@@ -1,0 +1,18 @@
+{
+  "schema": "agentic-cloud-collaboration-request/v1",
+  "targetRepository": "huijoohwee/knowgrph",
+  "workItemId": "work-item:dev-source-resolver-20260803",
+  "canonicalBaseRevision": "7497dd63b271565ab4f88a8d76615af539ed962a",
+  "laneRevision": "7497dd63b271565ab4f88a8d76615af539ed962a",
+  "declaredWriteScope": [
+    "path:scripts/__tests__/worktree-policy.test.mjs",
+    "path:scripts/worktree-policy.mjs",
+    "semantic:dev-source-resolver"
+  ],
+  "leaseEpoch": 1,
+  "expiresAt": "2026-08-03T06:04:07Z",
+  "deviceId": "huis-macbook-pro-3",
+  "sessionId": "codex-dev-source-resolver-20260803",
+  "actorId": "github-user:8945812",
+  "actorLogin": "huijoohwee"
+}

@@ -15,6 +15,7 @@ export type ImageToGlbContourComponentPlan = {
   areaRatio: number
   color: RgbColor
   depth: number
+  bevel?: number
   inferredSurfaceConfidence: number
   materialIndex: number
   name: string
@@ -213,7 +214,7 @@ function deduplicatePoints(points: readonly Point2[]): Point2[] {
   return unique
 }
 
-function boundedOutline(track: RunTrack, worldWidth: number, worldHeight: number): Point2[] {
+function boundedOutline(track: RunTrack, worldWidth: number, worldHeight: number, maxPoints: number = BUDGETS.maxOutlinePointsPerComponent): Point2[] {
   const runs = [...track.runs].sort((first, second) => first.y - second.y)
   const left: Point2[] = []
   const right: Point2[] = []
@@ -230,10 +231,10 @@ function boundedOutline(track: RunTrack, worldWidth: number, worldHeight: number
     }
   })
   let outline = deduplicatePoints([...left, ...right.reverse()])
-  if (outline.length > BUDGETS.maxOutlinePointsPerComponent) {
+  if (outline.length > maxPoints) {
     const lastIndex = outline.length - 1
-    outline = Array.from({ length: BUDGETS.maxOutlinePointsPerComponent }, (_, index) => (
-      outline[Math.round(index * lastIndex / (BUDGETS.maxOutlinePointsPerComponent - 1))]!
+    outline = Array.from({ length: maxPoints }, (_, index) => (
+      outline[Math.round(index * lastIndex / (maxPoints - 1))]!
     ))
     outline = deduplicatePoints(outline)
   }
@@ -291,8 +292,8 @@ function shapeFromOutline(outline: readonly Point2[]): THREE.Shape {
   return shape
 }
 
-function geometryFromComponent(component: Pick<ImageToGlbContourComponentPlan, 'depth' | 'outline'>): THREE.ExtrudeGeometry {
-  const bevel = Math.min(component.depth * 0.16, 0.045)
+function geometryFromComponent(component: Pick<ImageToGlbContourComponentPlan, 'depth' | 'outline' | 'bevel'>): THREE.ExtrudeGeometry {
+  const bevel = component.bevel ?? Math.min(component.depth * 0.16, 0.045)
   const geometry = new THREE.ExtrudeGeometry(shapeFromOutline(component.outline), {
     bevelEnabled: true,
     bevelSegments: 2,
@@ -319,7 +320,8 @@ export function summarizeContourRebuildPlan(plan: ImageToGlbContourRebuildPlan):
   return plan.quality
 }
 
-export function deriveContourRebuildPlan(analysis: ImageToGlbReferenceAnalysis): ImageToGlbContourRebuildPlan {
+export function deriveContourRebuildPlan(analysis: ImageToGlbReferenceAnalysis, options: { detail?: 'standard' | 'fine' } = {}): ImageToGlbContourRebuildPlan {
+  const budgets = { ...BUDGETS, maxOutlinePointsPerComponent: options.detail === 'fine' ? 96 : BUDGETS.maxOutlinePointsPerComponent }
   const aspectRatio = finite(analysis.aspectRatio, 'aspect ratio')
   if (aspectRatio <= 0) throw new Error('Contour rebuild aspect ratio must be positive.')
   const rawTracks = buildRunTracks(analysis.spans)
@@ -345,7 +347,8 @@ export function deriveContourRebuildPlan(analysis: ImageToGlbReferenceAnalysis):
       inferredSurfaceConfidence: confidence,
       materialIndex: nearestMaterialIndex(materials, color),
       name: semanticComponentName(track, index),
-      outline: boundedOutline(track, worldWidth, worldHeight),
+      outline: boundedOutline(track, worldWidth, worldHeight, budgets.maxOutlinePointsPerComponent),
+      ...(options.detail === 'fine' ? { bevel: quantize(Math.min(0.008, worldHeight / analysis.height * 0.2)) } : {}),
       sourceSpanCount: track.runs.length,
     }
   })
@@ -371,10 +374,10 @@ export function deriveContourRebuildPlan(analysis: ImageToGlbReferenceAnalysis):
     withinBudgets: components.length <= BUDGETS.maxComponents
       && materials.length <= BUDGETS.maxMaterials
       && estimatedTriangles <= BUDGETS.maxTriangles
-      && components.every(component => component.outline.length <= BUDGETS.maxOutlinePointsPerComponent),
+      && components.every(component => component.outline.length <= budgets.maxOutlinePointsPerComponent),
   }
   const plan: ImageToGlbContourRebuildPlan = {
-    budgets: { ...BUDGETS },
+    budgets,
     components,
     depthEvidence: {
       baseDepth,
@@ -429,6 +432,7 @@ export function createContourRebuildProgram(plan: ImageToGlbContourRebuildPlan):
     components: plan.components.map(component => ({
       color: component.materialIndex,
       depth: component.depth,
+      bevel: component.bevel ?? Math.min(component.depth * 0.16, 0.045),
       inferredSurfaceConfidence: component.inferredSurfaceConfidence,
       name: component.name,
       outline: component.outline,
@@ -448,7 +452,7 @@ export function buildImageToGlbReviewedScene() {
     const shape = new THREE.Shape()
     component.outline.forEach((point, index) => index === 0 ? shape.moveTo(point[0], point[1]) : shape.lineTo(point[0], point[1]))
     shape.closePath()
-    const bevel = Math.min(component.depth * 0.16, 0.045)
+    const bevel = component.bevel ?? Math.min(component.depth * 0.16, 0.045)
     const geometry = new THREE.ExtrudeGeometry(shape, { bevelEnabled: true, bevelSegments: 2, bevelSize: bevel, bevelThickness: bevel, curveSegments: 1, depth: component.depth, steps: 1 })
     geometry.translate(0, 0, -component.depth / 2); geometry.computeVertexNormals()
     const mesh = new THREE.Mesh(geometry, materials[component.color]); mesh.name = component.name; mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData.inferredSurfaceConfidence = component.inferredSurfaceConfidence; group.add(mesh)

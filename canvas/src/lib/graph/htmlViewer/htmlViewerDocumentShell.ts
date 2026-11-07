@@ -1,3 +1,4 @@
+import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { resolveCssVarWithKgFallback } from '@/lib/ui/tokens-ssot'
 
 const escapeHtml = (s: string): string => {
@@ -53,7 +54,7 @@ export function buildHtmlViewerDocumentShell(args: {
 }): string {
   const { title, svgMarkup: svgPlaceholder, overlayHtml: overlayHtmlFiltered, runtimeScript } = args
   const { canvasBg, panelBg, border, text, textSecondary, textTertiary, panelActionBg, panelActionBgHover, canvasEdgeStroke, canvasNodeStroke, canvasAccent, canvasLabelFill, canvasLabelHalo, markdownHeaderBg, markdownPanelHeaderH, mediaPanelRadius, mediaPanelPadding, mediaPanelTitleSize } = args.appearance
-  const fontFamily = tryReadCssVar('--kg-font-family', 'ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial')
+  const fontFamily = tryReadCssVar('--kg-font-family', UI_FONT_SANS)
 
   const html = `<!doctype html>
 <html lang="en">
@@ -107,15 +108,15 @@ export function buildHtmlViewerDocumentShell(args: {
     .kg-mediaSnapImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.02);opacity:0;transition:opacity 220ms ease}
     .kg-mediaSnapMeta{position:absolute;left:0;right:0;bottom:0;padding:10px 10px 9px;background:linear-gradient(180deg, rgba(15,23,42,0), rgba(15,23,42,0.66));color:#fff;display:flex;flex-direction:column;gap:2px}
     .kg-mediaSnapTitle{font-size:12px;line-height:1.25;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .kg-mediaSnapHost{font-size:11px;line-height:1.25;opacity:0.84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kg-mediaSnapHost{font-size:12px;line-height:1.25;opacity:0.84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .kg-md{position:absolute;left:0;top:0;display:flex;flex-direction:column;pointer-events:none;background:var(--kg-panel-bg);border:var(--kg-media-panel-border-w) solid var(--kg-border);border-radius:var(--kg-media-panel-radius);box-shadow:0 10px 30px rgba(0,0,0,.12);overflow:hidden;box-sizing:border-box}
     .kg-mdHeader{height:var(--kg-md-panel-header-h);display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--kg-md-panel-header-bg, rgba(0,0,0,0.04));border-bottom:var(--kg-media-panel-border-w) solid var(--kg-border)}
     .kg-mdTitle{font-size:var(--kg-media-panel-title-size);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--kg-text-tertiary)}
     .kg-mdBody{position:relative;flex:1;padding:var(--kg-media-panel-padding);box-sizing:border-box}
-    .kg-mdTable{width:100%;border-collapse:collapse;font-size:11px;line-height:1.25;color:var(--kg-text)}
+    .kg-mdTable{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25;color:var(--kg-text)}
     .kg-mdTable th{ text-align:left; border:1px solid var(--kg-border); padding:2px 4px; background:rgba(0,0,0,0.04); font-weight:600 }
     .kg-mdTable td{ border:1px solid var(--kg-border); padding:2px 4px; vertical-align:top }
-    .kg-mdCode{margin:0;padding:6px;border-radius:8px;background:rgba(0,0,0,0.06);font-size:11px;line-height:1.35;overflow:hidden;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;white-space:pre;color:var(--kg-text)}
+    .kg-mdCode{margin:0;padding:6px;border-radius:8px;background:rgba(0,0,0,0.06);font-size:12px;line-height:1.35;overflow:hidden;font-family:${UI_FONT_MONO};white-space:pre;color:var(--kg-text)}
     .kg-mdQuote{border-left:3px solid var(--kg-border);padding-left:8px;color:var(--kg-text);font-size:12px;line-height:1.35;white-space:pre-wrap}
     .kg-mdText{font-size:12px;line-height:1.35;color:var(--kg-text);white-space:pre-wrap}
     .kg-mdCallout{border-left:3px solid var(--kg-canvas-accent);padding-left:8px;color:var(--kg-text);font-size:12px;line-height:1.35}

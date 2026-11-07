@@ -26,7 +26,6 @@ const MODULE_IMPORTERS = Object.freeze({
   xrNativeControllerCameraCatalog: () => import('@/features/three/xrNativeControllerCameraCatalog'),
   xrNativeControllerCameraRuntime: () => import('@/features/three/xrNativeControllerCameraRuntime'),
   xrNativeControllerDemoRuntime: () => import('@/features/three/xrNativeControllerDemoRuntime'),
-  xrNativeControllerPresentation: () => import('@/features/three/xrNativeControllerPresentation'),
   xrPhysicsRuntime: () => import('@/features/three/xrPhysicsRuntime'),
   xrSceneLibrary: () => import('@/features/three/xrSceneLibrary'),
   xrSceneSurfaceRuntime: () => import('@/features/three/xrSceneSurfaceRuntime'),

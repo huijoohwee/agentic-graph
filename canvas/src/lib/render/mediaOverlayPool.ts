@@ -43,6 +43,8 @@ export type { RichMediaPanelOverlayState } from '@/lib/render/richMediaPanelStat
 
 export type MediaOverlayNode = {
   id: string
+  /** Graph aliases represented by this single shared media surface. */
+  coveredNodeIds?: string[]
   title: string
   url: string
   srcDoc?: string
@@ -392,7 +394,7 @@ export function listMediaOverlayNodes(args: {
       nodeById: panelNodeById || EMPTY_NODE_BY_ID,
       connectedValuesBySchemaPath,
     })
-    const openUrl = chooseOpenUrl(nodeForSpec, spec.url)
+    const openUrl = !spec.url && (spec.kind === 'image' || spec.kind === 'svg') ? '' : chooseOpenUrl(nodeForSpec, spec.url)
     const preferredHit = preferredSet?.has(id) === true
     const rankBase = computeMediaRank(nodeForSpec, spec)
     const panelRankBonus = resolvedPanel
@@ -440,6 +442,8 @@ export function listMediaOverlayNodes(args: {
   }
 
   const bestByKey = new Map<string, Candidate>()
+  const coveredByKey = new Map<string, string[]>()
+  const candidateKeys = new Map<Candidate, string>()
   for (let i = 0; i < candidates.length; i += 1) {
     const c = candidates[i]!
     const keyUrl = canonicalMediaDedupUrl(c.url || c.openUrl)
@@ -447,6 +451,10 @@ export function listMediaOverlayNodes(args: {
       if (!c.panel) return `${c.kind}\n${keyUrl || c.id}`
       return buildRichMediaPanelDedupKey(c)
     })()
+    candidateKeys.set(c, key)
+    const covered = coveredByKey.get(key) || []
+    covered.push(c.id)
+    coveredByKey.set(key, covered)
     const prev = bestByKey.get(key)
     if (!prev) {
       bestByKey.set(key, c)
@@ -471,6 +479,7 @@ export function listMediaOverlayNodes(args: {
     .slice(0, poolMax)
     .map(n => ({
     id: n.id,
+    coveredNodeIds: coveredByKey.get(candidateKeys.get(n)!) || [n.id],
     title: n.title,
     url: n.url,
     ...(n.srcDoc ? { srcDoc: n.srcDoc } : {}),

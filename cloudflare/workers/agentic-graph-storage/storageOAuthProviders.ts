@@ -3,13 +3,21 @@ import { AGENTIC_OS_STORAGE_ROUTE_PATHS, type AgenticGraphStorageWorkerEnv } fro
 import { oauthHash, type OAuthProvider, type OAuthState } from './storageOAuthState'
 
 type Client = { id: string; secret: string }
-export type OAuthConfiguration = { secret: string; origins: string[]; clients: Partial<Record<OAuthProvider, Client>> }
+export type OAuthConfiguration = {
+  secret: string
+  origins: string[]
+  allowLoopbackPorts: boolean
+  clients: Partial<Record<OAuthProvider, Client>>
+}
 export const OAUTH_ISSUERS = { github: 'https://github.com', google: 'https://accounts.google.com' } as const
 const CALLBACK = AGENTIC_OS_STORAGE_ROUTE_PATHS.browserCallback
 export const readOAuthConfiguration = (env: AgenticGraphStorageWorkerEnv): OAuthConfiguration | null => {
   try {
     const secret = env.AGENTIC_OS_STORAGE_SIGNING_SECRET || ''
     const origins: unknown = JSON.parse(env.AGENTIC_OS_STORAGE_OAUTH_ORIGINS || '[]')
+    const loopbackPortsSetting = env.AGENTIC_OS_STORAGE_OAUTH_ALLOW_LOOPBACK_PORTS || 'false'
+    if (loopbackPortsSetting !== 'true' && loopbackPortsSetting !== 'false') return null
+    const allowLoopbackPorts = loopbackPortsSetting === 'true'
     if (secret.length < 32 || !Array.isArray(origins) || !origins.length || origins.length > 4
       || !origins.every(raw => {
         if (typeof raw !== 'string') return false
@@ -27,8 +35,17 @@ export const readOAuthConfiguration = (env: AgenticGraphStorageWorkerEnv): OAuth
         || clientSecret.length < 16 || clientSecret.length > 256 || /\s/.test(clientSecret)) return null
       clients[provider] = { id, secret: clientSecret }
     }
-    return Object.keys(clients).length ? { secret, origins, clients } : null
+    return Object.keys(clients).length ? { secret, origins, allowLoopbackPorts, clients } : null
   } catch { return null }
+}
+export const isAllowedOAuthOrigin = (origin: string, config: OAuthConfiguration): boolean => {
+  if (config.origins.includes(origin)) return true
+  if (!config.allowLoopbackPorts) return false
+  try {
+    const url = new URL(origin)
+    return url.origin === origin && url.protocol === 'http:' && url.hostname === '127.0.0.1'
+      && !url.username && !url.password && url.pathname === '/' && !url.search && !url.hash
+  } catch { return false }
 }
 export class OAuthFailure extends Error {
   constructor(readonly status: number, message: string) { super(message) }
@@ -95,7 +112,12 @@ const boundedJson = async (response: Response, provider: OAuthProvider): Promise
 }
 const providerJson = async (url: string, init: RequestInit, fetcher: OAuthFetch, provider: OAuthProvider): Promise<Record<string, unknown>> => {
   try {
-    return await boundedJson(await fetcher(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(5000) }), provider)
+    const response = await fetcher(url, { ...init, redirect: 'manual', signal: AbortSignal.timeout(5000) })
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel()
+      throw new OAuthFailure(502, 'Sign-in provider attempted an unsafe redirect.')
+    }
+    return await boundedJson(response, provider)
   } catch (error) {
     if (error instanceof OAuthFailure) throw error
     throw new OAuthFailure(502, 'Sign-in provider unavailable. Try again later.')
@@ -119,8 +141,8 @@ export const exchangeOAuthIdentity = async (state: OAuthState, code: string, con
       redirect_uri: state.origin + CALLBACK, code_verifier: state.verifier, grant_type: 'authorization_code' }),
   }, fetcher, state.provider)
   if (state.provider === 'github') {
-    if (typeof token.access_token !== 'string' || !/^ghu_[A-Za-z0-9_]{16,512}$/.test(token.access_token)
-      || token.token_type !== 'bearer' || token.scope !== '') throw new OAuthFailure(401, 'A GitHub App user token is required.')
+    if (typeof token.access_token !== 'string' || !/^gho_[A-Za-z0-9_]{16,512}$/.test(token.access_token)
+      || token.token_type !== 'bearer' || token.scope !== '') throw new OAuthFailure(401, 'A profile-only GitHub OAuth token is required.')
     const user = await providerJson('https://api.github.com/user', { headers: {
       accept: 'application/vnd.github+json', authorization: `Bearer ${token.access_token}`,
       'user-agent': 'agentic-storage', 'x-github-api-version': '2022-11-28',

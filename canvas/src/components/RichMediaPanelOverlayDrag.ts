@@ -1,4 +1,5 @@
 import type React from 'react'
+import { isSpacePanHeld } from '@/lib/canvas/space-pan'
 import {
   isOverlayPanStartButtonEvent,
   readOverlayPointerTargetState,
@@ -176,7 +177,9 @@ export const handleRichMediaPanelOverlayDragStartCapture = (args: {
     ? args.handlers.shouldForwardPointerDown(native as PointerEvent) === true
     : false
   const blockOverlayPanForTarget = shouldBlockOverlayPanTarget(pointerTarget, { scrollSurfaceCanForwardPointer })
-  if (pointerTarget.isHeader && !blockOverlayPanForTarget && args.startHeaderDrag(native, dragTarget)) {
+  const panelDragTarget = pointerTarget.isHeader
+    || (args.installHeaderDrag && native.button === 0 && !isSpacePanHeld())
+  if (panelDragTarget && !blockOverlayPanForTarget && args.startHeaderDrag(native, dragTarget)) {
     tryPreventDragEvent(args.event)
     return true
   }
@@ -213,7 +216,9 @@ export const handleRichMediaPanelOverlayNativeDragStartCapture = (args: {
     ? args.handlers.shouldForwardPointerDown(native as PointerEvent) === true
     : false
   const blockOverlayPanForTarget = shouldBlockOverlayPanTarget(pointerTarget, { scrollSurfaceCanForwardPointer })
-  if (pointerTarget.isHeader && !blockOverlayPanForTarget && args.startHeaderDrag(native, args.currentTarget)) {
+  const panelDragTarget = pointerTarget.isHeader
+    || (args.installHeaderDrag && native.button === 0 && !isSpacePanHeld())
+  if (panelDragTarget && !blockOverlayPanForTarget && args.startHeaderDrag(native, args.currentTarget)) {
     tryPreventNativeDragEvent(native)
     return true
   }

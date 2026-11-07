@@ -1,0 +1,67 @@
+[
+  {
+    "path": "evidence-analysis/fixtures/ADSBLOL-LICENSE-ODbL.txt",
+    "bytes": 25241,
+    "sha256": "d93f996262c15e7cf9d6b54f9f48e3f9d8b9c3a47fa2308dc8ef1f0f5cb88611"
+  },
+  {
+    "path": "evidence-analysis/fixtures/airport-wsss-source-v1.json",
+    "bytes": 6101,
+    "sha256": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36"
+  },
+  {
+    "path": "evidence-analysis/fixtures/arrival-singapore-exercise-calibration.json",
+    "bytes": 38886,
+    "sha256": "b04cff660d5ea8400e8068087578466249d7f045369c5527ce3db196cb1709a2"
+  },
+  {
+    "path": "evidence-analysis/fixtures/arrival-singapore-exercise-test.json",
+    "bytes": 17714,
+    "sha256": "5b3df6985d9349b588ee8666cfe73e4658d405d0bd8beca21e4cd82ac24b347c"
+  },
+  {
+    "path": "evidence-analysis/fixtures/arrival-singapore-exercise-train.json",
+    "bytes": 13476,
+    "sha256": "ab1c7103e9f5bdcf9f5c5d143c12c8aeca11b71aac753467b7945a561d0cd62d"
+  },
+  {
+    "path": "evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json",
+    "bytes": 213122,
+    "sha256": "f8e3e92881fde1d7bfa36423ee1e031e71019697993153fd1829cd440a1f0082"
+  },
+  {
+    "path": "evidence-analysis/fixtures/aviation-singapore-multitrack-v1.receipt.json",
+    "bytes": 5181,
+    "sha256": "3bb973e9d7eb88fe19dc1cf13fd47bba85fe72e2af63b0310521490b773c8f8a"
+  },
+  {
+    "path": "evidence-analysis/fixtures/aviation-singapore-v1.json",
+    "bytes": 276932,
+    "sha256": "e88ad4100e1ac1d164087e17c87d55190ccc13dd8fbf9e120c3a0ec2ec7b8926"
+  },
+  {
+    "path": "evidence-analysis/fixtures/aviation-synthetic-v1.json",
+    "bytes": 11479,
+    "sha256": "4750f8d966fc1ebbe690343a1c44ed2d60241d5035844b55642be96fb93438fd"
+  },
+  {
+    "path": "evidence-analysis/fixtures/notice-singapore-synthetic-v1.json",
+    "bytes": 1112,
+    "sha256": "0c09545133b3d4bbf22fdfd905297e2d0a4dab712ae74925bbe09ec12e764482"
+  },
+  {
+    "path": "evidence-analysis/fixtures/route-singapore-synthetic-v1.json",
+    "bytes": 10111,
+    "sha256": "ac7ecf1f267382465cb4d96d4212315b964303e967d135681febc1b45e87533a"
+  },
+  {
+    "path": "evidence-analysis/fixtures/scene-wsss-v1.json",
+    "bytes": 8460,
+    "sha256": "e3f4da8a41381e0ad018f1748653ea9865680f360e2f60c9205607537713c7dd"
+  },
+  {
+    "path": "evidence-analysis/fixtures/volume-singapore-synthetic-v1.json",
+    "bytes": 6991,
+    "sha256": "06a958e0d12c71f8722e18453ce0cedd0b741bedf2fe95367766c1d4425517bf"
+  }
+]

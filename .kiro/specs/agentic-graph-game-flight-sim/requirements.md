@@ -400,3 +400,40 @@ External references inform conceptual principles only. Maintainers attest that t
 2. IF a Flight gameplay operation explicitly attempts transport through the bounded gameplay-call seam, THEN THE Flight runtime SHALL synchronously reject it through the existing local blocked-operation error before invoking the supplied executor.
 3. WHILE Flight is active, THE independent Geo runtime SHALL retain ownership of its established MapLibre provider transport, and Flight SHALL NOT replace global browser transport functions or classify Geo style and tile requests as gameplay requests.
 4. WHEN Motion Control starts while Flight is active, THE existing LiteRT runtime SHALL load its checked-in local assets and SHALL contribute normalized pose input through the shared input owner without becoming a gameplay-network, renderer, camera, flight-policy, or external-dependency owner.
+
+### Requirement 28: Shared scenario-independent presentation and pacing
+
+**User Story:** As a player, I want shared display and simulation-speed controls, so that I can rehearse any authored scenario at a useful pace without changing its deterministic physics.
+
+#### Acceptance Criteria
+
+1. THE HUD and FloatingPanel SHALL consume one browser-local immutable presentation settings snapshot, with HUD overlays and Navigation enabled and Simulation speed at `1×` by default; supported rates SHALL be exactly `0.5×`, `1×`, and `2×`.
+2. WHEN either surface changes a setting, THEN both surfaces SHALL immediately project the same value with accessible pressed-state controls; invalid settings SHALL fail synchronously and atomically without changing the snapshot.
+3. WHEN HUD overlays are disabled, THEN only optional telemetry and the course cue SHALL hide; the objective, runtime/save errors, envelope warning, touch controls, camera controls, and lifecycle actions SHALL remain available. Navigation SHALL independently govern the existing north-up insets and SHALL NOT change MapLibre layer or camera ownership.
+4. WHEN Simulation speed changes, THEN the clock SHALL change only the wall-clock interval between serialized ticks; every physics step SHALL remain exactly `1 / 60` second. Identical normalized inputs for identical tick counts SHALL produce identical ECS captures at every supported rate.
+5. THE clock SHALL retain at most one in-flight step, coalesce requests, replace stale scheduled wakes after a rate change, and prevent queued work after disposal.
+6. THE settings SHALL remain ephemeral, with no Decisions persistence, new command grammar, new tool, transport, dependency, or mission/scenario/location literals. Scenario identifiers, failure windows, route content, and rehearsal instructions SHALL remain in their existing authored demo/scenario owners.
+
+### Requirement 29: Authored training profiles and generic runtime policy
+
+**User Story:** As a scenario author, I want mission definitions and failure timing in my demo configuration, so that the same headless runtime can rehearse different missions without embedding their names or policy.
+
+#### Acceptance Criteria
+
+1. THE current SourceFile MAY declare one `flight_training_profile` with schema `flight-training-profile/v1`; THE existing frontmatter owner SHALL parse it and THE training profile owner SHALL validate bounded unique mission/failure IDs, labels, objectives, terrain descriptions, night flags, finite non-negative increasing speed ranges, checklists, default joins, failure tick-window, recovery threshold, effect parameters, and optional coaching cues and control aliases before publishing immutable configuration.
+2. IF a declared profile is malformed, a default/alias ID is unresolved, or the current SourceFile identity/text/revision differs from its captured admission, THEN Flight entry and training controls SHALL fail explicitly before applying profile changes or creating a mission World. Admission SHALL fence asynchronous handoffs against source drift.
+3. IF no profile is declared, THEN the generic Flight kernel MAY enter using its existing spatial/physics authority while training SHALL remain explicitly unavailable, with no copied catalog, selected sample mission, injected failure, score, or training-outcome Decision. Training-specific operations SHALL fail clearly until a profile is admitted.
+4. THE HUD, training panel, scoring, failure activation/recovery, input modifiers and airspeed reliability SHALL consume the same admitted profile. Runtime owners SHALL contain no authored mission/failure IDs, demo alias catalog, failure-window numbers, terrain text, or scenario-specific objectives/checklists/coaching.
+5. THE two established browser tools and native invocation SHALL retain lifecycle grammar and expose generic `mission`/`failure` operations with admitted IDs. Existing demonstration aliases MAY remain only as contract shims resolved from the current authored profile; undeclared aliases and unsupported IDs SHALL fail closed.
+6. THE existing demo SHALL own the three initial missions, four failures, seven compatibility aliases, timing, recovery threshold and effect parameters; another valid profile with different IDs/window/parameters SHALL drive the same runtime without source changes. Profile configuration SHALL add no service, dependency, renderer, persistence owner, or paid effect.
+
+### Requirement 30: Authored geographic reference
+
+**User Story:** As a scenario author, I want my demo to supply its geographic reference, so that the Flight runtime can project any admitted location without a built-in regional mission.
+
+#### Acceptance Criteria
+
+1. THE active SourceFile MAY declare `geo_flight_overlay.geographic_reference` with longitude/latitude anchor and ordered presentation bounds; THE existing coordinate owner SHALL validate strict keys, finite geographic ranges, nondegenerate longitude scale, bounds ordering and anchor containment before immutable source-bound admission.
+2. THE mission route, aircraft, objective, timeline camera and local XR environment SHALL consume that same admitted reference. Regional POI rings that already contain geographic coordinates SHALL preserve them. Reference changes SHALL invalidate projection revisions and use the same drift/cancellation fence as authored training admission.
+3. IF no reference is authored, THEN headless/local simulation SHALL remain usable without a sample location; the geographic Flight overlay SHALL be explicitly unavailable and cleared. Geo+XR entry SHALL reject missing/invalid references before World or renderer preparation.
+4. THE Flight runtime SHALL contain no regional anchor/bounds or regional scenario copy; the existing demo SHALL carry its reference. Non-Flight map defaults and established compatibility callers SHALL retain their own authority. No new module, store, renderer, transport, dependency, or paid service SHALL be introduced.

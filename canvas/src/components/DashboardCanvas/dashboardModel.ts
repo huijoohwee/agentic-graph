@@ -4,6 +4,7 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { isPlainObject } from '@/lib/graph/value'
 import { readCanvasGridConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
+import { buildDashboardKeywordEvidence } from './dashboardKeywordEvidence'
 
 export type DashboardTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate'
 
@@ -274,6 +275,7 @@ export function buildDashboardCanvasModel(
   const edges = Array.isArray(graphData?.edges) ? graphData.edges : []
   const nodeTypeCounts: CountRecord = {}
   const edgeTypeCounts: CountRecord = {}
+  const communities = new Set<number>()
   const numericAggregates = new Map<string, NumericAggregate>()
   const semanticCounts: Record<SemanticBucket, number> = {
     input: 0,
@@ -285,6 +287,9 @@ export function buildDashboardCanvasModel(
   for (const node of nodes) {
     increment(nodeTypeCounts, readNodeType(node))
     collectProperties(node.properties, semanticCounts, numericAggregates)
+    const raw = unwrapGraphValue(node.properties?.['visual:community'])
+    const community = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() ? Number(raw) : NaN
+    if (Number.isFinite(community)) communities.add(community)
   }
   for (const edge of edges) {
     increment(edgeTypeCounts, readEdgeType(edge))
@@ -316,11 +321,13 @@ export function buildDashboardCanvasModel(
     metrics: [
       { id: 'nodes', label: 'Nodes', value: String(nodes.length), detail: `${Object.keys(nodeTypeCounts).length} types`, tone: 'blue' },
       { id: 'edges', label: 'Edges', value: String(edges.length), detail: `${Object.keys(edgeTypeCounts).length} relationship types`, tone: 'green' },
+      { id: 'clusters', label: 'Clusters', value: String(communities.size), detail: 'Detected community groups', tone: 'blue' },
       { id: 'density', label: 'Density', value: formatPercent(density), detail: `${isolatedNodes} isolated nodes`, tone: isolatedNodes > 0 ? 'amber' : 'green' },
       { id: 'signals', label: 'Signals', value: String(numericFields + outputSignals), detail: `${numericFields} numeric · ${outputSignals} output/media`, tone: 'rose' },
       { id: 'grid', label: 'Grid', value: grid.enabled ? 'On' : 'Off', detail: `${grid.variant} · major ${grid.majorEvery}`, tone: grid.enabled ? 'blue' : 'slate' },
     ],
     sections: [
+      ...buildDashboardKeywordEvidence(graphData),
       {
         id: 'structure',
         title: 'Structure',

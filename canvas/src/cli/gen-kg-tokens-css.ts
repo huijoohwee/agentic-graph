@@ -1,3 +1,4 @@
+import { buildUiTypographyCss } from 'grph-shared/ui/typography'
 import fs from 'node:fs'
 import path from 'node:path'
 import { AG_TOKEN_DEFS, buildKgTokensCssText, serializeKgTokens } from '@/lib/ui/tokens-ssot'
@@ -10,6 +11,7 @@ const format = args.find(arg => arg.startsWith('--format='))?.slice(9) as 'css' 
 const output = args.find(arg => arg.startsWith('--output='))?.slice(9)
 // Complete validation and serialization before opening any output file.
 const next = format ? serializeKgTokens(AG_TOKEN_DEFS, format) : [
+  buildUiTypographyCss(),
   buildKgTokensCssText('light', { selector: ':root' }),
   buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
   buildKgTokensCssText('black', { selector: ":root[data-theme='dark'][data-dark-variant='black']" }),

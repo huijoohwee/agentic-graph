@@ -69,7 +69,7 @@ export function resolveWorkspacePreviewWidthFromPointerDrag(args: {
   return clampWorkspacePreviewWidthPx(Math.round(args.startWidthPx + dx))
 }
 
-export function useCanvasWorkspacePaneRuntime(): {
+export function useCanvasWorkspacePaneRuntime(options: { compactForOverview?: boolean } = {}): {
   workspacePreviewWidthPx: number
   setResizeHandleEl: React.Dispatch<React.SetStateAction<HTMLHRElement | null>>
 } {
@@ -77,7 +77,24 @@ export function useCanvasWorkspacePaneRuntime(): {
   const [workspacePreviewWidthPx, setWorkspacePreviewWidthPx] = React.useState(() => resolveWorkspacePreviewDefaultWidthPx())
   const workspacePreviewWidthPxRef = React.useRef(workspacePreviewWidthPx)
   workspacePreviewWidthPxRef.current = workspacePreviewWidthPx
+  const previousCompactWidthRef = React.useRef<number | null>(null)
+  const compactForOverviewRef = React.useRef(false)
   const [resizeHandleEl, setResizeHandleEl] = React.useState<HTMLHRElement | null>(null)
+
+  React.useEffect(() => {
+    if (options.compactForOverview && !compactForOverviewRef.current) {
+      compactForOverviewRef.current = true
+      previousCompactWidthRef.current = workspacePreviewWidthPxRef.current
+      setWorkspacePreviewWidthPx(clampWorkspacePreviewWidthPx(360))
+      return
+    }
+    if (!options.compactForOverview && compactForOverviewRef.current) {
+      compactForOverviewRef.current = false
+      const previousWidth = previousCompactWidthRef.current
+      previousCompactWidthRef.current = null
+      if (previousWidth !== null) setWorkspacePreviewWidthPx(clampWorkspacePreviewWidthPx(previousWidth))
+    }
+  }, [options.compactForOverview])
 
   const wasEditorOverlayOpenRef = React.useRef<boolean>(workspaceEditorOverlayOpen)
   React.useEffect(() => {

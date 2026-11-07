@@ -1,0 +1,15 @@
+{
+  "schema": "notice-triage-policy/v1",
+  "inputSchema": "structured-notice/v1",
+  "maxBytes": 12000,
+  "volumeProfile": {"id": "volume-v1", "version": "1.0.0"},
+  "roleMap": {"vertices": "boundary", "floor": "lower", "ceiling": "upper", "validFrom": "valid_from", "validTo": "valid_to"},
+  "geometryType": "Polygon",
+  "schedule": "continuous",
+  "ui": {
+    "title": "Structured notice triage · synthetic Singapore exercise",
+    "description": "Explicit structured JSON exercise only. This synthetic Singapore-area polygon is not a real notice, official airspace or clearance. Free text, compound geometry, recurring schedules and unresolved vertical references are retained for review without interpretation.",
+    "fixturePath": "./fixtures/notice-singapore-synthetic-v1.json",
+    "defaultAtUtc": "2026-10-03T10:45:00.000Z"
+  }
+}

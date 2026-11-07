@@ -578,7 +578,7 @@ export function FloatingPanelChatComposerMediaOverlay(props: {
               displayText: part.displayText,
             })}
             <span
-              className={`pointer-events-none absolute left-0 top-1/2 w-full max-w-full -translate-y-1/2 cursor-text overflow-hidden bg-[color:var(--kg-panel-bg)] shadow-sm ${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} !mr-0 align-baseline`}
+              className={`pointer-events-none absolute left-0 top-1/2 w-full max-w-full -translate-y-1/2 cursor-text overflow-hidden bg-[color:var(--kg-panel-bg)] shadow-none ${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} !mr-0 align-baseline`}
               data-kg-chat-input-media-chip="1"
               data-kg-chat-input-media-source={part.sourceUrl || part.raw}
               title={readComposerMediaSource(part)}

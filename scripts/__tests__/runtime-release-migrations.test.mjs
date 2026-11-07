@@ -43,8 +43,10 @@ test('core selects storage dependencies and retains original provider ledger key
   assert.deepEqual(observation.selected.map(file => file.name), [...CORE_RUNTIME_MIGRATIONS].sort())
   assert(observation.appliedBefore.includes('0001_knowgrph_storage.sql'))
   assert(observation.pending.includes('0001_agentic-graph_storage.sql'))
+  assert(observation.pending.includes('0022_agentic_graph_r2_free_quota.sql'))
   assert(observation.deferred.includes('0005_strytree_external_provider_neutralization.sql'))
   assert(observation.deferred.includes('0018_agentic_commerce_paid_resources.sql'))
+  assert(!observation.deferred.includes('0022_agentic_graph_r2_free_quota.sql'))
   assert(f.calls.every(args => args.includes('execute') && args.includes('SELECT name FROM d1_migrations ORDER BY name')))
   assert(f.configurations.every(file => !fs.existsSync(path.dirname(file))))
 })
@@ -129,6 +131,10 @@ test('selected migrations preserve legacy storage rows and permit legacy schema 
     for (const { source } of selectedMigrationSources(profile)) db.exec(source)
     assert.deepEqual(tables.map(table => db.prepare(`SELECT * FROM ${table}`).all()), before)
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM storage_child_state').get().n, 2)
+    assert.deepEqual(db.prepare('PRAGMA table_info(agentic_graph_r2_free_quota)').all().map(row => row.name), [
+      'scope_id', 'month_key', 'day_key', 'class_a_used', 'class_b_used',
+      'uploaded_bytes_lifetime', 'daily_reservations', 'updated_at',
+    ])
     db.exec("UPDATE document_chunks SET markdown='After',content_hash='new',updated_at='2026-02-01' WHERE id='c'")
     assert.equal(db.prepare("SELECT revision FROM documents WHERE id='d'").get().revision, 2)
     db.exec("UPDATE documents SET content_md='Inline',revision=3 WHERE id='d'")

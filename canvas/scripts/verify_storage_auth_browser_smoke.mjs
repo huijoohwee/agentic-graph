@@ -44,7 +44,7 @@ const requests = [], failures = [], results = []
 const oauthFetch = async input => {
   const url = String(input)
   if (providerFailure) return Response.json({ error: 'fixture outage' }, { status: 503 })
-  if (url === 'https://github.com/login/oauth/access_token') return Response.json({ access_token: 'ghu_' + 'a'.repeat(40), token_type: 'bearer', scope: '' })
+  if (url === 'https://github.com/login/oauth/access_token') return Response.json({ access_token: 'gho_' + 'a'.repeat(40), token_type: 'bearer', scope: '' })
   if (url === 'https://www.googleapis.com/oauth2/v3/certs') return Response.json({ keys: [jwk] })
   if (url === 'https://oauth2.googleapis.com/token') {
     const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url')
@@ -122,6 +122,7 @@ await context.route(url => url.origin !== origin && url.origin !== providerOrigi
   await route.abort()
 })
 const open = async () => { await page.locator('#open').click(); await page.getByRole('dialog', { name: 'Airvio account' }).waitFor() }
+const readCloudWorkspace = () => page.getByRole('button', { name: 'Cloud workspace', exact: true }).getAttribute('data-value')
 const ready = async () => page.locator('body[data-ready="1"]').waitFor()
 const screenshot = async name => {
   if (!process.env.AG_STORAGE_AUTH_SCREENSHOT_DIR) return
@@ -159,12 +160,12 @@ try {
   await screenshot('signup')
   await page.getByRole('button', { name: 'Continue with GitHub' }).click()
   await page.getByRole('heading', { name: 'Your cloud workspace' }).waitFor()
-  const workspaceId = await page.getByLabel('Cloud workspace', { exact: true }).inputValue()
+  const workspaceId = await readCloudWorkspace()
   assert.match(workspaceId, /^kgws:personal:/)
   assert.equal(await page.evaluate(() => document.cookie.includes('kg_storage_session')), false)
   const sessionCookie = (await context.cookies()).find(cookie => cookie.name.includes('session'))
   assert.ok(sessionCookie?.httpOnly)
-  await page.getByRole('button', { name: 'Continue to workspace' }).click(); await ready()
+  await page.getByRole('button', { name: 'Select workspace' }).click(); await ready()
   await page.getByRole('dialog').waitFor({ state: 'detached' })
   assert.equal(new URL(page.url()).searchParams.has('kgAuth'), false)
   assert.equal(await page.evaluate(async () => (await import('/src/lib/storage/agentic-graph-storage-workspace-selection.ts')).readAgenticGraphStorageWorkspaceOverride()), workspaceId)
@@ -196,7 +197,7 @@ try {
   await open(); await page.getByText('Connect another sign-in method', { exact: true }).click()
   await page.getByRole('button', { name: 'Connect Google to this account', exact: true }).click()
   await page.getByRole('heading', { name: 'Your cloud workspace' }).waitFor()
-  assert.equal(await page.getByLabel('Cloud workspace', { exact: true }).inputValue(), workspaceId)
+  assert.equal(await readCloudWorkspace(), workspaceId)
   assert.equal(f.sql.prepare("SELECT count(*) n FROM auth_identities WHERE provider='google'").get().n, 1)
   await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('heading', { name: 'Sign in to Airvio' }).waitFor()
@@ -205,7 +206,7 @@ try {
   await page.getByRole('button', { name: 'Continue locally', exact: true }).click()
   await open(); await page.getByRole('link', { name: 'Continue with Google', exact: true }).click()
   await page.getByRole('heading', { name: 'Your cloud workspace' }).waitFor()
-  assert.equal(await page.getByLabel('Cloud workspace', { exact: true }).inputValue(), workspaceId)
+  assert.equal(await readCloudWorkspace(), workspaceId)
   await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('heading', { name: 'Sign in to Airvio' }).waitFor()
   await page.getByRole('button', { name: 'Continue locally', exact: true }).click()
@@ -216,7 +217,7 @@ try {
   await page.getByRole('heading', { name: 'Create your Airvio account' }).waitFor()
   await page.getByRole('button', { name: 'Continue with GitHub', exact: true }).click()
   await page.getByRole('heading', { name: 'Your cloud workspace' }).waitFor()
-  assert.notEqual(await page.getByLabel('Cloud workspace', { exact: true }).inputValue(), workspaceId)
+  assert.notEqual(await readCloudWorkspace(), workspaceId)
   await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('heading', { name: 'Sign in to Airvio' }).waitFor()
   await page.getByRole('button', { name: 'Continue locally', exact: true }).click()
@@ -224,7 +225,7 @@ try {
   providerFailure = true
   await open(); await page.getByRole('link', { name: 'Continue with GitHub', exact: true }).click()
   await page.getByRole('heading', { name: 'Sign-in was not completed' }).waitFor()
-  assert.ok(!await page.locator('body').innerText().then(text => text.includes('ghu_' + 'a'.repeat(40))))
+  assert.ok(!await page.locator('body').innerText().then(text => text.includes('gho_' + 'a'.repeat(40))))
   await page.getByRole('link', { name: 'Return to local workspace', exact: true }).click(); await ready()
   providerFailure = false; metadataFailure = true
   await open(); await page.getByRole('alert').waitFor()

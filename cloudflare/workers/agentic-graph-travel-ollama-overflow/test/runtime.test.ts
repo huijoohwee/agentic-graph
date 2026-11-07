@@ -15,13 +15,22 @@ describe('Workers AI Free overflow Worker', () => {
 
     const aiRun = vi.fn(async () => ({ response: 'must-not-run' }))
     const response = await fetch('/readyz', envWith(aiRun))
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(503)
     await expect(response.json()).resolves.toMatchObject({
-      ok: true,
-      dependency: 'workers-ai-free-configured',
+      ok: false,
+      dependency: 'workers-ai-cost-evidence-unavailable',
+      costVerifierConfigured: false,
       freeDailyNeuronLimit: 10_000,
     })
     expect(aiRun).not.toHaveBeenCalled()
+
+    const configured = await fetch('/readyz', envWith(aiRun, testCostVerifier))
+    expect(configured.status).toBe(200)
+    await expect(configured.json()).resolves.toMatchObject({
+      ok: true,
+      dependency: 'workers-ai-cost-verifier-configured',
+      costVerifierConfigured: true,
+    })
   })
 
   it('requires authentication and forwards bounded allowlisted inference to Workers AI', async () => {
@@ -32,7 +41,7 @@ describe('Workers AI Free overflow Worker', () => {
       expect(options?.signal?.aborted).toBe(false)
       return { response: 'world', usage: { prompt_tokens: 2, completion_tokens: 3 } }
     })
-    const environment = envWith(aiRun)
+    const environment = envWith(aiRun, testCostVerifier)
     expect((await fetch('/v1/inference', environment, { method: 'POST' })).status).toBe(401)
 
     const response = await fetch('/v1/inference', environment, {
@@ -48,9 +57,21 @@ describe('Workers AI Free overflow Worker', () => {
     expect(aiRun).toHaveBeenCalledOnce()
   })
 
+  it('blocks an otherwise valid inference before Workers AI when zero-cost proof is unavailable', async () => {
+    const aiRun = vi.fn(async () => ({ response: 'must-not-run' }))
+    const response = await fetch('/v1/inference', envWith(aiRun), {
+      method: 'POST',
+      headers: { authorization: `Bearer ${'t'.repeat(32)}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ modelId: MODEL, input: { prompt: 'hello' } }),
+    })
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ ok: false, reason: 'workers-ai-unavailable' })
+    expect(aiRun).not.toHaveBeenCalled()
+  })
+
   it('accepts structured messages and fails closed when Workers AI is unavailable', async () => {
     const aiRun = vi.fn(async () => { throw new Error('quota exhausted') })
-    const response = await fetch('/v1/inference', envWith(aiRun), {
+    const response = await fetch('/v1/inference', envWith(aiRun, testCostVerifier), {
       method: 'POST',
       headers: { authorization: `Bearer ${'t'.repeat(32)}`, 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -94,7 +115,7 @@ describe('Workers AI Free overflow Worker', () => {
   })
 
   it('fails closed rather than serializing an oversized Workers AI response', async () => {
-    const response = await fetch('/v1/inference', envWith(async () => ({ response: 'x'.repeat(300_000) })), {
+    const response = await fetch('/v1/inference', envWith(async () => ({ response: 'x'.repeat(300_000) }), testCostVerifier), {
       method: 'POST',
       headers: { authorization: `Bearer ${'t'.repeat(32)}`, 'content-type': 'application/json' },
       body: JSON.stringify({ modelId: MODEL, input: { prompt: 'hello' } }),
@@ -104,11 +125,37 @@ describe('Workers AI Free overflow Worker', () => {
   })
 })
 
-function envWith(run: (modelId: string, input: Record<string, unknown>, options?: { signal?: AbortSignal }) => Promise<unknown> = async () => ({ response: 'ok' })): WorkersAiOverflowEnv {
+function envWith(
+  run: (modelId: string, input: Record<string, unknown>, options?: { signal?: AbortSignal }) => Promise<unknown> = async () => ({ response: 'ok' }),
+  verifyProviderCostEvidence?: (request: Record<string, unknown>) => Promise<Record<string, unknown>>,
+): WorkersAiOverflowEnv & { verifyProviderCostEvidence?: (request: Record<string, unknown>) => Promise<Record<string, unknown>> } {
   return {
     ALLOWED_MODELS_JSON: JSON.stringify([MODEL]),
     INFERENCE_OVERFLOW_TOKEN: 't'.repeat(32),
     AI: { run } as unknown as Ai,
+    ...(verifyProviderCostEvidence ? { verifyProviderCostEvidence } : {}),
+  }
+}
+
+const testCostVerifier = async (request: Record<string, unknown>) => {
+  const scopeDigest = String(request.scopeDigest)
+  const observedAt = String(request.observedAt)
+  return {
+    schema: 'agentic-os/verified-effect-cost-evidence/v1',
+    status: 'verified-zero-cost',
+    provider: request.provider,
+    mode: 'free-fail-closed',
+    billingPlan: 'free',
+    providerHardCapUsd: null,
+    quotaExhaustion: 'deny',
+    paidPlanActive: false,
+    addOnsActive: false,
+    overagesEnabled: false,
+    autoUpgradeEnabled: false,
+    evidenceDigest: 'b'.repeat(64),
+    scopeDigest,
+    verifiedAt: observedAt,
+    expiresAt: new Date(Date.parse(observedAt) + 60_000).toISOString(),
   }
 }
 

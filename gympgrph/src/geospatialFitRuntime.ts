@@ -1,6 +1,7 @@
 import type { GeospatialBounds } from 'grph-shared/geospatial/enhancedLayerContract'
 import type { GeospatialFitRequest } from './hooks/store/types.js'
 import type { GeospatialPresentationCameraOwner } from './features/geospatial/geospatialPresentationCameraOwner.js'
+import { readGeoMapPresentationPadding } from './geoMapViewport.js'
 
 export type GeospatialFitRequestRoute =
   | 'city-presentation'
@@ -38,7 +39,12 @@ export function resolveGeospatialFitRequestRoute(
 const fit = (map: any, bounds: GeospatialBounds | null, padding: number): void => {
   if (!bounds) return
   try {
-    map.fitBounds(bounds, { padding, duration: 0 })
+    map.fitBounds(bounds, {
+      padding: typeof map?.getContainer === 'function'
+        ? readGeoMapPresentationPadding(map, padding)
+        : padding,
+      duration: 0,
+    })
   } catch {
     void 0
   }

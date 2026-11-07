@@ -437,8 +437,10 @@ export const createCanonicalDescendantMirrorRollbackProof = async ({ mirrorRoot,
       || new Set(changedPaths).size !== changedPaths.length) {
     throw new Error('Mirror descendant has no complete unique GameXR artifact delta')
   }
-  if (changedPaths.some(relativePath => isManagedDescendantExclusionPath(relativePath)
-      || !relativePath.startsWith('content/gamexr/'))) {
+  // This closed historical transition predates GameXR's managed-bundle admission.
+  // Its exact PR/commit/artifact bounds remain enforced by assertSuccessfulReleaseMirrorIdentity.
+  // Current ownership must not retroactively invalidate that retained rollback proof.
+  if (changedPaths.some(relativePath => !relativePath.startsWith('content/gamexr/'))) {
     throw new Error('Mirror descendant changed agentic-graph-managed or non-GameXR publication bytes')
   }
   const gamexrArtifact = await validateWholeGamexrArtifact({

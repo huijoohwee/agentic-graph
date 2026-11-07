@@ -223,6 +223,7 @@ export function WidgetEditorView(args: {
       className={`${pointerPolicy.rootClassName} [&_input:disabled]:pointer-events-none [&_select:disabled]:pointer-events-none [&_textarea:disabled]:pointer-events-none`}
       style={{
         zIndex: overlayZIndex,
+        pointerEvents: minimized ? 'none' : undefined,
       }}
       onPointerDownCapture={handleRootPointerCapture}
       onMouseDownCapture={handleRootPointerCapture}
@@ -266,7 +267,10 @@ export function WidgetEditorView(args: {
           />
         </section>
 
-        <section className={pointerPolicy.panelPointerEventsClassName}>
+        <section
+          className={pointerPolicy.panelPointerEventsClassName}
+          style={minimized ? { pointerEvents: 'none' } : undefined}
+        >
           <WidgetEditorPanel
             active={active}
             storyboardWidgetSurfaceId={storyboardWidgetSurfaceId}

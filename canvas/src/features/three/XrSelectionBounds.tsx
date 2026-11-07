@@ -1,6 +1,6 @@
 import React from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Box3, Box3Helper, Matrix4, type Group } from 'three'
+import { Box3, Box3Helper, Matrix4, type Group, type LineBasicMaterial } from 'three'
 import { THREE_RENDER_ORDER } from './renderOrder'
 
 /** World bounds follow the rendered geometry and compensate for any transformed parent. */
@@ -18,7 +18,7 @@ export function updateXrSelectionBounds(root: Group, helper: Box3Helper, inverse
   }
 }
 
-function SelectedBounds({ children, targetId }: { children: React.ReactNode; targetId: string }) {
+export function XrSelectionBounds({ children, targetId, selected, outlined = false }: { children: React.ReactNode; targetId: string; selected: boolean; outlined?: boolean }) {
   const root = React.useRef<Group>(null)
   const inverse = React.useMemo(() => new Matrix4(), [])
   const helper = React.useMemo(() => {
@@ -36,11 +36,16 @@ function SelectedBounds({ children, targetId }: { children: React.ReactNode; tar
     helper.geometry.dispose()
     for (const material of Array.isArray(helper.material) ? helper.material : [helper.material]) material.dispose()
   }, [helper])
-  useFrame(() => { if (root.current) updateXrSelectionBounds(root.current, helper, inverse) })
-  return <><group ref={root}>{children}</group><primitive object={helper} raycast={() => null} /></>
+  React.useEffect(() => {
+    for (const material of Array.isArray(helper.material) ? helper.material : [helper.material]) {
+      (material as LineBasicMaterial).color.setHex(selected ? 0xfacc15 : 0x22d3ee)
+    }
+  }, [helper, selected])
+  useFrame(() => {
+    if ((selected || outlined) && root.current) updateXrSelectionBounds(root.current, helper, inverse)
+    else helper.visible = false
+  })
+  return <><group ref={root}>{children}</group><primitive object={helper} visible={selected || outlined} raycast={() => null} /></>
 }
 
-/** All object selections share this outline. Labels and pose diagnostics stay outside its bounds. */
-export function XrSelectionBounds({ selected, ...props }: { selected: boolean; children: React.ReactNode; targetId: string }) {
-  return selected ? <SelectedBounds {...props} /> : <>{props.children}</>
-}
+// Keep the model parent stable: reparenting a reused R3F primitive on selection destroys its root binding.

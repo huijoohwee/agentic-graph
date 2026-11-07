@@ -1,7 +1,9 @@
 import React from 'react'
+import { photoFieldOfView } from './immersivePhotoProjection'
 import { useFrame } from '@react-three/fiber'
 import { Euler, MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { bindImmersiveMediaCameraPointerControls } from './immersiveMediaCameraPointerControls'
 import {
   playImmersiveMediaIntro,
   readImmersiveMediaSnapshot,
@@ -20,9 +22,11 @@ type SavedCamera = Readonly<{
   enableZoom: boolean
 }>
 
-function editableTarget(target: EventTarget | null): boolean {
+function interactiveTarget(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null
-  return !!element?.closest?.('input, textarea, select, [contenteditable="true"]')
+  return !!element?.closest?.(
+    'input, textarea, select, button, a, [contenteditable="true"], [role="button"], [role="textbox"]',
+  )
 }
 
 export function useImmersiveMediaCameraControls({
@@ -43,13 +47,6 @@ export function useImmersiveMediaCameraControls({
   )
   const active = enabled && snapshot.active
   const savedRef = React.useRef<SavedCamera | null>(null)
-  const pointerRef = React.useRef<{
-    pointerId: number
-    x: number
-    y: number
-    yaw: number
-    pitch: number
-  } | null>(null)
   const introRef = React.useRef({
     revision: snapshot.introRevision,
     startedAt: 0,
@@ -91,40 +88,10 @@ export function useImmersiveMediaCameraControls({
 
   React.useEffect(() => {
     if (!active) return
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || editableTarget(event.target)) return
-      pointerRef.current = {
-        pointerId: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        yaw: readImmersiveMediaSnapshot().view.yawDegrees,
-        pitch: readImmersiveMediaSnapshot().view.pitchDegrees,
-      }
-      domElement.setPointerCapture?.(event.pointerId)
-    }
-    const onPointerMove = (event: PointerEvent) => {
-      const pointer = pointerRef.current
-      if (!pointer || pointer.pointerId !== event.pointerId) return
-      setImmersiveMediaView({
-        yawDegrees: pointer.yaw - (event.clientX - pointer.x) * 0.14,
-        pitchDegrees: pointer.pitch + (event.clientY - pointer.y) * 0.12,
-      })
-    }
-    const onPointerUp = (event: PointerEvent) => {
-      if (pointerRef.current?.pointerId === event.pointerId) pointerRef.current = null
-    }
-    const onWheel = (event: WheelEvent) => {
-      if (editableTarget(event.target)) return
-      event.preventDefault()
-      zoomImmersiveMedia(event.deltaY > 0 ? 'out' : 'in')
-    }
-    const onDoubleClick = (event: MouseEvent) => {
-      if (!readImmersiveMediaSnapshot().navigation.doubleClickZoom || editableTarget(event.target)) return
-      zoomImmersiveMedia(event.shiftKey ? 'out' : 'in')
-    }
+    const unbindPointerControls = bindImmersiveMediaCameraPointerControls(domElement)
     const onKeyDown = (event: KeyboardEvent) => {
       const media = readImmersiveMediaSnapshot()
-      if (!media.navigation.keyboardActions || editableTarget(event.target)) return
+      if (!media.navigation.keyboardActions || interactiveTarget(event.target)) return
       const view = media.view
       if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
         setImmersiveMediaView({ yawDegrees: view.yawDegrees - 6 })
@@ -141,21 +108,9 @@ export function useImmersiveMediaCameraControls({
       else return
       event.preventDefault()
     }
-    domElement.addEventListener('pointerdown', onPointerDown)
-    domElement.addEventListener('pointermove', onPointerMove)
-    domElement.addEventListener('pointerup', onPointerUp)
-    domElement.addEventListener('pointercancel', onPointerUp)
-    domElement.addEventListener('wheel', onWheel, { passive: false })
-    domElement.addEventListener('dblclick', onDoubleClick)
     window.addEventListener('keydown', onKeyDown)
     return () => {
-      pointerRef.current = null
-      domElement.removeEventListener('pointerdown', onPointerDown)
-      domElement.removeEventListener('pointermove', onPointerMove)
-      domElement.removeEventListener('pointerup', onPointerUp)
-      domElement.removeEventListener('pointercancel', onPointerUp)
-      domElement.removeEventListener('wheel', onWheel)
-      domElement.removeEventListener('dblclick', onDoubleClick)
+      unbindPointerControls()
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [active, domElement])
@@ -163,18 +118,18 @@ export function useImmersiveMediaCameraControls({
   useFrame(({ clock }) => {
     if (!active) return
     controls.enabled = false
-    camera.position.set(0, 0, 0.01)
+    camera.position.set(0, 0, snapshot.source.photo ? 0 : 0.01)
     const intro = introRef.current
     if (!intro.startedAt) intro.startedAt = clock.elapsedTime
     const elapsed = clock.elapsedTime - intro.startedAt
     const duration = Math.max(0.25, snapshot.transitionDurationMs / 1000)
     const progress = Math.min(1, elapsed / duration)
     const eased = 1 - Math.pow(1 - progress, 3)
-    const introOffset = intro.revision === snapshot.introRevision ? (1 - eased) * -42 : 0
+    const introOffset = !snapshot.source.photo && intro.revision === snapshot.introRevision ? (1 - eased) * -42 : 0
     const yaw = MathUtils.degToRad(snapshot.view.yawDegrees + introOffset)
     const pitch = MathUtils.degToRad(snapshot.view.pitchDegrees)
     camera.rotation.set(pitch, yaw, 0, 'YXZ')
-    const fieldOfView = Math.max(
+    const fieldOfView = snapshot.source.photo ? photoFieldOfView(snapshot.source.photo, camera.aspect, snapshot.view.fieldOfViewDegrees) : Math.max(
       24,
       Math.min(115, snapshot.view.fieldOfViewDegrees + snapshot.view.lensStrength * 18),
     )

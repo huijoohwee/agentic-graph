@@ -13,7 +13,7 @@ import {
 import IconButton from '@/components/IconButton'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getIconSizeClass } from '@/lib/ui'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import {
   TRAVERSAL_SEQUENCE_TOOLTIP,
   TRAVERSAL_SEQUENCE_MODE_LABEL_GRAPH_RAG,
@@ -71,7 +71,7 @@ export function TraversalSequenceSection({
           >
             <section
               className={[
-                `flex items-center gap-1 font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`,
+                `flex items-center gap-1 font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`,
                 uiPanelKeyValueTextSizeClass,
                 uiPanelTextFontClass,
               ].join(' ')}

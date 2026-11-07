@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import type { MutableRefObject } from 'react'
 import type { GraphNode, GraphEdge } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
@@ -11,7 +12,8 @@ import { getNodeRectDimensions2d, getNodeRenderShape2d } from '@/components/Grap
 import { buildNodeShapePathD } from '@/components/GraphCanvas/shapePaths2d'
 import { buildChevronPathD } from '@/components/GraphCanvas/layers/svgChevron'
 import { getEdgeEndpointFromPorts } from '@/components/GraphCanvas/portHandles'
-import { computeOverlayHalfExtentsWorld, readOverlaySizingConfigForDensity, type OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
+import type { OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
+import { computeOverlayHalfExtentsByNodeId2d } from '@/lib/render/overlayHalfExtentsByNodeId2d'
 import { readLabelPresentation2d } from '@/lib/canvas/labelPresentation2d'
 import { computeIdealSpacing2d, computeMaxSpeed2d, readPhysics2dTuning } from '@/lib/graph/physics2dTuning'
 import { buildCanonicalNodeLookup, getCanonicalNodeLookupValue } from '@/lib/graph/canonicalNodeIds'
@@ -121,8 +123,10 @@ export const attachSimulationTick = (args: {
   const groupsForBboxCollide = Array.isArray(args.groupsForBboxCollide) ? args.groupsForBboxCollide : []
   const nodeLookup = buildCanonicalNodeLookup(nodeById.entries())
 
-  let lastOverlayHalfExtentsKey = ''
-  let lastOverlayHalfExtents: { halfW: number; halfH: number } | null = null
+  const overlayHalfExtentsById = computeOverlayHalfExtentsByNodeId2d({ nodes, panelOnlyNodeIdSet,
+    mediaOverlayNodeIdSet, viewportW: width, viewportH: height, zoomK: 1,
+    mediaPanelDensity: mediaPanelDensity === 'compact' ? 'compact' : 'default', overlaySizing,
+    aspectRatioMode: useGraphStore.getState().strybldrStoryboardCardAspectMode })
   let lastSchema: GraphSchema | null = null
   const nodeMetricsCache = new Map<string, { width: number; height: number; r: number; key: string }>()
   const labelRelaxState: LabelRelaxState2d = {
@@ -397,19 +401,6 @@ export const attachSimulationTick = (args: {
       const k = typeof t.k === 'number' && Number.isFinite(t.k) && t.k > 0 ? t.k : 1
       return k
     })()
-    const overlayHalfExtentsWorld = (() => {
-      const hasSets =
-        (panelOnlyNodeIdSet && panelOnlyNodeIdSet.size > 0) || (mediaOverlayNodeIdSet && mediaOverlayNodeIdSet.size > 0)
-      if (!hasSets) return null
-      const density: 'default' | 'compact' = mediaPanelDensity === 'compact' ? 'compact' : 'default'
-      const cfg = readOverlaySizingConfigForDensity({ density, sizing: overlaySizing || null })
-      const key = `${density}|${width}|${height}|${zoomK}|${cfg.widthRatio}|${cfg.widthMinPx}|${cfg.widthMaxPx}`
-      if (key === lastOverlayHalfExtentsKey) return lastOverlayHalfExtents
-      const out = computeOverlayHalfExtentsWorld({ density, viewportW: width, viewportH: height, zoomK, config: cfg })
-      lastOverlayHalfExtentsKey = key
-      lastOverlayHalfExtents = out
-      return out
-    })()
     const nodeMetricsFrameCache = new Map<GraphNode, { width: number; height: number; r: number }>()
     const getNodeMetricsForFrame = (d: GraphNode): { width: number; height: number; r: number } => {
       const cached = nodeMetricsFrameCache.get(d)
@@ -438,9 +429,9 @@ export const attachSimulationTick = (args: {
       const ux = dx / norm
       const uy = dy / norm
 
-      if (isPanelNode(from) && overlayHalfExtentsWorld) {
-        const halfW = overlayHalfExtentsWorld.halfW
-        const halfH = overlayHalfExtentsWorld.halfH
+      const panelExtents = overlayHalfExtentsById?.[String(from.id)]
+      if (isPanelNode(from) && panelExtents) {
+        const { halfW, halfH } = panelExtents
         const absUx = Math.abs(ux)
         const absUy = Math.abs(uy)
         const txRect = absUx > 1e-6 ? halfW / absUx : Number.POSITIVE_INFINITY
@@ -692,8 +683,7 @@ export const attachSimulationTick = (args: {
     }
 
     applyStrictOverlapRelax2d({
-      state: strictOverlapState,
-      nodes,
+      state: strictOverlapState, nodes, halfExtentsByNodeId: overlayHalfExtentsById,
       tick,
       alpha: simulation.alpha(),
       schema,

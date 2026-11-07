@@ -26,7 +26,7 @@ const SOURCE_LABELS: Record<EnhancedLayerCatalogSource, string> = {
 }
 
 const BUTTON_CLASSNAME = [
-  'App-toolbar__btn min-h-7 rounded px-2 py-1 text-[11px]',
+  'App-toolbar__btn min-h-7 rounded px-2 py-1 text-xs',
   'text-[color:var(--kg-text-secondary)]',
   'hover:bg-[var(--kg-panel-action-bg-hover)]',
 ].join(' ')
@@ -56,11 +56,11 @@ function EnhancedLayerCatalogRow(props: {
       <header className="flex min-w-0 items-start justify-between gap-2">
         <span className="grid min-w-0 gap-0.5">
           <strong className="truncate text-xs" title={layer.id}>{layer.id}</strong>
-          <span className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <span className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
             {kindLabel(layer)} · {layer.visible ? 'Visible' : 'Hidden'}
           </span>
         </span>
-        <label className="inline-flex shrink-0 items-center gap-1 text-[10px]">
+        <label className="inline-flex shrink-0 items-center gap-1 text-xs">
           <input
             type="checkbox"
             role="switch"
@@ -72,16 +72,16 @@ function EnhancedLayerCatalogRow(props: {
           <span>{layer.visible ? 'On' : 'Off'}</span>
         </label>
       </header>
-      <span className={cn('truncate text-[10px]', UI_THEME_TOKENS.text.tertiary)} title={layer.url}>
+      <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={layer.url}>
         {layer.url}
       </span>
-      <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+      <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         {layer.timeoutMs} ms · {layer.maxBytes.toLocaleString()} bytes
         {layer.tags.length > 0 ? ` · ${layer.tags.join(' ')}` : ''}
       </span>
       {props.confirmingRemove ? (
         <footer className="flex flex-wrap items-center justify-end gap-1" role="group" aria-label={`Confirm removal of ${layer.id}`}>
-          <span className="mr-auto text-[10px] text-red-600">Remove this layer?</span>
+          <span className="mr-auto text-xs text-red-600">Remove this layer?</span>
           <button type="button" className={BUTTON_CLASSNAME} onClick={props.onCancelRemove} disabled={props.busy}>
             Cancel
           </button>
@@ -172,7 +172,7 @@ export function EnhancedLayerCatalogView(props: {
       <header className="flex items-start justify-between gap-2">
         <span className="grid gap-0.5">
           <strong className="text-xs">Enhanced layers</strong>
-          <span className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <span className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
             Source: {SOURCE_LABELS[controller.source]} · local browser configuration
           </span>
         </span>
@@ -242,7 +242,7 @@ export function EnhancedLayerCatalogView(props: {
       <footer className="grid gap-2">
         {confirmReset ? (
           <div className="flex flex-wrap items-center justify-end gap-1" role="group" aria-label="Confirm reset to environment defaults">
-            <span className={cn('mr-auto text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+            <span className={cn('mr-auto text-xs', UI_THEME_TOKENS.text.secondary)}>
               Remove the local catalog and visibility overrides?
             </span>
             <button type="button" className={BUTTON_CLASSNAME} onClick={() => setConfirmReset(false)} disabled={busy}>
@@ -269,7 +269,7 @@ export function EnhancedLayerCatalogView(props: {
           </button>
         )}
         {controller.message ? (
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)} role="status">
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)} role="status">
             {controller.message}
           </p>
         ) : null}

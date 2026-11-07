@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Artifact and Media Storage Architecture"
 id: "md:agentic-graph-artifact-media-storage-architecture"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "2.2.1"
-date: "2026-09-12"
+version: "2.2.2"
+date: "2026-10-20"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.storage.media-architecture"
@@ -19,12 +19,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "2.2.0"
-prd_revision: "2.2.1"
-tad_revision: "2.2.1"
-adr_revision: "2.2.1"
-mvp_revision: "2.2.1"
-gtm_revision: "2.2.1"
+previous_document_version: "2.2.1"
+prd_revision: "2.2.2"
+tad_revision: "2.2.2"
+adr_revision: "2.2.2"
+mvp_revision: "2.2.2"
+gtm_revision: "2.2.2"
 ---
 
 # Reference implementation: agentic-graph Artifact and Media Storage Architecture
@@ -34,6 +34,13 @@ gtm_revision: "2.2.1"
 This document owns only the implemented source contract for binary blob/media routes in the
 agentic-graph storage Worker. It does not make the storage Worker, bucket, endpoint, authentication
 policy, provider ingest, or delivery surface production-ready.
+
+The current cost boundary gates each configured Graph R2 operation with the pinned
+Agentic OS call-scope verifier and a shared D1 Free-quota reservation. It allows the
+Graph Workers a bounded 5% slice of the Standard R2 monthly request quotas and 500 MB
+of cumulative writes. Missing ledger evidence or exhausted budgets block before R2.
+The configured storage bucket is named in Wrangler; local fixture evidence grants no
+live authority. Other account R2 callers remain outside this Graph allocation.
 
 The public Worker dispatches through `storagePublicRouteSecurity.ts` before calling the binary
 handlers. Outside explicit local-runtime mode, the three route families are deliberately distinct:
@@ -95,7 +102,7 @@ but must not redefine their arguments or trust boundary.
 | Node | Role | Type | Lane | Connects to | Connection | Data residency |
 |---|---|---|---|---|---|---|
 | Client | Producer/Consumer | browser/tool host | Authoring | Storage Worker | HTTPS | caller device |
-| Storage Worker | Gateway | Worker source | Authoring | R2 binding | in-process binding call | configured Worker region |
+| Storage Worker | Gateway | Worker source | Authoring | exact scope + shared D1 quota gate → R2 binding | per-call proof; provider call blocked at the Graph Free-quota allocation | configured Worker region |
 | Generic blob handler | Router | function | Authoring | secured dispatcher, R2 binding | workspace authorization + async put/get/head | request memory |
 | Run-media handler | Router | function | Authoring | capability verifier, R2 binding | async signature verification + put/get/head | request memory |
 | Media-asset handler | Router | function | Authoring | secured dispatcher, D1, R2, optional KV/room | workspace authorization + async binding calls | request memory |
@@ -134,9 +141,10 @@ flowchart TB
   Dispatch -- "authorized metadata" --> Assets
   Auth -- "authorized issuance" --> Capability
   Media -- "verify scoped capability" --> Capability
-  Blob -- "async put/get/head" --> Bucket
-  Media -- "async put/get/head" --> Bucket
-  Assets -- "async head/delete" --> Bucket
+  Blob -- "put/get/head" --> CostGate["Exact cost + quota gate"]
+  Media -- "put/get/head" --> CostGate
+  Assets -- "head/delete" --> CostGate
+  CostGate -- "5% Free-tier allocation, reserved in shared D1" --> Bucket
   Assets -- "async query/upsert/delete" --> Catalog
   Assets -- "async optional cache/notification" --> Optional
   WorkerSource -. "protected batch" .-> Mirror
@@ -250,6 +258,20 @@ fixture because the runtime intentionally skips cloud synchronization for memory
 - CORS permits `*`; this is not authorization.
 - Content hashes are descriptive metadata, not integrity enforcement.
 - Neither source presence nor local tests prove a private bucket or delivered route.
+- Configured Graph R2 paths reserve against one shared D1 ledger before the provider call:
+  50,000 Class A and 500,000 Class B operations per UTC month, 500 MB cumulative upload
+  bytes, and 5,000 reservations per UTC day. Missing ledger/migration and exhausted budgets
+  block before R2. The operation caps are 5% of the published monthly R2 request quotas.
+- Writes are forced to Standard storage. Reads, overwrites, multipart completion and deletion
+  check object storage class first; Infrequent Access is blocked because it has no Free tier.
+  Unknown-size streams reserve up to 100 MiB before upload, are byte-limited, then release
+  unused reservation after a successful complete upload.
+- This shared ledger covers configured Graph Workers only. It caps their monthly request
+  reservations at 5% of the published Free limits and cumulative new writes at 500 MB.
+  Other account callers remain outside this guard; all account usage must fit the Free limits.
+- Workers AI inference is checked per model, binding, and request. Only a current
+  provider-hard-cap USD 0 proof or Free-plan deny-at-quota proof permits inference;
+  missing evidence blocks before `AI.run`.
 - Delivery remains closed until exact deployment/binding/auth and rollback evidence is recorded.
 
 ## TCO comparison
@@ -257,9 +279,9 @@ fixture because the runtime intentionally skips cloud synchronization for memory
 | Model | Infra/month | 12-month estimate | Security/ops burden | Disposition |
 |---|---:|---:|---|---|
 | local fixture/file artifacts | $0 | $0 | low; operator custody | default authoring fallback |
-| managed Worker + object store | $0–25 | $0–300 | medium; auth, retention, egress, rollback | optional after VCC-M3/M4 |
-| FOSS self-hosted object service | $10–80 | $120–960 | high; patching/backups/auth | portability alternative |
-| hybrid local + managed media | $0–35 | $0–420 | high boundary complexity | only with measured value |
+| managed Worker + object store | 5% Graph share of Standard R2 Free quota | no overage permitted; other account callers use remaining quota | medium; auth, retention, egress, rollback | Graph calls stop at shared D1 caps |
+| FOSS self-hosted object service | unknown; host and operations are unpriced | excluded until proved | high; patching/backups/auth | portability option needs its own zero-cost proof |
+| hybrid local + managed media | 5% Graph share of Standard R2 Free quota | no overage permitted; other account callers use remaining quota | high boundary complexity | Graph calls stop at shared D1 caps |
 
 All paths use zero LLM tokens for storage and replay.
 

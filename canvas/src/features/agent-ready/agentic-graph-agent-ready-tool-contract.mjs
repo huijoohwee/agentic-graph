@@ -1,4 +1,5 @@
 import { buildDashboardWidgetToolContract } from '../../components/DashboardCanvas/dashboardWidgetToolContract.mjs'
+import { buildEvidenceAnalysisAgentReadyToolContracts } from './evidenceAnalysisAgentReadyContract.mjs'
 import {
   AGENTIC_OS_AGENT_SURFACE_OUTPUT_SCHEMA,
   buildAgenticGraphMcpNoauthSecuritySchemes,
@@ -18,10 +19,10 @@ import { buildWorkspaceLaunchAgentReadyToolContracts, } from './workspaceLaunchA
 import { buildToolbarActionAgentReadyToolContracts, } from './toolbarActionAgentReadyContract.mjs'
 import { buildDurableRunAgentReadyToolContracts, } from './durableRunAgentReadyContract.mjs'
 import { buildPythonLearningToolContracts } from '../python-learning/learningToolContract.mjs'
+import { buildSemanticSpaceAgentReadyToolContracts } from './semanticSpaceAgentReadyContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agentic-graph-agent-ready-output-schemas.mjs'
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agenticGraphAgentReadyToolIds.mjs'
 export { AGENTIC_OS_AGENT_READY_TOOL_IDS }
-
 export const AGENTIC_OS_AGENT_READY_WEB_MCP_NAMESPACE = 'agentic-graph'
 export const AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 const buildReadOnlyToolAnnotations = () => Object.freeze({
@@ -285,7 +286,7 @@ export const buildAgenticGraphWebMcpToolName = (
 export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
   const defaultWorkspaceId = String(args.defaultWorkspaceId || '').trim()
   const includeBrowserOnlyTools = args.includeBrowserOnlyTools === true
-  const contracts = [
+  const contracts = [...(includeBrowserOnlyTools ? buildEvidenceAnalysisAgentReadyToolContracts() : []),
     {
       name: AGENTIC_OS_AGENT_READY_TOOL_IDS.search,
       webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.search),
@@ -506,8 +507,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
             },
             anyOf: [{ required: ['invocation'] }, { required: ['action'] }],
           },
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation),
@@ -522,9 +522,8 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           title: 'Control Local Animation',
           description: 'Apply, clear, configure, keyboard-move, play, pause, scrub, or export native XR choreography through structured fields or the in-repo /animation.control, #character-motion, #action-path, @selected-actor, and @canvas grammar.',
           inputSchema: XR_ANIMATION_CONTROL_INPUT_SCHEMA,
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
-        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), buildDashboardWidgetToolContract(), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+        }, ...buildSemanticSpaceAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), buildDashboardWidgetToolContract(), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
           title: 'Inspect Local 3D Layout Positions',
@@ -543,10 +542,19 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene),
           title: 'Control Local XR Scene',
-          description: 'Control the open browser-local XR scene through structured stage, placement, native dynamics, immersive AR reticle placement, path-interpolation, label, and removal actions. Animation is owned separately by /animation.control.',
-          inputSchema: XR_SCENE_CONTROL_INPUT_SCHEMA,
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+          description: 'Prepare a detached position/scale proposal using the spatialWorkspace identity token returned by scene inspection. The operator applies or undoes it in the scene inspector. Direct agent writes and approval flags are refused; legacy controls remain available through manual UI.',
+          inputSchema: {
+            oneOf: [XR_SCENE_CONTROL_INPUT_SCHEMA, {
+              type: 'object', additionalProperties: false, required: ['action', 'expectedToken', 'edits'],
+              properties: {
+                action: { type: 'string', const: 'preview' }, expectedToken: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+                edits: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'object', additionalProperties: false, required: ['subjectId'], minProperties: 2,
+                  properties: {
+                    subjectId: { type: 'string', minLength: 1, maxLength: 96 },
+                    position: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'number', minimum: -50, maximum: 50 } },
+                    scale: { type: 'number', minimum: 0.25, maximum: 4 },
+                  }, } }, }, }], },
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport),

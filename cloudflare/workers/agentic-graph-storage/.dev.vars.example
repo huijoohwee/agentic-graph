@@ -39,15 +39,18 @@ AGENTIC_OS_STORAGE_ONEDRIVE_REFRESH_TOKEN=replace-with-microsoft-refresh-token
 AGENTIC_OS_STORAGE_ONEDRIVE_DRIVE_ID=replace-with-onedrive-drive-id
 AGENTIC_OS_STORAGE_ONEDRIVE_ROOT_ID=replace-with-onedrive-root-id
 
-# Optional browser sign-in for the local Canvas at http://127.0.0.1:4201.
+# Optional browser sign-in for local Canvas development.
 # No repository/Drive/email scopes; never commit real secrets. Copy only the
-# required keys to .dev.vars, then supply real operator-owned values. Register
-# http://127.0.0.1:4201/api/storage/auth/callback with the selected provider.
+# required keys to .dev.vars, then supply real operator-owned values. For GitHub,
+# register http://127.0.0.1/api/storage/auth/callback without a port, plus
+# https://airvio.co/api/storage/auth/callback. Keep wildcard matching disabled;
+# the local authorization request supplies its active loopback port.
 # Apply local D1 migrations, start storage:worker:dev on 127.0.0.1:8787, then
 # start Canvas with AGENTIC_OS_STORAGE_DEV_PROXY_TARGET=http://127.0.0.1:8787.
 # Choose oauth only after callback registration and identity enrollment.
 # AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE=oauth
-# AGENTIC_OS_STORAGE_OAUTH_ORIGINS=["http://127.0.0.1:4201"]
+# AGENTIC_OS_STORAGE_OAUTH_ORIGINS=["http://127.0.0.1:5174"]
+# AGENTIC_OS_STORAGE_OAUTH_ALLOW_LOOPBACK_PORTS=true
 # AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID=<GitHub-App-client-ID>
 # AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET=<Worker-secret>
 # AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID=<Google-web-client-ID>

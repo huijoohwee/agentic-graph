@@ -5,57 +5,13 @@ import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
 import { resolveImageToThreeJsSourceKind } from './imageToThreeJsContract'
 import {
   getRasterImageDimensions,
-  readImageReferencePixels,
   type RasterImageSource,
 } from './imageReferencePixels'
 
+import { buildRasterReliefGeometry } from './imageRasterReliefGeometry'
+
 type LoadState = 'loading' | 'ready' | 'error'
 
-function buildRasterReliefGeometry(args: {
-  image: RasterImageSource | undefined
-  height: number
-  width: number
-}) {
-  const segments = 28
-  const geometry = new THREE.PlaneGeometry(args.width, args.height, segments, segments)
-  const positions = geometry.getAttribute('position')
-  let pixels: Uint8ClampedArray | null = null
-  let pixelWidth = 0
-  let pixelHeight = 0
-
-  try {
-    if (args.image) {
-      const reference = readImageReferencePixels({ image: args.image, maxDimension: 96 })
-      pixels = reference.data
-      pixelWidth = reference.width
-      pixelHeight = reference.height
-    }
-  } catch {
-    // A remote source can legitimately taint its canvas. Keep a deterministic
-    // native relief instead of dropping to the raw-image fallback surface.
-  }
-
-  for (let index = 0; index < positions.count; index += 1) {
-    const u = (positions.getX(index) / args.width) + 0.5
-    const v = 0.5 - (positions.getY(index) / args.height)
-    let depth = Math.sin(u * Math.PI * 4) * Math.sin(v * Math.PI * 3) * 0.012
-    if (pixels && pixelWidth > 0 && pixelHeight > 0) {
-      const x = Math.min(pixelWidth - 1, Math.max(0, Math.round(u * (pixelWidth - 1))))
-      const y = Math.min(pixelHeight - 1, Math.max(0, Math.round(v * (pixelHeight - 1))))
-      const pixelIndex = (y * pixelWidth + x) * 4
-      const luminance = (
-        Number(pixels[pixelIndex] || 0) * 0.2126
-        + Number(pixels[pixelIndex + 1] || 0) * 0.7152
-        + Number(pixels[pixelIndex + 2] || 0) * 0.0722
-      ) / 255
-      depth = (luminance - 0.5) * 0.09
-    }
-    positions.setZ(index, depth)
-  }
-  positions.needsUpdate = true
-  geometry.computeVertexNormals()
-  return geometry
-}
 
 export function disposeImageThreeJsObject(root: THREE.Object3D) {
   root.traverse(object => {
@@ -314,13 +270,13 @@ export function ImageThreeJsSurface(props: {
           : <RasterImageObject key={`raster:${sourceUrl}`} sourceUrl={sourceUrl} onLoadState={handleLoadState} />}
       </Canvas>
       {loadState === 'loading' ? (
-        <span className="absolute inset-x-0 bottom-2 text-center text-[11px] text-slate-500" role="status">
+        <span className="absolute inset-x-0 bottom-2 text-center text-xs text-slate-500" role="status">
           Converting image to Three.js…
         </span>
       ) : null}
       {loadState === 'ready' ? (
         <span
-          className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100"
+          className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100"
           data-kg-image-threejs-native-badge="1"
         >
           Native Three.js · {sourceKind === 'svg' ? 'extruded SVG' : 'image relief'}

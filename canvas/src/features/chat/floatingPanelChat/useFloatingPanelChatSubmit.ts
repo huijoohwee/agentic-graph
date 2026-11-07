@@ -48,6 +48,10 @@ export const useFloatingPanelChatSubmit = (
       } catch (error) { args.setErrorText(error instanceof Error ? error.message : 'Observability is unavailable.') }
       return
     }
+    if (/^\/python\.learning(?:\s|$)/.test(trimmed)) {
+      await (await import('@/features/python-learning/programmaticDronePreset')).invokeProgrammaticDroneInspection(args)
+      return
+    }
     if (/^\/launch-copilot(?:\s|$)/.test(trimmed)) {
       await (await import('@/features/agent-graph/launchCopilotInvocation')).invokeLaunchCopilot(args)
       return

@@ -90,7 +90,7 @@ export function StoryboardWidgetMappingSettingsPanel(props: {
 
             <section aria-label="Identity" className="space-y-2">
               <section className={UI_RESPONSIVE_FLOW_MANAGER_SECTION_HEADER_CLASSNAME} aria-label="Identity header">
-                <section className={cn('text-xs font-semibold uppercase tracking-wider', UI_THEME_TOKENS.text.secondary)}>Identity</section>
+                <section className={cn('text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.secondary)}>Identity</section>
                 <label className={cn(UI_RESPONSIVE_FLOW_MANAGER_INLINE_CONTROL_CLASSNAME, panelTypography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>
                   <PanelCheckbox checked={!!draft.isEnabled} onChange={e => onChangeDraft({ isEnabled: e.target.checked })} />
                   Enabled
@@ -144,7 +144,7 @@ export function StoryboardWidgetMappingSettingsPanel(props: {
             </section>
 
             <header className={UI_RESPONSIVE_FLOW_MANAGER_SECTION_HEADER_CLASSNAME} aria-label="Rows header">
-              <section className={cn('text-xs font-semibold uppercase tracking-wider', UI_THEME_TOKENS.text.secondary)}>Rows</section>
+              <section className={cn('text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.secondary)}>Rows</section>
               <button
                 type="button"
                 className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}

@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -122,20 +123,19 @@ export async function testMainPanelSettingsSyncsLiveFloatingChatPipelineInspecti
     if (!providerInput || providerInput.readOnly !== true || providerInput.value !== CHAT_PROVIDER_OPENAI) {
       throw new Error(`expected chatProvider Value to be derived read-only OpenAI text, got ${JSON.stringify(providerRow?.textContent || providerInput?.value || '')}`)
     }
-    if (providerRow?.querySelector('select')) {
+    if (providerRow?.querySelector('button[data-kg-select]')) {
       throw new Error('expected chatProvider Value to avoid a manual provider dropdown')
     }
     const modelInputRow = mainPanelContainer.querySelector('[data-row="model-input"]') as HTMLElement | null
-    const modelSelect = modelInputRow?.querySelector('select') as HTMLSelectElement | null
+    const modelSelect = modelInputRow?.querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!modelSelect) {
       throw new Error(`expected chatModel Value dropdown, got ${JSON.stringify(modelInputRow?.textContent || '')}`)
     }
 
     await act(async () => {
-      const valueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value')?.set
+      const valueSetter = selectMenuValue
       if (!valueSetter) throw new Error('expected DOM select value setter')
-      valueSetter.call(modelSelect, CHAT_LOCAL_DEFAULT_MODEL)
-      Simulate.change(modelSelect)
+      valueSetter(modelSelect, CHAT_LOCAL_DEFAULT_MODEL)
       await waitForFrames(dom.window as unknown as Window, 3)
     })
     await act(async () => {

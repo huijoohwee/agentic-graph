@@ -7,9 +7,67 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { canonicalJson, createRepositoryProfile } from 'agentic-os'
 import YAML from 'yaml'
-import { historyArtifactName, assertPriorBrowserRun } from '../production-browser-history.mjs'
+import { historyArtifactName, assertPriorBrowserRun, priorRunRequiresJobHistory } from '../production-browser-history.mjs'
 import { browserArtifactDigest, inspectBrowserInput, verifyStaticAssetRevalidation } from '../production-browser-preflight.mjs'
 import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
+import './production-prompt-catalog.test.mjs'
+import { build } from 'esbuild'
+import { chromium } from 'playwright'
+import { openWorkspaceFolder, readVisibleWorkspaceSeedInventory } from '../production-workspace-inventory.mjs'
+
+test('production inventory expands actual directory disclosures without selecting a folder', async () => {
+  const root = fileURLToPath(new URL('../../', import.meta.url))
+  const bundle = await build({ bundle: true, write: false, minify: true, platform: 'browser',
+    tsconfig: root + 'canvas/tsconfig.json', define: { 'process.env.NODE_ENV': '"production"' },
+    stdin: { resolveDir: root, loader: 'tsx', contents: `
+      import React, { useState } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure,
+        DirectoryTreeChildren } from './canvas/src/lib/ui/DirectoryTreeControls';
+      const select = () => { document.body.dataset.unexpectedSelection = 'true' };
+      function Folder({ name, children }) {
+        const [expanded, setExpanded] = useState(false);
+        return <DirectoryTreeBranch>
+          <DirectoryTreeRow depth={0} label={'Folder ' + name}>
+            <DirectoryTreeDisclosure name={name} path={'/' + name} expanded={expanded}
+              onToggle={() => setExpanded(value => !value)} />
+            <button aria-label={'Folder ' + name} onClick={select}>{name}</button>
+          </DirectoryTreeRow>
+          {expanded && <DirectoryTreeChildren name={name} path={'/' + name} depth={0} onSelect={select}>
+            <ul>{children}</ul>
+          </DirectoryTreeChildren>}
+        </DirectoryTreeBranch>;
+      }
+      createRoot(document.querySelector('main')).render(<ul><Folder name="docs">
+        <Folder name="workspace-seeds">{['alpha.md', 'beta.md'].map(name =>
+          <DirectoryTreeBranch key={name}><DirectoryTreeRow depth={1} label={'File ' + name}>
+            <button aria-label={'File ' + name} onClick={select}>{name}</button>
+          </DirectoryTreeRow></DirectoryTreeBranch>)}
+          <Folder name="nested"><DirectoryTreeBranch>
+            <DirectoryTreeRow depth={2} label="File unrelated.md">Unrelated</DirectoryTreeRow>
+          </DirectoryTreeBranch></Folder>
+        </Folder>
+      </Folder></ul>);
+    ` } })
+  assert.ok(bundle.outputFiles[0].contents.length < 500_000)
+  const browser = await chromium.launch({ channel: 'chrome', headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent('<!doctype html><html><body><main></main></body></html>')
+    await page.addScriptTag({ content: bundle.outputFiles[0].text })
+    await openWorkspaceFolder(page, 'docs', 1500)
+    const seeds = await openWorkspaceFolder(page, 'workspace-seeds', 1500)
+    await openWorkspaceFolder(page, 'workspace-seeds', 1500)
+    await openWorkspaceFolder(page, 'nested', 1500)
+    assert.deepEqual(await readVisibleWorkspaceSeedInventory(seeds), ['alpha.md', 'beta.md'])
+    assert.equal(await page.locator('body').getAttribute('data-unexpected-selection'), null)
+    assert.equal(await page.getByRole('button', { name: 'Collapse folder workspace-seeds', exact: true }).getAttribute('aria-expanded'), 'true')
+    await page.locator('section[aria-label="File beta.md"]').evaluate(row => { row.hidden = true })
+    assert.deepEqual(await readVisibleWorkspaceSeedInventory(seeds), ['alpha.md'], 'hidden rows cannot satisfy inventory proof')
+    await page.locator('section[aria-label="File alpha.md"]').evaluate(row => row.parentElement.append(row.cloneNode(true)))
+    assert.deepEqual(await readVisibleWorkspaceSeedInventory(seeds), ['alpha.md', 'alpha.md'], 'duplicate rows must remain visible to exact inventory comparison')
+  } finally { await browser.close() }
+})
 
 test('browser history refuses failed, interrupted, active, self, and unprotected attempts', () => {
   const run = { id: 41, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml', event: 'workflow_dispatch',
@@ -31,7 +89,7 @@ test('history keys bind source, docs and execution configuration with canonical 
   assert.notEqual(name, historyArtifactName({ ...binding, runtime: { ...binding.runtime, node: '24' } }))
 })
 
-test('passed browser history survives a proved pre-deployment stop, never a mutation or failed browser', () => {
+test('passed browser history survives exact authorization, Dev, or preflight stops, never mutation or failed verification', () => {
   const run = { id: 41, run_attempt: 1, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
     event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'failure' }
   const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
@@ -41,28 +99,78 @@ test('passed browser history survives a proved pre-deployment stop, never a muta
     'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
     'Publish verified production mirror', 'Restore exact prior travel mesh versions',
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']
-  const jobs = [job('Verify Release Candidate', 'success'),
-    job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure', [
-      { name: 'Preflight protected travel mesh without mutation', status: 'completed', conclusion: 'failure' },
-      ...skipped.map(name => ({ name, status: 'completed', conclusion: 'skipped' })),
-      { name: 'Require an exact successful deployment attempt', status: 'completed', conclusion: 'failure' },
-    ])]
-  assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
-  for (const mutate of [
-    value => { value[0].conclusion = 'failure' },
-    value => { value[0].head_sha = 'b'.repeat(40) },
-    value => { value[1].run_id = 40 },
-    value => { value[1].run_attempt = 2 },
-    value => { value[1].status = 'in_progress' },
-    value => { value.push(value[0]) },
-    value => { value[1].steps.pop(); value[1].steps.push({ name: 'Unknown failure', conclusion: 'failure' }) },
-    value => { value[1].steps.splice(1, 1) },
-    ...skipped.map(name => value => { value[1].steps.find(step => step.name === name).conclusion = 'success' }),
-  ]) {
-    const changed = structuredClone(jobs); mutate(changed)
-    assert.throws(() => assertPriorBrowserRun(run, '42', changed))
+  const authorization = 'Record exact human authorization and claim release controller'
+  const devPromotion = 'Promote isolated Pages Dev and verify shared data views'
+  const preflight = 'Preflight protected travel mesh without mutation'
+  const attemptGuard = 'Require an exact successful deployment attempt'
+  const step = (name, conclusion) => ({ name, status: 'completed', conclusion })
+  const stopCases = [
+    { name: 'authorization', authorization: 'failure', devPromotion: 'skipped', preflight: 'skipped' },
+    { name: 'Dev promotion', authorization: 'success', devPromotion: 'failure', preflight: 'skipped' },
+    { name: 'read-only preflight', authorization: 'success', devPromotion: 'success', preflight: 'failure' },
+  ]
+  for (const stop of stopCases) {
+    const makeJobs = () => [job('Verify Release Candidate', 'success'),
+      job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure', [
+        step(authorization, stop.authorization), step(devPromotion, stop.devPromotion), step(preflight, stop.preflight),
+        ...skipped.map(name => step(name, 'skipped')), step(attemptGuard, 'failure'),
+      ])]
+    const jobs = makeJobs()
+    assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
+    const mutateStep = (name, change) => value => Object.assign(value[1].steps.find(item => item.name === name), change)
+    const expected = { [authorization]: stop.authorization, [devPromotion]: stop.devPromotion, [preflight]: stop.preflight }
+    const invalidConclusions = (name, conclusion) => ['success', 'skipped', 'failure', 'cancelled', null]
+      .filter(value => value !== conclusion).map(value => mutateStep(name, { conclusion: value }))
+    for (const mutate of [
+      value => { value[0].conclusion = 'failure' },
+      value => { value[0].head_sha = 'b'.repeat(40) },
+      value => { value[1].run_id = 40 },
+      value => { value[1].run_attempt = 2 },
+      value => { value[1].status = 'in_progress' },
+      value => { value.push(value[0]) },
+      value => { value[1].steps.push(step('Unknown failure', 'failure')) },
+      ...[authorization, devPromotion, preflight, attemptGuard, ...skipped].flatMap(name => [
+        value => { value[1].steps = value[1].steps.filter(item => item.name !== name) },
+        value => { value[1].steps.push(structuredClone(value[1].steps.find(item => item.name === name))) },
+        mutateStep(name, { status: 'in_progress' }),
+      ]),
+      ...Object.entries(expected).flatMap(([name, conclusion]) => invalidConclusions(name, conclusion)),
+      ...['success', 'skipped', 'cancelled', null].map(conclusion => mutateStep(attemptGuard, { conclusion })),
+      ...skipped.flatMap(name => ['success', 'failure', 'cancelled', null].map(conclusion => mutateStep(name, { conclusion }))),
+    ]) {
+      const changed = makeJobs(); mutate(changed)
+      assert.throws(() => assertPriorBrowserRun(run, '42', changed), stop.name)
+    }
+    assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', makeJobs()))
   }
-  assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', jobs))
+})
+
+test('browser history accepts only cancellation before a protected deploy begins', () => {
+  const run = { id: 41, run_attempt: 4, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
+    event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'cancelled' }
+  const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
+    run_attempt: run.run_attempt, head_sha: run.head_sha, status: 'completed' })
+  const jobs = [
+    job('Verify Release Candidate', 'success'),
+    job('Human-Authorized Deploy, Verify, And Publish Mirror', 'cancelled'),
+  ]
+  assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'cancelled', [{ name: 'Set up job' }]),
+  ]))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    job('Verify Release Candidate', 'failure'), jobs[1],
+  ]))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure'),
+  ]))
+})
+
+test('restore fetches exact job history for failed or cancelled prior runs', () => {
+  const base = { status: 'completed', conclusion: 'failure' }
+  assert.equal(priorRunRequiresJobHistory(base), true)
+  assert.equal(priorRunRequiresJobHistory({ ...base, conclusion: 'cancelled' }), true)
+  assert.equal(priorRunRequiresJobHistory({ ...base, conclusion: 'success' }), false)
 })
 
 test('artifact identity detects changed browser bytes and rejects symlink substitutions', async () => {

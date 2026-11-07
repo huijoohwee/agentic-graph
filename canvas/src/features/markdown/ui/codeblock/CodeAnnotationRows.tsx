@@ -1,6 +1,8 @@
 import React from 'react'
 import { Columns, Eye, LayoutPanelTop } from 'lucide-react'
 import type { AnnotatedCodeRow } from '@/features/markdown/ui/markdownAnnotatedCode'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { HighlightedCode } from './HighlightedCode'
 import {
@@ -18,8 +20,9 @@ export function AnnotateDisplayModeToggle(props: {
 }) {
   const { baseMode, mode, setMode, clearOverride } = props
 
-  const base = `p-1.5 rounded-md ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} transition-colors`
-  const active = `p-1.5 rounded-md ${UI_THEME_TOKENS.panel.bg} shadow-sm ${UI_THEME_TOKENS.button.activeText} transition-colors`
+  const iconSizeClass = getIconSizeClass(useGraphStore(s => s.uiIconScale))
+  const base = `${UI_THEME_TOKENS.button.iconControl} ${UI_THEME_TOKENS.button.square} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} transition-colors`
+  const active = `${UI_THEME_TOKENS.button.iconControl} ${UI_THEME_TOKENS.button.square} ${UI_THEME_TOKENS.button.selectedIcon}`
 
   const onPick = (next: AnnotateDisplayMode) => {
     if (next === baseMode) {
@@ -36,30 +39,30 @@ export function AnnotateDisplayModeToggle(props: {
         aria-label="Show annotations beside code"
         title="Beside"
         className={mode === 'beside' ? active : base}
-        aria-current={mode === 'beside' ? 'true' : undefined}
+        aria-pressed={mode === 'beside'}
         onClick={() => onPick('beside')}
       >
-        <Columns className="w-3.5 h-3.5" strokeWidth={1.5} />
+        <Columns className={iconSizeClass} />
       </button>
       <button
         type="button"
         aria-label="Show annotations inline"
         title="Inline"
         className={mode === 'inline' ? active : base}
-        aria-current={mode === 'inline' ? 'true' : undefined}
+        aria-pressed={mode === 'inline'}
         onClick={() => onPick('inline')}
       >
-        <LayoutPanelTop className="w-3.5 h-3.5" strokeWidth={1.5} />
+        <LayoutPanelTop className={iconSizeClass} />
       </button>
       <button
         type="button"
         aria-label="Render code block output"
         title="Render"
         className={mode === 'render' ? active : base}
-        aria-current={mode === 'render' ? 'true' : undefined}
+        aria-pressed={mode === 'render'}
         onClick={() => onPick('render')}
       >
-        <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
+        <Eye className={iconSizeClass} />
       </button>
     </menu>
   )

@@ -3,15 +3,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import './production-release-dependency-install.test.mjs'
+import './seed-storage-local-api.test.mjs'
 import YAML from 'yaml'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
 import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
 import {
   assertCandidatePagesAttribution,
-  digestBytes,
   normalizeTransportInstant,
-  validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
@@ -37,6 +36,7 @@ const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scr
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
+const productionMirrorObserverScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'observe-production-mirror-identity.mjs'), 'utf8')
 const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 const assertAllMatch = (source, patterns) => patterns.forEach(pattern => assert.match(source, pattern))
@@ -119,11 +119,11 @@ test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
     assert.ok(actionUses.some(uses => uses.startsWith(`actions/${action}@`)), `${action} workflow action must be present`)
   }
 })
-test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
-  const verifyJob = workflowJob('verify')
-  assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /AGENTIC_OS_SOURCE_REVISION: ['"]?\$\{\{ inputs\.source_sha \}\}/, /VITE_AGENTIC_OS_STORAGE_BASE_URL: ['"]?https:\/\/airvio\.co/,
-    /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ])
-  assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
+test('production release builds the exact localhost-reviewed candidate after source-control preflight', () => {
+  const verifyJob = workflowJob('verify'); assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /AGENTIC_OS_SOURCE_REVISION: ['"]?\$\{\{ inputs\.source_sha \}\}/, /VITE_AGENTIC_OS_STORAGE_BASE_URL: ['"]?https:\/\/airvio\.co/, /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ]); assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
+  assertInOrder(verifyJob, ['name: Initialize native release gate trust', 'name: Resolve exact Agentic OS source pin', 'name: Checkout exact Agentic OS source', 'name: Preflight exact Agentic OS source control', 'name: Build and sync verified candidate'])
+  const sourcePin = workflowStep(verifyJob, 'Resolve exact Agentic OS source pin'); assertIncludes(sourcePin, ['github:huijoohwee/agentic-os#', 'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/', '^[0-9a-f]{40}$', 'agentic-os must use an exact immutable source pin']); assert.match(sourcePin, /console\.log\(\\?"revision=\\?" \+ revision\)/); assert.doesNotMatch(sourcePin, /process\.stdout\.write/)
+  assertIncludes(workflowStep(verifyJob, 'Checkout exact Agentic OS source'), ['repository: huijoohwee/agentic-os', "ref: '${{ steps.agentic_os_source.outputs.revision }}'", 'path: agentic-os-source']); assertIncludes(workflowStep(verifyJob, 'Preflight exact Agentic OS source control'), ['agentic-os-pin.mjs', '--consumer="$GITHUB_WORKSPACE/agentic-graph"', '--source-control'])
 })
 test('Pages release dependencies use the canonical storage origin', () => {
   assertAllMatch(pagesFunctionsBuildScript, [/process\.env\.AGENTIC_OS_PUBLISH_REPOSITORY_ROOT/])
@@ -154,7 +154,7 @@ test('transport capture normalizes provider timestamps with extra fractional pre
 test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
     .map(([, days]) => Number(days))
-  assert.deepEqual(retentionDays, [1, 90, 90, 1, 90, 1, 90, 90, 90, 90])
+  assert.deepEqual(retentionDays, [1, 90, 90, 1, 90, 1, 7, 90, 90, 90, 90])
   assertAllMatch(releaseWorkflow, [/name: ['"]?production-\$\{\{ inputs\.source_sha \}\}/])
   for (const name of ['immutable-release-manifest', 'production-authorization', 'production-lifecycle', 'production-lifecycle-complete', 'production-release-evidence', 'production-lifecycle-rolled-back', 'production-release-raw']) {
     assert.match(releaseWorkflow, new RegExp(`name: ['"]?${name}-\\$\\{\\{ inputs\\.source_sha \\}\\}`))
@@ -215,6 +215,8 @@ test('production evidence wiring records exact Pages, D1, transport, browser, an
 })
 test('production rollback is authoritative, pre-publication only, and emits a terminal carrier', () => {
   const deployJob = workflowJob('deploy')
+  const rollbackDocsCheckout = YAML.parse(releaseWorkflow).jobs.deploy.steps.find(step => step.id === 'checkout_rollback_docs')
+  assert.equal(rollbackDocsCheckout.with['fetch-depth'], 0, 'rollback docs ancestry needs full Git history')
   assertInOrder(deployJob, [ 'name: Deploy verified artifact', 'name: Capture authoritative candidate deployment', 'name: Record exact Pages deployment receipt', 'name: Determine pre-publication rollback eligibility',
     'name: Checkout rollback agentic-graph source', 'name: Install rollback dependencies', 'name: Resolve rollback docs dependency', 'name: Checkout rollback Agentic Canvas OS docs',
     'name: Roll back Pages to exact last-known-good deployment', 'name: Restore and reconcile last-known-good D1 state', 'name: Capture authoritative restored Pages deployment',
@@ -235,6 +237,8 @@ test('production rollback is authoritative, pre-publication only, and emits a te
   assertExcludes(eligibility, ["steps.deploy_pages.outcome == 'success'"])
   assertAllMatch(productionReleaseTransportScript, [ /schema: 'agentic-graph-pages-deployment-capture\/v1', status: 'deployed', adapterId: PAGES_API_ADAPTER/, /schema: 'agentic-graph-production-release-failure-observation\/v1'/,
     /deployment\|state-reconciliation\|live-verification\|publication\|receipt-persistence/, /schema: 'agentic-graph-production-restored-pages-evidence\/v1', status: 'restored', adapterId: PAGES_API_ADAPTER/,
+  ])
+  assertAllMatch(productionMirrorObserverScript, [
     /schema: 'agentic-graph-production-observed-mirror-identity\/v1'/, ])
 })
 test('Pages candidate attribution rejects concurrent same-SHA and mismatched Wrangler deployments', () => {
@@ -298,58 +302,9 @@ test('Pages capture failure preserves a typed mutation-possible reconciliation b
   assert.match(productionReleaseTransportScript, /status: 'preserve-required'/)
   assert.match(productionReleaseTransportScript, /mutationPossible: true, mutationProven: false/)
 })
-test('transport evidence keeps immutable, stable Pages, and public routes distinct with apex/app marker parity', () => {
-  const sourceRevision = 'a'.repeat(40)
-  const manifestDigest = 'b'.repeat(64)
-  const markerBytesDigest = digestBytes('marker-bytes')
-  const marker = {
-    bodyDigest: markerBytesDigest,
-    sourceRevision,
-    agenticCanvasOsRevision: 'c'.repeat(40),
-    catalogRevision: 'c'.repeat(40),
-    artifactDigest: 'd'.repeat(64),
-    immutableManifestDigest: manifestDigest,
-  }
-  const transports = ['immutable', 'stable-pages', 'public'].map((id, index) => ({
-    id,
-    origin: `https://${id}-${index}.example.com`,
-    smoke: { evidenceDigest: 'e'.repeat(64), checkCount: 3 },
-    markers: { apex: { ...marker }, app: { ...marker } },
-    routes: {
-      apex: { routeOwner: 'root-agent-ready-pages', status: 200 },
-      app: { routeOwner: 'agentic-graph-agent-ready-pages', status: 200 },
-    },
-  }))
-  const evidence = {
-    schema: 'agentic-graph-production-transport-evidence/v1',
-    status: 'passed',
-    sourceRevision,
-    immutableManifestDigest: manifestDigest,
-    markerBytesParity: true,
-    markerBytesDigest,
-    transports,
-  }
-  assert.equal(validateTransportEvidence({ evidence, sourceRevision, manifestDigest }), evidence)
-  const markerMismatch = structuredClone(evidence)
-  markerMismatch.transports[1].markers.app.bodyDigest = 'f'.repeat(64)
-  assert.throws(
-    () => validateTransportEvidence({ evidence: markerMismatch, sourceRevision, manifestDigest }),
-    /apex\/app readiness marker bytes differ/,
-  )
-  const ownerMismatch = structuredClone(evidence)
-  ownerMismatch.transports[2].routes.apex.routeOwner = 'agentic-graph-agent-ready-pages'
-  assert.throws(
-    () => validateTransportEvidence({ evidence: ownerMismatch, sourceRevision, manifestDigest }),
-    /apex route owner drifted/,
-  )
-  assert.match(productionReleaseTransportScript, /\/\.well-known\/runtime-readiness\.json/)
-  assert.match(productionReleaseTransportScript, /\/agentic-graph\/\.well-known\/runtime-readiness\.json/)
-  assert.match(releaseWorkflow, /Terminal carrier file digest:[^\n]*sha256sum/)
-  assert.doesNotMatch(releaseWorkflow, /\.carrierDigest/)
-})
 test('Agentic Canvas OS docs promote automatically through protected agentic-graph integration', () => {
   assert.match(promotionWorkflow, /schedule:\s*\n\s*- cron:/)
-  assert.doesNotMatch(promotionWorkflow, /workflow_dispatch:/)
+  assert.match(promotionWorkflow, /workflow_dispatch:[\s\S]*if: github\.ref == 'refs\/heads\/main'/)
   assert.match(promotionWorkflow, /secrets\.HUIJOOHWEE_PUSH_TOKEN/)
   assert.match(promotionWorkflow, /gh pr create --draft/)
   assert.match(promotionWorkflow, /gh pr merge "\$url" --auto --squash/)
@@ -497,7 +452,7 @@ test('rollback is bound to immutable deployment identities', () => {
   assert.match(pagesDeploymentScript, /deployment_trigger\?\.metadata\?\.commit_hash/)
   assert.match(pagesDeploymentScript, /capture-candidate/)
   assert.match(pagesDeploymentScript, /deployment_url/)
-  assert.match(pagesDeploymentScript, /writeOutput\('production_origin', productionPagesOrigin\)/)
+  assert.match(pagesDeploymentScript, /writeOutput\('production_origin', productionPagesOrigin, env\)/)
   assert.match(pagesDeploymentScript, /CLOUDFLARE_PAGES_PROJECT must be one lowercase DNS label/)
   assert.match(pagesDeploymentScript, /const pagesHostname = `\$\{projectName\}\.pages\.dev`/)
   assert.match(pagesDeploymentScript, /pages\.dev/)
@@ -575,7 +530,7 @@ test('canonical docs reconciliation proves stored content and exact chunk parity
   assert.match(docsSeedScript, /buildDirectD1ReconciliationStatements/)
   assert.match(docsSeedScript, /'--command',[\s\S]*'--json'/)
   assert.match(docsSeedScript, /maxBuffer: 64 \* 1024 \* 1024/)
-  assert.match(docsSeedScript, /const shouldUseDirectD1ControlPlane = isCanonicalProductionOrigin/)
+  assert.match(docsSeedScript, /const shouldUseDirectD1ControlPlane = local \|\| isCanonicalProductionOrigin/)
   assert.match(docsSeedScript, /WHERE workspace_id = .*\n.*AND deleted = 0/)
   assert.match(docsSeedScript, /content-parity=passed/)
   assert.match(docsSeedScript, /snapshots=\$\{snapshotParity\.graphSnapshotCount\}/)

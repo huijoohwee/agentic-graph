@@ -1,6 +1,7 @@
 import React from 'react'
 import type { GeospatialBounds } from 'grph-shared/geospatial/enhancedLayerContract'
 import { useEnhancedGeospatialLayers } from './useEnhancedGeospatialLayers.js'
+import { useSourceGeospatialLayers } from './useSourceGeospatialLayers.js'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -25,22 +26,31 @@ export function useEnhancedGeospatialHostLayers(args: {
   selectedBounds: GeospatialBounds | null
   graphBounds: GeospatialBounds | null
 }): GeospatialBounds | null {
+  const snapshotRef = React.useRef(args.snapshot)
+  const handlersRef = React.useRef(args.handlers)
+  snapshotRef.current = args.snapshot
+  handlersRef.current = args.handlers
   const notify = React.useCallback((toast: {
     id: string
     kind: 'neutral' | 'success' | 'warning' | 'error'
     message: string
     ttlMs?: number
   }) => {
-    const handlers = resolveHandlers(args.snapshot, args.handlers)
+    const handlers = resolveHandlers(snapshotRef.current, handlersRef.current)
     const upsert = handlers?.upsertUiToast
     if (typeof upsert !== 'function') return
     upsert({ ...toast, dismissible: true, log: toast.kind === 'error' })
-  }, [args.handlers, args.snapshot])
+  }, [])
   const enhancedBounds = useEnhancedGeospatialLayers({
     enabled: args.enabled,
     map: args.map,
     styleRevision: args.styleRevision,
     notify,
+  })
+  useSourceGeospatialLayers({
+    enabled: args.enabled, map: args.map, styleRevision: args.styleRevision,
+    snapshot: isRecord(args.snapshot) ? args.snapshot.sourceGeospatial : null,
+    onError: message => notify({ id: 'kg:geo:source', kind: 'error', message, ttlMs: 5000 }),
   })
   React.useEffect(() => {
     if (

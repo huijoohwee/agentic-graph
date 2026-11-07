@@ -5,7 +5,7 @@ import Tooltip from '@/features/panels/ui/Tooltip'
 import { RENDER_PANEL_SECTION_COPY } from '@/features/panels/config'
 import { AgenticRagIgnoreFiltersSummaryView } from '@/features/panels/views/AgenticRagContextSection'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getPillClass } from '@/lib/ui'
+import { getPillClass } from '@/lib/ui/icons'
 import {
   AGENTIC_RAG_CONTEXT_LABEL,
   AGENTIC_RAG_DATASET_CONTEXT_VOCAB_LABEL,
@@ -189,15 +189,15 @@ export default function DatasetInspectorSection({
           ].join(' ')}
         >
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Nodes</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Nodes</span>
             <span className="font-semibold">{String(datasetStats.nodeCount)}</span>
           </section>
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Edges</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Edges</span>
             <span className="font-semibold">{String(datasetStats.edgeCount)}</span>
           </section>
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Distinct relationships</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Distinct relationships</span>
             <span className="font-semibold">{String(datasetStats.distinctTriples)}</span>
           </section>
         </section>

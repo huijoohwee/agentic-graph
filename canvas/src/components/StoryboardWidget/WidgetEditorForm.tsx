@@ -384,8 +384,8 @@ export const WidgetEditorForm = React.memo(function WidgetEditorForm({
     onRegistrySelectionChange?.({ entry: null })
   }, [active, onPatchProperties, onRegistrySelectionChange, registryOptionIdSet, registrySelectionId])
   const handleRegistrySelect = React.useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const nextId = String(event.target.value || '').trim()
+    (nextValue: string) => {
+      const nextId = String(nextValue || '').trim()
       if (nextId === registrySelectionId) return
       if (!nextId) {
         onPatchProperties({

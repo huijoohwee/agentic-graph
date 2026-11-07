@@ -110,6 +110,16 @@ export async function assertFlightSimSeedReadiness({
   ) {
     throw new Error('Flight Sim seed must retain mission training, scoring, voice, failure, and six-panel projection contracts')
   }
+  const authoredProfile = seed.flight_training_profile
+  if (!authoredProfile || authoredProfile.schema !== 'flight-training-profile/v1'
+    || authoredProfile.defaultMissionId !== training.missions[0]
+    || !exactArray(authoredProfile.missions?.map(mission => mission.id), training.missions)
+    || !exactArray(authoredProfile.failures?.map(failure => failure.id), training.practice_failures)
+    || authoredProfile.failureWindow?.startTick !== 180
+    || authoredProfile.failureWindow?.endTickExclusive !== 420
+    || authoredProfile.recoveryThrottleMinimum !== 0.6) {
+    throw new Error('Flight Sim demo catalog and failure window must be authored in its training profile')
+  }
 
   const nativeFlightDemo = seed.native_flight_demo
   if (
@@ -282,19 +292,24 @@ export async function assertFlightSimSeedReadiness({
     'canvas/src/features/game-flight-sim/FlightSimTrainingSurfaceProjection.tsx',
   )
   requireMarkers(trainingSource, [
-    "'circuit-foundation'",
-    "'night-circuit'",
-    "'systems-recovery'",
-    "'engine-power-loss'",
-    "'instrument-uncertainty'",
-    "'control-bias'",
-    'tick >= 180',
-    'tick < 420',
+    'export function admitFlightSimTrainingProfile(',
+    'scenario.profile?.missions.find',
+    'scenario.profile?.failures.find',
+    'tick >= window.startTick && tick < window.endTickExclusive',
+    'assertFlightSimTrainingRunBinding',
+    'profileSourceKey',
     'score: training.score',
     "schema: 'agentic-graph-flight-training-outcome/v1'",
     'window.speechSynthesis.speak(utterance)',
     'data-kg-flight-training-score',
   ], 'mission-based Flight training runtime')
+  if (training.missions.concat(training.practice_failures.filter(id => id !== 'none')).some(id => trainingSource.includes(`'${id}'`))) {
+    throw new Error('Flight training runtime must not embed the authored demo catalog')
+  }
+  const profileSource = await readText('canvas/src/features/game-flight-sim/flightSimTrainingProfile.ts')
+  requireMarkers(profileSource, ["'flight-training-profile/v1'", 'export function validateFlightSimTrainingProfile(', 'Object.freeze', "list(raw.failures, 'failures', 32)", "list(raw.missions, 'missions', 32)"], 'bounded immutable authored Flight profile')
+  const admissionSource = await readText('canvas/src/features/game-flight-sim/flightSimTrainingSource.ts')
+  requireMarkers(admissionSource, ['findComposedSourceFileByPath', 'validateFlightSimTrainingProfile(declaration)', 'isFlightSimTrainingSourceCurrent(capture)', "source.status !== 'parsed'"], 'exact active source admission')
 
   const panelProjectionSource = await Promise.all([
     'canvas/src/features/command-menu/MediaCatalogPanelView.tsx',
@@ -319,11 +334,16 @@ export async function assertFlightSimSeedReadiness({
     'canvas/src/features/three/XrNativeControllerDemoStage.tsx',
   ) + await readText(
     'canvas/src/lib/three/flightSimMissionStageLoader.ts',
+  ) + await readText(
+    'canvas/src/features/game-flight-sim/FlightSimHud.tsx',
+  ) + await readText(
+    'gympgrph/src/flightGeoOverlay.ts',
   )
   requireMarkers(trainingOwners, [
-    "night ? '#050a1a'",
-    '<ambientLight intensity={night ? 0.13 : 0.4}',
-    "args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}",
+    'resolveFlightSimTrainingMission(trainingScenario.missionId)?.night ?? false',
+    '<XrSceneSkyAtmosphere appearance={appearance} night={night}',
+    'const hudPanelClassName = training.night',
+    'kgFlightNight: overlay.night',
     'importWithRetry(importMissionStage',
     'retries: 2',
     'retryDelayMs: 50',

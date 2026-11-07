@@ -1,4 +1,6 @@
 import React from 'react'
+import { useMediaQuery } from '@/lib/ui/useMediaQuery'
+import { SurfaceSeparator } from '@/components/ui/SurfaceSeparator'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import { MarkdownWorkspaceToolbar } from '../../MarkdownWorkspaceToolbar'
 import { UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES, UI_VIEW_EDIT_SURFACE_FLEX_AREA_CLASS_NAME } from '@/lib/ui/surfaceClasses'
@@ -11,6 +13,7 @@ export function MarkdownWorkspaceLayout(props: {
   renderMarkdownEditor: () => React.ReactNode
   renderJsonEditor: () => React.ReactNode
   pythonPane?: React.ReactNode
+  blockPane?: React.ReactNode
   binaryPane?: React.ReactNode
   binaryPaneVisible?: boolean
   splitPaneVisibility: MarkdownWorkspacePaneVisibility
@@ -20,6 +23,7 @@ export function MarkdownWorkspaceLayout(props: {
   htmlViewer?: React.ReactNode
   presentation: React.ReactNode
 }) {
+  const stacked = useMediaQuery('(pointer: coarse), (max-width: 768px)')
   const paneVisibility = resolveMarkdownWorkspacePaneVisibility({
     layoutMode: props.layoutMode,
     splitPaneVisibility: props.splitPaneVisibility,
@@ -29,14 +33,15 @@ export function MarkdownWorkspaceLayout(props: {
   const binaryPaneVisible = props.binaryPaneVisible === true
   const paneClassName = 'kg-markdown-workspace-pane flex-1 min-w-0 min-h-0 flex flex-col'
   const viewerPaneClassName = `kg-markdown-workspace-pane flex flex-col ${UI_VIEW_EDIT_SURFACE_FLEX_AREA_CLASS_NAME}`
-  const paneDividerClassName = 'kg-markdown-workspace-pane-divider w-px self-stretch bg-[color:var(--kg-border)] border-0'
+  const paneDividerClassName = 'kg-markdown-workspace-pane-divider'
   const splitPanes = [
     binaryPaneVisible ? (
       <section key="bin" className={paneClassName} aria-label="Binary Model">
         {props.binaryPane}
       </section>
     ) : null,
-    paneVisibility.python ? <section key="python" className={paneClassName} aria-label="Python Editor">{props.pythonPane}</section> : null,
+    paneVisibility.python ? <section key="python" className={paneClassName} data-program-pane="python" aria-label="Python Editor">{props.pythonPane}</section> : null,
+    paneVisibility.block ? <section key="block" className={paneClassName} data-program-pane="block" aria-label="Block Editor">{props.blockPane}</section> : null,
     paneVisibility.json ? (
       <section key="json" className={paneClassName} aria-label="JSON Editor">
         {props.renderJsonEditor()}
@@ -76,10 +81,10 @@ export function MarkdownWorkspaceLayout(props: {
       ) : null}
 
       {props.layoutMode === 'editor' ? (
-        <section className="kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex" aria-label="Monaco editors">
+        <section className={`kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex`} aria-label="Monaco editors">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
-              {index > 0 ? <hr className={paneDividerClassName} aria-hidden="true" /> : null}
+              {index > 0 ? <SurfaceSeparator className={paneDividerClassName} orientation={stacked ? 'horizontal' : 'vertical'} label={`${pane.props['aria-label']} pane separator`} /> : null}
               {pane}
             </React.Fragment>
           ))}
@@ -93,10 +98,10 @@ export function MarkdownWorkspaceLayout(props: {
           {props.presentation}
         </section>
       ) : (
-        <section className="kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell" aria-label="Split view">
+        <section className={`kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell`} aria-label="Split view">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
-              {index > 0 ? <hr className={`${paneDividerClassName} kg-workspace-split-divider`} aria-hidden="true" /> : null}
+              {index > 0 ? <SurfaceSeparator className={`${paneDividerClassName} kg-workspace-split-divider`} orientation={stacked ? 'horizontal' : 'vertical'} label={`${pane.props['aria-label']} pane separator`} /> : null}
               {pane}
             </React.Fragment>
           ))}

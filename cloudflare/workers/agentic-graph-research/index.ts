@@ -1,3 +1,4 @@
+import { withZeroCostR2Bindings } from '../../shared/r2-cost-gate.mjs'
 import {
   compileResearchThesisSpec,
   buildResearchThesisReviewAudit,
@@ -407,14 +408,20 @@ export const processResearchThesisQueueMessage = async (
 }
 
 export const createAgenticGraphResearchWorker = () => ({
-  async fetch(request: Request, env: ResearchWorkerEnv): Promise<Response> {
+  async fetch(request: Request, rawEnv: ResearchWorkerEnv): Promise<Response> {
+    const env = withZeroCostR2Bindings(rawEnv, {
+      RESEARCH_THESIS_ARTIFACTS: 'agentic-research-thesis',
+    }) as ResearchWorkerEnv
     try {
       return await handleResearchRequest(request, env)
     } catch (err) {
       return json(500, { ok: false, error: err instanceof Error ? err.message : 'unexpected research worker error' })
     }
   },
-  async queue(batch: QueueBatchLike, env: ResearchWorkerEnv): Promise<void> {
+  async queue(batch: QueueBatchLike, rawEnv: ResearchWorkerEnv): Promise<void> {
+    const env = withZeroCostR2Bindings(rawEnv, {
+      RESEARCH_THESIS_ARTIFACTS: 'agentic-research-thesis',
+    }) as ResearchWorkerEnv
     for (const message of batch.messages || []) {
       try {
         await processResearchThesisQueueMessage(message.body, env)

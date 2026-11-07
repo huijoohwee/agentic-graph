@@ -51,8 +51,41 @@ export function resolveThemeColors(): ThemeColors {
   }
 }
 
+const NEUTRAL_BORDER_COLOR_CLASS_NAME = 'border-[color:var(--kg-border)]'
+const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-width,1px)]'
+
+const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--agentic-control-height)]'
+
+/** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
+export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
+
+/** One setting controls UI glyphs; authored SVG/chart strokes keep their own semantics. */
+export const UI_ICON_DEFAULTS = { strokeWidth: 1.5 } as const
+export function normalizeUiIconStrokeWidth(value: number): number {
+  return Number.isFinite(value) ? Math.max(0.5, Math.min(4, value)) : UI_ICON_DEFAULTS.strokeWidth
+}
+
+// A stronger primary wash distinguishes keyboard focus even on a selected icon.
+const ICON_FOCUS_CLASS_NAME = 'focus-visible:bg-blue-100 dark:focus-visible:bg-blue-900/40 focus-visible:text-blue-600 dark:focus-visible:text-blue-400'
+
 export const UI_THEME_TOKENS = {
+  shadow: {
+    flat: 'shadow-none',
+    raised: 'shadow-[var(--kg-shadow-raised)]',
+    overlay: 'shadow-[var(--kg-shadow-overlay)]',
+  },
+  border: {
+    width: NEUTRAL_BORDER_WIDTH_CLASS_NAME,
+    color: NEUTRAL_BORDER_COLOR_CLASS_NAME,
+    outline: `${NEUTRAL_BORDER_WIDTH_CLASS_NAME} ${NEUTRAL_BORDER_COLOR_CLASS_NAME}`,
+  },
+  control: {
+    height: CONTROL_HEIGHT_CLASS_NAME,
+    singleLine: 'agentic-form-control min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap',
+  },
   button: {
+    iconControl: `kg-icon-control min-w-[var(--kg-control-height)]! min-h-[var(--kg-default-glyph-size,1rem)] rounded border-0 outline-none transition-colors shadow-none ${ICON_FOCUS_CLASS_NAME}`,
+    selectedIcon: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text}`,
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
     hoverBg: 'hover:bg-[var(--kg-panel-action-bg-hover)]',
@@ -75,12 +108,12 @@ export const UI_THEME_TOKENS = {
   },
   pill: {
     base: 'rounded-full px-2 py-0.5 border border-[color:var(--kg-border)]',
-    text: 'text-[10px] font-medium text-[color:var(--kg-text-secondary)]',
-    badgeText: 'text-[10px] font-bold',
+    text: 'text-xs font-medium text-[color:var(--kg-text-secondary)]',
+    badgeText: 'text-xs font-bold',
   },
   badge: {
     chip: 'rounded px-1.5 py-0.5 bg-black/5 dark:bg-white/5',
-    text: 'text-[10px] font-mono',
+    text: 'text-xs font-mono',
     toolbarGroup: 'rounded bg-black/5 dark:bg-white/5 p-0.5',
   },
   icon: {
@@ -90,9 +123,9 @@ export const UI_THEME_TOKENS = {
   panel: {
     bg: 'bg-[var(--kg-panel-bg)]',
     overlayBg: 'bg-[color-mix(in_srgb,var(--kg-panel-bg)_88%,transparent)] backdrop-blur-sm',
-    border: 'border-[color:var(--kg-border)]',
+    border: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     headerBg: 'bg-[color-mix(in_srgb,var(--kg-panel-bg)_75%,transparent)]',
-    divider: 'border-[color:var(--kg-divider)]',
+    divider: NEUTRAL_BORDER_COLOR_CLASS_NAME,
   },
   kanban: {
     groupBg: 'bg-[var(--kg-kanban-group-bg)]',
@@ -113,20 +146,20 @@ export const UI_THEME_TOKENS = {
     headerBg: 'bg-gray-50 dark:bg-gray-800',
     rowHover: 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
     rowHoverHighlight: 'hover:!bg-[var(--kg-panel-action-bg-hover)]',
-    rowDivider: 'divide-[color:var(--kg-divider)]',
-    cellBorder: 'border-[color:var(--kg-border)]',
+    rowDivider: 'divide-[color:var(--kg-border)]',
+    cellBorder: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     text: 'text-[color:var(--kg-text-primary)]',
     textSecondary: 'text-[color:var(--kg-text-secondary)]',
     rowBg: 'bg-[var(--kg-panel-bg)]',
     rowBgAlt: 'bg-[var(--kg-panel-bg)]',
-    rowSelected: 'bg-blue-50 dark:bg-blue-900/20',
-    rowSelectedBorder: 'ring-1 ring-inset ring-blue-500 dark:ring-blue-400',
+    // Inset accent avoids layout shifts; first-cell paint keeps it above sticky table cells.
+    rowSelected: '!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] hover:!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] !shadow-[inset_4px_0_0_#3b82f6] [&>td:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>th:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>td]:!bg-inherit [&>th]:!bg-inherit',
     rowRelated: 'bg-blue-50/50 dark:bg-blue-900/10',
     rowOutside: 'bg-[var(--kg-panel-bg)]',
   },
   input: {
     bg: 'bg-[var(--kg-panel-bg)]',
-    border: 'border-[color:var(--kg-border)]',
+    border: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     hoverBorder: 'hover:border-blue-500/30 dark:hover:border-blue-400/40',
     placeholder: 'placeholder:text-[color:var(--kg-text-tertiary)]',
     selectionControl: 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400',
@@ -162,3 +195,16 @@ export const UI_THEME_TOKENS = {
     text: 'text-[color:var(--kg-code-text)]',
   },
 } as const
+
+/** Keep decoration; fixed geometry belongs to the shared single-line control. */
+export function singleLineControlDecorationClassName(className = ''): string {
+  return className.split(/\s+/).filter(token => {
+    const utility = token.replace(/^(?:(?:[\w-]+|\[[^\]]+\]):)+/, '').replace(/^!/, '')
+    return token && !/^(?:(?:min-|max-)?(?:h|size)-|(?:min|max)-w-|p[xytrblse]?-|leading-|whitespace-|overflow(?:-[xy])?-|text-(?:ellipsis|clip)$|box-)/.test(utility)
+  }).join(' ')
+}
+
+/** Normalize saved/caller classes so old sizes cannot override the shared owner. */
+export function normalizeSingleLineControlClassName(className = ''): string {
+  return [...new Set(`${singleLineControlDecorationClassName(className)} ${UI_THEME_TOKENS.control.singleLine}`.trim().split(/\s+/))].join(' ')
+}

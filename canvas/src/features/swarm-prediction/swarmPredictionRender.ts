@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import type {
   SwarmPredictionEvent,
   SwarmPredictionMetrics,
@@ -35,14 +36,14 @@ export const buildSwarmPredictionChartSvg = (states: SwarmPredictionWorldState[]
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)} prediction chart">`,
     '<rect width="720" height="320" fill="#f8fafc"/>',
     '<path d="M44 44V276H676" fill="none" stroke="#334155" stroke-width="1.5"/>',
-    '<text x="44" y="28" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0f172a">',
+    `<text x="44" y="28" font-family="${UI_FONT_SANS}" font-size="18" font-weight="700" fill="#0f172a">`,
     `${escapeHtml(title)}`,
     '</text>',
     `<polyline points="${line}" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
     `<polyline points="${consensus}" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.78"/>`,
-    '<text x="52" y="300" font-family="Inter, Arial, sans-serif" font-size="12" fill="#475569">Prediction score</text>',
+    `<text x="52" y="300" font-family="${UI_FONT_SANS}" font-size="12" fill="#475569">Prediction score</text>`,
     '<circle cx="48" cy="296" r="4" fill="#0f766e"/>',
-    '<text x="186" y="300" font-family="Inter, Arial, sans-serif" font-size="12" fill="#475569">Consensus</text>',
+    `<text x="186" y="300" font-family="${UI_FONT_SANS}" font-size="12" fill="#475569">Consensus</text>`,
     '<circle cx="178" cy="296" r="4" fill="#7c3aed"/>',
     '</svg>',
   ].join('')

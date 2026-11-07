@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -82,10 +83,10 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
       {context.audit.truncated ? ' Scan is incomplete; limits were reached.' : ''} Browser layout and accessibility still need review.</p>
     <section className="flex min-w-0 flex-wrap items-end gap-2" aria-label="Design export">
       <label className="flex min-w-0 flex-col gap-1 text-xs">Export format
-        <select aria-label="Export format" className={actionClass} value={format} onChange={e => setFormat(e.target.value as ExportFormat)}>
+        <PanelSelect aria-label="Export format" className={actionClass} value={format} onValueChange={selectedValueInput => setFormat(selectedValueInput as ExportFormat)}>
           <option value="context-markdown">Context Markdown</option><option value="context-json">Context JSON</option>
           <option value="tokens-css">Tokens CSS</option><option value="tokens-json">Tokens JSON</option><option value="tokens-typescript">Tokens TypeScript</option>
-        </select>
+        </PanelSelect>
       </label>
       <button type="button" className={actionClass} onClick={exportReview}>Export locally</button>
     </section>

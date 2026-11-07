@@ -1,0 +1,80 @@
+import { useEffect, useMemo } from 'react'
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
+import { READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
+import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
+import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { useWarehouseInspection } from './useWarehouseInspection'
+import { WAREHOUSE_INSPECTION, WAREHOUSE_INSPECTION_FPS } from './warehouseCoverageRoutes'
+import { WarehouseInspectionFeed } from './WarehouseInspectionFeed'
+
+const names: Record<string, string> = {
+  'charging-truck': 'Mobile charging truck', drone001: 'Drone 001', drone002: 'Drone 002',
+  door: 'Dock door', lid: 'Drone lid', camera: 'Camera frames', wifi: 'Wi-Fi delivery', yolo: 'Simulated detections',
+}
+const actionClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded text-xs`
+
+export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }) {
+  const inspection = useWarehouseInspection()
+  const { active, available, canEnable, seconds, duration, sample, documentKey, enable, disable } = inspection
+  useEffect(() => {
+    if (!active) return
+    return () => {
+      const transport = useGraphStore.getState()
+      if (transport.timelineTransportDocumentKey === documentKey) transport.setTimelineTransportState({ playing: false })
+    }
+  }, [active, documentKey])
+  const code = useMemo(() => [
+    'gantt', '  title Video Sequence', '  dateFormat HH:mm', '  axisFormat %M:%S',
+    '  section Warehouse inspection',
+    `  Warehouse inspection scene : warehouse_inspection_scene, kgpos_0, ${duration / 60}m`,
+  ].join('\n'), [duration])
+  const laneGroups = useMemo(() => {
+    const groups = new Map<string, typeof WAREHOUSE_INSPECTION.cues[number][]>()
+    for (const cue of WAREHOUSE_INSPECTION.cues) {
+      const list = groups.get(cue.actorId) ?? []
+      list.push(cue); groups.set(cue.actorId, list)
+    }
+    return [...groups.entries()]
+  }, [])
+  const scaleSeconds = resolveVideoSequenceTimelineScaleDurationSeconds(duration)
+  const seek = (time: number) => {
+    if (!active || !documentKey) return
+    useGraphStore.getState().setTimelineTransportState({ documentKey, position: Math.max(0, Math.min(duration, time)) / 60, playing: false })
+  }
+  if (!available) return <p role="status" className="p-3 text-xs">Open the drone Python lesson to inspect this warehouse scenario.</p>
+  if (!active) return <section className="min-h-0 min-w-0 max-h-full space-y-2 overflow-auto p-3 text-xs" aria-label="Warehouse inspection timeline">
+    <strong className="block text-sm">Warehouse inspection</strong>
+    <p>Replay the truck, two drones and dock cycle with the shared Timeline. Camera frames, Wi-Fi delivery and detections are simulated locally.</p>
+    <button type="button" className={actionClass} disabled={!canEnable} onClick={enable}>Open warehouse inspection</button>
+    {!canEnable && <p role="status">Pause or stop Python before opening the inspection preview.</p>}
+  </section>
+  return <section className="flex h-full min-h-0 min-w-0 flex-col gap-2 overflow-hidden" aria-label="Warehouse inspection timeline" data-warehouse-inspection="active" data-warehouse-frame={sample.frameIndex}>
+    <header className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 px-2 text-xs">
+      <section className="min-w-0 flex-1" aria-label="Warehouse inspection progress"><strong>Warehouse inspection</strong><p className="truncate" title={`${sample.phase} · rack checks ${sample.coverage.rackVisited}/${sample.coverage.rackTotal} · aisle checks ${sample.coverage.aisleVisited}/${sample.coverage.aisleTotal}`}>{sample.phase} · rack checks {sample.coverage.rackVisited}/{sample.coverage.rackTotal} · aisle checks {sample.coverage.aisleVisited}/{sample.coverage.aisleTotal}</p></section>
+      <button type="button" className={actionClass} onClick={disable}>Return to Python flight</button>
+    </header>
+    <section aria-label="Warehouse timeline and camera" className="grid min-h-0 min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-2 overflow-auto">
+    <section aria-label="Warehouse inspection tracks" className="min-w-0 overflow-hidden">
+    <GanttTimelineTransportPanel code={code} compact={compact} clockActive editable={false}
+      commandAdapter={READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER} mode="media" publishPlaybackRequest={false}
+      runtimeDocumentKey={documentKey} runtimeDurationSeconds={duration} runtimeFrameRate={WAREHOUSE_INSPECTION_FPS}
+      timelineInsertedLanes={laneGroups.map(([id, cues]) => ({
+        id: `warehouse:${id}`, selectRowKey: `warehouse:${id}`, insertAfterLaneId: 'scene', label: names[id] ?? id,
+        content: ({ selectRow }) => <TimelineTransportTimeAxisClip laneStyle="video" aria-label={`${names[id] ?? id} inspection cues`}>
+          <section aria-label={`${names[id] ?? id} cues`} className={`relative w-full ${UI_THEME_TOKENS.control.height}`}>
+            {cues.map(cue => <button key={cue.id} type="button" title={`${cue.label} · ${cue.startSeconds.toFixed(1)}–${cue.endSeconds.toFixed(1)} s`}
+              aria-label={`Seek ${cue.label}`} onClick={() => { selectRow(); seek(cue.startSeconds) }}
+              className="timeline-transport-time-axis-bar"
+              style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%` }}>
+              <span>{cue.label}</span>
+            </button>)}
+          </section>
+        </TimelineTransportTimeAxisClip>,
+      }))} />
+    </section>
+    <WarehouseInspectionFeed seconds={seconds} sample={sample} />
+    </section>
+  </section>
+}

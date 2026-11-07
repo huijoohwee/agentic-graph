@@ -8,7 +8,7 @@ import {
 import { createBrowserSafeFunctionSourceFromText } from '@/features/agent-ready/browserFunctionSource.mjs'
 import { PUBLISHED_AGENT_READY_TOOL_EXECUTORS_BROWSER_SOURCE } from '@/features/agent-ready/publishedToolExecutors.mjs'
 import { WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE } from '@/features/agent-ready/webMcpLifecycleBrowserSource.mjs'
-import { webMcpScript } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
+import { webMcpScript } from '../../../cloudflare/pages/agentic-graph-agent-ready-webmcp.mjs'
 import {
   WEB_MCP_LIFECYCLE_SCRIPT_MARKER,
   hasOwnedWebMcpLifecycleScript,

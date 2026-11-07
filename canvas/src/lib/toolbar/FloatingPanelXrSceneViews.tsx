@@ -1,4 +1,6 @@
 import React from 'react'
+import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   CitySimPanelProjection,
   type CitySimProjectionSurface,
@@ -6,6 +8,7 @@ import {
 import type { ImmersiveMediaProjectionSurface } from '@/features/immersive-media/ImmersiveMediaPanelProjection'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
 
+const XrWorkspaceMediaPanelLazy = React.lazy(() => import('@/features/xr-v2/XrWorkspaceMediaPanel'))
 const MediaCatalogPanelLazy = React.lazy(() => import('@/features/command-menu/CommandMenuCatalogPanel'))
 const XrAnimationFloatingPanelViewLazy = React.lazy(() => import('@/features/three/XrAnimationFloatingPanelView'))
 const MotionControlFloatingPanelViewLazy = React.lazy(() => import('@/features/three/MotionControlFloatingPanelView'))
@@ -28,6 +31,8 @@ const ImmersiveMediaPanelProjectionLazy = React.lazy(() =>
 )
 
 export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) {
+  const { available: warehouseAvailable } = useWarehouseInspectionMode()
+  const xr = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const panel = view === 'media' ? <MediaCatalogPanelLazy />
     : view === 'animation' ? <XrAnimationFloatingPanelViewLazy />
       : view === 'motionControl' ? <MotionControlFloatingPanelViewLazy />
@@ -46,8 +51,7 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
     || view === 'camera'
   ) ? view as CitySimProjectionSurface : null
   const immersiveMediaSurface = projectionSurface as ImmersiveMediaProjectionSurface | null
-  return (
-    <React.Suspense fallback={null}>
+  const content = (
       <section
         className="flex h-full min-h-0 flex-col"
         data-kg-city-sim-panel-composition={projectionSurface || undefined}
@@ -55,13 +59,14 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
       >
         {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
         {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
-        <div
+        <section
           className={`min-h-0 flex-1 ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
           data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
         >
           {panel}
-        </div>
+        </section>
       </section>
-    </React.Suspense>
   )
+  return <React.Suspense fallback={null}>{view === 'media' && (xr || warehouseAvailable)
+    ? <XrWorkspaceMediaPanelLazy>{content}</XrWorkspaceMediaPanelLazy> : content}</React.Suspense>
 }

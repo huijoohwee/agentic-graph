@@ -28,6 +28,7 @@ export const ColumnHeaderPropertyTypeMenu = React.memo(function ColumnHeaderProp
 ) {
   const toggleTargets = props.toggleTargets || 'icon+chevron'
   const shouldToggleFromSummaryEvent = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
+    if (e.detail === 0 && e.target === e.currentTarget) return true
     const el = e.target as HTMLElement | null
     return Boolean(el?.closest('[data-kg-menu-toggle]'))
   }, [])

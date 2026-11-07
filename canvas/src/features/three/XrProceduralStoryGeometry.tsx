@@ -14,27 +14,52 @@ export function XrStoryCharacter({ kind, color, size, pose }: {
   const [w, h, d] = size
   const skin = kind === 'pig' ? '#f5a3b7' : kind === 'monkey' ? '#9b6542' : '#71859a'
   const snout = kind === 'pig' ? '#ee839f' : kind === 'monkey' ? '#e9bd8b' : '#aab7c4'
+  const cloth = kind === 'pig' ? color : kind === 'wolf' ? '#43556d' : '#4e8b74'
   const crouch = (pose?.crouch || 0) * h * 0.12
   return <group name={`agentic_os_xr_story_${kind}`}>
     <mesh position={[0, 0, h * 0.46 - crouch]} scale={[1, 0.8, 1.15]} castShadow>
-      <sphereGeometry args={[w * 0.44, 16, 12]} /><Material color={color} />
+      <sphereGeometry args={[w * 0.44, 24, 18]} /><Material color={skin} />
     </mesh>
     <mesh position={[0, 0, h * 0.79 - crouch]} scale={[1, 0.9, kind === 'pig' ? 0.94 : 1.05]} castShadow>
-      <sphereGeometry args={[w * 0.48, 16, 12]} /><Material color={skin} />
+      <sphereGeometry args={[w * 0.48, 24, 18]} /><Material color={skin} />
     </mesh>
+    <mesh position={[0, -d * 0.16, h * 0.45 - crouch]} scale={[1, 0.52, 1.05]} castShadow>
+      <sphereGeometry args={[w * 0.4, 20, 14]} /><Material color={cloth} />
+    </mesh>
+    <mesh position={[0, d * 0.27, h * 0.52 - crouch]} castShadow>
+      <boxGeometry args={[w * 0.42, d * 0.08, h * 0.26]} /><Material color={cloth} />
+    </mesh>
+    {[-1, 1].map(side => <group key={`strap:${side}`}>
+      <mesh position={[side * w * 0.24, d * 0.21, h * 0.66 - crouch]} rotation={[0, 0, -side * 0.1]} castShadow>
+        <boxGeometry args={[w * 0.095, d * 0.08, h * 0.32]} /><Material color={cloth} />
+      </mesh>
+      <mesh position={[side * w * 0.19, d * 0.32, h * 0.59 - crouch]}>
+        <sphereGeometry args={[w * 0.035, 10, 8]} /><Material color="#e8c66b" />
+      </mesh>
+    </group>)}
     <mesh position={[0, d * 0.54, h * 0.74 - crouch]} rotation={[0, 0, 0]} castShadow>
       {kind === 'monkey' ? <sphereGeometry args={[w * 0.25, 12, 8]} /> : kind === 'pig' ? <cylinderGeometry args={[w * 0.23, w * 0.25, d * 0.25, 16]} /> : <coneGeometry args={[w * 0.24, d * 0.85, 8]} />}
       <Material color={snout} />
     </mesh>
+    {kind === 'pig' ? [-1, 1].map(side => <mesh key={`nostril:${side}`} position={[side * w * 0.075, d * 0.69, h * 0.75 - crouch]}>
+      <sphereGeometry args={[w * 0.035, 10, 8]} /><meshStandardMaterial color="#8a4258" roughness={0.84} />
+    </mesh>) : null}
     {[-1, 1].map(side => <group key={side}>
       <mesh position={[side * w * (kind === 'monkey' ? 0.5 : 0.29), 0, h * (kind === 'monkey' ? 0.82 : 1.02) - crouch]} rotation={[Math.PI / 2, side * 0.25, 0]} castShadow>
-        {kind === 'monkey' ? <sphereGeometry args={[w * 0.2, 12, 8]} /> : <coneGeometry args={[w * 0.17, h * (kind === 'wolf' ? 0.25 : 0.15), 3]} />}<Material color={skin} />
+        {kind === 'monkey' ? <sphereGeometry args={[w * 0.2, 20, 14]} /> : <coneGeometry args={[w * (kind === 'wolf' ? 0.16 : 0.14), h * (kind === 'wolf' ? 0.3 : 0.22), 8]} />}<Material color={skin} />
+      </mesh>
+      <mesh position={[side * w * (kind === 'monkey' ? 0.5 : 0.29), d * 0.04, h * (kind === 'monkey' ? 0.82 : 0.99) - crouch]} rotation={[Math.PI / 2, side * 0.25, 0]}>
+        {kind === 'monkey' ? <sphereGeometry args={[w * 0.12, 14, 10]} /> : <coneGeometry args={[w * (kind === 'wolf' ? 0.1 : 0.08), h * (kind === 'wolf' ? 0.21 : 0.14), 8]} />}
+        <Material color={kind === 'wolf' ? '#39485b' : kind === 'pig' ? '#df8298' : '#d19a68'} />
       </mesh>
       <mesh position={[side * w * 0.17, d * 0.47, h * 0.87 - crouch]}>
-        <sphereGeometry args={[w * 0.075, 10, 8]} /><Material color="#fffaf2" />
+        <sphereGeometry args={[w * 0.075, 14, 10]} /><Material color="#fffaf2" />
       </mesh>
       <mesh position={[side * w * 0.17, d * 0.52, h * 0.87 - crouch]}>
-        <sphereGeometry args={[w * 0.039, 8, 6]} /><Material color="#172b3e" />
+        <sphereGeometry args={[w * 0.039, 12, 8]} /><Material color="#172b3e" />
+      </mesh>
+      <mesh position={[side * w * 0.18, d * 0.545, h * 0.89 - crouch]}>
+        <sphereGeometry args={[w * 0.012, 8, 6]} /><meshBasicMaterial color="#fffaf2" />
       </mesh>
       {kind === 'pig' ? <mesh position={[side * w * 0.09, d * 0.68, h * 0.76 - crouch]}>
         <sphereGeometry args={[w * 0.034, 8, 6]} /><Material color="#9d4564" />
@@ -45,12 +70,16 @@ export function XrStoryCharacter({ kind, color, size, pose }: {
       ]}>
         <mesh position={[0, 0, -h * 0.1]} rotation={UPRIGHT} castShadow><capsuleGeometry args={[w * 0.095, h * 0.17, 4, 8]} /><Material color={skin} /></mesh>
       </group>
-      <mesh position={[side * w * 0.22, 0, h * 0.15 - crouch * 0.2]} rotation={UPRIGHT} castShadow>
-        <capsuleGeometry args={[w * 0.11, h * 0.15, 4, 8]} /><Material color={skin} />
-      </mesh>
-      <mesh position={[side * w * 0.22, d * 0.13, h * 0.06]} scale={[1, 1.5, 0.6]} castShadow>
-        <sphereGeometry args={[w * 0.14, 10, 8]} /><Material color="#344453" />
-      </mesh>
+      <group position={[side * w * 0.22, 0, h * 0.15 - crouch * 0.2]} rotation={[
+        MathUtils.degToRad((side < 0 ? pose?.leftLegPitchDegrees : pose?.rightLegPitchDegrees) || 0), 0, 0,
+      ]}>
+        <mesh position={[0, 0, -h * 0.045]} rotation={UPRIGHT} castShadow>
+          <capsuleGeometry args={[w * 0.11, h * 0.15, 4, 8]} /><Material color={skin} />
+        </mesh>
+        <mesh position={[0, d * 0.13, -h * 0.09]} scale={[1, 1.5, 0.6]} castShadow>
+          <sphereGeometry args={[w * 0.14, 10, 8]} /><Material color="#344453" />
+        </mesh>
+      </group>
     </group>)}
     {kind === 'monkey' ? <mesh position={[0, -d * 0.7, h * 0.36]} rotation={[Math.PI / 2, Math.PI / 2, 0]}><torusGeometry args={[h * 0.24, w * 0.045, 6, 18, Math.PI * 1.65]} /><Material color={skin} /></mesh> : kind === 'pig' ? <mesh position={[0, -d * 0.53, h * 0.42]} rotation={UPRIGHT}>
       <torusGeometry args={[w * 0.1, w * 0.025, 6, 12, Math.PI * 1.65]} /><Material color={skin} />

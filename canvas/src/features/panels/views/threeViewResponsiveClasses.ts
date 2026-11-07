@@ -1,1 +1,9 @@
-export const THREE_VIEW_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
+import React from 'react'
+import { KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
+
+// Compose existing owners: the body owns insets; the inner stack owns row rhythm.
+export function ThreeViewFieldSection({ children }: { children: React.ReactNode }) {
+  return React.createElement('section', { className: uiToolbarSettingsPanelBodyClassName },
+    React.createElement(KeyTypeValueSectionStack, null, children))
+}

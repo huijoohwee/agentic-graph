@@ -4,6 +4,7 @@ import { WidgetEditorActionsToolbar } from '@/components/StoryboardWidget/Widget
 import { buildSharedRichMediaOverlayControlProps, buildSharedRichMediaOverlayToolbarProps } from '@/components/StoryboardWidget/richMediaOverlayToolbarProps'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { isSpacePanHeld } from '@/lib/canvas/space-pan'
+import { readVectorPaintedOverlayScale } from '@/lib/canvas/vectorPaintedOverlayProjection'
 import { Z_INDEX_GRAPH_MEDIA_LAYER } from '@/lib/ui/zIndex'
 import RichMediaPanel from '@/components/RichMediaPanel'
 import { RichMediaOutputVersionSelector } from '@/components/RichMediaOutputVersionSelector'
@@ -24,6 +25,7 @@ type RichMediaResizeState = {
   pointerId: number
   startW: number
   startH: number
+  scale: number
   lastW: number
   lastH: number
 }
@@ -174,8 +176,9 @@ export function RichMediaOverlayLayer2d(props: {
   const beginResize = React.useCallback((id: string, pointerId: number) => {
     const el = overlayElsRef.current.get(id) || null
     const rect = el?.getBoundingClientRect()
-    const measuredW = rect && Number.isFinite(rect.width) ? Math.max(24, Math.round(rect.width)) : 0
-    const measuredH = rect && Number.isFinite(rect.height) ? Math.max(24, Math.round(rect.height)) : 0
+    const scale = el ? readVectorPaintedOverlayScale(el) : 1
+    const measuredW = rect && Number.isFinite(rect.width) ? Math.max(24, Math.round(rect.width / scale)) : 0
+    const measuredH = rect && Number.isFinite(rect.height) ? Math.max(24, Math.round(rect.height / scale)) : 0
     const baseProps = readGraphNodePropertiesFromStore(id)
     const storedW = Number(baseProps['visual:width'])
     const startW = Number.isFinite(storedW) && storedW > 0 ? Math.max(24, Math.round(storedW)) : Math.max(24, measuredW)
@@ -185,7 +188,7 @@ export function RichMediaOverlayLayer2d(props: {
       width: startW,
     })
     const startH = Math.max(24, Math.round(aspectSize.height || measuredH))
-    resizeRef.current = { id, pointerId, startW, startH, lastW: startW, lastH: startH }
+    resizeRef.current = { id, pointerId, startW, startH, scale, lastW: startW, lastH: startH }
     if (el) {
       el.style.width = `${startW}px`
       el.style.height = `${startH}px`
@@ -198,8 +201,8 @@ export function RichMediaOverlayLayer2d(props: {
     const next = resolveCanvasAspectRatioResizeSize({
       startWidth: drag.startW,
       startHeight: drag.startH,
-      deltaX: payload.dx,
-      deltaY: payload.dy,
+      deltaX: payload.dx / drag.scale,
+      deltaY: payload.dy / drag.scale,
       minWidth: 24,
       mode: strybldrStoryboardCardAspectMode,
     })

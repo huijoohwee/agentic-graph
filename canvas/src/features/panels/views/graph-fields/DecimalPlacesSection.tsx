@@ -25,7 +25,7 @@ export function DecimalPlacesSection({
         <span className={labelClassName}>Decimal places</span>
         <GraphFieldsFieldSelect
           value={String(selectedSettings.decimalPlaces)}
-          onChange={e => updateSettings({ decimalPlaces: Number(e.target.value) })}
+          onValueChange={selectedValueInput => updateSettings({ decimalPlaces: Number(selectedValueInput) })}
           textSizeClassName={uiPanelKeyValueTextSizeClass}
         >
           {Array.from({ length: 7 }).map((_, i) => (

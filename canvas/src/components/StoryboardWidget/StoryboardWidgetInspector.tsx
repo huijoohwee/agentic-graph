@@ -167,7 +167,7 @@ export default function StoryboardWidgetInspector({
             <section className="mt-3 flex flex-col gap-2">
               {selectedNodeCardFields.map(field => (
                 <section key={field.id} className="rounded-md border border-black/5 bg-black/[0.025] px-2.5 py-2">
-                  <p className={cn('m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary)}>
+                  <p className={cn('m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
                     {field.label}
                   </p>
                   <CardInlineTextEditor

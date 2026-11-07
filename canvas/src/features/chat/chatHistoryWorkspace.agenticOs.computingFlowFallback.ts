@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { analyzeAgenticOsRequest, sanitizeRequestIntent } from './chatAgenticOsRequestProfile'
 import {
   COMPUTING_FLOW_COMPUTE_NODE_ID,
@@ -51,13 +52,13 @@ const buildSeededOutputAssets = (markdown: string, fallbackTitle: string): {
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200">',
     '<rect width="640" height="200" fill="#f8fafc"/>',
-    `<text x="320" y="82" font-family="system-ui" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">${titleHtml}</text>`,
-    `<text x="320" y="116" font-family="system-ui" font-size="12" fill="#475569" text-anchor="middle">${words} words - ${pct}% of ${target} target</text>`,
+    `<text x="320" y="82" font-family="${UI_FONT_SANS}" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">${titleHtml}</text>`,
+    `<text x="320" y="116" font-family="${UI_FONT_SANS}" font-size="12" fill="#475569" text-anchor="middle">${words} words - ${pct}% of ${target} target</text>`,
     '</svg>',
   ].join('')
   const outputSrcDoc = [
     '<!doctype html><html><head><meta charset=utf-8><style>',
-    'body{margin:0;padding:16px;font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a}',
+    `body{margin:0;padding:16px;font-family:${UI_FONT_SANS};background:#f8fafc;color:#0f172a}`,
     'h2{font-size:14px;font-weight:600;margin:0 0 10px}.track{height:16px;background:#e2e8f0;border-radius:8px;overflow:hidden}',
     `.bar{height:100%;background:#22c55e;border-radius:8px;width:${pct}%}.note{margin-top:8px;font-size:12px;color:#64748b}`,
     'p{font-size:12px;line-height:1.45;margin:10px 0 0;color:#334155}',
@@ -108,12 +109,12 @@ const buildComputingFlowComputeSource = (): string[] => [
   '  const title = (query || context || evidence || "Output").slice(0, 96)',
   '  const svg = "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 640 200\\">" +',
   '    "<rect width=\\"640\\" height=\\"200\\" fill=\\"#f8fafc\\"/>" +',
-  '    "<text x=\\"320\\" y=\\"84\\" font-family=\\"system-ui\\" font-size=\\"14\\" font-weight=\\"700\\" fill=\\"#0f172a\\" text-anchor=\\"middle\\">" + escapeHtml(title) + "</text>" +',
-  '    "<text x=\\"320\\" y=\\"116\\" font-family=\\"system-ui\\" font-size=\\"12\\" fill=\\"#475569\\" text-anchor=\\"middle\\">" + count + " " + escapeHtml(metricLabel) + " · " + pct + "% of target</text>" +',
+  `    "<text x=\\"320\\" y=\\"84\\" font-family=\\"${UI_FONT_SANS}\\" font-size=\\"14\\" font-weight=\\"700\\" fill=\\"#0f172a\\" text-anchor=\\"middle\\">" + escapeHtml(title) + "</text>" +`,
+  `    "<text x=\\"320\\" y=\\"116\\" font-family=\\"${UI_FONT_SANS}\\" font-size=\\"12\\" fill=\\"#475569\\" text-anchor=\\"middle\\">" + count + " " + escapeHtml(metricLabel) + " · " + pct + "% of target</text>" +`,
   '    "</svg>"',
   '  const imageUrl = "data:image/svg+xml," + encodeURIComponent(svg)',
   '  const outputSrcDoc = "<!doctype html><html><head><meta charset=\\"utf-8\\"><style>" +',
-  '    "body{margin:0;padding:16px;font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a}" +',
+  `    "body{margin:0;padding:16px;font-family:${UI_FONT_SANS};background:#f8fafc;color:#0f172a}" +`,
   '    "h2{font-size:14px;font-weight:600;margin:0 0 10px}.track{height:16px;background:#e2e8f0;border-radius:8px;overflow:hidden}" +',
   '    ".bar{height:100%;background:#22c55e;border-radius:8px;width:" + pct + "%}.note{margin-top:8px;font-size:12px;color:#64748b}" +',
   '    "</style></head><body><h2>" + escapeHtml(title) + "</h2><div class=\\"track\\"><div class=\\"bar\\"></div></div>" +',

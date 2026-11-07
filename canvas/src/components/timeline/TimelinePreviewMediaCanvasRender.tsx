@@ -38,7 +38,7 @@ export function TimelinePreviewMediaCanvasRender(args: TimelinePreviewMediaCanva
                     <h2 className="min-w-0 truncate text-xs font-medium text-[var(--kg-text-secondary)]">{section.header.label}</h2>
                     {section.summary.visible ? (
                       <p
-                        className="text-[11px] text-[var(--kg-text-secondary)]"
+                        className="text-xs text-[var(--kg-text-secondary)]"
                         data-kg-media-canvas-family-summary={section.summary.dataValue}
                       >
                         {section.summary.label}

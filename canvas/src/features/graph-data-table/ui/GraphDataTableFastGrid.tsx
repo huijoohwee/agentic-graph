@@ -533,7 +533,7 @@ export function GraphDataTableFastGrid(props: GraphDataTableFastGridProps) {
       <section className={`absolute inset-0 z-20 pointer-events-none ${UI_THEME_TOKENS.text.primary}`} aria-hidden="true">
         {model.layout.scrollable.length <= 0 && props.columns.length > 0 ? (
           <section className="absolute inset-0 flex items-center justify-center">
-            <section className="rounded border px-3 py-2 bg-[var(--kg-panel-bg)] text-[color:var(--kg-text-secondary)] text-xs shadow-sm">
+            <section className="rounded border px-3 py-2 bg-[var(--kg-panel-bg)] text-[color:var(--kg-text-secondary)] text-xs shadow-none">
               All columns hidden
             </section>
           </section>

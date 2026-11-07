@@ -10,7 +10,7 @@ import {
   STARFIELD_RADIUS_TOOLTIP,
   STARFIELD_BRIGHTNESS_TOOLTIP,
 } from '@/features/panels/views/ThreeViewTuningTooltips'
-import { THREE_VIEW_FIELD_GRID_CLASS_NAME } from '@/features/panels/views/threeViewResponsiveClasses'
+import { ThreeViewFieldSection } from '@/features/panels/views/threeViewResponsiveClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   UI_RESPONSIVE_COMPACT_SELECTION_CONTROL_CLASSNAME,
@@ -42,7 +42,7 @@ export default function ThreeViewStarfieldSection({
       headerClassName="px-0"
       stickyOffsetClassName="top-6"
     >
-      <section className={THREE_VIEW_FIELD_GRID_CLASS_NAME}>
+      <ThreeViewFieldSection>
         <PanelKeyTypeCheckboxValueRow
           density="compact"
           keyNode={<span className={keyLabelClassName}>Starfield</span>}
@@ -114,7 +114,7 @@ export default function ThreeViewStarfieldSection({
           textInputClassName={uiPanelKeyValueInputClass}
           placeholder="#facc15"
         />
-      </section>
+      </ThreeViewFieldSection>
     </CollapsibleSection>
   )
 }

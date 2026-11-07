@@ -33,33 +33,19 @@ export function clampOverlayTopLeftToViewport(args: {
   }
 }
 
-export function clampOverlayCenterToViewport(args: {
+export function clampOverlayCenterFullyInViewport(args: {
   pos: { top: number; left: number }
   size: { width: number; height: number }
   viewport: { width: number; height: number }
-  visiblePx: number
-  inset?: { top?: number; left?: number; right?: number; bottom?: number }
 }): { top: number; left: number } {
-  const halfWidthPx = Math.max(0, Math.round(args.size.width / 2))
-  const halfHeightPx = Math.max(0, Math.round(args.size.height / 2))
-
-  const viewportW = Math.max(1, Math.floor(args.viewport.width))
-  const viewportH = Math.max(1, Math.floor(args.viewport.height))
-  const visiblePx = Math.max(0, Math.floor(args.visiblePx))
-
-  const insetTop = Math.max(0, Math.floor(args.inset?.top ?? 0))
-  const insetLeft = Math.max(0, Math.floor(args.inset?.left ?? 0))
-  const insetRight = Math.max(0, Math.floor(args.inset?.right ?? 0))
-  const insetBottom = Math.max(0, Math.floor(args.inset?.bottom ?? 0))
-
-  const minTop = insetTop + visiblePx - halfHeightPx
-  const maxTop = viewportH - insetBottom - visiblePx + halfHeightPx
-  const minLeft = insetLeft + visiblePx - halfWidthPx
-  const maxLeft = viewportW - insetRight - visiblePx + halfWidthPx
-
-  const top = Math.min(Math.max(args.pos.top, minTop), maxTop)
-  const left = Math.min(Math.max(args.pos.left, minLeft), maxLeft)
-  return { top, left }
+  const width = Number.isFinite(args.size.width) ? Math.max(1, args.size.width) : 1
+  const height = Number.isFinite(args.size.height) ? Math.max(1, args.size.height) : 1
+  const clamped = clampOverlayTopLeftFullyInViewport({
+    pos: { top: args.pos.top - height / 2, left: args.pos.left - width / 2 },
+    size: { width, height },
+    viewport: args.viewport,
+  })
+  return { top: clamped.top + height / 2, left: clamped.left + width / 2 }
 }
 
 export function clampOverlayTopLeftFullyInViewport(args: {

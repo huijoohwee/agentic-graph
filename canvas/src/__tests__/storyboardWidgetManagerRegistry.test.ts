@@ -34,9 +34,7 @@ import {
 import {
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
   CHAT_BYTEPLUS_TEXT_MODEL_DEFAULT,
-  CHAT_DEERFLOW_ENDPOINT_URL,
   CHAT_OPENAI_ENDPOINT_URL,
-  CHAT_PROVIDER_DEERFLOW,
   CHAT_PROVIDER_BYTEPLUS,
   CHAT_PROVIDER_OPENAI,
 } from '@/lib/chatEndpoint'
@@ -264,19 +262,7 @@ export function testStoryboardWidgetManagerBuildsReusableTextRegistryDrafts() {
       throw new Error(`expected byteplus text draft to exclude stale or non-chat field ${key}`)
     }
   })
-
-  const deerflowDraft = buildTextGenerationRegistryDraft({ providerFamily: 'deerflow' })
-  if (deerflowDraft.formId !== 'textGeneration.deerflow') {
-    throw new Error(`expected DeerFlow text draft to keep a provider-specific form id, got ${String(deerflowDraft.formId)}`)
-  }
-  if (!deerflowDraft.fields.some(field => field.fieldKey === 'chatMessagesJson')) {
-    throw new Error('expected DeerFlow text draft scaffold to stay on the OpenAI-compatible text widget field set')
-  }
-  const deerflowLabel = getWidgetRegistryEntryLabel({ nodeTypeId: deerflowDraft.nodeTypeId, formId: deerflowDraft.formId })
-  if (deerflowLabel !== 'Widget Card') {
-    throw new Error(`expected DeerFlow compatibility form to use the canonical Widget Card label, got ${String(deerflowLabel)}`)
-  }
-  ;(['byteplus', 'lmstudio-local', 'openai', 'deerflow', 'miromind', 'agnes', 'sealion', 'qwen', 'google-cloud'] as const).forEach(providerFamily => {
+  ;(['byteplus', 'lmstudio-local', 'openai', 'miromind', 'agnes', 'sealion', 'qwen', 'google-cloud'] as const).forEach(providerFamily => {
     const draft = buildTextGenerationRegistryDraft({ providerFamily })
     const label = getWidgetRegistryEntryLabel({ nodeTypeId: draft.nodeTypeId, formId: draft.formId })
     if (label !== 'Widget Card') {
@@ -294,31 +280,6 @@ export function testStoryboardWidgetManagerDoesNotSeedOpenAiTextRegistryEntry() 
   ;['chatMessagesJson', 'chatResponseFormatJson', 'chatToolsJson'].forEach(key => {
     if (!fieldKeys.has(key)) throw new Error(`expected OpenAI text widget draft to expose ${key}`)
   })
-}
-
-export function testStoryboardWidgetManagerDoesNotSeedDeerFlowTextRegistryEntry() {
-  const seeded = ensureDefaultWidgetRegistryEntries([], '2026-02-06T00:00:00.000Z')
-  const deerflowEntry = seeded.entries.find(entry => entry.nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID && entry.formId === 'textGeneration.deerflow')
-  if (deerflowEntry) throw new Error('expected default widget registry seed to omit DeerFlow text widget entry')
-  const deerflowDraft = buildTextGenerationRegistryDraft({ providerFamily: 'deerflow' })
-  const fieldKeys = new Set((deerflowDraft.fields || []).map(field => field.fieldKey))
-  ;['chatProvider', 'chatEndpointUrl', 'chatModel', 'chatMessagesJson', 'chatResponseFormatJson'].forEach(key => {
-    if (!fieldKeys.has(key)) throw new Error(`expected DeerFlow text widget draft to expose ${key}`)
-  })
-  const normalized = normalizeTextGenerationWidgetPropertiesForProviderFamily({
-    providerFamily: 'deerflow',
-    properties: {
-      chatProvider: 'openai',
-      chatEndpointUrl: 'https://api.openai.com/v1/responses',
-      chatModel: 'gpt-5-nano',
-    },
-  })
-  if (String(normalized.chatProvider || '') !== CHAT_PROVIDER_DEERFLOW) {
-    throw new Error(`expected DeerFlow normalization to force provider ${CHAT_PROVIDER_DEERFLOW}`)
-  }
-  if (String(normalized.chatEndpointUrl || '') !== CHAT_DEERFLOW_ENDPOINT_URL) {
-    throw new Error(`expected DeerFlow normalization to force endpoint ${CHAT_DEERFLOW_ENDPOINT_URL}`)
-  }
 }
 
 export function testStoryboardWidgetManagerDoesNotSeedGrabMapsDiscoveryRegistryEntry() {

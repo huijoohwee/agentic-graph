@@ -1,6 +1,5 @@
 import React from 'react'
 import { MarkdownCodeBlock } from './MarkdownCodeBlock'
-import { MarkdownDataViewTableView } from './MarkdownDataViewTableView'
 import type { RenderOpts } from './MarkdownRendererTypes'
 import {
   buildMarkdownFrontmatterPreviewCodeToken,
@@ -8,6 +7,8 @@ import {
 } from './markdownFrontmatterPreview'
 import { getMarkdownViewerWidthWrapperClassName } from './markdownSectionUtils'
 import type { MarkdownVariableSsotEntry } from './markdownVariableReferences'
+
+const MarkdownDataViewTableView = React.lazy(() => import('./MarkdownDataViewTableView').then(module => ({ default: module.MarkdownDataViewTableView })))
 
 export const MarkdownFrontmatterPreviewBlocks = React.memo(function MarkdownFrontmatterPreviewBlocks(props: {
   yaml?: string | null
@@ -54,6 +55,7 @@ export const MarkdownFrontmatterPreviewBlocks = React.memo(function MarkdownFron
               if (line > 0) props.onShowInEditor(line)
             }}
           >
+            <React.Suspense fallback={<p role="status">Loading table…</p>}>
             <MarkdownDataViewTableView
               view={frontmatterPreviewTable.view}
               columnTypesById={{ 'frontmatter-key': 'text', 'frontmatter-value': 'text' }}
@@ -62,6 +64,7 @@ export const MarkdownFrontmatterPreviewBlocks = React.memo(function MarkdownFron
               tableFit="container"
               onUpdateCell={() => {}}
             />
+            </React.Suspense>
           </section>
         </section>
       ) : null}

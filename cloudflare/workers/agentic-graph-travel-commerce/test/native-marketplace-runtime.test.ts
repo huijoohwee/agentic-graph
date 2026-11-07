@@ -30,20 +30,6 @@ describe('native marketplace production runtime', () => {
     await graph.recordSettlementAttempt(begin.record.cascadeId, owner)
     await graph.markSettlementComplete(begin.record.cascadeId, owner)
     await ledger.commitCascade(begin.record.cascadeId)
-    await graph.commitPreparedCascade(begin.record.cascadeId)
-
-    const committed = await graph.getMarketplaceState() as {
-      splits: Record<string, unknown>[]; payouts: Record<string, unknown>[]; events: Record<string, unknown>[]
-    }
-    expect(committed.splits).toEqual([expect.objectContaining({
-      vendor_id: 'agent-hotel', gross_amount_minor: 125,
-      commission_amount_minor: 12, net_payout_amount_minor: 113,
-    })])
-    expect(committed.payouts).toEqual([expect.objectContaining({ payout_state: 'pending', attempt_count: 0 })])
-    expect(committed.events.map((event) => event.eventType)).toEqual(expect.arrayContaining([
-      'settlement-verified', 'split-committed', 'bundle-committed',
-    ]))
-    await graph.finishCascade(begin.record.cascadeId, false)
 
     let settlementCalls = 0
     let settlementBody: Record<string, unknown> | null = null
@@ -67,6 +53,21 @@ describe('native marketplace production runtime', () => {
       }),
     } as TravelCommerceEnv
     await runInDurableObject(graph, async (instance, state) => {
+      const committedRecord = instance.commitPreparedCascade(begin.record.cascadeId)
+      if ('kind' in committedRecord) throw new Error(committedRecord.reason)
+      const committed = instance.getMarketplaceState() as {
+        splits: Record<string, unknown>[]; payouts: Record<string, unknown>[]; events: Record<string, unknown>[]
+      }
+      expect(committed.splits).toEqual([expect.objectContaining({
+        vendor_id: 'agent-hotel', gross_amount_minor: 125,
+        commission_amount_minor: 12, net_payout_amount_minor: 113,
+      })])
+      expect(committed.payouts).toEqual([expect.objectContaining({ payout_state: 'pending', attempt_count: 0 })])
+      expect(committed.events.map((event) => event.eventType)).toEqual(expect.arrayContaining([
+        'settlement-verified', 'split-committed', 'bundle-committed',
+      ]))
+      const outcome = instance.finishCascade(begin.record.cascadeId, false)
+      if (outcome.kind === 'rejected') throw new Error(outcome.reason ?? 'cascade-rejected')
       await state.storage.deleteAlarm()
       const payout = state.storage.sql.exec<PayoutRow>(
         `SELECT p.*, s.cascade_id, s.bundle_id, s.vendor_id, s.payout_principal_id,
@@ -78,6 +79,7 @@ describe('native marketplace production runtime', () => {
       const record = instance.getCascade(begin.record.cascadeId)
       if (!record) throw new Error('missing cascade')
       await dispatchPayout(state, fakeEnv, payout, record, Date.now())
+      await state.storage.deleteAlarm()
       expect(state.storage.sql.exec<{ payout_state: string }>(
         'SELECT payout_state FROM marketplace_payouts WHERE payout_id = ?', payout.payout_id,
       ).one().payout_state).toBe('settled')

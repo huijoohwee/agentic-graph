@@ -1,3 +1,6 @@
+import { UI_ICON_DEFAULTS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
+import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
+import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
 import type { GraphState } from '@/hooks/store/types'
@@ -79,8 +82,8 @@ export const createUiInitialState = (
     floatingPanelView: 'propsPanel' as GraphState['floatingPanelView'],
     setFloatingPanelView: (view: GraphState['floatingPanelView']) => {
       const next =
-        view === 'skillsCommands' || view === 'promptPresets'
-        || view === 'media'
+        view === 'skillsCommands' || view === 'blockLibrary' || view === 'promptPresets'
+        || view === 'media' || view === 'preview'
         || view === 'animation'
         || view === 'motionControl'
         || view === 'gameMode'
@@ -90,11 +93,13 @@ export const createUiInitialState = (
         || view === 'camera'
         || view === 'design'
         || view === 'chat'
+        || view === 'console'
         || view === 'geo'
         || view === 'renderer'
         || view === 'storyboardWidget' || view === 'flowchart'
         || view === 'gitGraph'
         || view === 'gantt'
+        || view === 'sequence'
         || view === 'timeline'
         || view === 'architecture'
         || view === 'eventModeling'
@@ -362,7 +367,7 @@ export const createUiInitialState = (
     uiPanelKeyValueTextSizeClass: lsJson<string>(
       LS_KEYS.panelKeyValueTextSizeClass,
       'text-sm',
-      value => (typeof value === 'string' ? value : 'text-sm'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-sm'),
     ),
 
     uiPanelTextFontClass: lsJson<string>(
@@ -376,7 +381,7 @@ export const createUiInitialState = (
       PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
       value =>
         typeof value === 'string'
-          ? value
+          ? normalizeSingleLineControlClassName(normalizeUiTextClasses(value))
           : PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
     ),
 
@@ -395,12 +400,12 @@ export const createUiInitialState = (
     uiPanelMonospaceTextClass: lsJson<string>(
       LS_KEYS.panelMonospaceTextClass,
       'font-mono text-xs',
-      value => (typeof value === 'string' ? value : 'font-mono text-xs'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'font-mono text-xs'),
     ),
     uiPanelMicroLabelTextSizeClass: lsJson<string>(
       LS_KEYS.panelMicroLabelTextSizeClass,
       '',
-      value => (typeof value === 'string' ? value : ''),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : ''),
     ),
 
     uiHeaderRowHeightClass: lsJson<string>(
@@ -433,7 +438,7 @@ export const createUiInitialState = (
     uiIconFormat: lsJson<'default' | 'minimal' | '1'>(LS_KEYS.iconFormat, '1', value =>
       value === 'minimal' || value === 'default' || value === '1' ? value : '1',
     ),
-    uiIconStrokeWidth: lsNum(LS_KEYS.iconStrokeWidth, 2),
+    uiIconStrokeWidth: normalizeUiIconStrokeWidth(lsFloat(LS_KEYS.iconStrokeWidth, UI_ICON_DEFAULTS.strokeWidth)),
     uiIconColorClass: lsJson<string>(
       LS_KEYS.iconColorClass,
       UI_THEME_TOKENS.text.secondary,
@@ -469,18 +474,18 @@ export const createUiInitialState = (
     ),
     uiIconBadgeChipTextSizeClass: lsJson<string>(
       LS_KEYS.iconBadgeChipTextSizeClass,
-      'text-[9px]',
-      value => (typeof value === 'string' ? value : 'text-[9px]'),
+      'text-xs',
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconPillLegendTextSizeClass: lsJson<string>(
       LS_KEYS.iconPillLegendTextSizeClass,
       'text-xs',
-      value => (typeof value === 'string' ? value : 'text-xs'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconPillBadgeTextSizeClass: lsJson<string>(
       LS_KEYS.iconPillBadgeTextSizeClass,
-      'text-[9px]',
-      value => (typeof value === 'string' ? value : 'text-[9px]'),
+      'text-xs',
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconAnimationEnabled: lsBool(LS_KEYS.iconAnimationEnabled, true),
     uiOverlayOpacity: lsNum(LS_KEYS.overlayOpacity, 0.95),

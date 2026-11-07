@@ -38,6 +38,7 @@ import { ZoomModeSelect } from '@/components/toolbar/ZoomModeSelect';
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { toolbarActionAffordance } from '@/lib/toolbar/toolbarActionAffordance'
+import { MainPanelLayer, MainPanelLoadingFallback } from '@/features/panels/ui/MainPanelFrame'
 import {
   registerToolbarActionControlHandler,
   type ToolbarActionId,
@@ -177,7 +178,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     return () => observer.disconnect()
   }, [])
   const navClassBase = 'Island App-toolbar App-toolbar--compact w-fit'
-  const clampedMainPanelPos = isMainPanelOpen ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
+  const clampedMainPanelPos = isMainPanelOpen && mainPanelDragPos ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
   const isNarrowViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode
   const effectiveMainPanelPinned = isNarrowViewport ? true : mainPanelPinned
@@ -279,7 +280,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         onActivateGeoXrMode={actions.handleActivateGeoXrMode}
         onExitGeospatialMode={actions.handleExitGeospatialMode}
       />
-      <section className="App-toolbar__divider" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Canvas mode and settings separator" />
       <IconButton
         className="App-toolbar__btn"
         title={UI_LABELS.settings}
@@ -291,10 +292,10 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         <Settings className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
       {isMainPanelOpen && (
-        <section
+        <MainPanelLayer
           data-kg-main-panel-shell="true"
           data-kg-main-panel-requested-tab={mainPanelRequestedTab}
-          className={`${effectiveMainPanelPinned ? 'fixed inset-0 z-[2000]' : 'fixed inset-0 z-[80]'} ${(isNarrowViewport || effectiveMainPanelPinned) ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          className={`fixed inset-0 ${isNarrowViewport ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
           {isNarrowViewport ? (
             <>
@@ -310,7 +311,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 ref={mainPanelCardRef}
                 className={UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME}
               >
-                <React.Suspense fallback={null}>
+                <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                   <MainPanelLazy
                     onClose={() => setIsMainPanelOpen(false)}
                     requestedTab={mainPanelRequestedTab}
@@ -339,12 +340,12 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
               ].join(' ')}
               style={{
                 position: 'absolute',
-                top: clampedMainPanelPos.top,
-                left: clampedMainPanelPos.left,
+                top: clampedMainPanelPos?.top ?? '50%',
+                left: clampedMainPanelPos?.left ?? '50%',
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <React.Suspense fallback={null}>
+              <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                 <MainPanelLazy
                   onClose={() => setIsMainPanelOpen(false)}
                   onHeaderDragStart={!effectiveMainPanelPinned ? handleMainPanelHeaderDragStart : undefined}
@@ -363,7 +364,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
               </React.Suspense>
             </section>
           )}
-        </section>
+        </MainPanelLayer>
       )}
 
       <IconButton className="App-toolbar__btn" title={UI_LABELS.history} onClick={actions.handleOpenHistory} {...toolbarActionAffordance('history:open')} showTooltip>
@@ -374,7 +375,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         <HelpCircle className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
 
-      <section className="App-toolbar__divider" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Workspace and editing actions separator" />
       <IconButton
         className="App-toolbar__btn"
         title={UI_LABELS.createNode}
@@ -445,7 +446,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       </IconButton>
       <ZoomModeSelect iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} onZoomSelection={onZoomSelection} />
       <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
-      <hr className="App-toolbar__divider" aria-hidden="true" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="History and search separator" />
       <IconButton
         className="App-toolbar__btn"
         ref={searchBtnRef}
@@ -509,7 +510,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       )}
       <AgentRunCloseButton iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
       {learningDocument ? <>
-        <hr className="App-toolbar__divider" aria-hidden="true" />
+        <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Learning editor separator" />
         <IconButton className="App-toolbar__btn" title="Edit Python code" ariaLabel="Edit Python code"
           tooltipContent="Edit Python code" showTooltip
           onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })}>

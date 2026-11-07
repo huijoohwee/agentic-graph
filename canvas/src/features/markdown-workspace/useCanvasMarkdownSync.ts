@@ -15,6 +15,8 @@ import type { StatusHelpers } from './useWorkspaceFileActions/types'
 import { resolveMarkdownWorkspaceDocsMirrorCanonicalPath } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionCanonicalPath'
 import { buildWorkspaceEntriesIndex, type WorkspaceEntriesIndex } from '@/lib/markdown-workspace-runtime/workspaceEntriesIndex'
 
+import { readWorkspaceImportMarkdownSourceUrl, workspaceImportSourceUrlsMatch } from './workspaceImport/sourceUrlIdentity'
+
 const EMPTY_GRAPH_NODES: GraphNode[] = []
 const EMPTY_GRAPH_EDGES: GraphEdge[] = []
 
@@ -62,8 +64,14 @@ export const resolveCanvasMarkdownSyncTargetPath = (args: {
   entries: WorkspaceEntry[]
   entriesIndex?: WorkspaceEntriesIndex
   docKey: string
+  activePath?: WorkspacePath | null
 }): WorkspacePath | null => {
-  const targetPath = findWorkspacePathForDocumentKey(args.entries, args.docKey)
+  const sourceUrl = /^https?:\/\//i.test(args.docKey)
+  const captures = sourceUrl ? args.entries.filter(entry => entry.kind === 'file'
+    && workspaceImportSourceUrlsMatch(readWorkspaceImportMarkdownSourceUrl(entry.text || ''), args.docKey)) : []
+  const targetPath = sourceUrl
+    ? captures.find(entry => entry.path === args.activePath)?.path || (captures.length === 1 ? captures[0]!.path : null)
+    : findWorkspacePathForDocumentKey(args.entries, args.docKey)
   if (!targetPath) return null
   const entriesIndex = args.entriesIndex || buildWorkspaceEntriesIndex(args.entries)
   return resolveMarkdownWorkspaceDocsMirrorCanonicalPath(targetPath, entriesIndex) || targetPath
@@ -173,9 +181,10 @@ export function useCanvasMarkdownSync(args: {
         entries,
         entriesIndex,
         docKey,
+        activePath,
       })
       if (!targetPath) {
-        setStatusError(`Missing file: ${docKey}`, { ttlMs: 3500, dismissible: true })
+        setStatusError(/^https?:\/\//i.test(docKey) ? `No unique saved document for source: ${docKey}` : `Missing file: ${docKey}`, { ttlMs: 3500, dismissible: true })
         return
       }
 

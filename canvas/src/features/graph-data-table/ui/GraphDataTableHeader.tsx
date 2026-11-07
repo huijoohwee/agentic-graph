@@ -167,7 +167,7 @@ export const HeaderCell = React.memo(function HeaderCell({
 
             <menu
               className={[
-                'rounded border shadow-sm p-1 z-20',
+                'rounded border shadow-[var(--kg-shadow-overlay)] p-1 z-20',
                 UI_THEME_TOKENS.panel.bg,
                 UI_THEME_TOKENS.panel.border,
                 UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME,
@@ -247,7 +247,7 @@ export const HeaderCell = React.memo(function HeaderCell({
         </section>
 
         <section className="flex items-center gap-1 shrink-0">
-          {isSorted ? <span className={`${UI_THEME_TOKENS.table.textSecondary} text-[10px]`}>{sortDir === 'asc' ? 'A→Z' : 'Z→A'}</span> : null}
+          {isSorted ? <span className={`${UI_THEME_TOKENS.table.textSecondary} text-xs`}>{sortDir === 'asc' ? 'A→Z' : 'Z→A'}</span> : null}
           {isGroupable ? <span className={`rounded ${UI_THEME_TOKENS.badge.chip} px-1 ${UI_THEME_TOKENS.table.textSecondary}`}>group</span> : null}
         </section>
 

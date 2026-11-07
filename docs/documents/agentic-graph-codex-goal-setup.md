@@ -28,7 +28,7 @@ relatedLinks:
 
 agentic-graph keeps its durable Codex objective in the repo-root `goal` file. That goal is the local contract for long-running harness work: it names the objective, constraints, validation loop, proof artifacts, and stopping condition.
 
-The goal loop is the native agentic-graph long-horizon SuperAgent message gateway for local research, code, and create work. It uses repo-owned run memory, traces, role-scoped agent contracts, tools, skills, and sandbox/workspace artifacts through `agentic_graph_parser`; DeerFlow may be cited only as conceptual inspiration or used as an optional local gateway provider, never as copied runtime architecture or a required deploy target.
+The goal loop is the native agentic-graph long-horizon SuperAgent message gateway for local research, code, and create work. It uses repo-owned run memory, traces, role-scoped agent contracts, tools, skills, and sandbox/workspace artifacts through `agentic_graph_parser`; DeerFlow may be cited only as conceptual inspiration never as copied runtime architecture or a required deploy target.
 
 Enable the experimental Codex goal feature in Codex config:
 

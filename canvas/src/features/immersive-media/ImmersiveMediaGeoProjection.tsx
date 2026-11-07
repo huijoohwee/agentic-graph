@@ -6,6 +6,7 @@ import {
   setHoveredImmersiveMediaMarker,
   setSelectedImmersiveMediaMarker,
 } from './immersiveMediaRuntime'
+import { bindImmersiveMediaCameraPointerControls } from './immersiveMediaCameraPointerControls'
 import type {
   ImmersiveMediaMarker,
   ImmersiveMediaSnapshot,
@@ -61,8 +62,15 @@ export function ImmersiveMediaGeoProjection({
 }: {
   snapshot: ImmersiveMediaSnapshot
 }) {
+  const cameraInputRef = React.useRef<HTMLElement | null>(null)
   const [introAnimating, setIntroAnimating] = React.useState(false)
   const [transitionOpacity, setTransitionOpacity] = React.useState(1)
+
+  React.useEffect(() => {
+    const element = cameraInputRef.current
+    if (!snapshot.active || !element) return
+    return bindImmersiveMediaCameraPointerControls(element)
+  }, [snapshot.active])
 
   React.useEffect(() => {
     if (!snapshot.active || typeof window === 'undefined') return
@@ -135,12 +143,17 @@ export function ImmersiveMediaGeoProjection({
         <span className={`absolute bottom-[13%] right-0 top-[8%] left-[92%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
       </section>
       <figure
+        ref={cameraInputRef}
         className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
-        aria-label="Immersive flight context media"
+        aria-label="Immersive camera view; drag to look and scroll to zoom"
+        tabIndex={0}
         data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+        data-kg-immersive-media-camera-input="1"
         style={{
+          cursor: 'grab',
           opacity: transitionOpacity,
           transform: `scale(${introAnimating ? lensScale * 0.92 : lensScale})`,
+          touchAction: 'none',
           transitionDuration: `${snapshot.transitionDurationMs}ms`,
         }}
       >
@@ -157,7 +170,7 @@ export function ImmersiveMediaGeoProjection({
           />
         ) : null}
         <figcaption
-          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur"
+          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-xs font-semibold tracking-normal text-cyan-50 backdrop-blur"
           aria-label="Immersive flight context media"
           data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         >
@@ -174,7 +187,7 @@ export function ImmersiveMediaGeoProjection({
           aria-orientation="vertical"
         />
         <abbr
-          className="pointer-events-none absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80 no-underline"
+          className="pointer-events-none absolute left-1/2 top-[9%] -translate-x-1/2 text-xs font-bold text-cyan-50/80 no-underline"
           title="North"
         >
           N
@@ -220,7 +233,7 @@ export function ImmersiveMediaGeoProjection({
                 }`}
                 style={{ borderColor: marker.color }}
               />
-              <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-normal text-white/90 backdrop-blur">
+              <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-xs font-normal text-white/90 backdrop-blur">
                 {edge ? '‹ ' : ''}{marker.label}{edge ? ' ›' : ''}
               </strong>
             </button>
@@ -228,7 +241,7 @@ export function ImmersiveMediaGeoProjection({
         })}
         {selectedMarker ? (
           <output
-            className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-[9px] text-cyan-50 backdrop-blur"
+            className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-xs text-cyan-50 backdrop-blur"
             aria-label="Selected immersive marker details"
             aria-live="polite"
           >

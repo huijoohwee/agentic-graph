@@ -285,7 +285,7 @@ export function DesignCanvasRenderShell(props: DesignCanvasRenderShellProps) {
                         dominantBaseline="hanging"
                         textAnchor="start"
                         fill="var(--kg-text-primary)"
-                        fontSize={13}
+                        fontSize={14}
                         fontWeight={600}
                         style={{ userSelect: 'none', pointerEvents: 'none' }}
                       >

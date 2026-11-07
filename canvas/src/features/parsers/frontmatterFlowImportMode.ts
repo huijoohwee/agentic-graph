@@ -4,7 +4,8 @@ import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import { readFrontmatterFlowRenderSettings } from '@/lib/graph/frontmatterFlowSettings'
 import type { GraphData } from '@/lib/graph/types'
-import { applyCanvasFrontmatterPreset } from './canvasFrontmatterPreset'
+import { isDataViewCanvas2dRenderer } from '@/lib/config.render'
+import { applyCanvasFrontmatterPreset, resolveCanvasFrontmatterPreset } from './canvasFrontmatterPreset'
 import type { CanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 
 const FRONTMATTER_FLOW_CANVAS_RENDER_MODE = '2d' as const
@@ -33,7 +34,10 @@ export const applyFrontmatterFlowImportModes = (
   } = {},
 ): boolean => {
   if (!graphData || !isFrontmatterFlowGraph(graphData)) return false
-  if (opts.applyViewPreset !== false) {
+  const store = useGraphStore.getState()
+  const explicitPreset = resolveCanvasFrontmatterPreset({ graphData, rawText: opts.rawText, preset: opts.preset })
+  const retainRecordView = store.canvasRenderMode === '2d' && isDataViewCanvas2dRenderer(store.canvas2dRenderer) && !explicitPreset
+  if (opts.applyViewPreset !== false && !retainRecordView) {
     applyCanvasFrontmatterPreset({
       graphData,
       rawText: opts.rawText,

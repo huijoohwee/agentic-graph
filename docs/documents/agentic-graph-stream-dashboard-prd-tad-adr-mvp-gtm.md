@@ -2,24 +2,26 @@
 title: "Stream to Markdown Dashboard — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-STREAM-DASHBOARD-001"
-version: "2.0.0"
-prd_revision: "2.0.0"
-tad_revision: "2.0.0"
-adr_revision: "2.0.0"
-mvp_revision: "2.0.0"
-gtm_revision: "2.0.0"
+version: "2.1.2"
+date: "2026-09-30"
+lang: "en-US"
+prd_revision: "2.1.2"
+tad_revision: "2.1.2"
+adr_revision: "2.1.2"
+mvp_revision: "2.1.2"
+gtm_revision: "2.1.2"
 owner: "agentic-graph"
 frontmatter_contract: "required"
-local_rung: "implemented-local"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 load_policy: "on-demand"
-reviewed_source_revision: "2fd02312fd9caf145184f9e5d9fc8b28b612917d"
+reviewed_source_revision: "1ee1282ad7346762d3a172094233839aadcd0498"
 ---
 
 # Stream to Markdown Dashboard — reference implementation
 
-All five roles consume GRAPH-STREAM-DASHBOARD-001@2.0.0. The user's explicit instruction
+All five roles consume GRAPH-STREAM-DASHBOARD-001@2.1.2. The user's explicit instruction
 “UPDATE agentic-os, prd-tad-adr-mvp-gtm md, then IMPLEMENT” authorizes this implementation.
 The [Agentic OS contract](https://github.com/huijoohwee/agentic-os/blob/main/guides/STREAM-DASHBOARDS.md)
 owns the observation/presentation boundary. This document owns product behavior, not a new lifecycle.
@@ -124,6 +126,18 @@ Browser saving through the pinned public GitHub source succeeded. OS PR #212 and
 passed their required CI; the source guide and template remain review candidates. Saved dashboards
 remain self-contained and do not need a template download to reopen.
 
+## Mission Console projection (2.1.0)
+
+PRD SD-08: the floating panel exposes **Console** immediately after Chat. With a selected Mission observation, it shows the same retained span hierarchy and selected-span status; without one, it states that no observation is selected. Opening Console never starts an agent, evaluates a run or grants release authority.
+
+TAD: `AgentMissionConsolePanel` consumes `useAgentRunInspection`, `visibleSpanTree` and `AgentRunSpanViews` from the existing Mission owner. It stores no second trace, polls no endpoint, and exposes no execution or payment tool. The toolbar lazy-loads this surface; the existing floating-panel store admits its view ID. The narrow panel scrolls horizontally for the shared span tree and vertically for evidence.
+
+ADR SD-ADR-05: reuse the existing read-only Mission snapshot and span component. A duplicated event stream or a new operator write console would introduce authority drift. Selection remains in the Mission inspection store, expires with that snapshot and returns to the truthful empty state; rollback removes the new view without migrating data.
+
+MVP SD-08 check: open Chat, select Console by pointer or keyboard, observe the empty state, then select a native Mission trace and confirm the retained span/partial marker and selection synchronize. `npm -C canvas run check` and all five selected source validation checks passed; the focused component test rendered a real typed trace, partial marker, shared span tree and expiry-to-empty transition with no write control. The local browser showed pointer and keyboard activation and the truthful empty state; selected-trace browser proof remains open. This slice is bounded to 90 active minutes, seven files/two UI modules/16 KiB, <600 lines per file, <500 KiB per chunk and $0 new spend.
+
+GTM and the deck, business-plan and financial projections stay unchanged: a clearer inspection path may reduce operator review time, but savings, demand and revenue are unmeasured. Public delivery requires a separate exact source and deployment receipt.
+
 ## Full-reference template and file ownership (2.0.0)
 
 The authored template is website commit `722e2858b9db27011538f1bb863dc16c1079d2e4` (PR #235),
@@ -136,3 +150,77 @@ means everything in the captured reference, including its recorded partial cover
 claim observations beyond that reference. Old four-card reports remain valid and are not rewritten.
 
 Current local evidence: focused projection, persistence and Source Files ownership tests pass (3/3); `npm run check` passes. Browser validation saved `/docs/dashboards/dashboard-1789786616449-01b8aed9.input.json` and its sibling `.md`, opened the shared template through Source Files, and confirmed the saved 159-span tree, 8,121 sources, economics, Structure and Signals. Input and output selection both retain the historical Mission. Website PR #235 passes both required checks; fleet ownership reports eight repositories and no findings. The broader Mission archive and projection checks pass; its browser runner requires a clean committed source and is recorded separately in the handoff receipt.
+
+
+## Graph Dashboard entry (2.1.1)
+
+PRD SD-09: opening Dashboard from Settings, Canvas View, or its canonical command preserves
+ordinary graph data and selection and shows nodes, edges and detected clusters. Mission is an
+explicit `agent-run:*` view; saved Mission documents keep their existing observation semantics.
+The 2026-09-30 browser comments authorize this correction. Invocation: `/fix #dashboard.graph-scope
+@codex`; base `82276a39bde3ef861bd5db4091bde896ee204ddc`.
+
+TAD: all generic Dashboard entries use the existing Canvas View control owner and renderer.
+Only explicit Mission options activate the inspection workspace. The existing Dashboard model
+counts distinct finite `visual:community` values, including zero and numeric strings; unassigned
+nodes do not invent a cluster. No second graph, polling loop, hosted service or model call is added.
+
+ADR SD-ADR-06: remove the Dashboard-to-Mission alias at its three entry points. Preserve the
+shared read-only observation source and ordinary graph owner. Reuse the existing metric cards;
+cluster counting is linear in the already-scanned nodes. Baseline locks continue to apply.
+
+MVP: nine files / 20 KB changed source / 35 active minutes plus 10 for browser verification, zero dependencies,
+zero paid resources, no always-load guidance delta. Check ordinary entry, explicit Mission entry,
+return to graph, source/selection preservation, baseline refusal and cluster zero/string identity.
+The repository planner additionally selects Mission projection/archive/browser coverage and Canvas
+typechecking. Source rollback reverts the entry changes; no stored-document migration is needed.
+
+GTM: restore the general graph overview for document and website users. Buyer demand, savings and
+revenue remain unmeasured. Development: four Dashboard regressions, four Mission projection/durable-run tests, eight archive/stage
+checks, Canvas typechecking and three browser-runner tests pass. The local Settings entry opens the
+authored Dashboard. The complete Mission browser smoke passes on source
+`0888acb524f27e7a0b387bf54d79caef39737dba`, including Settings pointer entry, mobile and desktop
+inspection, offline expiry, local imports and private-model disposal. Protected integration,
+Production Release and deployed Runtime proof have not been established for this revision.
+
+The follow-up requires universal, neutral, file-agnostic behavior: Document insights consumes active
+document text; Keyword Mode consumes text and local tuning; Dashboard consumes graph structure.
+No filename, website domain or agent-manifest path selects these generic analysis behaviors.
+
+Final review: Settings keeps its panel open and reports a refused Canvas View action locally,
+including the existing baseline lock, rather than propagating an effect error to the application.
+The focused entry regression checks that refusal as well as the ordinary and explicit Mission paths.
+Browser regressions verify metric CRUD relative to the current inventory and distinguish Mission
+exit from the retained authored Dashboard. They require explicit Mission entry and clear private
+evidence on exit, while preserving authored graph data. The added source is approximately 14 KB
+across nine files, with no new modules; the largest changed script remains below 600 lines.
+
+
+## Document analysis ownership cleanup (2.1.2)
+
+PRD SD-10: Keyword Mode reuses the canonical English stopword set, and the MainPanel
+Dashboard keeps only its live Canvas entry. The user's 2026-09-30 instruction to implement
+the dependency-audit recommendations authorizes `/refactor #document-analysis-cleanup @codex`.
+
+TAD/ADR SD-ADR-07: replace the equivalent local stopword-set construction with
+`NLTK_STOPWORDS_EN_SET`; remove the unused Dashboard header and the source-text assertions
+that kept it alive. Retain the existing Help header checks. No runtime package, module,
+service, configuration migration or new always-load guidance is introduced. Rollback restores
+these source changes; authored data is untouched.
+
+MVP: up to eight files / 15 KB / 25 active minutes / zero added spend. All eight Keyword Mode
+regressions pass. The MainPanel source-contract test has an independently reproduced baseline
+failure in its Field Settings import assertion, before reaching the changed header checks.
+Canvas typechecking and its three browser-runner checks pass; this is the command selected
+by the native affected-check planner for these source changes.
+
+The shared signal scanner is reserved by the active Source Files lane. A two-file proposed
+patch makes the website summary project the same bounded, visible-text index used by Document
+insights, preserving caller result limits and source locations. Both prepared regressions pass:
+frontmatter/code/image/URL exclusion parity and bounded summary/index limits. Its application
+was explicitly delegated to that owner with user authorization; completion and its exact
+source receipt are pending. No competing repository edit has been made.
+
+GTM: reduce maintenance drift and inconsistent document counts. Buyer demand, savings and
+revenue remain unmeasured. Development proof does not imply protected integration, Production
+Release or deployed Runtime proof; those transitions retain their existing authority gates.

@@ -2,7 +2,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import MarkdownPreview from '@/features/markdown/ui/MarkdownPreview'
 import { fetchYouTubeTranscriptConversion } from '@/lib/net/youtubeTranscriptConversion'
-import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
+import { Z_INDEX_MENU } from '@/lib/ui/zIndex'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -79,6 +79,21 @@ export async function testMarkdownPreviewRendersWebpageSnapshotForStandaloneLink
 
     const standalone = snapshots.find(el => String(el.getAttribute('data-src') || '').includes('example.com/abc'))
     if (!standalone) throw new Error('expected snapshot for standalone markdown link')
+    const thumbnail = standalone.querySelector('[role="button"][data-kg-media-thumbnail="1"]')
+    if (thumbnail?.getAttribute('aria-label') !== 'Example' || !thumbnail.textContent?.includes('Example')) {
+      throw new Error('expected the visible and accessible preview name to preserve the authored link label')
+    }
+    if (standalone.querySelector('iframe')) throw new Error('a labeled link must retain snapshot rendering without loading a live frame')
+    const opened: string[] = [], previousOpen = dom.window.open
+    dom.window.open = url => { opened.push(String(url)); return null }
+    try {
+      for (const key of ['Enter', ' ']) await act(async () => {
+        thumbnail.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+      })
+    } finally { dom.window.open = previousOpen }
+    if (opened.length !== 2 || opened.some(url => url !== 'https://example.com/abc')) {
+      throw new Error('Enter and Space must use the existing thumbnail open action and exact source URL')
+    }
     const scriptEmbed = snapshots.find(el => String(el.getAttribute('data-src') || '').includes('example.com/embed'))
     if (!scriptEmbed) throw new Error('expected snapshot for HTML script embed')
 
@@ -292,8 +307,8 @@ export async function testMarkdownPreviewShowsYouTubeTimestampPreviewOnHoverAndT
     if (preview.getAttribute('data-kg-rich-media-preview-key') !== linkPreviewKey) {
       throw new Error('expected timestamp preview to reuse the link Rich Media preview semantic key')
     }
-    if (preview.style.zIndex !== String(Z_INDEX_ANCHOR_OVERLAY)) {
-      throw new Error(`expected timestamp preview to render above workspace overlays with z-index ${Z_INDEX_ANCHOR_OVERLAY}, got ${preview.style.zIndex || '<empty>'}`)
+    if (preview.style.zIndex !== String(Z_INDEX_MENU)) {
+      throw new Error(`expected timestamp preview to use the shared tooltip layer with z-index ${Z_INDEX_MENU}, got ${preview.style.zIndex || '<empty>'}`)
     }
     const videoSnapshot = preview.querySelector('[data-kg-video-snapshot="1"]') as HTMLElement | null
     if (!videoSnapshot) throw new Error('expected timestamp preview to reuse the shared video snapshot surface')
@@ -384,8 +399,8 @@ export async function testMarkdownPreviewKeepsStandaloneTimestampMarkdownLinkInl
 
     const preview = doc.querySelector('[data-kg-youtube-timestamp-preview="1"]') as HTMLElement | null
     if (!preview) throw new Error('expected standalone timestamp markdown link hover to reveal the shared inline preview')
-    if (preview.style.zIndex !== String(Z_INDEX_ANCHOR_OVERLAY)) {
-      throw new Error(`expected standalone timestamp hover preview to render above workspace overlays with z-index ${Z_INDEX_ANCHOR_OVERLAY}, got ${preview.style.zIndex || '<empty>'}`)
+    if (preview.style.zIndex !== String(Z_INDEX_MENU)) {
+      throw new Error(`expected standalone timestamp hover preview to use the shared tooltip layer with z-index ${Z_INDEX_MENU}, got ${preview.style.zIndex || '<empty>'}`)
     }
     const videoSnapshot = preview.querySelector('[data-kg-video-snapshot="1"]') as HTMLElement | null
     if (!videoSnapshot) throw new Error('expected standalone timestamp hover preview to reuse the shared video snapshot surface')
@@ -488,8 +503,8 @@ export async function testImportUrlYouTubeTimestampMarkdownRendersNormalLinkWith
     if (preview.getAttribute('data-kg-rich-media-preview-key') !== linkPreviewKey) {
       throw new Error('expected imported timestamp preview to reuse the link semantic key')
     }
-    if (preview.style.zIndex !== String(Z_INDEX_ANCHOR_OVERLAY)) {
-      throw new Error(`expected imported timestamp preview to render above workspace overlays with z-index ${Z_INDEX_ANCHOR_OVERLAY}, got ${preview.style.zIndex || '<empty>'}`)
+    if (preview.style.zIndex !== String(Z_INDEX_MENU)) {
+      throw new Error(`expected imported timestamp preview to use the shared tooltip layer with z-index ${Z_INDEX_MENU}, got ${preview.style.zIndex || '<empty>'}`)
     }
     const videoSnapshot = preview.querySelector('[data-kg-video-snapshot="1"]') as HTMLElement | null
     if (!videoSnapshot) throw new Error('expected imported timestamp preview to reuse the shared video snapshot surface')

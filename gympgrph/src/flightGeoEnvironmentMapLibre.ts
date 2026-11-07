@@ -1,6 +1,7 @@
 import type { FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
 import {
   flightGeoEnvironmentMapLibreFeatureCollection,
+  flightGeoEnvironmentProjectionFeatureCollection,
   hasExactFlightGeoEnvironmentFeatureCollection,
   type FlightGeoEnvironmentFeatureCollection,
   type FlightGeoEnvironmentFeatureProperties,
@@ -337,12 +338,27 @@ export function applyFlightGeoEnvironmentToMap(
   viewMode: string,
   options: Readonly<{ beforeLayerId?: string | null }> = {},
 ): boolean {
+  return applyFlightGeoEnvironmentProjectionToMap(
+    map,
+    overlay.environment,
+    viewMode,
+    options,
+  )
+}
+
+/** Paints the same authored XR environment outside the Flight presentation. */
+export function applyFlightGeoEnvironmentProjectionToMap(
+  map: any,
+  environment: FlightGeoOverlaySnapshot['environment'],
+  viewMode: string,
+  options: Readonly<{ beforeLayerId?: string | null }> = {},
+): boolean {
   if (!map || !isMapLibreStyleReady(map)) return false
-  if (!overlay.environment) {
+  if (!environment) {
     return clearFlightGeoEnvironmentFromMap(map)
   }
   try {
-    const expected = flightGeoEnvironmentMapLibreFeatureCollection(overlay)
+    const expected = flightGeoEnvironmentProjectionFeatureCollection(environment)
     if (!ensureEnvironmentSource(map, expected)) {
       throw new Error('MapLibre did not register the XR environment source.')
     }
@@ -363,7 +379,7 @@ export function applyFlightGeoEnvironmentToMap(
     return scheduleEnvironmentSourceData(map, expected)
   } catch (error) {
     console.error(
-      `[kg-flight] Could not project XR environment "${overlay.environment.id}" into MapLibre mode "${viewMode}".`,
+      `[kg-flight] Could not project XR environment "${environment.id}" into MapLibre mode "${viewMode}".`,
       error,
     )
     return false

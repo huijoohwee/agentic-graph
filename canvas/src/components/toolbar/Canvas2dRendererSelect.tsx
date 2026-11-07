@@ -10,12 +10,13 @@ import type { CanvasViewOptionId, CanvasViewModelState } from '@/components/tool
 import { useAgentRunWorkspace, closeAgentRunInspection, activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTriggerState } from '@/components/toolbar/canvasViewMenu'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { buildCanvasViewOptionHelp } from './canvasViewOptionHelp'
 import { UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 import { useMinimapCollapsed } from '@/features/minimap/minimapVisibility'
 import {
   activateXrSceneSurface,
+  activateXrSceneSurfaceAfterGeospatialExit,
   resolveXrSurfaceEntryPanelView,
 } from '@/features/three/xrSceneSurfaceRuntime'
 import {
@@ -144,8 +145,8 @@ export function Canvas2dRendererSelect({
   const options = buildCanvasViewOptions(effectiveModel, rendererOptions)
   const triggerState = getCanvasViewTriggerState(effectiveModel, rendererOptions)
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
-    if (id === 'renderer:dashboard' || id.startsWith('agent-run:')) {
-      activateAgentRunWorkspace(id === 'renderer:dashboard' ? inspection?.view ?? 'tree' : id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
+    if (id.startsWith('agent-run:')) {
+      activateAgentRunWorkspace(id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
     }
     if (!baselineGuard()) return
     // Presentation controls configure the current Mission; only navigation leaves it.
@@ -164,7 +165,29 @@ export function Canvas2dRendererSelect({
         if (mode === 'xr') {
           const current = useGraphStore.getState()
           const panelView = resolveXrSurfaceEntryPanelView(current)
-          if (!activateXrSceneSurface({ panelView, openPanel: true, timeline: true })) {
+          const activation = { panelView, openPanel: true, timeline: true }
+          if (geospatialEnabled) {
+            void activateXrSceneSurfaceAfterGeospatialExit(activation)
+              .then(activated => {
+                if (!activated) {
+                  current.pushUiToast({
+                    id: 'canvas-view:xr:unavailable',
+                    kind: 'error',
+                    message: 'The shared XR Mode surface is unavailable for this document.',
+                  })
+                }
+              })
+              .catch((error: unknown) => {
+                const message = error instanceof Error ? error.message : String(error || 'Unknown error')
+                useGraphStore.getState().pushUiToast({
+                  id: 'canvas-view:xr:handoff-failed',
+                  kind: 'error',
+                  message: `XR Mode could not take ownership of the Canvas: ${message}`,
+                })
+              })
+            return
+          }
+          if (!activateXrSceneSurface(activation)) {
             current.pushUiToast({
               id: 'canvas-view:xr:unavailable',
               kind: 'error',
@@ -223,7 +246,7 @@ export function Canvas2dRendererSelect({
     state,
   ])
   React.useEffect(() => registerCanvasViewControlHandler(optionId => {
-    if (optionId.startsWith('agent-run:') || optionId === 'renderer:dashboard') { applyCanvasViewOption(optionId); return }
+    if (optionId.startsWith('agent-run:')) { applyCanvasViewOption(optionId); return }
     const option = options.flatMap(parent => parent.children?.length ? parent.children : [parent])
       .find(candidate => candidate.id === optionId)
     if (!option || option.disabled || option.children?.length) {
@@ -249,37 +272,23 @@ export function Canvas2dRendererSelect({
       disabled={false}
       onSelect={id => applyCanvasViewOption(id as CanvasViewOptionId)}
       renderButtonContent={() => <Eye className={iconSizeClass} strokeWidth={iconStrokeWidth} />}
-      renderOptionContent={option => (
-        <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
-          <span className="kg-toolbar-dropdown-option-copy min-w-0 flex-1 text-left">
-            <span className={`block ${option.description || option.badges?.length ? 'break-words leading-4' : 'truncate'}`}>
-              {option.rowLabel || option.title}
-            </span>
-            {option.description || option.badges?.length ? (
-              <span className="mt-0.5 block min-w-0">
-                {option.description ? (
-                  <span className={`block text-[10px] leading-3 ${UI_THEME_TOKENS.text.tertiary}`}>
-                    {option.description}
-                  </span>
-                ) : null}
-                {option.badges?.length ? (
-                  <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-                    {option.badges.slice(0, 2).map(badge => (
-                      <span key={badge} className={`shrink-0 rounded border px-1 py-0 text-[9px] leading-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.badge.chip}`}>
-                        {badge}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-              </span>
-            ) : null}
-          </span>
+      getOptionTooltip={buildCanvasViewOptionHelp}
+      renderOptionContent={option => {
+        // Setting rows name the feature; categorical choices already describe themselves.
+        const showFieldLabel = Boolean(option.children?.length)
+          || option.id.startsWith('document:')
+          || (option.id.startsWith('control:') && option.rowLabel !== 'Display')
+        return <>
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          {showFieldLabel || !option.valueLabel ? <span className="min-w-0 flex-1 truncate text-left">
+            {option.rowLabel || option.title}
+          </span> : null}
           {option.valueLabel ? (() => {
             const invocationOptionId = resolveInvocationOptionId(option)
             return <SelectableRowValue
               label={option.rowLabel || option.title}
               value={option.valueLabel}
+              className={showFieldLabel ? 'kg-toolbar-dropdown-option-value ml-auto text-xs' : 'min-w-0 flex-1 truncate text-left'}
               invocation={invocationOptionId ? buildCanvasViewInvocation(invocationOptionId) : undefined}
               mcpTool={invocationOptionId ? CANVAS_VIEW_MCP_TOOL_NAME : undefined}
               commandToken={invocationOptionId ? CANVAS_VIEW_COMMAND_TOKEN : undefined}
@@ -288,7 +297,7 @@ export function Canvas2dRendererSelect({
             />
           })() : null}
         </>
-      )}
+      }}
       menuWidthClass={UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
     />
   )

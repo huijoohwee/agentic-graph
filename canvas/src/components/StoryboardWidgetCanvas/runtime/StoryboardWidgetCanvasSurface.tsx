@@ -482,34 +482,35 @@ export default function StoryboardWidgetCanvasSurface(props: {
         cancelEdge={props.cancelPendingEdge}
         finalizeEdge={props.finalizePendingEdge}
       >
-      <React.Suspense fallback={null}>
       {!props.noGraphLoaded && (
-        <DeferredFlowCanvas
-          active={props.active}
-          storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
-          allowNodeDragOverride={props.canInteract}
-          graphDataOverride={flowCanvasGraphDataOverride}
-          mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
-          graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
-          excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
-          hideGroupIds={storyboardGroupPanelIds}
-          overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
-          excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
-          flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
-          flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}
-          storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
-          onNodeChange={props.patchNodeById}
-          onNodePropertiesChange={props.patchNodePropertiesById}
-          onNodeRemove={props.removeNodeById}
-          exposeRuntimeRef={ref => {
-            props.flowRuntimeRefRef.current = ref
-          }}
-          onInteractionFrame={props.hasOverlayEditors ? props.emitStoryboardWidgetInteractionFrame : undefined}
-          onOverlayInteractionFrame={storyboardCardsActive ? flushCardOverlayInteractionFrame : undefined}
-        />
+        <section aria-label="Storyboard layout runtime" data-kg-storyboard-layout-runtime={props.geospatialWidgetPanelMode ? 'hidden' : 'visible'} className="absolute inset-0" style={{ visibility: props.geospatialWidgetPanelMode ? 'hidden' : 'visible' }}>
+          <React.Suspense fallback={null}><DeferredFlowCanvas
+            active={props.active}
+            storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
+            allowNodeDragOverride={props.canInteract}
+            graphDataOverride={flowCanvasGraphDataOverride}
+            mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
+            graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
+            excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
+            hideGroupIds={storyboardGroupPanelIds}
+            overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
+            excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
+            flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
+            flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}
+            storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
+            onNodeChange={props.patchNodeById}
+            onNodePropertiesChange={props.patchNodePropertiesById}
+            onNodeRemove={props.removeNodeById}
+            exposeRuntimeRef={ref => {
+              props.flowRuntimeRefRef.current = ref
+            }}
+            onInteractionFrame={props.hasOverlayEditors ? props.emitStoryboardWidgetInteractionFrame : undefined}
+            onOverlayInteractionFrame={storyboardCardsActive ? flushCardOverlayInteractionFrame : undefined}
+          /></React.Suspense>
+        </section>
       )}
 
-      {(props.overlayOnlyActive || props.hasOverlayEditors || storyboardCardsActive) && (
+      {!props.geospatialWidgetPanelMode && (props.overlayOnlyActive || props.hasOverlayEditors || storyboardCardsActive) && (
         <svg
           ref={props.overlayEdgesSvgRef}
           className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME}
@@ -524,7 +525,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         />
       )}
 
-      <DeferredStoryboardEdgeNodeInsertionMenu
+      <React.Suspense fallback={null}><DeferredStoryboardEdgeNodeInsertionMenu
         active={props.active}
         canEdit={props.canEdit}
         rootRef={props.rootRef}
@@ -532,11 +533,11 @@ export default function StoryboardWidgetCanvasSurface(props: {
         commitGraphData={props.commitStoryboardCardMediaGraph}
         readWorldPoint={readSurfaceDrop}
         upsertUiToast={props.upsertUiToast}
-      />
+      /></React.Suspense>
 
-      {props.overlayEditorElements}
-      <DeferredStoryboardGroupPanelLayer2d
-        active={storyboardSharedSurfaceActive}
+      <React.Suspense fallback={null}>{props.overlayEditorElements}</React.Suspense>
+      <React.Suspense fallback={null}><DeferredStoryboardGroupPanelLayer2d
+        active={storyboardSharedSurfaceActive && !props.geospatialWidgetPanelMode}
         fallbackNodePositions={stableStoryboardCardPlacements}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
         flowWidgetStateGraphKey={flowWidgetStateGraphKey}
@@ -544,8 +545,8 @@ export default function StoryboardWidgetCanvasSurface(props: {
         getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
         onNodeChange={props.patchNodeById}
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
-      />
-      <DeferredStoryboardCardOverlayLayer2d
+      /></React.Suspense>
+      <React.Suspense fallback={null}><DeferredStoryboardCardOverlayLayer2d
         active={storyboardCardsActive}
         commitGraphData={props.commitStoryboardCardMediaGraph}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
@@ -565,8 +566,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         schema={schema}
         widgetRegistry={props.widgetRegistry}
         registerInteractionFrameProjectionScheduler={registerCardOverlayInteractionFrameScheduler}
-      />
-      </React.Suspense>
+      /></React.Suspense>
 
       {props.noGraphLoaded && !props.geospatialWidgetPanelMode && (
         <aside className="absolute top-3 left-3 z-[220]" aria-label="Storyboard Status">

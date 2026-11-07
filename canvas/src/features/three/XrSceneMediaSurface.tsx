@@ -10,6 +10,7 @@ import {
 } from './xrSceneLibrary'
 import { XrStagePresetGeometry } from './XrStagePresetGeometry'
 import { XrSceneLibraryAssetGeometry } from './XrSceneLibrarySubject'
+import { resolveXrStageFitScale } from './xrSceneScale'
 
 const XR_MEDIA_STAGE_SPAN = 12
 
@@ -26,7 +27,7 @@ function computeXrSceneMediaCameraPlacement(
   if (projection.entityKind === 'environment') {
     const stage = resolveXrMotionReferenceStage(projection.entityId as XrMotionReferenceStageId)
     const tropical = stage.id === 'tropical-playground'
-    const scale = XR_MEDIA_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+    const scale = resolveXrStageFitScale(stage.sizeMeters, XR_MEDIA_STAGE_SPAN)
     const width = stage.sizeMeters[0] * scale
     const depth = stage.sizeMeters[1] * scale
     const structureHeight = tropical
@@ -129,8 +130,10 @@ function XrSceneMediaContent({ projection }: { projection: XrSceneMediaDragProje
         <meshStandardMaterial color="#475569" roughness={1} metalness={0} transparent opacity={0.72} />
       </mesh>
       <gridHelper args={[floorSize, 12, '#38bdf8', '#334155']} position={[0, 0.005, 0]} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
-        <XrSceneLibraryAssetGeometry assetId={asset.id} color={asset.defaultColor} />
+      <group rotation={[0, THREE.MathUtils.degToRad(asset.orientationOffsetYDegrees || 0), 0]}>
+        <group rotation={[-Math.PI / 2, 0, 0]}>
+          <XrSceneLibraryAssetGeometry assetId={asset.id} color={asset.defaultColor} />
+        </group>
       </group>
     </group>
   )
@@ -190,11 +193,11 @@ export function XrSceneMediaSurface({
         <directionalLight position={[-7, 5, -6]} intensity={tropicalKit ? 0.72 : 0.55} />
         <XrSceneMediaContent projection={projection} />
       </Canvas>
-      <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-5rem)] truncate rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100">
+      <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-5rem)] truncate rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100">
         {projection.label}
       </span>
       <span
-        className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100"
+        className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100"
         data-kg-rich-media-xr-native-badge="1"
       >
         Native Three.js · XR

@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import type { GraphData } from '@/lib/graph/types'
 import {
   XR_MOTION_REFERENCE_CAMERA_BASELINE_METERS,
@@ -91,7 +92,7 @@ function buildTopDownSvg(plan: XrMotionReferencePlan): string {
   })
   return [
     '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">',
-    '<style>text{font:16px system-ui;fill:#e2e8f0}.light{fill:#64748b}.mid{fill:#475569}.dark{fill:#1e293b}.accent{fill:#0f766e}.camera{fill:#f8fafc}</style>',
+    `<style>text{font:16px ${UI_FONT_SANS};fill:#e2e8f0}.light{fill:#64748b}.mid{fill:#475569}.dark{fill:#1e293b}.accent{fill:#0f766e}.camera{fill:#f8fafc}</style>`,
     '<rect width="1000" height="700" fill="#0f172a"/>',
     ...structureRows,
     ...subjectRows,

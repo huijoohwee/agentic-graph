@@ -138,7 +138,7 @@ export const MarkdownDataViewMultiTagSelect = React.memo(function MarkdownDataVi
         <ul className="flex min-w-0 max-w-full flex-wrap gap-1 items-center list-none m-0 p-0" aria-label="Selected tags">
           {selected.map(t => (
             <li key={t} className="list-none">
-              <span className={[UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1 px-2 py-0.5 rounded border text-[10px] font-medium', resolveDataViewChipClass(t)].join(' ')}>
+              <span className={[UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1 px-2 py-0.5 rounded border text-xs font-medium', resolveDataViewChipClass(t)].join(' ')}>
                 <span className={UI_TEXT_TRUNCATE}>{t}</span>
                 <button
                   type="button"
@@ -167,7 +167,7 @@ export const MarkdownDataViewMultiTagSelect = React.memo(function MarkdownDataVi
 
       <section className={['my-2 h-px', UI_THEME_TOKENS.panel.divider].join(' ')} />
 
-      <p className={['m-0 text-[11px]', UI_THEME_TOKENS.text.tertiary].join(' ')}>{MARKDOWN_DATA_VIEW_COPY.multiTagHelperText}</p>
+      <p className={['m-0 text-xs', UI_THEME_TOKENS.text.tertiary].join(' ')}>{MARKDOWN_DATA_VIEW_COPY.multiTagHelperText}</p>
 
       <menu className={`${UI_RESPONSIVE_DATA_VIEW_OPTION_MENU_LIST_CLASSNAME} mt-2`} aria-label="Tag options">
         {createCandidate ? (
@@ -197,7 +197,7 @@ export const MarkdownDataViewMultiTagSelect = React.memo(function MarkdownDataVi
                   onClick={() => toggleTag(t)}
                   aria-pressed={active}
                 >
-                  <span className={[UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'px-2 py-0.5 rounded border text-[10px] font-medium', resolveDataViewChipClass(t)].join(' ')}>
+                  <span className={[UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'px-2 py-0.5 rounded border text-xs font-medium', resolveDataViewChipClass(t)].join(' ')}>
                     <span className={UI_TEXT_TRUNCATE}>{t}</span>
                   </span>
                   {active ? <Check className={['w-4 h-4 shrink-0', UI_THEME_TOKENS.icon.color].join(' ')} aria-hidden="true" /> : null}

@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react'
 import type { EdgeMarkerShape, GraphSchema } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -5,7 +6,6 @@ import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvas
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
-import { UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import {
   KeyTypeValueStaticRow,
   RightAlignedValueCell,
@@ -18,13 +18,6 @@ type FieldStylesSectionProps = {
   uiPanelKeyValueTextSizeClass: string
 }
 
-function isHexColor(text: string) {
-  const v = String(text || '').trim()
-  if (!v.startsWith('#')) return false
-  if (v.length === 4) return true
-  if (v.length === 7) return true
-  return false
-}
 
 export default function FieldStylesSection({
   schema,
@@ -68,7 +61,6 @@ export default function FieldStylesSection({
   const panelClassName = `rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3 space-y-3`
   const keyLabelClassName = `${UI_THEME_TOKENS.text.secondary} break-words`
   const ownerValueClassName = `${uiPanelMonospaceTextClass} ${UI_THEME_TOKENS.text.secondary} break-all`
-  const colorPickerClassName = `${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent ${UI_THEME_TOKENS.focus.primaryBorderRing} disabled:opacity-50`
   const colorInputClassName = `${uiPanelKeyValueInputClass} min-w-0 flex-1 ${uiPanelMonospaceTextClass} disabled:opacity-50`
   const sectionHeadingClassName = `${uiPanelKeyValueTextSizeClass} font-semibold ${UI_THEME_TOKENS.text.primary}`
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps('default')
@@ -95,12 +87,11 @@ export default function FieldStylesSection({
             keyNode={<span className={keyLabelClassName}>Fill</span>}
             valueNode={(
               <RightAlignedValueCell className="gap-2">
-                <input
-                  type="color"
-                  className={colorPickerClassName}
+                <PanelColorPicker
+
                   disabled={!hasOwner}
-                  value={isHexColor(nodeFillNormalized) ? nodeFillNormalized : '#000000'}
-                  onChange={e => updateNodeStyle(ownerKey, { color: e.target.value })}
+                  value={nodeFillNormalized}
+                  onValueChange={nextColor => updateNodeStyle(ownerKey, { color: nextColor })}
                 />
                 <PanelTextInput
                   className={colorInputClassName}
@@ -137,12 +128,11 @@ export default function FieldStylesSection({
             keyNode={<span className={keyLabelClassName}>Stroke</span>}
             valueNode={(
               <RightAlignedValueCell className="gap-2">
-                <input
-                  type="color"
-                  className={colorPickerClassName}
+                <PanelColorPicker
+
                   disabled={!hasOwner}
-                  value={isHexColor(nodeStrokeNormalized) ? nodeStrokeNormalized : '#000000'}
-                  onChange={e => updateNodeStroke(ownerKey, { color: e.target.value })}
+                  value={nodeStrokeNormalized}
+                  onValueChange={nextColor => updateNodeStroke(ownerKey, { color: nextColor })}
                 />
                 <PanelTextInput
                   className={colorInputClassName}
@@ -188,12 +178,11 @@ export default function FieldStylesSection({
             keyNode={<span className={keyLabelClassName}>Color</span>}
             valueNode={(
               <RightAlignedValueCell className="gap-2">
-                <input
-                  type="color"
-                  className={colorPickerClassName}
+                <PanelColorPicker
+
                   disabled={!hasOwner}
-                  value={isHexColor(edgeColorNormalized) ? edgeColorNormalized : '#000000'}
-                  onChange={e => updateEdgeStyle(ownerKey, { color: e.target.value })}
+                  value={edgeColorNormalized}
+                  onValueChange={nextColor => updateEdgeStyle(ownerKey, { color: nextColor })}
                 />
                 <PanelTextInput
                   className={colorInputClassName}
@@ -234,7 +223,7 @@ export default function FieldStylesSection({
                   aria-label="Edge start marker"
                   disabled={!hasOwner}
                   value={edgeMarkerStart}
-                  onChange={e => updateEdgeStyle(ownerKey, { markerStart: e.target.value as EdgeMarkerShape })}
+                  onValueChange={selectedValueInput => updateEdgeStyle(ownerKey, { markerStart: selectedValueInput as EdgeMarkerShape })}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
                 >
                   <option value="none">None</option>
@@ -257,8 +246,8 @@ export default function FieldStylesSection({
                   aria-label="Edge end marker"
                   disabled={!hasOwner}
                   value={edgeMarkerEnd}
-                  onChange={e => {
-                    const markerEnd = e.target.value as EdgeMarkerShape
+                  onValueChange={selectedValueInput => {
+                    const markerEnd = selectedValueInput as EdgeMarkerShape
                     updateEdgeStyle(ownerKey, { markerEnd, arrow: markerEnd === 'arrow' })
                   }}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
@@ -283,8 +272,8 @@ export default function FieldStylesSection({
                   aria-label="Edge marker size"
                   disabled={!hasOwner}
                   value={edgeMarkerSize}
-                  onChange={e => updateEdgeStyle(ownerKey, {
-                    markerSize: e.target.value as GraphSchema['edgeStyles'][string]['markerSize'],
+                  onValueChange={selectedValueInput => updateEdgeStyle(ownerKey, {
+                    markerSize: selectedValueInput as GraphSchema['edgeStyles'][string]['markerSize'],
                   })}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
                 >
@@ -324,11 +313,10 @@ export default function FieldStylesSection({
           keyNode={<span className={keyLabelClassName}>Color</span>}
           valueNode={(
             <RightAlignedValueCell className="gap-2">
-              <input
-                type="color"
-                className={colorPickerClassName.replace(' disabled:opacity-50', '')}
-                value={isHexColor(labelColorNormalized) ? labelColorNormalized : '#000000'}
-                onChange={e => setLabelStyles({ color: e.target.value })}
+              <PanelColorPicker
+
+                value={labelColorNormalized}
+                onValueChange={nextColor => setLabelStyles({ color: nextColor })}
               />
               <PanelTextInput
                 className={colorInputClassName.replace(' disabled:opacity-50', '')}

@@ -18,6 +18,7 @@ import {
 type ZoomModeSelectProps = {
   iconSizeClass: string
   iconStrokeWidth: number
+  /** Compatibility prop; the store mode setter owns initial selection zoom publication. */
   onZoomSelection?: () => void
 }
 
@@ -34,7 +35,7 @@ type ZoomOption = {
   key: ZoomOptionKey
   label: string
   tooltip: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  Icon: React.ComponentType<Pick<React.SVGProps<SVGSVGElement>, 'className' | 'strokeWidth' | 'role' | 'aria-label'>>
   children?: readonly ZoomOption[]
   dividerBefore?: boolean
   isActive?: boolean
@@ -43,7 +44,7 @@ type ZoomOption = {
   enableHint?: string
 }
 
-export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection }: ZoomModeSelectProps) {
+export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth }: ZoomModeSelectProps) {
   const {
     currentZoomScale,
     viewPinned,
@@ -188,9 +189,8 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection
       }
       const next = !zoomToSelectionMode
       setZoomToSelectionMode(next)
-      if (next && onZoomSelection) onZoomSelection()
     },
-    [fitToViewDisabled, handleFitToView, onZoomSelection, requestZoom, requestZoomTransform, setFitToScreenMode, setZoomToSelectionMode, toggleFitToScreenMode, toggleViewPinned, zoomToSelectionMode],
+    [fitToViewDisabled, handleFitToView, requestZoom, requestZoomTransform, setFitToScreenMode, setZoomToSelectionMode, toggleFitToScreenMode, toggleViewPinned, zoomToSelectionMode],
   )
 
   const isOptionActive = React.useCallback(
@@ -267,14 +267,14 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection
       renderButtonContent={() => (
         <span className="inline-flex min-w-0 items-center gap-1">
           <Focus className={iconSizeClass} strokeWidth={iconStrokeWidth} />
-          <span className="max-w-[3.5rem] truncate text-[10px] leading-none">{currentZoomLabel}</span>
+          <span className="max-w-[3.5rem] truncate text-xs leading-none">{currentZoomLabel}</span>
         </span>
       )}
       renderOptionContent={option => (
         <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.title}</span>
-          {isOptionActive(option.id) ? <span className="ml-auto text-[10px] opacity-80">On</span> : null}
+          {isOptionActive(option.id) ? <span className="ml-auto text-xs opacity-80">On</span> : null}
         </>
       )}
       menuWidthClass={UI_RESPONSIVE_COMPACT_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}

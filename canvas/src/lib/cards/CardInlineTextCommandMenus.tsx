@@ -498,7 +498,7 @@ export function CardInlineTextCommandMenus(props: {
   const commandMenu = commandMode ? (
     <section
       aria-label={commandMenuConfig?.ariaLabel || 'Card commands'}
-      className={`fixed z-[1000] rounded border p-2 shadow-lg ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
+      className={`fixed z-[1000] rounded border p-2 shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
       style={menuFrame ? { left: menuFrame.left, top: menuFrame.top, width: menuFrame.width } : undefined}
       {...{ [CARD_INLINE_TEXT_COMMAND_MENU_ATTRIBUTE]: commandMode }}
       onMouseDown={preventDefaultMouseDown}
@@ -538,17 +538,17 @@ export function CardInlineTextCommandMenus(props: {
       {showLaunchers ? <menu className="absolute right-2 top-2 z-10 m-0 flex list-none gap-1 p-0" aria-label="Card inline command launchers" {...{ [CARD_INLINE_TEXT_COMMAND_MENU_ATTRIBUTE]: '1' }}>
         <li className="list-none">
           <button type="button" className={cardInlineCommandButtonClassName} title="Slash commands" onMouseDown={preventDefaultMouseDown} onClick={() => openCommandMenu('slash')}>
-            <Slash className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.8} />
+            <Slash className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
           </button>
         </li>
         <li className="list-none">
           <button type="button" className={cardInlineCommandButtonClassName} title="Variable commands" onMouseDown={preventDefaultMouseDown} onClick={() => openCommandMenu('variable')}>
-            <AtSign className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.8} />
+            <AtSign className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
           </button>
         </li>
         <li className="list-none">
           <button type="button" className={cardInlineCommandButtonClassName} title="Keyword commands" onMouseDown={preventDefaultMouseDown} onClick={() => openCommandMenu('keyword')}>
-            <Hash className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.8} />
+            <Hash className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
           </button>
         </li>
       </menu> : null}

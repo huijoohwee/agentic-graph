@@ -16,4 +16,4 @@ export const CARD_TEXT_SURFACE_EDIT_CLASS_NAME =
   UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME
 
 export const CARD_TEXT_SURFACE_TEXT_CLASS_NAME =
-  'text-[10px] font-medium leading-4 text-[color:var(--kg-text-secondary)] [scrollbar-gutter:stable]'
+  'text-xs font-medium leading-4 text-[color:var(--kg-text-secondary)] [scrollbar-gutter:stable]'

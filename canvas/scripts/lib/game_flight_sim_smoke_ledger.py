@@ -32,8 +32,30 @@ REQUIRED_BROWSER_VERIFICATION_NAMES = _read_required_verification_names()
 
 
 class BrowserVerificationLedger:
-    def __init__(self) -> None:
+    def __init__(self, *, checkpoint_path: Path | None = None) -> None:
         self._records: dict[str, dict[str, Any]] = {}
+        self._checkpoint_path = checkpoint_path
+        self._write_checkpoint(None)
+
+    def _write_checkpoint(self, active: str | None) -> None:
+        if self._checkpoint_path is None:
+            return
+        temporary = self._checkpoint_path.with_name(
+            self._checkpoint_path.name + ".tmp"
+        )
+        temporary.write_text(
+            json.dumps({
+                "activeVerification": active,
+                "verificationLedger": self.evidence(),
+            }, indent=2, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(self._checkpoint_path)
+
+    def _report_phase(self, name: str, status: str) -> None:
+        self._write_checkpoint(name if status == "start" else None)
+        if self._checkpoint_path is not None:
+            print(f"[browser-verification:phase-{status}] {name}", flush=True)
 
     def verify(
         self,
@@ -65,7 +87,9 @@ class BrowserVerificationLedger:
                 "status": "skipped",
                 "blockedBy": blocked,
             }
+            self._report_phase(name, "skipped")
             return None
+        self._report_phase(name, "start")
         try:
             value = check()
         except Exception as error:
@@ -75,8 +99,10 @@ class BrowserVerificationLedger:
                 "errorType": type(error).__name__,
                 "message": str(error),
             }
+            self._report_phase(name, "failed")
             return None
         self._records[name] = {"name": name, "status": "passed"}
+        self._report_phase(name, "passed")
         return value
 
     def evidence(self) -> list[dict[str, Any]]:

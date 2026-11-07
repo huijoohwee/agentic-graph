@@ -46,7 +46,7 @@ export function CardPreviewInlineMediaPill(props: {
         </span>
         <button
           type="button"
-          className="absolute right-1 top-1 z-10 inline-flex h-6 w-6 items-center justify-center rounded border border-[color:var(--kg-border)] bg-[color:var(--kg-surface)] text-[color:var(--kg-text-secondary)] shadow-sm"
+          className="absolute right-1 top-1 z-10 inline-flex h-6 w-6 items-center justify-center rounded border border-[color:var(--kg-border)] bg-[color:var(--kg-surface)] text-[color:var(--kg-text-secondary)] shadow-none"
           aria-label={`Render ${label} as inline media chip`}
           title="Inline chip"
           data-kg-card-inline-media-collapse="1"
@@ -86,7 +86,7 @@ export function CardPreviewInlineMediaPill(props: {
       {canToggle ? (
         <button
           type="button"
-          className="absolute right-0 top-0 z-30 inline-flex h-5 w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border border-[color:var(--kg-border)] bg-[color:var(--kg-surface)] text-[color:var(--kg-text-secondary)] opacity-0 shadow-md ring-1 ring-white/80 transition-opacity group-hover/kg-inline-media:opacity-100 focus:opacity-100 dark:ring-black/50"
+          className="absolute right-0 top-0 z-30 inline-flex h-5 w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border border-[color:var(--kg-border)] bg-[color:var(--kg-surface)] text-[color:var(--kg-text-secondary)] opacity-0 shadow-none ring-1 ring-white/80 transition-opacity group-hover/kg-inline-media:opacity-100 focus:opacity-100 dark:ring-black/50"
           aria-label={`Render ${label} as full media`}
           title="Full media"
           data-kg-card-inline-media-toggle="1"

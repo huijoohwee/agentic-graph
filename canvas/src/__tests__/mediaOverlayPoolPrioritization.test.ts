@@ -366,3 +366,21 @@ export async function testMediaOverlayPoolPreservesUntouchedRichMediaVariantsAcr
     throw new Error(`expected mixed panel state to stay multi-variant after switching to video, got ${JSON.stringify(videoView[0]?.panel || null)}`)
   }
 }
+
+export function testMediaOverlayPoolCarriesCoveredAliases() {
+  const url = 'https://assets.example.test/figure.png'
+  const nodes = [
+    { id: 'image', type: 'Image', label: 'Figure', properties: { media_url: url } },
+    { id: 'link', type: 'Link', label: 'Source', properties: { url: `/__fetch_remote?url=${encodeURIComponent(url)}` } },
+    { id: 'other', type: 'Image', label: 'Other', properties: { media_url: `${url}?edition=other` } },
+  ]
+  for (const preferred of ['image', 'link']) {
+    const out = listMediaOverlayNodes({ enabled: true, nodes, poolMax: 1, preferredNodeIds: [preferred] })
+    if (out.length !== 1 || out[0]?.id !== preferred) throw new Error('preferred media must own the bounded shared panel')
+    const covered = new Set(out[0]?.coveredNodeIds)
+    if (covered.size !== 2 || !covered.has('image') || !covered.has('link') || covered.has('other')) {
+      throw new Error('one media panel must cover its graph aliases without hiding distinct media outside the pool')
+    }
+  }
+  if (listMediaOverlayNodes({ enabled: false, nodes, poolMax: 1 }).length) throw new Error('disabled media must not suppress graph nodes')
+}

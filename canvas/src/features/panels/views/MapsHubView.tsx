@@ -1,6 +1,5 @@
 import React from 'react'
 import SettingsView from '@/features/panels/views/SettingsView'
-import SiteSelectionWidget from '@/features/maps/SiteSelectionWidget'
 
 export default function MapsHubView({
   searchQuery = '',
@@ -27,7 +26,6 @@ export default function MapsHubView({
         <p>Directions default to lng,lat coordinate order unless lat_first is enabled.</p>
         <p>Use overview=full when you need route geometry suitable for animation or media prompts.</p>
       </section>
-      <SiteSelectionWidget />
       <SettingsView
         searchQuery={searchQuery}
         requestedAnchorId={requestedAnchorId}

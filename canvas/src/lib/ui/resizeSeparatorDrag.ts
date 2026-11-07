@@ -15,7 +15,7 @@ export type ResizeSeparatorDragMove<TValue> = {
 
 export function bindResizeSeparatorDragRuntime<TValue>(args: {
   resizeHandleEl: HTMLElement
-  cursor: ResizeSeparatorDragCursor
+  cursor: ResizeSeparatorDragCursor | (() => ResizeSeparatorDragCursor)
   readCurrentValue: () => TValue | null
   setPreviewValue: (next: TValue) => void
   commitValue: (next: TValue) => void
@@ -39,6 +39,29 @@ export function bindResizeSeparatorDragRuntime<TValue>(args: {
     return shouldStart ? shouldStart(ev) : true
   }
 
+  const readCursor = () => typeof cursor === 'function' ? cursor() : cursor
+  const onKeyDown = (ev: KeyboardEvent) => {
+    if (ev.defaultPrevented || ev.altKey || ev.ctrlKey || ev.metaKey) return
+    const axis = readCursor()
+    const keys = axis === 'col-resize' ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown']
+    const direction = keys.indexOf(ev.key)
+    if (direction < 0) return
+    const startValue = readCurrentValue()
+    if (startValue == null) return
+    ev.preventDefault()
+    ev.stopPropagation()
+    const delta = (direction ? 1 : -1) * (ev.shiftKey ? 32 : 8)
+    const deltaX = axis === 'col-resize' ? delta : 0
+    const deltaY = axis === 'row-resize' ? delta : 0
+    const next = resolveNextValueFromPointerDrag({
+      startValue, startClientX: 0, startClientY: 0,
+      currentClientX: deltaX, currentClientY: deltaY, deltaX, deltaY,
+    })
+    rafSetPreview.cancel()
+    setPreviewValue(next)
+    commitValue(next)
+  }
+
   const onDown = (ev: PointerEvent) => {
     if (!canStart(ev)) return
     const startValue = readCurrentValue()
@@ -48,7 +71,7 @@ export function bindResizeSeparatorDragRuntime<TValue>(args: {
     let pending = startValue
     startPointerDrag({
       ev,
-      cursor,
+      cursor: readCursor(),
       shouldStart: canStart,
       onMove: mv => {
         const next = resolveNextValueFromPointerDrag({
@@ -77,8 +100,10 @@ export function bindResizeSeparatorDragRuntime<TValue>(args: {
   }
 
   resizeHandleEl.addEventListener('pointerdown', onDown)
+  resizeHandleEl.addEventListener('keydown', onKeyDown)
   return () => {
     rafSetPreview.cancel()
     resizeHandleEl.removeEventListener('pointerdown', onDown)
+    resizeHandleEl.removeEventListener('keydown', onKeyDown)
   }
 }

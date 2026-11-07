@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospatialSource'
 import {
   Gauge,
   Plane,
@@ -43,6 +44,11 @@ import {
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
 import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import { FlightSimPresentationControls } from './FlightSimPresentationControls'
+import {
+  readFlightSimPresentationSettings,
+  subscribeFlightSimPresentationSettings,
+} from './flightSimPresentationSettings'
 import {
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
   readFlightSimCameraSnapshot,
@@ -57,10 +63,13 @@ import {
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
 import { FlightSimTrainingSurfaceProjection } from './FlightSimTrainingSurfaceProjection'
+import { readFlightSimTrainingScenario } from './flightSimTrainingScenario'
 import {
   readFlightSimTrainingSnapshot,
   subscribeFlightSimTrainingSnapshot,
 } from './flightSimTrainingRuntime'
+
+const EvidencePanelLazy = React.lazy(() => import('@/features/evidence-analysis/EvidencePanel'))
 
 type PendingOperation = FlightSimOperation | 'reset-save'
 
@@ -74,7 +83,7 @@ function Invocation({
   return (
     <code className={cn(
       UI_INLINE_CHIP_GROUP_CLASSNAME,
-      'min-w-0 overflow-hidden font-mono text-[9px]',
+      'min-w-0 overflow-hidden font-mono text-xs',
       UI_THEME_TOKENS.text.secondary,
     )}>
       {renderMarkdownSigilInlineText(buildFlightSimInvocation(operation, throttle), {
@@ -101,6 +110,7 @@ function airspeed(velocity: readonly number[]): string {
 }
 
 export function FlightSimFloatingPanelView() {
+  const sourceContext = useSourceGeospatialContext()
   const flight = React.useSyncExternalStore(
     subscribeFlightSimSnapshot,
     readFlightSimSnapshot,
@@ -126,12 +136,18 @@ export function FlightSimFloatingPanelView() {
     readFlightSimCameraSnapshot,
     readFlightSimCameraSnapshot,
   )
+  const presentation = React.useSyncExternalStore(
+    subscribeFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
+  )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const spatialProfile = readFlightSimSpatialProfile()
   const environment = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => spatialProfile.sourceKey.includes(`:${stage.id}:`))
     || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
+  const [evidenceLoaded, setEvidenceLoaded] = React.useState(false)
 
   React.useEffect(() => {
     setThrottle(flight.aircraft.throttle)
@@ -194,6 +210,16 @@ export function FlightSimFloatingPanelView() {
     && !decisions.hydrationBlocked
   const canSave = flight.phase === 'completed' || flight.phase === 'crashed'
 
+  if (sourceContext) return (
+    <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Recorded flight evidence">
+      <FloatingPanelCatalogHeader title="Recorded flight evidence" subtitle="Source observations · shared map and Timeline" actionsLabel="Recorded evidence actions" />
+      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        <p className="text-xs">Select a map feature to inspect its source and observation time. Closing Timeline keeps the recorded map active.</p>
+        <React.Suspense fallback={<p role="status">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense>
+      </section>
+    </section>
+  )
+
   return (
     <section
       className={floatingPanelCatalogSurfaceClassName()}
@@ -245,9 +271,15 @@ export function FlightSimFloatingPanelView() {
       />
 
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        <details className={cn('min-w-0 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+          onToggle={event => { if (event.currentTarget.open) setEvidenceLoaded(true) }} data-kg-flight-evidence="1">
+          <summary className="min-h-[44px] cursor-pointer text-xs font-semibold">Evidence and analysis</summary>
+          <p className="mb-2 text-xs">Local imported records are separate from simulated aircraft state. Export before closing the Flight panel.</p>
+          {evidenceLoaded ? <React.Suspense fallback={<p role="status" className="text-xs">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense> : null}
+        </details>
         <section
           className={cn(
-            'grid grid-cols-3 gap-2 rounded border p-2 text-[10px]',
+            'grid grid-cols-3 gap-2 rounded border p-2 text-xs',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
@@ -284,7 +316,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight camera and navigation"
         >
-          <p className="flex items-center gap-1 text-[11px] font-semibold">
+          <p className="flex items-center gap-1 text-xs font-semibold">
             <View className="h-3.5 w-3.5" aria-hidden="true" />
             Camera view · {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.find(option => option.id === camera.view)?.label}
           </p>
@@ -303,8 +335,9 @@ export function FlightSimFloatingPanelView() {
               </button>
             ))}
           </div>
-          <FlightSimNavigationInset flight={flight} />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <FlightSimPresentationControls surface="panel" buttonClassName="App-toolbar__btn" />
+          {presentation.navigationVisible ? <FlightSimNavigationInset flight={flight} /> : null}
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Press C to cycle views · north-up route is derived from the authored local mission only.
           </p>
         </section>
@@ -315,29 +348,31 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim runtime status"
         >
-          <p className="flex items-center gap-1 text-[11px] font-semibold">
+          <p className="flex items-center gap-1 text-xs font-semibold">
             <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
             Desktop, pointer, touch, gamepad, Motion Control
           </p>
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
             {flight.currentWaypointId
               ? `Proceed to ${flight.currentWaypointId}.`
               : flight.phase === 'completed'
                 ? 'Mission complete. Save the validated Decisions locally.'
                 : `The ${environment.label} XR terrain remains the only world owner.`}
           </p>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
           </p>
           <p
-            className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+            className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
             data-kg-flight-sim-geography-boundary="not-rendered"
           >
-            The local XR stage is aligned to Singapore’s Flight anchor; it is not a Singapore geographic boundary.
+            {readFlightSimTrainingScenario().geographicReference
+              ? 'The local scene uses the authored geographic anchor and presentation bounds.'
+              : 'Geographic projection unavailable. The local simulation has no authored geographic anchor.'}
           </p>
           <p
             className={cn(
-              'text-[10px]',
+              'text-xs',
               motionControl.phase === 'running'
                 ? UI_THEME_TOKENS.status.success
                 : UI_THEME_TOKENS.text.tertiary,
@@ -353,7 +388,7 @@ export function FlightSimFloatingPanelView() {
           </p>
           {flight.runtimeError ? (
             <p
-              className={cn('text-[10px]', UI_THEME_TOKENS.status.error)}
+              className={cn('text-xs', UI_THEME_TOKENS.status.error)}
               role="alert"
               data-kg-flight-sim-runtime-error="1"
             >
@@ -363,14 +398,14 @@ export function FlightSimFloatingPanelView() {
           ) : null}
           {decisions.error ? (
             <p
-              className={cn('break-words text-[10px]', UI_THEME_TOKENS.status.error)}
+              className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
               role="alert"
               data-kg-flight-sim-save-error="1"
             >
               {decisions.error}
             </p>
           ) : null}
-          <p className={cn('break-all text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('break-all text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Decision owner · {FLIGHT_SIM_SAVE_PATH}
           </p>
         </section>
@@ -379,7 +414,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim controls"
         >
-          <label className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[10px]">
+          <label className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs">
             <span>Throttle</span>
             <input
               type="range"
@@ -459,7 +494,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim companions"
         >
-          <h3 className="text-[11px] font-semibold">Motion Control · XR Mode</h3>
+          <h3 className="text-xs font-semibold">Motion Control · XR Mode</h3>
           <div className="flex flex-wrap gap-1">
             <button
               type="button"
@@ -478,7 +513,7 @@ export function FlightSimFloatingPanelView() {
               <View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode
             </button>
           </div>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Motion Control keeps the aircraft and camera capture live across the panel handoff. XR Mode exits the aircraft overlay and restores the authored scene controller.
           </p>
         </section>
@@ -487,12 +522,12 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           data-kg-flight-sim-invocations="native"
         >
-          <h3 className="text-[11px] font-semibold">WebMCP · / · @ · #</h3>
+          <h3 className="text-xs font-semibold">WebMCP · / · @ · #</h3>
           <Invocation operation="open" />
           <Invocation operation="start" />
           <Invocation operation="throttle" throttle={0.75} />
           <Invocation operation="save" />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Browser tools · agentic-graph.inspect_local_flight_sim · agentic-graph.control_local_flight_sim
           </p>
         </section>

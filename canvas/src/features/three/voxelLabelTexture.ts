@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { CanvasTexture, ClampToEdgeWrapping, LinearFilter } from 'three'
 
 type TextureKey = string
@@ -30,7 +31,7 @@ const makeCanvasTexture = (args: {
     return { texture: fallback, widthPx: 1, heightPx: 1 }
   }
 
-  ctx.font = `${fontSizePx}px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  ctx.font = `${fontSizePx}px ${UI_FONT_SANS}`
   const metrics = ctx.measureText(text)
   const textW = Math.ceil(metrics.width)
   const textH = Math.ceil(fontSizePx * 1.2)
@@ -66,7 +67,7 @@ const makeCanvasTexture = (args: {
   ctx.fillStyle = textColor
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'center'
-  ctx.font = `${fontSizePx}px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  ctx.font = `${fontSizePx}px ${UI_FONT_SANS}`
   ctx.fillText(text, w / 2, h / 2)
 
   const texture = new CanvasTexture(canvas)

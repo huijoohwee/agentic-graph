@@ -519,7 +519,7 @@ export function XrV2RuntimeSmokePage() {
       data-kg-xr-v2-encoded-track-source-released={String(state.encodedTrackContainer?.sourceReleased ?? false)}
       data-kg-xr-v2-observation-error={state.error}
     >
-      <section className="mx-auto max-w-3xl rounded-3xl border border-slate-700 bg-slate-900/80 p-6 shadow-2xl">
+      <section className="mx-auto max-w-3xl rounded-3xl border border-slate-700 bg-slate-900/80 p-6 shadow-[var(--kg-shadow-overlay)]">
         <header>
           <p className="m-0 text-xs uppercase tracking-[0.2em] text-sky-300">Review-candidate observation</p>
           <h1 className="mt-2 text-2xl font-semibold">XR v2 browser behavior</h1>

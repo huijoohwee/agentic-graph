@@ -313,7 +313,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
         }}
         onModEnter={() => { if (!props.isSubmitDisabled) editorRef.current?.closest('form')?.requestSubmit() }}
       />
-      <AnchorOverlay anchorRef={anchorRef} open={!!trigger} onClose={closeMenu} align="top-left" className={`w-[min(22rem,calc(100vw-1rem))] rounded border p-2 shadow-sm ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}>
+      <AnchorOverlay anchorRef={anchorRef} open={!!trigger} onClose={closeMenu} align="top-left" className={`w-[min(22rem,calc(100vw-1rem))] rounded border p-2 shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}>
         <MarkdownBlockContainerCommandMenu
           ariaLabel={ariaLabel}
           items={items}

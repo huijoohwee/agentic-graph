@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { AutoHeightMiniBarChart } from '@/features/panels/views/DatasetInspectorMiniViz'
@@ -151,21 +152,21 @@ export default function GraphLayerWordFrequenciesSection({
                   value={graphLayerTokenFilter}
                   onChange={setGraphLayerTokenFilter}
                 />
-                <select
+                <PanelSelect
                   className={[
                     uiPanelMicroLabelTextSizeClass,
                     uiPanelTextFontClass,
                     statsInputClassName,
                   ].join(' ')}
                   value={graphLayerTokenSort}
-                  onChange={e => {
-                    const raw = e.target.value === 'alpha' ? 'alpha' : 'freq'
+                  onValueChange={selectedValueInput => {
+                    const raw = selectedValueInput === 'alpha' ? 'alpha' : 'freq'
                     setGraphLayerTokenSort(raw)
                   }}
                 >
                   <option value="freq">{UI_COPY.statsSortByCountLabel}</option>
                   <option value="alpha">{UI_COPY.statsSortAzLabel}</option>
-                </select>
+                </PanelSelect>
                 <section className={`inline-flex rounded border ${UI_THEME_TOKENS.panel.border} overflow-hidden ${UI_THEME_TOKENS.panel.bg}`}>
                   <button
                     type="button"

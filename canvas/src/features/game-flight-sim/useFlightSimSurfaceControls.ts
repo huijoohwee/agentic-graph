@@ -30,6 +30,10 @@ import {
   createFlightSimSimulationClock,
   runFlightSimStageSimulationStep,
 } from './flightSimSimulationClock'
+import {
+  readFlightSimPresentationSettings,
+  subscribeFlightSimPresentationSettings,
+} from './flightSimPresentationSettings'
 
 const INPUT_OWNER_ID = 'flight-sim:aircraft'
 const CLOCK_INTERVAL_MS = FLIGHT_SIM_FIXED_STEP_SECONDS * 1000
@@ -91,6 +95,9 @@ export function useFlightSimSurfaceControls(args: Readonly<{
   React.useEffect(() => {
     const clock = createFlightSimSimulationClock({
       minimumStepIntervalMs: CLOCK_INTERVAL_MS,
+      readMinimumStepIntervalMs: () => (
+        CLOCK_INTERVAL_MS / readFlightSimPresentationSettings().simulationSpeed
+      ),
       runStep: async () => {
         const flight = runtimeController.readSnapshot()
         if (
@@ -125,8 +132,18 @@ export function useFlightSimSurfaceControls(args: Readonly<{
         runtimeController.stop()
       },
     })
-    const timer = window.setInterval(clock.requestStep, CLOCK_INTERVAL_MS)
+    let speed = readFlightSimPresentationSettings().simulationSpeed
+    let timer = window.setInterval(clock.requestStep, CLOCK_INTERVAL_MS / speed)
+    const releasePreferences = subscribeFlightSimPresentationSettings(() => {
+      const nextSpeed = readFlightSimPresentationSettings().simulationSpeed
+      if (nextSpeed === speed) return
+      speed = nextSpeed
+      window.clearInterval(timer)
+      timer = window.setInterval(clock.requestStep, CLOCK_INTERVAL_MS / speed)
+      clock.requestStep()
+    })
     return () => {
+      releasePreferences()
       window.clearInterval(timer)
       clock.dispose()
       runtimeController.setInput(FLIGHT_SIM_NEUTRAL_INPUT)

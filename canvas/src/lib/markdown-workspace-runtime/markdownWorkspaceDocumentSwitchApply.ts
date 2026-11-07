@@ -1,5 +1,6 @@
 import React from 'react'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
+import { workspaceExtLower } from '@/features/workspace-fs/path'
 import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMarkdownDocument'
 import type { MarkdownWorkspaceRuntimeSetActiveDocument } from './markdownWorkspaceRuntime.types'
 import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocumentPayloadGuards'
@@ -7,7 +8,9 @@ import { hashSignatureParts } from '@/lib/hash/signature'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { normalizeMarkdownWorkspaceSelectionPath } from './markdownWorkspaceSelectionPath'
 import {
+  extractYamlFrontmatterHeaderBlock,
   parseCanvasWorkspaceFrontmatterPreset,
+  readYamlFrontmatterValue,
   type CanvasWorkspaceFrontmatterPreset,
 } from '@/lib/markdown/frontmatter'
 import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
@@ -117,6 +120,15 @@ export function isWorkspaceGraphSourceStaleForDocument(args: {
   return graphDataSource !== expectedMarkdownSource
 }
 
+function isHackaMapDomainGraphManifest(text: string): boolean {
+  const header = extractYamlFrontmatterHeaderBlock(text)
+  return !!header && readYamlFrontmatterValue(header.rawBlock, 'document_type') === 'hackamap-domain-manifest'
+}
+
+function hackaMapDomainGraphSource(documentKey: string): string {
+  return `hackamap-domain:${String(documentKey || '').trim().replace(/^\/+/, '')}`
+}
+
 function isWorkspaceGraphSourceConflictingMarkdownDocument(args: {
   activeDocumentKey?: string | null
   graphDataSource?: string | null
@@ -149,7 +161,9 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   canvas2dRenderer?: string | null
 }): boolean {
   if (args.userEditedActiveText === true) return false
-  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.nextText)) return false
+  if (workspaceExtLower(args.activeDocumentKey || args.activePath || '') === 'py') return false
+  const hackamapDomainManifest = isHackaMapDomainGraphManifest(args.nextText)
+  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.nextText) && !hackamapDomainManifest) return false
   if (!shouldAcceptWorkspaceDocumentSelectionText({
     activePath: args.activePath,
     activeEntryKind: args.activeEntryKind,
@@ -160,6 +174,9 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   }
   const activeDocumentKey = String(args.activeDocumentKey || '').trim()
   if (!activeDocumentKey) return false
+  if (hackamapDomainManifest) {
+    return String(args.graphDataSource || '').trim() !== hackaMapDomainGraphSource(activeDocumentKey)
+  }
   if (isWorkspaceGraphSourceStaleForDocument({
     activeDocumentKey,
     graphDataSource: args.graphDataSource,
@@ -205,9 +222,14 @@ export function isWorkspaceDocumentSwitchApplySettled(args: {
 }): boolean {
   const activeDocumentKey = String(args.activeDocumentKey || '').trim()
   if (!activeDocumentKey) return false
+  // Python's learning runtime owns its Canvas; selection only hydrates the file.
+  if (workspaceExtLower(activeDocumentKey) === 'py') return true
   if (String(args.markdownDocumentName || '').trim() !== activeDocumentKey) return false
   if (String(args.markdownDocumentText || '') !== String(args.text || '')) return false
-  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.text)) return true
+  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.text)) {
+    if (!isHackaMapDomainGraphManifest(args.text)) return true
+    return String(args.graphDataSource || '').trim() === hackaMapDomainGraphSource(activeDocumentKey)
+  }
   return !isWorkspaceGraphSourceStaleForDocument({
     activeDocumentKey,
     graphDataSource: args.graphDataSource,
@@ -220,7 +242,7 @@ export function shouldForceWorkspaceDocumentSwitchGraphApply(args: {
 }): boolean {
   const activeDocumentPath = normalizeMarkdownWorkspaceSelectionPath(args.activeDocumentKey || null)
   const pendingSwitchPath = normalizeMarkdownWorkspaceSelectionPath(args.pendingSwitchPath || null)
-  return !!activeDocumentPath && pendingSwitchPath === activeDocumentPath
+  return !!activeDocumentPath && workspaceExtLower(activeDocumentPath) !== 'py' && pendingSwitchPath === activeDocumentPath
 }
 
 export type WorkspaceDocumentSwitchApplyStatus = 'applied' | 'settled' | 'deferred'

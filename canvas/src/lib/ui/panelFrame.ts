@@ -8,7 +8,7 @@ export const PANEL_FRAME_ROOT_STYLE: CssStyle = {
   borderRadius: 'var(--kg-media-panel-radius, 10px)',
   border: 'var(--kg-media-panel-border-w, 1px) solid var(--kg-border)',
   background: 'var(--kg-media-panel-bg, var(--kg-panel-bg, rgba(255,255,255,0.92)))',
-  boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+  boxShadow: 'var(--kg-shadow-overlay)',
   willChange: 'left, top, width, height',
   display: 'flex',
   flexDirection: 'column',

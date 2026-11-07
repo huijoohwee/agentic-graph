@@ -30,6 +30,7 @@ const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 
 const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
   active,
+  forceFloating = false,
   storyboardWidgetSurfaceId, editorSurfaceKind,
   overlayCollectiveCount,
   node,
@@ -108,6 +109,7 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     })
   }))
   const pinnedInCanvasForPlacement = useGraphStore(useShallow(s => {
+    if (forceFloating) return false
     const v = readScopedFlowWidgetNodeValue({
       nodeId,
       graphMetaKey,
@@ -162,6 +164,7 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     openWidgetNodeCount: effectiveOverlayCollectiveCount,
     autoStackOffset,
     floating: pinnedInCanvasForPlacement !== true,
+    forceFloating,
     floatingUsesScreenAuthority: shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas: pinnedInCanvasForPlacement, storyboardWidgetSurfaceId }),
   })
   const uiState = useWidgetEditorOverlayUiState({
@@ -177,14 +180,24 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     upsertUiToast,
     setFlowWidgetPinnedByNodeIdForGraph,
     setSelectionSource,
+    forceFloating,
   })
-  const pinnedInCanvas = uiState.pinnedInCanvas
+  const pinnedInCanvas = forceFloating ? false : uiState.pinnedInCanvas
   const effectiveHideFields = isRichMediaPanelNode ? uiState.richMediaKtvRows : uiState.hideFields
   const floating = pinnedInCanvas !== true
   const headerDragAllowedByPin = isFlowWidgetHeaderDragAllowedByPin({
     pinnedInCanvas,
   })
   const floatingUsesScreenAuthority = shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas, storyboardWidgetSurfaceId })
+  const persistFloatingScreenPlacement = placement.persistFloatingScreenPlacement
+  const persistFloatingPlacement = placement.persistFloatingPlacement
+  const persistFloatingDragPlacement = React.useCallback((pos: { top: number; left: number }) => {
+    if (floatingUsesScreenAuthority) {
+      persistFloatingScreenPlacement(pos)
+      return
+    }
+    persistFloatingPlacement(pos)
+  }, [floatingUsesScreenAuthority, persistFloatingPlacement, persistFloatingScreenPlacement])
 
   React.useEffect(() => {
     placement.applyOverlayPosition({ emitInteractionFrame: false })
@@ -245,7 +258,7 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     pinnedTopPx: placement.pinnedTopPx,
     pinnedLeftPx: placement.pinnedLeftPx,
     applyOverlayPosition: placement.applyOverlayPosition,
-    persistFloatingPlacement: placement.persistFloatingPlacement,
+    persistFloatingPlacement: persistFloatingDragPlacement,
     persistWorldPos: placement.persistWorldPos,
     setSelectionSource: uiState.setWidgetSelectionSource,
     selectNode,
@@ -302,8 +315,8 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
       headerDragEnabled={headerDragAllowedByPin}
       onHeaderPointerDown={drag.handleHeaderPointerDown}
       onToggleHideFields={uiState.handleToggleHideFields}
-      onTogglePinned={uiState.handleTogglePinned}
-      onPinnedPointerDown={uiState.handlePinnedPointerDown}
+      onTogglePinned={forceFloating ? undefined : uiState.handleTogglePinned}
+      onPinnedPointerDown={forceFloating ? undefined : uiState.handlePinnedPointerDown}
       onToggleMinimized={uiState.handleToggleMinimized}
       onSetLabel={onSetLabel}
       onSetType={onSetType}

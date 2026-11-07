@@ -14,6 +14,7 @@ import {
 import {
   scoreGameFpsNpcActions,
   selectGameFpsNpcAction,
+  GAME_FPS_NPC_ENGAGE_DISTANCE_METERS,
 } from '../features/game-fps/gameFpsNpcPolicy'
 import {
   acknowledgeGameFpsDecisions,
@@ -119,6 +120,7 @@ async function aimAndFireAtVisibleTarget(): Promise<GameFpsSnapshot> {
 
 test('Game FPS core serializes fixed World_Ticks with deterministic zero-cost output', async () => {
   resetGameFpsRuntimeForTests()
+  const playerSpawn = readGameFpsSpatialProfile().playerSpawn
   startGameFpsMission()
   setGameFpsInput({ forward: 1, strafe: 0.25, lookYawDelta: 0.2 })
   await Promise.all([
@@ -127,6 +129,10 @@ test('Game FPS core serializes fixed World_Ticks with deterministic zero-cost ou
   ])
   const first = readGameFpsSnapshot()
   assert.equal(first.tick, GAME_FPS_NPC_DECISION_INTERVAL_TICKS)
+  assert.ok(
+    Math.hypot(first.player.x - playerSpawn.x, first.player.z - playerSpawn.z) > 0,
+    'held movement input moves the player through the active spatial profile',
+  )
   assert.ok(first.pendingDecisions.some(decision => decision.payload.event === 'npc_action'))
   assert.deepEqual(first.lastCostLog, GAME_FPS_ZERO_COST_LOG)
   assert.equal(first.lastCostLog.model, 'none')
@@ -418,7 +424,31 @@ test('NPC scoring uses the closed stable priority only when its decision interva
   )
 })
 
-test('one weapon, reload, all four utility actions, and mission completion stay local', async () => {
+test('NPCs approach before engaging so movement input has room to respond', () => {
+  const outsideEngageRange = scoreGameFpsNpcActions({
+    health: 100,
+    playerDistance: GAME_FPS_NPC_ENGAGE_DISTANCE_METERS + 0.1,
+    lineOfSight: true,
+  })
+  const insideEngageRange = scoreGameFpsNpcActions({
+    health: 100,
+    playerDistance: GAME_FPS_NPC_ENGAGE_DISTANCE_METERS,
+    lineOfSight: true,
+  })
+  assert.equal(selectGameFpsNpcAction(outsideEngageRange), 'alert')
+  assert.equal(selectGameFpsNpcAction(insideEngageRange), 'engage')
+  assert.equal(
+    scoreGameFpsNpcActions({
+      health: 100,
+      playerDistance: 1,
+      lineOfSight: false,
+    }).engage,
+    0,
+    'occluded NPCs do not engage even inside the approach radius',
+  )
+})
+
+test('one weapon, reload, NPC approach, and mission completion stay local', async () => {
   resetGameFpsRuntimeForTests()
   const initial = startGameFpsMission()
   assert.equal(initial.npcs.length, 4)
@@ -445,7 +475,6 @@ test('one weapon, reload, all four utility actions, and mission completion stay 
     .filter(decision => decision.payload.event === 'npc_action')
     .map(decision => decision.payload.action))
   assert.ok(actionEvents.has('alert'))
-  assert.ok(actionEvents.has('engage'))
   assert.ok(actionEvents.has('flee'))
   assert.ok(Object.isFrozen(completed) && Object.isFrozen(completed.pendingDecisions))
 })

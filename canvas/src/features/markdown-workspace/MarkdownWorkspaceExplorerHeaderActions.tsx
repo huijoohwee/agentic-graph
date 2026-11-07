@@ -1,5 +1,5 @@
 import React from 'react'
-import { RefreshCcw } from 'lucide-react'
+import { LocateFixed, RefreshCcw } from 'lucide-react'
 import { ExplorerToolbarIconButton } from './ExplorerToolbarIconButton'
 import { ExplorerSearchControl } from './ExplorerSearchControl'
 import { uiToolbarRowScrollJustifyEndClassName, uiToolbarRowScrollListClassName } from '@/features/toolbar/ui/toolbarStyles'
@@ -10,6 +10,8 @@ type MarkdownWorkspaceExplorerHeaderActionsProps = {
   onRefresh: () => void
   search: string
   setSearch: (next: string) => void
+  activePath?: string | null
+  onRevealActiveFile?: () => void
 }
 
 const explorerHeaderActionIconClassName = `${UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} shrink-0`
@@ -20,6 +22,11 @@ export function MarkdownWorkspaceExplorerHeaderActions(props: MarkdownWorkspaceE
   return (
     <nav className={`kg-toolbar ${uiToolbarRowScrollJustifyEndClassName} gap-1`} aria-label="Explorer actions">
       <ul className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Explorer actions list">
+        {props.activePath && props.onRevealActiveFile && <li className="list-none">
+          <ExplorerToolbarIconButton ariaLabel="Reveal active file in Source Files" title={props.activePath} onClick={props.onRevealActiveFile}>
+            <LocateFixed className={explorerHeaderActionIconClassName} />
+          </ExplorerToolbarIconButton>
+        </li>}
         <li className="list-none">
           <ExplorerToolbarIconButton ariaLabel="Refresh" title="Refresh" onClick={onRefresh}>
             <RefreshCcw className={explorerHeaderActionIconClassName} />

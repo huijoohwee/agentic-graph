@@ -2,7 +2,7 @@ export function buildMarkdownSidebarTitleClassName({
   uiPanelTextFontClass,
   uiPanelMicroLabelTextSizeClass,
   uiPanelKeyValueTextSizeClass,
-  fallbackSizeClass = 'text-[10px]',
+  fallbackSizeClass = 'text-xs',
   textColorClassName,
 }: {
   uiPanelTextFontClass: string
@@ -14,7 +14,7 @@ export function buildMarkdownSidebarTitleClassName({
   return [
     uiPanelTextFontClass,
     uiPanelMicroLabelTextSizeClass || uiPanelKeyValueTextSizeClass || fallbackSizeClass,
-    'font-semibold uppercase tracking-wide truncate',
+    'font-semibold uppercase tracking-normal truncate',
     textColorClassName,
   ].join(' ')
 }

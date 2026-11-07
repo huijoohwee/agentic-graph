@@ -1,5 +1,4 @@
 import React from 'react'
-import { CheckCircle2, Play, SquareCheckBig, XCircle } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
@@ -15,19 +14,29 @@ import {
 } from '@/features/research-agent/researchCompilerPanelModel'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
-  uiToolbarButtonMutedClassName,
-  uiToolbarButtonPrimarySolidClassName,
   uiToolbarRowScrollInlineClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
-import { PanelField, PanelReadOnlyField, PanelTextInput, PanelTextarea } from '@/lib/ui/panelFormControls'
+import { PanelTextInput, PanelTextarea } from '@/lib/ui/panelFormControls'
 
+import { MainPanelField, observedFieldHelp } from '../ui/MainPanelField'
+import { MainPanelIconButton } from '../ui/MainPanelIconButton'
+import { MainPanelTypeIcon } from '../ui/mainPanelHelpIconLibrary'
+import CollapsibleSection from '../ui/CollapsibleSection'
+import { KeyTypeValueHeader, KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+
+const TOKEN_BUDGETS = [
+  { label: 'Input tokens', defaultValue: 80_000 },
+  { label: 'Output tokens', defaultValue: 12_000 },
+] as const
 const DEFAULT_RESEARCH_PROMPT = 'Evaluate whether the selected operating thesis is investable from the current workspace sources.'
 
 export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery?: string }) {
+  const typography = usePanelTypography()
   const { sourceFiles } = useGraphStore(useShallow(s => ({ sourceFiles: s.sourceFiles || [] })))
   const [prompt, setPrompt] = React.useState(DEFAULT_RESEARCH_PROMPT)
-  const [maxInputTokens, setMaxInputTokens] = React.useState(80_000)
-  const [maxOutputTokens, setMaxOutputTokens] = React.useState(12_000)
+  const [maxInputTokens, setMaxInputTokens] = React.useState<number>(TOKEN_BUDGETS[0].defaultValue)
+  const [maxOutputTokens, setMaxOutputTokens] = React.useState<number>(TOKEN_BUDGETS[1].defaultValue)
   const [selectedSourceIds, setSelectedSourceIds] = React.useState<Set<string>>(() => new Set())
   const [compileResult, setCompileResult] = React.useState<ResearchThesisCompileResult | null>(null)
   const [reviewAudit, setReviewAudit] = React.useState<ResearchThesisReviewAudit | null>(null)
@@ -97,148 +106,54 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
     }))
   }, [acceptedCandidateIds, candidateNodes, compileResult])
 
+  const observed = (label: string, value: React.ReactNode, type = 'string') => <MainPanelField key={label} label={label} type={type} help={observedFieldHelp('Researcher', label, 'review the compiler result before staging any graph change')}>{value}</MainPanelField>
   return (
-    <section className="h-full min-h-0 overflow-y-auto pr-1" data-kg-research-compiler-panel="1" aria-label="Research compiler">
-      <section className="grid gap-3 pb-3">
-        <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3`}>
-          <PanelField label="Thesis prompt" variant="section" layout="compact" labelClassName="font-semibold">
-            <PanelTextarea
-              variant="transparent"
-              className="min-h-24 p-2 text-sm"
-              value={prompt}
-              onChange={event => setPrompt(event.currentTarget.value)}
-              data-kg-research-thesis-prompt="1"
-            />
-          </PanelField>
-          <section className={`${uiToolbarRowScrollInlineClassName} mt-2 gap-2`} aria-label="Research budget">
-            <PanelField label="Input tokens" layout="compact" labelClassName="text-[11px] font-semibold">
-              <PanelTextInput
-                variant="transparent"
-                className="w-28 text-sm"
-                type="number"
-                min={1}
-                value={maxInputTokens}
-                onChange={event => setMaxInputTokens(Number(event.currentTarget.value))}
-              />
-            </PanelField>
-            <PanelField label="Output tokens" layout="compact" labelClassName="text-[11px] font-semibold">
-              <PanelTextInput
-                variant="transparent"
-                className="w-28 text-sm"
-                type="number"
-                min={1}
-                value={maxOutputTokens}
-                onChange={event => setMaxOutputTokens(Number(event.currentTarget.value))}
-              />
-            </PanelField>
-            <button
-              type="button"
-              className={`App-toolbar__btn ${uiToolbarButtonPrimarySolidClassName} ml-auto`}
-              onClick={runCompile}
-              disabled={pending || requestModel.issues.length > 0}
-              data-kg-research-compile-action="1"
-            >
-              <Play className="h-4 w-4" aria-hidden="true" />
-              <span>{pending ? 'Running' : 'Compile'}</span>
-            </button>
-          </section>
-        </section>
-
-        <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3`} aria-label="Research source selection">
-          <header className={`${uiToolbarRowScrollInlineClassName} justify-between gap-2`}>
-            <h3 className={`text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}>Source Files</h3>
-            <span className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{requestModel.selectedSourceCount} selected</span>
-          </header>
-          <section className="mt-2 grid gap-1" data-kg-research-source-list="1">
+    <section className={`h-full min-h-0 overflow-y-auto ${typography.panelTextClass}`} data-kg-research-compiler-panel="1" aria-label="Research compiler">
+      <KeyTypeValueHeader />
+      <KeyTypeValueSectionStack>
+        <CollapsibleSection title="Request" defaultCollapsed={false} flushTop>
+          <MainPanelField label="Thesis prompt" help={{ role: 'Researcher', actions: ['describe the thesis to evaluate'], outcome: 'scope compilation to a question grounded in the selected sources', value: { key: 'thesisPrompt', type: 'string', defaultValue: DEFAULT_RESEARCH_PROMPT, impact: 'Sets the question compiled from selected workspace sources.' } }}>
+            <PanelTextarea aria-label="Thesis prompt" variant="transparent" className={`min-h-24 p-2 ${typography.panelTextClass}`} value={prompt} onChange={event => setPrompt(event.currentTarget.value)} data-kg-research-thesis-prompt="1" />
+          </MainPanelField>
+          {TOKEN_BUDGETS.map((budget, index) => <MainPanelField key={budget.label} label={budget.label} type="number" help={{ role: 'Researcher', actions: [`cap ${budget.label.toLowerCase()} for this compilation`], outcome: 'bound the requested compiler token budget', value: { key: budget.label, type: 'number', defaultValue: budget.defaultValue, min: 1, max: 'No configured limit', interval: 1, expansionNote: 'More permits a larger budget', contractionNote: 'Fewer reduces the budget', notes: 'No configured upper limit.' } }}>
+            <PanelTextInput aria-label={budget.label} variant="transparent" className={`${typography.keyValueInputClass} ${typography.panelTextClass} text-right`} type="number" min={1} step={1} value={index === 0 ? maxInputTokens : maxOutputTokens} onChange={event => (index === 0 ? setMaxInputTokens : setMaxOutputTokens)(Number(event.currentTarget.value))} />
+          </MainPanelField>)}
+          <MainPanelField label="Compile" type="action" help={{ role: 'Researcher', actions: ['compile the selected sources'], outcome: 'produce a candidate thesis graph for review', value: { key: 'compile', type: 'action', defaultValue: 'Idle', impact: 'Runs on activation when the prompt and source selection are valid.' } }}>
+            <MainPanelIconButton iconKey="action.run" label={pending ? 'Running' : 'Compile'} onClick={runCompile} disabled={pending || requestModel.issues.length > 0} data-kg-research-compile-action="1" />
+          </MainPanelField>
+        </CollapsibleSection>
+        <CollapsibleSection title="Source Files" defaultCollapsed={false} actions={<span className={typography.microLabelClass}>{requestModel.selectedSourceCount} selected</span>}>
+          <section aria-label="Research source selection" data-kg-research-source-list="1">
             {filteredSourceFiles.slice(0, 12).map(file => {
               const id = String(file.id || '')
-              const checked = selectedSourceIds.has(id)
-              return (
-                <label key={id || String(file.name || file.source?.path)} className={`${uiToolbarRowScrollInlineClassName} gap-2 rounded px-1 py-1 ${UI_THEME_TOKENS.text.secondary}`}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={event => {
-                      setSelectedSourceIds(prev => {
-                        const next = new Set(prev)
-                        if (event.currentTarget.checked) next.add(id)
-                        else next.delete(id)
-                        return next
-                      })
-                    }}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{String(file.source?.path || file.name || id)}</span>
-                </label>
-              )
+              return <MainPanelField key={id} label={String(file.source?.path || file.name || id)} type="boolean" help={{ role: 'Researcher', actions: ['include or exclude this source'], outcome: 'control which workspace evidence enters compilation', value: { key: id, type: 'boolean', defaultValue: file.enabled !== false, impact: 'Checked includes this source; unchecked excludes it.' } }}>
+                <input type="checkbox" aria-label={`Include ${String(file.name || id)}`} checked={selectedSourceIds.has(id)} onChange={event => { const checked = event.currentTarget.checked; setSelectedSourceIds(prev => { const next = new Set(prev); if (checked) next.add(id); else next.delete(id); return next }) }} />
+              </MainPanelField>
             })}
           </section>
-        </section>
-
-        <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3`} aria-label="Research run status" data-kg-research-run-status="1">
-          <header className={`${uiToolbarRowScrollInlineClassName} justify-between gap-2`}>
-            <h3 className={`text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}>Run</h3>
-            {resultSummary.status === 'ready' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" /> : null}
-            {resultSummary.status === 'error' ? <XCircle className="h-4 w-4 text-red-600" aria-hidden="true" /> : null}
-          </header>
-          <section className="mt-2 grid grid-cols-2 gap-2">
-            <PanelReadOnlyField label="Run ID" value={resultSummary.runId || 'pending'} valueClassName="truncate font-mono" />
-            <PanelReadOnlyField label="Claims" value={resultSummary.claimCount} />
-            <PanelReadOnlyField label="Evidence" value={resultSummary.evidenceCount} />
-            <PanelReadOnlyField
-              label="Candidates"
-              value={`${resultSummary.candidateNodeCount} nodes / ${resultSummary.candidateEdgeCount} edges`}
-            />
-            <PanelReadOnlyField label="Cache hits" value={resultSummary.cacheHits} />
-            <PanelReadOnlyField label="Active graph mutated" value={String(resultSummary.activeGraphMutated)} />
+        </CollapsibleSection>
+        <CollapsibleSection title="Run" defaultCollapsed={false} actions={resultSummary.status !== 'idle' ? <MainPanelTypeIcon iconKey={resultSummary.status === 'ready' ? 'status.ready' : 'status.error'} className="size-4" /> : null}>
+          <section aria-label="Research run status" data-kg-research-run-status="1">
+            {observed('Run ID', resultSummary.runId || 'pending')}
+            {observed('Claims', resultSummary.claimCount, 'number')}
+            {observed('Evidence', resultSummary.evidenceCount, 'number')}
+            {observed('Candidates', `${resultSummary.candidateNodeCount} nodes / ${resultSummary.candidateEdgeCount} edges`)}
+            {observed('Cache hits', resultSummary.cacheHits, 'number')}
+            {observed('Active graph mutated', String(resultSummary.activeGraphMutated), 'boolean')}
+            {resultSummary.error ? <p role="alert" className="mt-2 text-red-600">{resultSummary.error}</p> : null}
           </section>
-          {resultSummary.error ? <p className="mt-2 text-xs text-red-600">{resultSummary.error}</p> : null}
-        </section>
-
-        {candidateNodes.length > 0 ? (
-          <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3`} aria-label="Candidate thesis graph review" data-kg-research-review-surface="1">
-            <header className={`${uiToolbarRowScrollInlineClassName} justify-between gap-2`}>
-              <h3 className={`text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}>Review</h3>
-              <button type="button" className={`App-toolbar__btn ${uiToolbarButtonMutedClassName}`} onClick={buildReview}>
-                <SquareCheckBig className="h-4 w-4" aria-hidden="true" />
-                <span>Stage</span>
-              </button>
-            </header>
-            <section className="mt-2 grid gap-1">
-              {candidateNodes.slice(0, 8).map(node => {
-                const accepted = acceptedCandidateIds.has(node.id)
-                return (
-                  <label key={node.id} className={`${uiToolbarRowScrollInlineClassName} gap-2 rounded px-1 py-1 ${UI_THEME_TOKENS.text.secondary}`}>
-                    <input
-                      type="checkbox"
-                      checked={accepted}
-                      onChange={event => {
-                        setAcceptedCandidateIds(prev => {
-                          const next = new Set(prev)
-                          if (event.currentTarget.checked) next.add(node.id)
-                          else next.delete(node.id)
-                          return next
-                        })
-                      }}
-                    />
-                    <span className="min-w-0 flex-1 truncate">{String(node.label || node.id)}</span>
-                  </label>
-                )
-              })}
-            </section>
-            <section className="mt-2 grid grid-cols-2 gap-2">
-              <PanelReadOnlyField
-                label="Apply owner"
-                value={reviewAudit?.apply_owner || RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER}
-                valueClassName="truncate font-mono"
-              />
-              <PanelReadOnlyField
-                label="Accepted delta"
-                value={`${reviewAudit?.accepted_delta.nodes.length || 0} nodes / ${reviewAudit?.accepted_delta.edges.length || 0} edges`}
-              />
-            </section>
+        </CollapsibleSection>
+        {candidateNodes.length > 0 ? <CollapsibleSection title="Review" defaultCollapsed={false} actions={<MainPanelIconButton iconKey="action.review" label="Stage" onClick={buildReview} />}>
+          <section aria-label="Candidate thesis graph review" data-kg-research-review-surface="1">
+            {candidateNodes.slice(0, 8).map(node => <label key={node.id} className={`${uiToolbarRowScrollInlineClassName} gap-2 py-1 ${UI_THEME_TOKENS.text.secondary}`}>
+              <input type="checkbox" checked={acceptedCandidateIds.has(node.id)} onChange={event => { const checked = event.currentTarget.checked; setAcceptedCandidateIds(prev => { const next = new Set(prev); if (checked) next.add(node.id); else next.delete(node.id); return next }) }} />
+              <span className="min-w-0 flex-1 truncate">{String(node.label || node.id)}</span>
+            </label>)}
+            {observed('Apply owner', reviewAudit?.apply_owner || RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER)}
+            {observed('Accepted delta', `${reviewAudit?.accepted_delta.nodes.length || 0} nodes / ${reviewAudit?.accepted_delta.edges.length || 0} edges`)}
           </section>
-        ) : null}
-      </section>
+        </CollapsibleSection> : null}
+      </KeyTypeValueSectionStack>
     </section>
   )
 }

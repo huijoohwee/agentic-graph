@@ -148,15 +148,24 @@ export function requireCitySimRuntimeIdentity({
   )
 
   requireValue('city_initial.regional_poi_profile_id', cityInitial.regional_poi_profile_id, authority.regionalPoi.profileId)
-  requireValue('city_initial.rows', cityInitial.rows, 2)
-  requireValue('city_initial.columns', cityInitial.columns, 3)
+  const rows = cityInitial.rows
+  const columns = cityInitial.columns
+  const hasValidGrid = Number.isSafeInteger(rows)
+    && rows > 0
+    && Number.isSafeInteger(columns)
+    && columns > 0
+    && rows * columns <= Number.MAX_SAFE_INTEGER
+  if (!hasValidGrid) {
+    missing.push('city_initial rows and columns are positive safe integers')
+  }
   const poiIds = readPoiZoningIds(source)
   if (
-    poiIds.length !== 6
+    !hasValidGrid
+    || poiIds.length !== rows * columns
     || new Set(poiIds).size !== poiIds.length
     || poiIds.some(id => !POI_ID_PATTERN.test(id) || /^r\d{2}c\d{2}$/.test(id))
   ) {
-    missing.push('authored initial POI zoning=6 unique canonical RegionalPoiIdentity ids')
+    missing.push('authored initial POI zoning has one unique canonical RegionalPoiIdentity id per configured grid cell')
   }
 
   requireValue('city_poi_zoning_projection.source_id', cityPoiProjection.source_id, 'kg-city-sim:geo-overlay')

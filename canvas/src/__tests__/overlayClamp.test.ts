@@ -1,6 +1,6 @@
 import {
   clampLocalOverlayTopLeftFullyInViewport,
-  clampOverlayCenterToViewport,
+  clampOverlayCenterFullyInViewport,
   clampOverlayTopLeftFullyInViewport,
   clampOverlayTopLeftToViewport,
 } from '@/lib/ui/overlayClamp'
@@ -42,20 +42,20 @@ export function testOverlayClampFullyInViewport() {
   if (!(clamped.top <= 400 - 120)) throw new Error('expected top to be clamped to max inside bound')
 }
 
-export function testOverlayClampCenterRespectsInset() {
-  const clamped = clampOverlayCenterToViewport({
-    pos: { top: -999, left: -999 },
-    size: { width: 200, height: 100 },
-    viewport: { width: 500, height: 400 },
-    visiblePx: 32,
-    inset: { top: 50 },
+export function testOverlayClampCenterKeepsPanelAndHeaderReachable() {
+  const viewport = { width: 1108, height: 720 }
+  const size = { width: 700, height: 600 }
+  const clamped = clampOverlayCenterFullyInViewport({
+    pos: { top: -374, left: -152 }, size, viewport,
   })
-  const halfH = 50
-  const halfW = 100
-  const minTop = 50 + 32 - halfH
-  const minLeft = 0 + 32 - halfW
-  if (!(clamped.top >= minTop)) throw new Error('expected center top to respect top inset')
-  if (!(clamped.left >= minLeft)) throw new Error('expected center left to respect visible bound')
+  if (clamped.top - size.height / 2 < 0) throw new Error('panel header remains above viewport')
+  if (clamped.left - size.width / 2 < 0) throw new Error('panel remains left of viewport')
+  if (clamped.top + size.height / 2 > viewport.height) throw new Error('panel remains below viewport')
+
+  const oversized = clampOverlayCenterFullyInViewport({
+    pos: { top: -374, left: -152 }, size: { width: 700, height: 800 }, viewport,
+  })
+  if (oversized.top - 400 !== 0) throw new Error('oversized panel header is not reachable')
 }
 
 export function testOverlayClampLocalPositionKeepsMenuInViewport() {

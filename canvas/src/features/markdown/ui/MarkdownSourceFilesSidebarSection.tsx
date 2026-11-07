@@ -50,7 +50,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
               showTooltip
               onClick={() => void integration.onOpenFolder()}
             >
-              <FolderOpen className={integration.iconClassName} strokeWidth={1.5} aria-hidden="true" />
+              <FolderOpen className={integration.iconClassName} aria-hidden="true" />
             </IconButton>
           </li>
           {integration.onRefreshFiles ? (
@@ -61,7 +61,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
                 showTooltip
                 onClick={() => void integration.onRefreshFiles?.()}
               >
-                <RefreshCw className={integration.iconClassName} strokeWidth={1.5} aria-hidden="true" />
+                <RefreshCw className={integration.iconClassName} aria-hidden="true" />
               </IconButton>
             </li>
           ) : null}
@@ -73,7 +73,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
                 showTooltip
                 onClick={() => void integration.onCreateFolder?.(null)}
               >
-                <FolderPlus className={integration.iconClassName} strokeWidth={1.5} aria-hidden="true" />
+                <FolderPlus className={integration.iconClassName} aria-hidden="true" />
               </IconButton>
             </li>
           ) : null}
@@ -85,7 +85,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
                 showTooltip
                 onClick={() => integration.onCreateFile?.(null)}
               >
-                <FilePlus className={integration.iconClassName} strokeWidth={1.5} aria-hidden="true" />
+                <FilePlus className={integration.iconClassName} aria-hidden="true" />
               </IconButton>
             </li>
           ) : null}
@@ -98,7 +98,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
           UI_THEME_TOKENS.panel.divider,
           UI_THEME_TOKENS.text.tertiary,
           uiPanelTextFontClass,
-          'text-[10px] flex items-center justify-between gap-2',
+          'text-xs flex items-center justify-between gap-2',
         ].join(' ')}
         aria-label="Source files status"
       >

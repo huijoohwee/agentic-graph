@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { persistMarkdownSourceFolderPaths, readPersistedMarkdownSourceFolderPaths } from '@/features/markdown/ui/markdownSourceFilesPersistence'
@@ -62,7 +63,7 @@ export async function testMarkdownWorkspaceFolderModeContractOpensDocs() {
 
     const folderSection = doc.querySelector(`section[aria-label="Folder ${folderName}"]`) as HTMLElement | null
     if (!folderSection) throw new Error('expected folder row')
-    const folderButton = folderSection.querySelector('button') as HTMLButtonElement | null
+    const folderButton = folderSection.querySelector(`button[aria-label="Folder ${folderName}"]`) as HTMLButtonElement | null
     if (!folderButton) throw new Error('expected folder row button')
     folderButton.click()
     await tick(dom)
@@ -73,10 +74,9 @@ export async function testMarkdownWorkspaceFolderModeContractOpensDocs() {
       throw new Error(`expected activePath to open sitemap, got ${String(activeAfterFolder)}`)
     }
 
-    const select = doc.querySelector('select[aria-label="Folder mode contract"]') as HTMLSelectElement | null
+    const select = doc.querySelector('button[data-kg-select][aria-label="Folder mode contract"]') as HTMLButtonElement | null
     if (!select) throw new Error('expected folder mode contract select')
-    select.value = 'user-journey'
-    select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+    selectMenuValue(select, 'user-journey')
     await tick(dom)
     await tick(dom)
 

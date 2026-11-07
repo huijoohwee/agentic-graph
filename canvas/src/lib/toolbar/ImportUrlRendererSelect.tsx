@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -42,20 +43,20 @@ export function ImportUrlRendererSelect(props: {
   onChange: (next: ImportUrlRendererSelection) => void
 }) {
   return (
-    <select
+    <PanelSelect
       className={cn(
         UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME,
-        'flex-1 rounded border text-xs',
+        'w-full min-h-11 rounded border text-xs',
         UI_THEME_TOKENS.input.border,
         UI_THEME_TOKENS.input.bg,
         UI_THEME_TOKENS.input.text,
       )}
       value={props.value}
-      onChange={e => props.onChange(normalizeImportUrlRendererSelection(e.target.value))}
+      onValueChange={selectedValueInput => props.onChange(normalizeImportUrlRendererSelection(selectedValueInput))}
       aria-label="Import URL renderer"
-      title="2D renderer"
+      title="Optional 2D Canvas layout"
     >
-      <option value="default">Default</option>
+      <option value="default">Automatic (source defaults)</option>
       {WORKSPACE_URL_IMPORT_CANVAS_RENDERERS.map(renderer => (
         <optgroup key={renderer} label={getWorkspaceUrlImportCanvasRendererLabel(renderer)}>
           {WORKSPACE_URL_IMPORT_DOCUMENT_MODES.map(mode => (
@@ -65,6 +66,6 @@ export function ImportUrlRendererSelect(props: {
           ))}
         </optgroup>
       ))}
-    </select>
+    </PanelSelect>
   )
 }

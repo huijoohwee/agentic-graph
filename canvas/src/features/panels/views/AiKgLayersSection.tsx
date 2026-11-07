@@ -45,7 +45,7 @@ export default function AiKgLayersSection({
         className={[
           uiPanelKeyValueTextSizeClass,
           uiPanelTextFontClass,
-          `mb-1 font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`,
+          `mb-1 font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`,
         ].join(' ')}
       >
         {UI_LABELS.aiKgLayers}

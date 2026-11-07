@@ -16,7 +16,7 @@ export async function testDocsSsotValidationFixtureForbidsHardcodedEndpointLiter
   const matched = forbiddenLiterals.filter((literal) => fixtureText.includes(literal))
   if (matched.length > 0) {
     throw new Error(
-      `expected docs fixture to avoid hardcoded DeerFlow endpoint URLs; found: ${matched.join(', ')}`,
+      `expected docs fixture to avoid hardcoded local gateway endpoint URLs; found: ${matched.join(', ')}`,
     )
   }
 }

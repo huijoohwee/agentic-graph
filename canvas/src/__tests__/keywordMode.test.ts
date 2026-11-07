@@ -27,7 +27,7 @@ export const testKeywordModeDerivesEntitiesAndPredicateEdges = () => {
     if (Array.isArray(tags) && tags.map(v => String(v).toLowerCase()).includes('idea')) hasIdeaTag = true
   }
   if (nodeKeys.has('the') || nodeKeys.has('a')) throw new Error('Keyword nodes should exclude stopwords')
-  if (nodeKeys.has('about')) throw new Error('Keyword nodes should exclude NLTK stopwords')
+  if (nodeKeys.has('about')) throw new Error('Keyword nodes should exclude native function words')
   if (!nodeKeys.has('cat') || !nodeKeys.has('fish')) throw new Error('Keyword nodes missing expected entities')
   if (!hasNodeSizing) throw new Error('Keyword nodes should carry visual:nodeSize scaled by frequency')
   if (!hasLayer) throw new Error('Keyword nodes should carry visual:layer derived from communities')

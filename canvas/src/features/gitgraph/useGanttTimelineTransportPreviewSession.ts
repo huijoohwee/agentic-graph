@@ -7,6 +7,7 @@ import {
   type VideoSequenceExportPlan,
 } from '@/components/timeline/videoSequenceExport'
 import { useTimelinePreviewMonitorBinding } from '@/components/timeline/useTimelinePreviewMonitorBinding'
+import { useTimelinePreviewSourceRecovery } from '@/components/timeline/useTimelinePreviewMediaSession'
 import { readVideoSequenceTimelineModelFromMarkdown } from '@/components/timeline/videoSequenceTimeline'
 import { type MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
 
@@ -31,6 +32,7 @@ export function useGanttTimelineTransportPreviewSession(args: {
     () => readVideoSequenceTimelineModelFromMarkdown(args.markdownText),
     [args.markdownText],
   )
+  const sourceRevision = useTimelinePreviewSourceRecovery(videoSequenceModel?.sources)
   const previewMonitorBinding = useTimelinePreviewMonitorBinding({
     markdownDocumentName: args.markdownDocumentName,
     markdownText: args.markdownText,
@@ -46,7 +48,7 @@ export function useGanttTimelineTransportPreviewSession(args: {
       filenameHint: args.markdownDocumentName,
       sources: videoSequenceModel?.sources || [],
     }),
-    [args.code, args.markdownDocumentName, videoSequenceModel?.sources],
+    [args.code, args.markdownDocumentName, sourceRevision, videoSequenceModel?.sources],
   )
   const previewPlan = React.useMemo(
     () => buildTimelinePreviewSyncPlan({
@@ -55,7 +57,7 @@ export function useGanttTimelineTransportPreviewSession(args: {
       selectedRowKey: args.selectedRowKey,
       sources: videoSequenceModel?.sources || [],
     }),
-    [args.code, args.markdownDocumentName, args.selectedRowKey, videoSequenceModel?.sources],
+    [args.code, args.markdownDocumentName, args.selectedRowKey, sourceRevision, videoSequenceModel?.sources],
   )
   const thumbnailPlan = React.useMemo(
     () => buildTimelinePreviewThumbnailPlan({
@@ -63,7 +65,7 @@ export function useGanttTimelineTransportPreviewSession(args: {
       filenameHint: args.markdownDocumentName,
       sources: videoSequenceModel?.sources || [],
     }),
-    [args.code, args.markdownDocumentName, videoSequenceModel?.sources],
+    [args.code, args.markdownDocumentName, sourceRevision, videoSequenceModel?.sources],
   )
   const exportPlanError = React.useMemo(() => resolveVideoSequenceExportPlanError(exportPlan), [exportPlan])
 

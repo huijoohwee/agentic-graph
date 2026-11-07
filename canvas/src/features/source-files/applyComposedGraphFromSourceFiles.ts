@@ -7,7 +7,7 @@ import {
 } from '@/lib/graph/sourceLayers'
 import { applyFrontmatterFlowImportModes } from '@/features/parsers/frontmatterFlowImportMode'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
-import { isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
+import { isDataViewCanvas2dRenderer, isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
@@ -208,7 +208,9 @@ function applyComposedSourceImportModes(
     })
     if (signature && lastAppliedComposedImportModesSignature === signature) return
     const preserveLiveSharedXrSurface = store.canvasRenderMode === '3d' && store.canvas3dMode === 'xr'
-    applyFrontmatterFlowImportModes(graphData, { preserveLiveSharedXrSurface })
+    // Passive composition retains the selected record view; explicit source presets still apply below.
+    const preserveDataView = store.canvasRenderMode === '2d' && isDataViewCanvas2dRenderer(store.canvas2dRenderer)
+    applyFrontmatterFlowImportModes(graphData, { preserveLiveSharedXrSurface, applyViewPreset: !preserveDataView })
     if (rawText) {
       applyCanvasFrontmatterPreset({
         graphData,

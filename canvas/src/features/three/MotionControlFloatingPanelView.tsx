@@ -120,7 +120,7 @@ function createXrV2RawClipRecorder(stream: MediaStream): XrV2RawClipRecorder {
 function MotionInvocationChip({ invocation, operation }: { invocation: string; operation: string }) {
   return (
     <code
-      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}
+      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-xs', UI_THEME_TOKENS.text.secondary)}
       data-kg-motion-control-invocation={operation}
       data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"
     >
@@ -379,7 +379,7 @@ export function MotionControlFloatingPanelView() {
         actions={<>
           {xrV2DemoActive ? (
             <output
-              className="px-1 text-[9px] font-semibold"
+              className="px-1 text-xs font-semibold"
               aria-live="polite"
               data-kg-xr-v2-header-capability-tier={xrCapabilityTier || 'detecting'}
             >
@@ -404,13 +404,13 @@ export function MotionControlFloatingPanelView() {
             {!state.cameraActive ? <div className={cn('absolute inset-0 grid place-items-center text-center text-xs', UI_THEME_TOKENS.text.secondary)}>Camera stays off until Start.</div> : null}
           </div>
           <PanelField label="LiteRT accelerator">
-            <PanelSelect value={backend} disabled={startPending || stopPending || runtimeBusy} onChange={event => setBackend(event.currentTarget.value as MotionControlBackendPreference)} data-kg-motion-control-backend="1">
+            <PanelSelect value={backend} disabled={startPending || stopPending || runtimeBusy} onValueChange={selectedValueInput => setBackend(selectedValueInput as MotionControlBackendPreference)} data-kg-motion-control-backend="1">
               <option value="auto">Auto · WebGPU with Wasm fallback</option>
               <option value="webgpu">WebGPU preferred</option>
               <option value="wasm">Wasm CPU</option>
             </PanelSelect>
           </PanelField>
-          <label className={cn('flex items-center gap-2 text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <label className={cn('flex items-center gap-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
             <PanelCheckbox
               checked={state.boundingBoxEnabled}
               disabled={boundingBoxPending}
@@ -419,16 +419,16 @@ export function MotionControlFloatingPanelView() {
             />
             Bounding box · {state.boundingBoxEnabled ? 'Enabled' : 'Disabled (default)'}
           </label>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Shows the live pose ROI and catalog-authored XR object bounds.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Shows the live pose ROI and catalog-authored XR object bounds.</p>
           <div role="status" aria-live="polite" aria-atomic="true" data-kg-motion-control-live-status="1">
-            <p className={cn('text-[10px]', state.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{state.message}</p>
-            {state.fallbackReason ? <p className={cn('text-[10px]', UI_THEME_TOKENS.status.warning)}>{state.fallbackReason}</p> : null}
+            <p className={cn('text-xs', state.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{state.message}</p>
+            {state.fallbackReason ? <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)}>{state.fallbackReason}</p> : null}
           </div>
         </section>
 
         <section className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Device sensor controls" data-kg-motion-control-device-sensor-controls="explicit">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-1 text-[10px] font-semibold"><Cpu className="h-3.5 w-3.5" aria-hidden="true" /> Device motion + orientation</p>
+            <p className="flex items-center gap-1 text-xs font-semibold"><Cpu className="h-3.5 w-3.5" aria-hidden="true" /> Device motion + orientation</p>
             <div className="flex flex-wrap gap-1">
               <button
                 type="button"
@@ -451,18 +451,18 @@ export function MotionControlFloatingPanelView() {
             </div>
           </div>
           <div role="status" aria-live="polite" aria-atomic="true" data-kg-motion-control-device-sensor-status="1">
-            <p className={cn('text-[10px]', sensorState.phase === 'denied' || sensorState.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{sensorState.message}</p>
+            <p className={cn('text-xs', sensorState.phase === 'denied' || sensorState.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{sensorState.message}</p>
           </div>
-          <div className={cn('grid grid-cols-2 gap-2 text-[10px]', UI_THEME_TOKENS.text.secondary)} aria-label="Device sensor telemetry">
+          <div className={cn('grid grid-cols-2 gap-2 text-xs', UI_THEME_TOKENS.text.secondary)} aria-label="Device sensor telemetry">
             <span><b>Status</b><br />{sensorState.phase}</span>
             <span><b>Permission</b><br />{sensorState.permission}</span>
             <span><b>Samples</b><br />{sensorState.sampleCount}</span>
             <span><b>Orientation</b><br />{sensorState.orientation ? `${sensorState.orientation.alpha?.toFixed(1) ?? '—'}° / ${sensorState.orientation.beta?.toFixed(1) ?? '—'}° / ${sensorState.orientation.gamma?.toFixed(1) ?? '—'}°` : '—'}</span>
           </div>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Sensors are independent from the camera. Samples remain in memory and are neither uploaded nor persisted.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Sensors are independent from the camera. Samples remain in memory and are neither uploaded nor persisted.</p>
         </section>
 
-        <section className={cn('grid grid-cols-2 gap-2 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Motion Control telemetry">
+        <section className={cn('grid grid-cols-2 gap-2 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Motion Control telemetry">
           <span><b>Status</b><br />{state.phase}</span>
           <span><b>Permission</b><br />{state.permission}</span>
           <span><b>Backend</b><br />{state.effectiveBackend}</span>
@@ -477,7 +477,7 @@ export function MotionControlFloatingPanelView() {
         {xrActionsReady ? (
           <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
         ) : (
-          <p className={cn('m-0 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-actions-gated="detecting">
+          <p className={cn('m-0 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-actions-gated="detecting">
             XR viewer actions unlock after exactly one capability tier is reported.
           </p>
         )}
@@ -485,9 +485,9 @@ export function MotionControlFloatingPanelView() {
         <FlightSimTrainingSurfaceProjection surface="motion-control" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-invocations="shared-catalog">
-          <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>
+          <h3 className="text-xs font-semibold">MCP · / · @ · #</h3>
           {!sourceMetadataReady ? (
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               {sourceMetadataDeferred
                 ? 'ACOS Motion Control invocation metadata is deferred for offline XR. Native Motion Control remains ready.'
                 : sourceMetadataLoading
@@ -506,10 +506,10 @@ export function MotionControlFloatingPanelView() {
           <MotionInvocationChip invocation={buildMotionControlExportInvocation('csv')} operation="export-csv" />
           <MotionInvocationChip invocation={buildMotionControlShareInvocation(true)} operation="share-enable" />
           <MotionInvocationChip invocation={buildMotionControlShareInvocation(false)} operation="share-disable" />
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP: {`agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`}</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP: {`agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`}</p>
         </section>
 
-        <section className={cn('grid gap-1 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+        <section className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
           <p className="flex items-center gap-1 font-semibold"><Cpu className="h-3.5 w-3.5" aria-hidden="true" /> Official LiteRT.js + Google BlazePose GHUM Full</p>
           <p>Center one person’s full body. Pose drives the selected 3D XR subject, object, or prop and the native XR physics controller.</p>
           <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Frames are neither uploaded nor persisted.</p>

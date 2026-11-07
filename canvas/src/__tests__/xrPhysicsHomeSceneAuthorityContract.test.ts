@@ -105,6 +105,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   const xrSceneStageSource = readSource('features', 'three', 'XrSceneStage.tsx')
   const sceneSource = readSource('lib', 'three', 'Scene.impl.tsx')
   const threeGraphSource = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
+  const documentStageAuthoritySource = readSource('features', 'three', 'xrSceneDocumentReadiness.ts')
   const threeGraphImmersiveMediaSource = readSource('lib', 'three', 'ThreeGraphImmersiveMedia.tsx')
   const gameMissionSource = readSource('features', 'game-fps', 'GameFpsMissionStage.tsx')
   const staleCompositionPath = resolve(
@@ -225,9 +226,18 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   requireSourceMarker(sceneSource, '<XrSceneStage authority={xrGraphStageAuthority}', 'Scene must delegate to the explicit XR selector')
   requireSourceMarker(
     threeGraphSource,
-    "xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'",
-    'ThreeGraph source identity must decide the XR stage before construction',
+    'const documentStageAuthority = resolveXrDocumentStageAuthority({',
+    'ThreeGraph must delegate source identity to the shared admission owner',
   )
+  requireSourceMarker(threeGraphSource,
+    "const xrGraphStageAuthority = mode === 'xr' && hasGraph ? documentStageAuthority : undefined",
+    'ThreeGraph must pass only admitted XR authority to construction')
+  for (const marker of [
+    'isXrPhysicsRuntimeRunReadyDemoActive',
+    "if (graphHasXrAuthoringSource(input.graphData)) return 'native-controller'",
+    'resolveXrMotionReferencePersistedValue',
+    "return persisted && typeof persisted === 'object' && !Array.isArray(persisted) ? 'motion-reference' : undefined",
+  ]) requireSourceMarker(documentStageAuthoritySource, marker, 'shared XR source admission')
   if (existsSync(staleMixedStagePath)) {
     throw new Error('expected the mixed XR stage owner to be deleted rather than hidden or retained')
   }
@@ -240,7 +250,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     "'empty-world'",
   ]) {
     requireSourceMarker(
-      `${threeGraphSource}\n${threeGraphImmersiveMediaSource}`,
+      `${threeGraphSource}\n${threeGraphImmersiveMediaSource}\n${documentStageAuthoritySource}`,
       marker,
       'XR scene owner must be explicit at first mount',
     )

@@ -369,17 +369,21 @@ export function writeSettingsFlowArtifacts(
   artifacts: SettingsFlowArtifact[],
   repoRoot?: string,
 ): void {
-  const stagedPaths = artifacts.map((artifact, index) => (
+  // Concurrent dev checks share these files. Replacing identical bytes triggers
+  // Vite reloads and destroys otherwise valid browser verification contexts.
+  const changed = artifacts.filter(artifact => !existsSync(artifact.absolutePath)
+    || readFileSync(artifact.absolutePath, 'utf8') !== artifact.content)
+  const stagedPaths = changed.map((artifact, index) => (
     `${artifact.absolutePath}.tmp-${process.pid}-${index}`
   ))
   try {
-    artifacts.forEach((artifact, index) => {
+    changed.forEach((artifact, index) => {
       const directory = path.dirname(artifact.absolutePath)
       mkdirSync(directory, { recursive: true })
       if (!statSync(directory).isDirectory()) throw new Error(`Missing artifact directory: ${directory}`)
       writeFileSync(stagedPaths[index] ?? '', artifact.content, 'utf8')
     })
-    artifacts.forEach((artifact, index) => {
+    changed.forEach((artifact, index) => {
       renameSync(stagedPaths[index] ?? '', artifact.absolutePath)
     })
     if (repoRoot) {

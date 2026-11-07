@@ -47,7 +47,7 @@ city_runtime:
   world_ownership: "overlay-only"
   renderer_rule: "reuse one native MapLibre map; create or activate zero City Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent"
   gameplay_surface_rule: "use the shared exclusive-overlay lifecycle"
-  lifecycle: ["open", "start", "stop", "restart", "zone", "advise", "save", "reset", "exit"]
+  lifecycle: ["open", "start", "stop", "travel", "restart", "zone", "advise", "save", "reset", "exit"]
   zone_types: ["unzoned", "residential", "commercial", "industrial"]
   source_authored_only: true
   runtime_dependencies_added: 0
@@ -61,8 +61,8 @@ city_regional_poi_zoning:
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre POI clicks and City Builder POI controls"
   parcel_identity_policy: "each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap"
   ordering_policy: "row and column are deterministic UI ordering only and never geometry"
-  composition: "one real native MapLibre basemap with companion-owned regional geographic POI surfaces carrying read-only City zoning state; existing Flight aircraft and route layers remain independently owned; zero City-authored geometry, Flight data, Three presentation, or HTML POI markers"
-  layer_order: ["regional-context", "city", "flight"]
+  composition: "one real native MapLibre basemap with companion-owned regional geographic POI surfaces carrying City zoning state; fixed-pixel local player and goal markers; existing Flight aircraft and route layers remain independently owned; zero City-authored geographic geometry or Three presentation"
+  layer_order: ["regional-context", "city-zones", "city-gameplay", "flight"]
   native_xr_physics_stage_active: false
   authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
@@ -73,8 +73,22 @@ city_poi_zoning_projection:
   layers: ["fill", "extrusion", "outline", "selected-poi"]
   state_owner: "one live City Runtime snapshot"
   framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
-  camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding"
+  camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture; after a travel action, pan to the player-goal midpoint without changing zoom; restore prior padding on exit"
   duplicate_source_or_layer_ids_forbidden: true
+city_gameplay_overlay:
+  owner: "gympgrph/src/cityGeoGameplayMapLibre.ts"
+  source_id: "kg-city-gameplay:activity"
+  layers: ["kg-city-gameplay:activity:route-halo", "kg-city-gameplay:activity:route", "kg-city-gameplay:activity:player", "kg-city-gameplay:activity:goal"]
+  state_owner: "transient activity state on the one City Runtime snapshot"
+  location_identity: "player and goal each reference a distinct canonical POI in the active regional profile"
+  actions: ["travel directly to the marked goal", "select a regional POI for an optional detour", "complete matching goal", "rotate to next goal"]
+  input_policy: "the marked goal is reachable in one semantic City Builder action; optional detours use the selected regional POI; preserve native MapLibre pan, zoom, and keyboard focus"
+  controls_discovery: "collapsed accessible disclosure explains map or Regional POI destination selection, the direct goal action, optional detours, native map pan/zoom, and Tab plus Enter/Space operation"
+  progression: "session-local completed-goal count; no change to City economy or WorkspaceFs save"
+  rendering: "a fixed-pixel player sprite, destination marker, and high-contrast dashed route on the existing MapLibre Geo+XR canvas; use City Builder for names to keep dense map labels clear"
+  network_policy: "not synchronized by the cooperative zoning protocol; guests cannot move the host player"
+  three_or_html_markers_forbidden: true
+  duplicate_map_camera_or_canvas_forbidden: true
 regional_geographic_poi_projection:
   profile_identity_source: "city_initial.regional_poi_profile_id"
   profile_fact_authority: "/docs/documents/agentic-graph-adm0-singapore-prd-tad-adr-mvp-gtm.companion.md"
@@ -100,16 +114,16 @@ city_semantic_media:
   pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder POI controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_camera:
-  framing: "selected regional geographic POI bounds in the visible MapLibre aperture"
+  framing: "selected regional geographic POI bounds in the MapLibre aperture after visible workspace and FloatingPanel occlusion"
   projection: "MapLibre"
   canvas_mode: "geo-xr"
   owner: "native MapLibre Geo host"
-  resize_rule: "observe the map and occluding workspace panels, refit without cumulative padding, restore prior padding on handoff"
+  resize_rule: "observe map size plus editor and FloatingPanel occlusion/visibility changes; debounce aperture refit without cumulative padding or requiring Start; after player or goal changes, pan to their route midpoint without changing zoom; restore prior padding on handoff"
 city_initial:
   city_name: "Civic Seed"
   regional_poi_profile_id: "adm0:SGP:major-pois/v1"
-  rows: 2
-  columns: 3
+  rows: 3
+  columns: 4
   tick: 0
   treasury_cents: 100000
   tax_rate_basis_points: 1000
@@ -125,13 +139,14 @@ economy_v1:
   commit: "validate a complete safe-integer candidate, then atomically publish all or none"
 floating_panel:
   primary_view: "cityBuilder"
-  primary_controls: ["Open", "Start", "Stop", "Restart", "Zone", "Advise", "Save", "Reset", "Exit"]
+  primary_controls: ["Open", "Start", "Stop", "Select POI", "Travel to next goal", "Visit selected POI", "Restart", "Zone", "Advise", "Save", "Reset", "Exit"]
   shared_snapshot: "all projections subscribe to one immutable City Runtime revision"
   projections:
     media: "palette and regional POI zoning appearance; handoff to City Builder"
     animation: "fixed-step playback and Start or Stop delegation"
     motionControl: "normalized input and selected regional POI"
     gameMode: "exclusive city-overlay state and enter or exit handoff"
+    cityGameplay: "player location, next regional POI goal, and session-local completed-goal count"
     flightSim: "independently owned existing Flight overlay status; no City-authored aircraft or route"
     camera: "native MapLibre framing"
 advisor:
@@ -169,8 +184,8 @@ mcp:
 proof_contract:
   start: "neutral browser with the native MapLibre basemap, no persisted city state, no Flight-local XR environment source/layers, no kg-city-sim:geo-overlay source/layers, and no kg-geo-xr:regional-poi source/layers"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "one real native MapLibre basemap wrapped by SemanticMediaFigure", "live MapLibre canvas has the direct City accessible name and sole selection marker", "all exact companion-selected regional geographic POI surfaces plus one visible fixed-pixel identity locator and label per POI", "six City parcels keyed one-to-one by canonical RegionalPoiIdentity ids", "visible City zone and selection layers on companion-owned POI geometry", "no City-authored geographic or Flight fields", "regional-context then City then independently owned Flight layer order", "regional POI MapLibre framing and gestures", "zero City-created, active, or visible Three stage, mesh, camera, or pointer owner; retained shared canvas is inactive and pointer-transparent", "zero HTML POI marker, generic selectable wrapper, or aria-hidden decoration", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
-  actions: ["Select POI", "Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit clears City-selected regional presentation and restores prior regional/FloatingPanel/Canvas state exactly once"]
+  assertions: ["Geo+XR Mode", "one real native MapLibre basemap wrapped by SemanticMediaFigure", "live MapLibre canvas has the direct City accessible name and sole selection marker", "all exact companion-selected regional geographic POI surfaces plus one visible fixed-pixel identity locator and label per POI", "twelve City parcels keyed one-to-one by canonical RegionalPoiIdentity ids", "visible City zone and selection layers on companion-owned POI geometry", "procedural detail kits use the shared bounded local asset builder and leave profile rings unchanged", "no City-authored geographic or Flight fields", "regional-context then City then independently owned Flight layer order", "regional POI MapLibre framing and gestures", "zero City-created, active, or visible Three stage, mesh, camera, or pointer owner; retained shared canvas is inactive and pointer-transparent", "zero HTML POI marker, generic selectable wrapper, or aria-hidden decoration", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
+  actions: ["Select POI", "travel player to selected POI", "complete and rotate one goal", "Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "shared panels across two documents", "host and guest proposal round-trip", "Exit clears City and gameplay presentation and restores prior regional/FloatingPanel/Canvas state exactly once"]
   exact_sha_required: true
   repeatability: "repeat from neutral state and compare initial serialized bytes and regional feature/provenance digest"
 release_boundary:
@@ -222,11 +237,19 @@ pointer owner. Any retained shared Canvas remains invisible, inactive, and
 pointer-transparent. MapLibre POI clicks and City Builder controls dispatch
 to the same City Runtime selection owner.
 
+The toolbar already exposes `Surface Mode → Geo+XR`. Selecting it opens the
+existing composed surface; applying this source requests that same mode and
+opens City Builder. Cooperative Planning binds to the existing peer session:
+one connected guest may suggest a zone, while the host decides and owns ticks,
+committed City state, and local saves. City messages carry document identity,
+bounded snapshots, and monotonic sequence numbers; the existing document sync
+remains the source owner. A disconnected guest remains read-only.
+
 The source parser initializes one POI-zoning state from this document. Its
 `regional_poi_profile_id` resolves one immutable geographic profile whose
 identities, exact rings, real-metre heights, accuracy, and provenance remain
 solely in the selected companion. Every City `parcel_id` must equal exactly one
-`RegionalPoiIdentity.id`, and the six rows must cover that selected profile
+`RegionalPoiIdentity.id`, and the twelve rows must cover that selected profile
 one-to-one in profile order. Row and column fields are deterministic UI order
 only; they never generate, position, scale, rotate, or otherwise modify
 geometry. `kg-city-sim:geo-overlay` projects only live zone and selection state
@@ -269,9 +292,15 @@ parcel_id,row,column,zone,land_value_cents,population,pollution
 marina-bay-sands,0,0,residential,10000,10,0
 singapore-flyer,0,1,commercial,9000,5,0
 gardens-by-the-bay,0,2,unzoned,5000,0,0
-esplanade-theatres-on-the-bay,1,0,industrial,7000,0,2
-the-fullerton-hotel,1,1,unzoned,5000,0,0
-raffles-hotel,1,2,unzoned,5000,0,0
+esplanade-theatres-on-the-bay,0,3,industrial,7000,0,2
+the-fullerton-hotel,1,0,unzoned,5000,0,0
+raffles-hotel,1,1,unzoned,5000,0,0
+national-gallery-singapore,1,2,commercial,8000,0,0
+marina-barrage,1,3,industrial,7500,0,0
+merlion-park,2,0,unzoned,5000,0,0
+suntec-singapore-convention-exhibition-centre,2,1,commercial,8000,0,0
+marina-bay-cruise-centre,2,2,unzoned,5000,0,0
+the-shoppes-at-marina-bay-sands,2,3,commercial,8500,0,0
 ```
 
 ## Local use
@@ -282,11 +311,14 @@ raffles-hotel,1,2,unzoned,5000,0,0
 3. Confirm City Builder is closed, the City media figure is presentational and
    inactive, and Flight gameplay is inactive.
 4. Open Explorer -> Source Files and wait for bootstrap readiness.
-5. Open this document and apply it.
+5. Choose Toolbar → Surface Mode → Geo+XR, then open this document and apply
+   it. Source activation requests the same mode and opens City Builder on the
+   existing surface.
 6. Confirm Geo+XR Mode shows every companion-selected regional geographic POI
    surface at its exact rings and real-metre height plus one visible fixed-pixel
-   identity locator and label per POI, with the six source-authored zoning
-   states projected onto those exact surfaces. Confirm no City-authored
+   identity locator and label per POI, with the twelve source-authored zoning
+   states projected onto those exact surfaces. Confirm the shared local
+   procedural detail kits leave exact source rings unchanged. Confirm no City-authored
    geographic or Flight data exists and the camera frames the regional
    features. Then confirm City Builder opens with tick `0`,
    treasury `100000` cents, and population `15`.
@@ -302,6 +334,18 @@ then Stop.
 The next tick uses the exact v1 coefficients in frontmatter. Stop must fence
 queued ticks. Advice returns at most two local heuristic rounds and never
 changes a parcel by itself.
+
+The neighborhood activity marker starts at the first regional POI, with the
+second POI as its goal. Choose **Go to _goal_** for a marked trip without
+selecting a map POI first. Select a different regional POI to reveal an
+optional **Visit _POI_** detour. Reaching the goal increments the session-local
+count and advances to the next canonical POI. The player, goal, and connecting
+route are fixed-pixel MapLibre overlays on the same Geo+XR canvas. This activity
+does not write zoning, economy, or save data. After a marked trip or detour, the
+MapLibre camera pans to the player-goal midpoint without changing zoom.
+The collapsed **How to travel** disclosure explains POI selection, direct goal
+travel, optional detours, native map navigation, and keyboard activation. It
+documents the existing controls; no extra movement-key bindings are implied.
 
 Save writes only `/game-city-sim/city-poi-zoning.md`, reads that path back, compares
 bytes and parsed state, and reports success only after both comparisons pass.
@@ -320,9 +364,47 @@ All projections must report the same runtime revision:
   City-authored aircraft or route;
 - Camera: native MapLibre framing.
 
-City Builder remains the complete editing surface. Exit restores the prior
+City Builder remains the complete editing surface. Neighborhood activity
+draws its player and goal on that same map and keeps its movement host-local;
+it adds no second world, camera, renderer, or collaboration message. Exit restores the prior
 FloatingPanel/Canvas surface state exactly once and neither captures nor
 restores a Three camera.
+
+## Proposed cooperative city overlay
+
+The product plan is
+[`prd-tad-adr-mvp-gtm-geo-xr-cooperative-city-overlay.md`](../documents/prd-tad-adr-mvp-gtm-geo-xr-cooperative-city-overlay.md).
+This section is a proposal only; it does not change this seed's activation
+schema or claim multiplayer readiness.
+
+The intended entry is City Builder → Cooperative Planning after the source has selected
+Toolbar → Surface Mode → Geo+XR. One host keeps the existing City Runtime and
+decides every mutation. One invited guest can inspect the same snapshot and
+submit one zoning proposal; only an explicit host decision calls the existing
+City operation. Both clients then receive the same ordered snapshot. The
+existing P2P setup exchanges a host invite and a guest answer token. The
+invite is a bearer capability; transport source IDs identify a connection
+only. Neither is account authentication. The host's explicit local save
+remains the only durable City save.
+
+The collaborative zoning controls remain in City Builder's panel: participant
+and connection status, proposal review, and accepted/rejected result. The local
+activity adds one abstract player marker and one goal marker to the existing
+MapLibre map. It adds no 3D avatar, second map, camera, renderer, chat, or
+persistent shared town. Movement is host-local and is not part of the peer
+protocol; guests cannot mutate it.
+The base City loop must still work offline when no collaboration session is
+available. Existing peer collaboration already supplies host/guest invite
+setup and a generic validated extension channel. It does not define a City
+message namespace, operation authority, proposal ordering, or City snapshots.
+The separate authenticated document-sync room is not a City state authority
+and is outside this proposal. The `agentic-graph.city-coop/v1` message contract and overlay
+remain implementation work before co-op can be activated; transport failure
+must leave solo City usable. The local proof applies only when authenticated
+storage-room configuration is absent: the collaboration bridge selects that
+room when configured and retires P2P invite-answer commands. Do not bypass the
+configured runtime or silently fall back. See the linked plan's VCC table and
+release boundary.
 
 ## Validation status
 
@@ -333,10 +415,19 @@ restores a Three camera.
   Flight-local XR environment source/layers, no
   `kg-city-sim:geo-overlay` source/layers, and no `kg-geo-xr:regional-poi`
   source/layers.
-- [ ] Source application alone selects Geo+XR, retains one native MapLibre host
-  wrapped by `SemanticMediaFigure`, and loads the authored POI zoning in City
-  Builder.
-- [ ] Six live POI zoning features render through the City source/layers;
+- [x] Local browser E2E confirms the canonical source selects Geo+XR, retains
+  one native MapLibre host wrapped by `SemanticMediaFigure`, and loads the
+  authored POI zoning in City Builder; a renamed content fixture also activates
+  without run-ready identity.
+- [x] Live browser check confirms the player, goal, and route share the Geo+XR
+  map. With no POI selected, one **Go to _goal_** action moves the player,
+  increments the activity count, advances the goal, and updates the route while
+  the City tick remains unchanged; a selected-POI detour moves the player
+  without completing the goal. Route changes pan to their midpoint without
+  changing zoom. The collapsed **How to travel** disclosure opens with
+  destination selection, goal travel, detours, map navigation, and keyboard
+  activation instructions.
+- [ ] Twelve live POI zoning features render through the City source/layers;
   MapLibre clicks and City Builder controls share POI selection; one zone
   and selection mutation is visible; and zero City-created, active, or visible
   Three.js/R3F stage/mesh/camera mounts. Any retained shared canvas is inactive
@@ -373,3 +464,7 @@ restores a Three camera.
 No box may be checked from source inspection alone. Protected integration,
 production publication, and cloud release remain separate gates, and this
 increment grants none of those release actions.
+
+The cooperative overlay has separate pending VCCs in its joined planning
+record. This seed's local proof must not be used as evidence for its two-client
+session, shared revision, or host/guest authorization claims.

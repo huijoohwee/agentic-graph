@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRendererPanelState } from '@/features/panels/hooks/useRendererPanelState'
@@ -14,6 +15,7 @@ import { FlowchartRendererSettings } from '@/features/toolbar/ui/FlowchartRender
 import { RadarGalaxyRendererSettings } from '@/features/toolbar/ui/RadarGalaxyRendererSettings'
 import { EdgeTypesRendererSettings } from '@/features/toolbar/ui/EdgeTypesRendererSettings'
 import { RendererGraphTopologySummary } from '@/features/toolbar/ui/RendererGraphTopologySummary'
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGlobalEdgeType, type GlobalEdgeType, withGlobalEdgeType } from '@/lib/graph/edgeTypes'
 import { readLayoutMode2d, type LayoutMode2d } from '@/lib/graph/layoutMode'
@@ -185,11 +187,15 @@ export function ToolbarToolMenuRendererView(props: {
   return (
     <section className="flex flex-col gap-2">
       <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} />
-      <React.Suspense fallback={null}>
-        <WorkspaceTableModeControlLazy />
-      </React.Suspense>
+      <section className={uiToolbarSettingsPanelBodyClassName}>
+        <React.Suspense fallback={null}>
+          <WorkspaceTableModeControlLazy />
+        </React.Suspense>
+      </section>
       <RendererPaletteSettings />
-      <RendererHoverSettings />
+      <section className={uiToolbarSettingsPanelBodyClassName}>
+        <RendererHoverSettings />
+      </section>
       <RenderSettingsSection
         inspection={!!inspectionGraph}
         layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
@@ -226,17 +232,17 @@ export function ToolbarToolMenuRendererView(props: {
         </section>
         <label className="flex items-center gap-2 text-xs">
           <span className="min-w-0">Panel mode</span>
-          <select
+          <PanelSelect
             className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
             value={richMediaPanelMode}
-            onChange={e => {
-              const v = String(e.target.value || '')
+            onValueChange={selectedValueInput => {
+              const v = String(selectedValueInput || '')
               setRichMediaPanelMode(v === 'embed' ? 'embed' : 'snapshot')
             }}
           >
             <option value="snapshot">Snapshot preview</option>
             <option value="embed">Interactive embed</option>
-          </select>
+          </PanelSelect>
         </label>
       </section>
       {showDesignWireframeUi ? <DesignWireframeSettings /> : null}

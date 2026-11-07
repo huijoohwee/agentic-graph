@@ -219,7 +219,11 @@ export async function testVersionedRichMediaWorkspaceViewerReusesInlineSelection
         }),
       ),
     )
-    await tick(10)
+    // The workspace viewer is lazy-loaded; fixed event-loop ticks race its import.
+    const readyDeadline = Date.now() + 5_000
+    while (!doc.querySelector('[data-kg-rich-media-inline-edit="1"] h1[data-start-line="9"]') && Date.now() < readyDeadline) {
+      await new Promise<void>(resolve => setTimeout(resolve, 20))
+    }
 
     const richMediaEditSurface = doc.querySelector('[data-kg-rich-media-inline-edit="1"]')
     if (!richMediaEditSurface) {

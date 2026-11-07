@@ -13,6 +13,7 @@ import {
 } from '@/features/workspace-fs/path'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { getWorkspaceSeedFiles } from '@/features/workspace-fs/workspaceFs'
+import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
 import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
 import {
   hydrateWorkspaceFileFromPendingLocalImport,
@@ -173,7 +174,7 @@ export function useMarkdownWorkspaceIndexing(args: MarkdownWorkspaceIndexingArgs
             if (args.repairedMissingWorkspaceFilesRef.current.has(normalizedPath)) return loaded
             args.repairedMissingWorkspaceFilesRef.current.add(normalizedPath)
 
-            const seeds = await getWorkspaceSeedFiles()
+            const seeds = await getWorkspaceSeedFiles({ includeSupplyChainOverview: normalizedPath === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH })
             const seed = seeds.find(candidate => normalizeWorkspacePath(candidate.path) === normalizedPath)
             if (!seed) return loaded
 

@@ -1,5 +1,5 @@
 import { tokenizeForStats } from '@/lib/graph/statsUtils'
-import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 import type { TextEntity, TextTriple } from './types'
 import { listEntitiesInSentence } from './entities'
 import { escapeRe, inferEntityLabel, isVerbLike, normalizeEntityKey, normalizeNounPhrase, normalizeWhitespace, splitCommaAndAndList, splitSentencesWithOffsets } from './utils'
@@ -103,7 +103,7 @@ export const extractCooccurrencePairs = (text: string, entities: TextEntity[]): 
         const between = left < right ? sentence.slice(left, right) : ''
 
         const tokens = between.match(/[A-Za-z]+(?:[-'][A-Za-z]+)*/g) || []
-        const cleaned = tokens.map(t => t.toLowerCase()).filter(t => !NLTK_STOPWORDS_EN_SET.has(t))
+        const cleaned = tokens.map(t => t.toLowerCase()).filter(t => !KEYWORD_FUNCTION_WORDS.has(t))
 
         const verb = cleaned.find(t => isVerbLike(t)) || (cleaned.length > 0 ? cleaned[0] : 'relates_to')
 

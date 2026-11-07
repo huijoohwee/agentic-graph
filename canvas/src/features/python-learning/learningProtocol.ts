@@ -41,20 +41,26 @@ export function validLearningSnapshot(value: unknown): value is LearningWorkerSn
     || !smallText(value.output, PYTHON_LIMITS.outputBytes) || !finite(value.computeMs) || value.computeMs < 0
     || !record(value.scene) || !record(value.metrics) || !record(value.variables) || !record(value.grade)) return false
   const scene = value.scene
+  const lesson = learningLesson(value.identity.lessonId), drone = lesson.vehicle === 'drone'
   if (!['x', 'z', 'heading', 'distance'].every(key => finite(scene[key])) || Math.abs(scene.x) > 8 || Math.abs(scene.z) > 8
     || scene.heading < 0 || scene.heading >= 360 || scene.distance < 0 || typeof scene.atGoal !== 'boolean'
     || !count(scene.ticks, PYTHON_LIMITS.ticks) || !count(scene.collisions, PYTHON_LIMITS.ticks)) return false
+  if (drone && (!finite(scene.altitude) || scene.altitude < 0 || scene.altitude > 4
+    || !finite(scene.maxAltitude) || scene.maxAltitude < scene.altitude || scene.maxAltitude > 4
+    || !count(scene.hoverTicks, scene.ticks) || scene.landed !== (scene.altitude === 0)
+    || scene.atGoal !== (scene.altitude === 0 && Math.hypot(scene.x - lesson.goal[0], scene.z - lesson.goal[1]) <= 0.25))) return false
   if (!['statements', 'assignments', 'loops', 'branches', 'functions', 'sensors'].every(key => count(value.metrics[key], PYTHON_LIMITS.steps))
     || Object.keys(value.variables).length > PYTHON_LIMITS.variables || !Object.entries(value.variables).every(([key, text]) => /^[a-zA-Z_]\w*$/.test(key) && smallText(text, PYTHON_LIMITS.stringLength * 4 + 4))) return false
   if (value.error !== null && !validLearningError(value.error)) return false
   if (value.state === 'failed' && value.error === null) return false
-  const expected = gradeLearningLesson(learningLesson(value.identity.lessonId), scene as LearningSceneSnapshot, value.metrics as ExecutionMetrics, value.state === 'completed')
+  const expected = gradeLearningLesson(lesson, scene as LearningSceneSnapshot, value.metrics as ExecutionMetrics, value.state === 'completed')
   if (value.grade.passed !== expected.passed || value.grade.score !== expected.score || !Array.isArray(value.grade.criteria)
     || value.grade.criteria.length !== expected.criteria.length || !expected.criteria.every((criterion, index) => {
       const actual = value.grade.criteria[index]
       return record(actual) && actual.id === criterion.id && actual.label === criterion.label && actual.passed === criterion.passed
     })) return false
   if (value.trace !== undefined && (!Array.isArray(value.trace) || value.trace.length > PYTHON_LIMITS.ticks
-    || !value.trace.every(row => Array.isArray(row) && row.length === 4 && row.every(finite)) || sourceBytes(JSON.stringify(value.trace)) > PYTHON_LIMITS.traceBytes)) return false
+    || !value.trace.every(row => Array.isArray(row) && row.length === (drone ? 5 : 4) && row.every(finite)
+      && (!drone || (row[4] >= 0 && row[4] <= 4))) || sourceBytes(JSON.stringify(value.trace)) > PYTHON_LIMITS.traceBytes)) return false
   return true
 }

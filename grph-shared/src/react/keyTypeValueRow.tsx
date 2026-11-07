@@ -1,23 +1,25 @@
 import type { ReactNode } from 'react'
 import {
-  KTV_KEY_ICON_SLIDER_INPUT_GRID_CLASS_NAME,
-  KTV_KEY_ICON_VALUE_GRID_CLASS_NAME,
-  KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME,
-  KTV_KEY_VALUE_GRID_CLASS_NAME,
+  KTV_FIELD_GRID_CLASS_NAME,
+  KTV_FIELD_CONTROL_GROUP_CLASS_NAME,
+  panelFieldDecorationClassName,
   KTV_ROW_LABEL_CELL_CLASS_NAME,
   KTV_ROW_VALUE_CELL_CLASS_NAME,
-  KTV_VALUE_CELL_ROW_SCROLL_CLASS_NAME,
   KTV_VALUE_ROW_SCROLL_CLASS_NAME,
 } from '../ui/keyTypeValueRows.js'
 import { UI_THEME_TOKENS } from '../ui/themeTokens.js'
 
+// Older call signatures are adapters only; every variant renders one grid.
 export type KeyTypeValueStaticRowLayout =
   | 'keyTypeValue'
   | 'keyValue'
   | 'keyIconValue'
   | 'keyIconSliderInput'
 
+export type KeyTypeValueCells = { keyNode: ReactNode; typeNode?: ReactNode; valueNode: ReactNode }
+
 export interface KeyTypeValueStaticRowProps {
+  presentCells?: (cells: KeyTypeValueCells) => KeyTypeValueCells
   keyNode: ReactNode
   typeNode?: ReactNode
   valueNode: ReactNode
@@ -39,6 +41,7 @@ export interface RightAlignedValueCellProps {
 }
 
 export interface SimpleKeyValueRowProps {
+  presentCells?: KeyTypeValueStaticRowProps['presentCells']
   label: ReactNode
   children: ReactNode
   align?: 'center' | 'start'
@@ -50,8 +53,11 @@ export interface SimpleKeyValueRowProps {
   onClick?: () => void
 }
 
+export function KeyTypeValueContainer({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <section className={`agentic-ktv-container ${className}`.trim()}>{children}</section>
+}
+
 function buildRootClassName({
-  gridClassName,
   align,
   textSizeClassName,
   fontClassName,
@@ -60,7 +66,6 @@ function buildRootClassName({
   onClick,
   className,
 }: {
-  gridClassName: string
   align: 'center' | 'start'
   textSizeClassName: string
   fontClassName: string
@@ -72,15 +77,15 @@ function buildRootClassName({
   const alignClassName = align === 'start' ? 'items-start' : 'items-center'
   const cursorClassName = onClick ? 'cursor-pointer' : ''
   return [
-    `grid w-full ${gridClassName}`,
-    'gap-x-2 gap-y-0 rounded',
+    KTV_FIELD_GRID_CLASS_NAME,
+    'rounded',
     activeClassName || '',
     textSizeClassName,
     fontClassName,
     densityClassName,
     alignClassName,
     cursorClassName,
-    className || '',
+    panelFieldDecorationClassName(className),
   ]
     .filter(Boolean)
     .join(' ')
@@ -100,95 +105,16 @@ export function KeyTypeValueStaticRow({
   className,
   id,
   dataKgAnchor,
+  presentCells,
 }: KeyTypeValueStaticRowProps) {
-  if (layout === 'keyIconSliderInput') {
-    return (
-      <dl
-        className={buildRootClassName({
-          gridClassName: KTV_KEY_ICON_SLIDER_INPUT_GRID_CLASS_NAME,
-          align,
-          textSizeClassName,
-          fontClassName,
-          densityClassName,
-          activeClassName,
-          onClick,
-          className,
-        })}
-        onClick={onClick}
-      >
-        <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-          {keyNode}
-        </dt>
-        <dd className={`flex min-w-0 items-center justify-center ${UI_THEME_TOKENS.text.tertiary}`} />
-        <dd className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-2 ${UI_THEME_TOKENS.text.secondary}`}>
-          {typeNode}
-        </dd>
-        <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_CELL_ROW_SCROLL_CLASS_NAME} items-stretch`}>
-          {valueNode}
-        </dd>
-      </dl>
-    )
-  }
-
-  if (layout === 'keyIconValue') {
-    return (
-      <dl
-        className={buildRootClassName({
-          gridClassName: KTV_KEY_ICON_VALUE_GRID_CLASS_NAME,
-          align,
-          textSizeClassName,
-          fontClassName,
-          densityClassName,
-          activeClassName,
-          onClick,
-          className,
-        })}
-        onClick={onClick}
-      >
-        <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-          {keyNode}
-        </dt>
-        <dd className={`flex min-w-0 items-center justify-center ${UI_THEME_TOKENS.text.tertiary}`}>
-          {typeNode}
-        </dd>
-        <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_CELL_ROW_SCROLL_CLASS_NAME} items-center`}>
-          {valueNode}
-        </dd>
-      </dl>
-    )
-  }
-
-  if (layout === 'keyValue') {
-    return (
-      <dl
-        className={buildRootClassName({
-          gridClassName: KTV_KEY_VALUE_GRID_CLASS_NAME,
-          align,
-          textSizeClassName,
-          fontClassName,
-          densityClassName,
-          activeClassName,
-          onClick,
-          className,
-        })}
-        onClick={onClick}
-      >
-        <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-          {keyNode}
-        </dt>
-        <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME} items-center`}>
-          {valueNode}
-        </dd>
-      </dl>
-    )
-  }
-
+  const cells = presentCells ? presentCells({ keyNode, typeNode, valueNode }) : { keyNode, typeNode, valueNode }
   return (
+    <KeyTypeValueContainer className={className?.split(/\s+/).filter(token => /(?:^|:)(?:col|row)-span-/.test(token)).join(' ')}>
     <dl
       id={id}
+      data-panel-field-row="true"
       data-kg-anchor={dataKgAnchor}
       className={buildRootClassName({
-        gridClassName: KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME,
         align,
         textSizeClassName,
         fontClassName,
@@ -200,20 +126,21 @@ export function KeyTypeValueStaticRow({
       onClick={onClick}
     >
       <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-        {keyNode}
+        {cells.keyNode}
       </dt>
       <dd className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center justify-start sm:justify-end ${UI_THEME_TOKENS.text.secondary}`}>
-        {typeNode}
+        {layout === 'keyIconSliderInput' ? null : cells.typeNode}
       </dd>
       <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME} items-center`}>
-        {valueNode}
+        {layout === 'keyIconSliderInput' ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{cells.typeNode}{cells.valueNode}</section> : cells.valueNode}
       </dd>
     </dl>
+    </KeyTypeValueContainer>
   )
 }
 
 export function RightAlignedValueCell({ children, className }: RightAlignedValueCellProps) {
-  const rootClassName = [KTV_VALUE_ROW_SCROLL_CLASS_NAME, className || '']
+  const rootClassName = [KTV_VALUE_ROW_SCROLL_CLASS_NAME, panelFieldDecorationClassName(className)]
     .filter(Boolean)
     .join(' ')
   return <section className={rootClassName}>{children}</section>
@@ -229,9 +156,11 @@ export function SimpleKeyValueRow({
   densityClassName,
   activeClassName,
   onClick,
+  presentCells,
 }: SimpleKeyValueRowProps) {
   return (
     <KeyTypeValueStaticRow
+      presentCells={presentCells}
       keyNode={label}
       valueNode={children}
       align={align}

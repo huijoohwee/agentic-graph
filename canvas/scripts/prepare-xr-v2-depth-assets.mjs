@@ -100,25 +100,55 @@ async function writeAtomically(pathname, bytes) {
   await rename(temporaryPath, pathname)
 }
 
-async function ensurePinnedModelFile(file) {
-  const target = path.resolve(modelRoot, file.path)
-  if (await fileMatches(target, file)) return
+function transientDownloadFailure(error) {
+  if (error?.name === 'TimeoutError' || error?.name === 'AbortError') return true
+  if (error instanceof TypeError && ['fetch failed', 'terminated'].includes(error.message)) return true
+  return ['UND_ERR_BODY_TIMEOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_SOCKET',
+    'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN'].includes(error?.cause?.code ?? error?.code)
+}
 
-  let response
+/** Keep headers and bounded body consumption inside the same pinned download attempt. */
+export async function downloadPinnedXrDepthBytes(file, {
+  fetchImpl = fetch,
+  wait = sleep,
+  report = message => process.stderr.write(`[agentic-graph] ${message}\n`),
+} = {}) {
   let lastFailure
   for (let attempt = 0; attempt < MODEL_DOWNLOAD_ATTEMPTS; attempt += 1) {
+    let response
+    let phase = 'request'
     try {
-      response = await fetch(`${modelSourceRoot}/${file.path}`, {
+      response = await fetchImpl(`${modelSourceRoot}/${file.path}`, {
         redirect: 'follow',
         signal: AbortSignal.timeout(45_000),
       })
+      if (response.ok) {
+        const declaredBytes = Number(response.headers.get('content-length') || 0)
+        if (declaredBytes && declaredBytes !== file.bytes) {
+          throw new Error(
+            `Pinned XR depth asset size mismatch for ${file.path}: expected ${file.bytes}, received ${declaredBytes}.`,
+          )
+        }
+        phase = 'response body'
+        const bytes = await readBoundedResponseBytes(response, {
+          maximumBytes: file.bytes,
+          resourceName: `Pinned XR depth asset ${file.path}`,
+        })
+        if (bytes.byteLength !== file.bytes || sha256(bytes) !== file.sha256) {
+          throw new Error(`Pinned XR depth asset integrity mismatch for ${file.path}.`)
+        }
+        return bytes
+      }
     } catch (error) {
-      lastFailure = error
+      try { await response?.body?.cancel() } catch { /* Preserve the original failure. */ }
+      if (!transientDownloadFailure(error)) throw error
+      lastFailure = new Error(`Pinned XR depth asset ${file.path} ${phase} failed on attempt ${attempt + 1}/${MODEL_DOWNLOAD_ATTEMPTS}: ${error.name}: ${error.message}`, { cause: error })
       if (attempt === MODEL_DOWNLOAD_ATTEMPTS - 1) break
-      await sleep(MODEL_DOWNLOAD_RETRY_DELAYS_MS[attempt])
+      const delayMs = MODEL_DOWNLOAD_RETRY_DELAYS_MS[attempt]
+      report(`${lastFailure.message}; retrying in ${delayMs} ms.`)
+      await wait(delayMs)
       continue
     }
-    if (response.ok) break
     lastFailure = new Error(
       `Pinned XR depth asset download failed for ${file.path} (${response.status}).`,
     )
@@ -130,25 +160,15 @@ async function ensurePinnedModelFile(file) {
     }
     const delayMs = retryAfterMs(response, MODEL_DOWNLOAD_RETRY_DELAYS_MS[attempt])
     await response.body?.cancel()
-    response = undefined
-    await sleep(delayMs)
+    await wait(delayMs)
   }
-  if (!response?.ok) {
-    throw lastFailure || new Error(`Pinned XR depth asset download failed for ${file.path}.`)
-  }
-  const declaredBytes = Number(response.headers.get('content-length') || 0)
-  if (declaredBytes && declaredBytes !== file.bytes) {
-    throw new Error(
-      `Pinned XR depth asset size mismatch for ${file.path}: expected ${file.bytes}, received ${declaredBytes}.`,
-    )
-  }
-  const bytes = await readBoundedResponseBytes(response, {
-    maximumBytes: file.bytes,
-    resourceName: `Pinned XR depth asset ${file.path}`,
-  })
-  if (bytes.byteLength !== file.bytes || sha256(bytes) !== file.sha256) {
-    throw new Error(`Pinned XR depth asset integrity mismatch for ${file.path}.`)
-  }
+  throw lastFailure || new Error(`Pinned XR depth asset download failed for ${file.path}.`)
+}
+
+async function ensurePinnedModelFile(file) {
+  const target = path.resolve(modelRoot, file.path)
+  if (await fileMatches(target, file)) return
+  const bytes = await downloadPinnedXrDepthBytes(file)
   await writeAtomically(target, bytes)
 }
 

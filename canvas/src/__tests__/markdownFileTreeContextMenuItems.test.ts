@@ -49,7 +49,27 @@ export async function testMarkdownFileTreeContextMenuItemsReuseSharedDefinitions
   items[5]?.onSelect()
   items[6]?.onSelect()
   items[7]?.onSelect()
-  items[8]?.onSelect()
+  await items[8]?.onSelect()
+
+  let answer!: (ok: boolean) => void
+  const pendingCalls: string[] = []
+  const pendingItems = buildMarkdownFileTreeContextMenuItems({
+    entry: { path: '/temporary.md', parentPath: '/', kind: 'file', name: 'temporary.md', updatedAtMs: 0 },
+    copyToClipboard: async () => true,
+    onDeleteEntry: path => pendingCalls.push(path), closeContextMenu: () => pendingCalls.push('close'),
+    confirmDelete: () => new Promise<boolean>(resolve => { answer = resolve }),
+  })
+  const remove = pendingItems.find(item => item.label === 'Delete')!
+  const canceled = remove.onSelect()
+  if (pendingCalls.length) throw Error('Deletion must await the visible confirmation')
+  answer(false); await canceled
+  if (pendingCalls.join(',') !== 'close') throw Error('Cancel must retain the source')
+  pendingCalls.length = 0
+  const confirmed = remove.onSelect(); answer(true); await confirmed
+  if (pendingCalls.join(',') !== '/temporary.md,close') throw Error('Confirmed deletion must run once')
+
+  const { testActiveSourceDeletionSettlesWritesAndClearsSelection } = await import('./markdownWorkspaceWebpageHtmlSidecarDeletion.test')
+  await testActiveSourceDeletionSettlesWritesAndClearsSelection()
 
   const callLog = calls.join(',')
   if (!callLog.includes('new-file,close')) {
@@ -88,8 +108,12 @@ export async function testMarkdownFileTreeContextMenuItemsHideMutationsForInitia
   })
 
   const labels = items.map(item => item.label).join(',')
-  if (labels !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear') {
-    throw new Error(`expected initialization-file menu to hide rename and delete, got ${labels}`)
+  if (labels !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') {
+    throw new Error(`expected initialization-file menu to retain the shared action order, got ${labels}`)
+  }
+  for (const item of items.filter(item => item.key === 'rename' || item.key === 'delete')) {
+    if (!item.disabled || item.disabledReason !== 'Protected workspace entry') throw new Error('Protected mutations must remain visible and disabled')
+    await item.onSelect()
   }
 }
 

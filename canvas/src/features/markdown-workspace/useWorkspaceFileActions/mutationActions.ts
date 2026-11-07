@@ -10,10 +10,14 @@ import {
   upsertWebpageFrontmatterMeta,
 } from '@/lib/markdown/frontmatter'
 import { fetchWorkspaceUrlContent } from '../workspaceImport'
+import { looksLikeIncompleteWebpageMarkdown } from '../workspaceImport/webpageMarkdownFidelity'
 import { loadWorkspaceSourceIndex, removeWorkspaceEntrySourcesForPrefix, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
-import type { WorkspaceMutationActionsCtx } from './types'
+import type { WorkspaceMutationActionsCtx, WorkspaceRefreshOptions } from './types'
 import { syncWorkspaceTextState, writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
+import { cancelMarkdownWorkspaceAutosaveSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.stateSync'
+import { settleWorkspaceSourceTextTransactions } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { resolveWorkspaceImportSourceUrl, workspaceImportSourceUrlsMatch } from '../workspaceImport/sourceUrlIdentity'
 
 export function useWorkspaceMutationActions(args: {
   core: { status: ReturnType<typeof import('./core').useWorkspaceStatusHelpers> }
@@ -41,6 +45,7 @@ export function useWorkspaceMutationActions(args: {
       options?: {
         getFsOverride?: () => ReturnType<typeof getFs>
         activeDocumentSourceUrl?: string | null
+        skipWrite?: boolean
       },
     ) => {
       const normalized = normalizeWorkspacePath(path)
@@ -48,10 +53,11 @@ export function useWorkspaceMutationActions(args: {
       const synchronizeActiveDocument =
         openedPath === normalized ||
         (!!normalizedDocumentKey && normalizedDocumentKey === activeDocumentKey)
-      await writeWorkspaceFileAndSync({
+      const saved = await writeWorkspaceFileAndSync({
         path: normalized,
         text,
         getFs: options?.getFsOverride || getFs,
+        skipWrite: options?.skipWrite,
         lastLoadedRef,
         setEntries,
         synchronizeActiveDocument,
@@ -61,6 +67,7 @@ export function useWorkspaceMutationActions(args: {
         setActiveMarkdownDocument,
         resetParsedState: true,
       })
+      if (!saved) throw new Error('The workspace changed before the content could be committed; retry after reloading the file')
     },
     [activeDocumentKey, getFs, lastLoadedRef, openedPath, setActiveMarkdownDocument, setActiveText, setEntries],
   )
@@ -83,18 +90,34 @@ export function useWorkspaceMutationActions(args: {
   )
 
   const refreshFileFromSource = React.useCallback(
-    async (path: WorkspacePath) => {
+    async (path: WorkspacePath, renderedPageRequestUrl?: string, refreshOptions?: WorkspaceRefreshOptions): Promise<boolean> => {
       const normalized = normalizeWorkspacePath(path)
       const index = loadWorkspaceSourceIndex()
       const src = index[normalized]
-      if (!src || src.kind !== 'url' || !String(src.url || '').trim()) {
-        status.setStatusError('No URL source')
-        return
-      }
-      status.setStatusProgress('Refreshing')
       try {
+        refreshOptions?.signal?.throwIfAborted()
         const fs = await getFs()
         const prevText = await fs.readFileText(normalized).catch(() => '')
+        const sourceUrl = resolveWorkspaceImportSourceUrl(src, prevText)
+        if (!sourceUrl) {
+          if (!refreshOptions?.silent) status.setStatusError('No URL source')
+          return false
+        }
+        if (!refreshOptions?.silent) status.setStatusProgress('Refreshing')
+        const capturedRequestUrl = String(renderedPageRequestUrl || '').trim()
+        const forceFullPageRefetch = Boolean(capturedRequestUrl) ||
+          (src?.kind === 'url' && /^https?:\/\//i.test(sourceUrl) && typeof location !== 'undefined' && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname))
+          || looksLikeIncompleteWebpageMarkdown(prevText)
+        const { refreshWebsiteImportMarkdown } = await import('../workspaceImport/refreshWebsiteImportMarkdown')
+        const capturedText = forceFullPageRefetch ? null : await refreshWebsiteImportMarkdown(prevText || '', sourceUrl, refreshOptions?.signal)
+        if (capturedText !== null) {
+          refreshOptions?.signal?.throwIfAborted()
+          if (await fs.readFileText(normalized) !== prevText) throw new Error('The file changed while refreshing; retry to keep the latest edits')
+          refreshOptions?.signal?.throwIfAborted()
+          await writeMutationWorkspaceText(normalized, capturedText, { activeDocumentSourceUrl: sourceUrl })
+          if (!refreshOptions?.silent) status.setStatusInfo('Refreshed from saved HTML')
+          return true
+        }
         const prevFm = prevText ? extractYamlFrontmatterBlock(prevText) : null
         const prevMeta = prevText ? parseWebpageFrontmatterMeta(prevText) : null
         const prevViewRaw = prevFm ? readYamlFrontmatterValue(prevFm.rawBlock, 'kgWebpageView') : ''
@@ -104,11 +127,21 @@ export function useWorkspaceMutationActions(args: {
         const desiredView = prevViewRaw === 'html' ? 'html' : prevViewRaw === 'json' ? 'json' : prevViewRaw === 'markdown' ? 'markdown' : ''
         const viewHint = desiredView === 'markdown' ? 'markdown' : desiredView === 'json' ? 'json' : desiredView === 'html' ? 'html' : undefined
 
-        const fetched = await fetchWorkspaceUrlContent(src.url, {
-          mode: 'refresh',
-          viewHint,
-          onProgress: p => status.setStatusProgress('Refreshing', p, 100),
+        const fetched = await fetchWorkspaceUrlContent(capturedRequestUrl || sourceUrl, {
+          mode: forceFullPageRefetch ? 'import' : 'refresh',
+          viewHint: forceFullPageRefetch ? 'markdown' : viewHint,
+          bypassCache: forceFullPageRefetch,
+          browserSessionId: refreshOptions?.browserSessionId,
+          signal: refreshOptions?.signal,
+          onProgress: refreshOptions?.silent ? undefined : p => status.setStatusProgress('Refreshing', p, 100),
         })
+        refreshOptions?.signal?.throwIfAborted()
+        if (capturedRequestUrl && !workspaceImportSourceUrlsMatch(sourceUrl, fetched.normalizedUrl)) {
+          throw new Error('The rendered page URL does not match this file source; the saved document was preserved')
+        }
+        if (forceFullPageRefetch && looksLikeIncompleteWebpageMarkdown(fetched.text)) {
+          throw Object.assign(new Error('The source returned only navigation or embedded shell content, so the saved document was preserved. This page may require a signed-in browser session; connect a matching API-native browser session or refresh from a rendered page.'), { code: 'WEBPAGE_CONTENT_INCOMPLETE' })
+        }
         let nextText = fetched.text
         if (prevMeta && prevMeta.url) {
           if (desiredView) nextText = normalizeWebpageFrontmatterView(nextText, desiredView as 'html' | 'json' | 'markdown')
@@ -123,12 +156,24 @@ export function useWorkspaceMutationActions(args: {
           }
         }
 
+        if (await fs.readFileText(normalized) !== prevText) throw new Error('The file changed while refreshing; retry to keep the latest edits')
+        refreshOptions?.signal?.throwIfAborted()
         await writeMutationWorkspaceText(normalized, nextText, {
           activeDocumentSourceUrl: fetched.normalizedUrl,
         })
-        status.setStatusInfo('Refreshed')
+        if (!refreshOptions?.silent) status.setStatusInfo('Refreshed')
+        return true
       } catch (e) {
-        status.setStatusError(`Refresh failed: ${String((e as { message?: unknown })?.message ?? e)}`)
+        if (refreshOptions?.signal?.aborted) return false
+        const error = e as { message?: unknown; code?: unknown }
+        const message = String(error?.message ?? e)
+        refreshOptions?.onFailure?.({ code: typeof error?.code === 'string' ? error.code : undefined, message })
+        if (!refreshOptions?.silent) {
+          status.setStatusError(error?.code === 'WEBPAGE_CONTENT_INCOMPLETE'
+            ? `Refresh failed: ${message} Use “Refresh from rendered page” for a page that requires sign-in.`
+            : `Refresh failed: ${message}`)
+        }
+        return false
       }
     },
     [getFs, status, writeMutationWorkspaceText],
@@ -144,6 +189,14 @@ export function useWorkspaceMutationActions(args: {
       status.setStatusProgress('Deleting')
       try {
         const fs = await getFs()
+        if (openedPath === normalized || openedPath?.startsWith(`${normalized}/`)) {
+          cancelMarkdownWorkspaceAutosaveSync(openedPath)
+          lastLoadedRef.current = null
+          setActivePathSafe(WORKSPACE_ROOT_PATH)
+          setSelectionPathSafe(WORKSPACE_ROOT_PATH)
+          setActiveText('')
+        }
+        await settleWorkspaceSourceTextTransactions()
         await runWorkspaceFsChangedBatch(async () => {
           suppressNextWorkspaceFsChangedEvent()
           await fs.deleteEntry(normalized)
@@ -155,7 +208,7 @@ export function useWorkspaceMutationActions(args: {
         status.setStatusError(`Delete failed: ${String((e as { message?: unknown })?.message ?? e)}`)
       }
     },
-    [getFs, refresh, status],
+    [getFs, refresh, status, openedPath, lastLoadedRef, setActivePathSafe, setSelectionPathSafe, setActiveText],
   )
 
   const renameEntry = React.useCallback(

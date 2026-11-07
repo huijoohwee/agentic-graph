@@ -21,8 +21,7 @@ import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readSnapGridScalarSize } from '@/lib/canvas/snapGridSize'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getEffectiveZoomStateForKey } from '@/lib/canvas/zoom-effective'
-import { RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE } from '@/lib/render/richMediaPanelDefaults'
-import { readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 export {
   isCanonicalFrontmatterBuiltInWidgetNode,
   resolveDefaultFlowWidgetPinnedInCanvas,
@@ -117,10 +116,9 @@ export function readProjectedRichMediaShellTransform(args: {
     const nodeX = typeof node?.x === 'number' && Number.isFinite(node.x) ? node.x : null
     const nodeY = typeof node?.y === 'number' && Number.isFinite(node.y) ? node.y : null
     if (nodeX == null || nodeY == null) continue
-    const properties = isRecord(node?.properties) ? node.properties : null
-    const stableSize = readStableRichMediaPanelSize(properties)
-    const panelWidth = stableSize?.w || RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width
-    const panelHeight = stableSize?.h || RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height
+    const stableSize = readRichMediaOverlayFrameSize(node)
+    const panelWidth = stableSize?.width || 1
+    const panelHeight = stableSize?.height || 1
     const transform = resolveProjectedRichMediaShellTransformFromGeometry({
       rect,
       nodeTopLeft: { x: nodeX, y: nodeY },
@@ -352,6 +350,7 @@ export function deriveOpenWidgetOverlayNodeIds(args: {
 type StoryboardWidgetOverlayProps = {
   visible?: boolean
   active: boolean
+  forceFloating?: boolean
   storyboardWidgetSurfaceId?: string
   editorSurfaceKind?: WidgetEditorSurfaceKind
   overlayCollectiveCount?: number
@@ -397,6 +396,7 @@ export const StoryboardWidgetOverlay = React.memo(function StoryboardWidgetOverl
     <FlowWidgetOverlay
       visible={args.visible}
       active={args.active}
+      forceFloating={args.forceFloating}
       storyboardWidgetSurfaceId={args.storyboardWidgetSurfaceId}
       editorSurfaceKind={args.editorSurfaceKind}
       overlayCollectiveCount={args.overlayCollectiveCount}

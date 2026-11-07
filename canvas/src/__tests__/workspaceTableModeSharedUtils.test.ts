@@ -1,3 +1,4 @@
+import { testNewRecordDividerAffordance } from './newRecordDividerAffordance.test'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -76,7 +77,7 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   const headerText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewHeader.tsx')
   const newRecordButtonText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewNewRecordButton.tsx')
   const responsiveCssText = readUtf8('src/styles/responsive-toolbar.css')
-  const indexCssText = readUtf8('src/index.css')
+  const kanbanActionsCss = readUtf8('src/styles/markdown-kanban-actions.css')
   const canvasViewportText = readUtf8('src/components/CanvasViewport.tsx')
   const bridgeText = readUtf8('src/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge.tsx')
   const derivedViewerText = readUtf8('src/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer.tsx')
@@ -112,8 +113,11 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   if (!kanbanDividerRowText.includes('<WorkspaceDataViewNewRecordButton') || !kanbanDividerRowText.includes('presentation="divider"')) {
     throw new Error('expected shared kanban divider row utility to own the semantic New Record divider presentation')
   }
-  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !indexCssText.includes('[data-kg-kanban-group-header="1"]:hover [data-kg-kanban-group-actions="1"]') || !indexCssText.includes('[data-kg-kanban-group-list="1"]:hover [data-kg-kanban-group-actions="1"]')) {
-    throw new Error('expected shared kanban group actions to reveal from both the lane header and semantic card list and reuse the shared New Record divider row utility')
+  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !kanbanActionsCss.includes('[data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]') || !kanbanActionsCss.includes('[data-kg-kanban-divider="1"]:is(:hover, :focus-within) > .kg-data-view-new-record-divider-action')) {
+    throw new Error('expected header actions and each semantic divider to own their hover/focus reveal independently')
+  }
+  if (kanbanActionsCss.includes('[data-kg-kanban-group-list="1"]:is(:hover, :focus-within)') || kanbanActionsCss.includes(':focus-within) ~ *')) {
+    throw new Error('expected lane and header hover/focus never to reveal neighboring record dividers')
   }
   if (!storyboardCanvasText.includes('data-kg-kanban-group-header="1"') || !storyboardCanvasText.includes('data-kg-kanban-group-list="1"') || !storyboardCanvasText.includes('<KanbanNewRecordDividerRow')) {
     throw new Error('expected Storyboard lanes to reuse the shared kanban header and semantic list action reveal contract, including the shared New Record divider row utility')
@@ -172,7 +176,9 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   }
   for (const expected of [
     'Properties field inventory',
-    'Properties field inventory list',
+    'Properties chooser',
+    'Show all properties',
+    'Hide all properties',
     'Search properties',
     'Hide property:',
     'Show property:',
@@ -190,6 +196,7 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   if (settingsPanelText.includes("<span className={['text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Group</span>")) {
     throw new Error('expected FloatingPanel View query workbench to avoid a duplicate Group selector label')
   }
+  return testNewRecordDividerAffordance()
 }
 
 export function testWorkspaceTableUserFacingCopyUsesMultiDimensionalTableSsot() {
@@ -280,6 +287,8 @@ export function testWorkspaceCsvRefreshReusesDelimitedTextDataViewOwners() {
 export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode() {
   const settingsText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewSettingsPanel.tsx')
   const viewerText = readUtf8('src/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer.tsx')
+  const viewConfigHookText = readUtf8('src/features/markdown-workspace/main/viewer/useWorkspaceDataViewConfig.ts')
+  const savedViewHookText = readUtf8('src/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView.ts')
   const activeViewText = readUtf8('src/hooks/active-graph-data/activeViewGraph.ts')
   const modeActionsText = readUtf8('src/hooks/store/uiSettingsSliceModeActions.ts')
   const renderConfigText = readUtf8('src/lib/config.render.ts')
@@ -299,11 +308,18 @@ export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode
   if (settingsText.includes('disabled={!props.canMutate}')) {
     throw new Error('expected graph-rendering view config toggle to stay enabled for read-only source tables')
   }
-  if (!viewerText.includes('writeWorkspaceDataViewConfig({')) {
-    throw new Error('expected workspace data-view graph config to persist immediately before canvas mode changes')
+  if (!viewConfigHookText.includes('saved.setViewConfig(next)') || !savedViewHookText.includes('writeWorkspaceDataViewConfig({ activeDocumentPath, tableId, value })')) {
+    throw new Error('expected workspace data-view layout changes to persist through the shared saved-view owner')
   }
   if (!viewerText.includes("setMultiDimTableModeEnabled(mode === 'multiDimTable')")) {
     throw new Error('expected workspace data-view layout changes to drive canvas Multi-dimensional Table mode')
+  }
+  if (!viewerText.includes("if (!props.dataViewSource && !props.canvasDataViewSurface) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')")
+    || !viewConfigHookText.includes('!canvasDataViewSurface')) {
+    throw new Error('expected the shared canvas data-view surface to keep layout selection from changing the global Graph renderer mode')
+  }
+  if (!viewerText.includes('props.canvasDataViewSurface && viewConfig')) {
+    throw new Error('expected shared canvas view settings and content to follow the persisted Table, Multi-dimensional Table, Kanban, or Calendar layout')
   }
   if (!activeViewText.includes("if (mode === 'multiDimTable') return deriveActiveViewGraph()")) {
     throw new Error('expected Multi-dimensional Table active-view derivation to bypass stale cache after view-config changes')
@@ -320,7 +336,7 @@ export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode
   if (!canvasViewportText.includes("import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface')") || !canvasViewportText.includes("active2dSurface === 'multiDimTable'") || !canvasViewportText.includes('<MultiDimTableSurfaceLazy active ariaLabel="Canvas Multi-dimensional Table" />')) {
     throw new Error('expected CanvasViewport to mount the shared Multi-dimensional Table surface')
   }
-  if (!canvasTableSurfaceText.includes('MarkdownWorkspaceDerivedViewer') || !canvasTableSurfaceText.includes('viewerMode="multiDimTable"') || !canvasTableSurfaceText.includes('jsonSourceDocumentText')) {
+  if (!canvasTableSurfaceText.includes('MarkdownWorkspaceDerivedViewer') || !canvasTableSurfaceText.includes('viewerMode={viewerMode}') || !canvasTableSurfaceText.includes('jsonSourceDocumentText') || !canvasTableSurfaceText.includes('canvasDataViewSurface={true}')) {
     throw new Error('expected Multi-dimensional Table to reuse Editor Workspace Viewer data-view owners')
   }
   if (canvasViewportText.includes("import('@/lib/graph-table/ui')") || canvasTableSurfaceText.includes(removedWorkspaceSymbol)) {

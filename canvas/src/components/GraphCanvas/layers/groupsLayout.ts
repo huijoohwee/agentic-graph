@@ -6,6 +6,8 @@ import { buildClosedPathD, computeConvexRing, type Point2d } from '@/lib/geometr
 import { buildChevronPathD } from '@/components/GraphCanvas/layers/svgChevron'
 import { getNodeAabbHalfExtentsWithLabel } from '@/components/GraphCanvas/layout/overlap'
 import { computeDynamicGroupResizeHandlePx } from '@/lib/canvas/groupResizeHandleConfig'
+import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
+import { getGroupDepth } from '@/lib/canvas/groupZOrder'
 
 export type GroupLayoutCacheEntry = {
   x: number
@@ -17,6 +19,53 @@ export type GroupLayoutCacheEntry = {
   chevronCx: number
   chevronCy: number
   d: string | null
+}
+
+export function createGroupsLayoutUpdater<T extends GraphGroup>(args: {
+  itemSel: d3.Selection<SVGGElement, T, SVGGElement, unknown>
+  hitRoot: SVGGElement
+  layoutCache: Map<string, GroupLayoutCacheEntry>
+  groupDatumById: Map<string, T>
+  computeBoundsAndLabel: (group: T) => GroupLayoutCacheEntry
+  applyComputedToGroup: (group: T, bounds: GroupLayoutCacheEntry, selectedId: string, activeId: string) => void
+  readSelectedId: () => string
+  readActiveResizeId: () => string
+  allowResize: boolean
+  eps: number
+}) {
+  let lastSelectedId = ''
+  let lastOrderKey = ''
+  return () => {
+    const selectedId = args.readSelectedId()
+    const activeId = args.readActiveResizeId()
+    if (args.allowResize && selectedId !== lastSelectedId) {
+      for (const id of [lastSelectedId, selectedId]) {
+        const group = args.groupDatumById.get(id)
+        if (group) args.applyComputedToGroup(group, args.layoutCache.get(id) || args.computeBoundsAndLabel(group), selectedId, activeId)
+      }
+    }
+    lastSelectedId = selectedId
+    args.itemSel.each(group => {
+      const bounds = args.computeBoundsAndLabel(group)
+      const prev = args.layoutCache.get(String(group.id))
+      const keys = ['x', 'y', 'w', 'h', 'labelX', 'labelY', 'chevronCx', 'chevronCy'] as const
+      if (prev && prev.d === bounds.d && keys.every(key => Math.abs(prev[key] - bounds[key]) < args.eps)) return
+      args.applyComputedToGroup(group, bounds, selectedId, activeId)
+    })
+    const orderKey = args.itemSel.data().map(group => {
+      const bounds = args.layoutCache.get(String(group.id))
+      return [group.id, getGroupDepth(group), group.zIndex, bounds?.w, bounds?.h].join(':')
+    }).join('|')
+    if (orderKey === lastOrderKey) return
+    lastOrderKey = orderKey
+    const surface = (group: T) => ({ id: String(group.id), w: args.layoutCache.get(String(group.id))?.w || 0,
+      h: args.layoutCache.get(String(group.id))?.h || 0 })
+    const compare = (a: T, b: T) => getGroupDepth(a) - getGroupDepth(b)
+      || (Number(a.zIndex) || 0) - (Number(b.zIndex) || 0)
+      || compareCanvasSurfaceArea(surface(a), surface(b))
+    args.itemSel.sort(compare)
+    d3.select(args.hitRoot).selectChildren<SVGElement, T>('[data-kg-group-id]').sort(compare)
+  }
 }
 
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)

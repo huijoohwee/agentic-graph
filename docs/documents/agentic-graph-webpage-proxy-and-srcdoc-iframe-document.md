@@ -139,7 +139,8 @@ The proxy-injected layer inside the sandboxed iframe listens for `postMessage` r
 - `mode`: `text | html | layout`
 - `maxChars`: cap the exported payload
 - `maxElements`: best-effort cap on exported DOM elements (neutral, URL-agnostic)
-- `expandFaq`: best-effort click/expand for accordion-like FAQ sections
+- `expandDisclosures`: bounded best-effort expansion for native and ARIA-marked collapsed content, without host-specific labels or classes
+- `expandFaq`: deprecated compatibility alias for `expandDisclosures`
 - `scrollCrawl`: best-effort scroll/settle loop to load lazy content and stabilize text
 
 For `mode ∈ {text, html}` it replies with:

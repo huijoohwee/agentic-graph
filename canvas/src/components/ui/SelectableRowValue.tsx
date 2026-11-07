@@ -1,6 +1,7 @@
 import React from 'react'
 
 export function SelectableRowValue(props: {
+  className?: string
   label: string
   value: string
   invocation?: string
@@ -11,7 +12,7 @@ export function SelectableRowValue(props: {
 }) {
   return (
     <output
-      className="relative z-10 ml-auto shrink-0 pointer-events-auto text-xs"
+      className={`relative z-10 pointer-events-auto ${props.className ?? "ml-auto shrink-0 text-xs"}`}
       role="status"
       aria-label={`${props.label}: ${props.value}`}
       data-kg-selection-affordance="row-value"

@@ -1,4 +1,5 @@
 import type { RegionalPoiIdentity } from './regionalPoiGeo.js'
+import { SINGAPORE_MAJOR_POI_SUPPLEMENT_IDENTITIES } from './singaporeMajorPoiSupplement.js'
 
 export const SINGAPORE_MAJOR_POI_IDENTITIES = Object.freeze([
   Object.freeze({ id: 'marina-bay-sands', label: 'Marina Bay Sands' }),
@@ -10,6 +11,7 @@ export const SINGAPORE_MAJOR_POI_IDENTITIES = Object.freeze([
   }),
   Object.freeze({ id: 'the-fullerton-hotel', label: 'The Fullerton Hotel' }),
   Object.freeze({ id: 'raffles-hotel', label: 'Raffles Hotel' }),
+  ...SINGAPORE_MAJOR_POI_SUPPLEMENT_IDENTITIES,
 ] as const satisfies readonly RegionalPoiIdentity[])
 
 export type SingaporeMajorPoiId =

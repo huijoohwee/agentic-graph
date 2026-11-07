@@ -22,10 +22,8 @@ import {
   readImageToThreeJsRenderMode,
   type ImageToThreeJsRenderMode,
 } from '@/features/image-to-threejs/imageToThreeJsContract'
-
 export { DEFAULT_NODE_MEDIA_KIND, NODE_MEDIA_KINDS, buildNodeMediaProperties, patchNodeMediaProperties } from '@/lib/canvas/graph-elements/mediaProperties'
 export type { NodeMediaKind } from '@/lib/canvas/graph-elements/mediaProperties'
-
 export type NodeMediaSpec = {
   kind: NodeMediaKind
   url: string
@@ -33,14 +31,12 @@ export type NodeMediaSpec = {
   interactive: boolean
   renderMode?: ImageToThreeJsRenderMode
 }
-
 export type NodeMediaInventoryRow = {
   id: string
   label: string
   type: string
   media: NodeMediaSpec
 }
-
 export type NodeMediaInventory = {
   rows: ReadonlyArray<NodeMediaInventoryRow>
   totalCount: number
@@ -445,6 +441,11 @@ function computeNodeMediaSpec(node: GraphNode): NodeMediaSpec | null {
   const resolvedUrl = url || (domMediaUrl ? coerceMediaUrl(domMediaUrl) : null)
   if (!resolvedUrl) {
     if (isRichMediaPanel) return buildRichMediaPanelTextualIframeSpec({ node, outputText, outputSrcDoc: richMediaSrcDoc, interactive: explicitInteractive === true })
+    // Keep unavailable images in the shared empty-media surface without admitting rejected URLs.
+    if (kindForced === 'image' || kindForced === 'svg' || domKindForced === 'image' || domKindForced === 'svg'
+      || String(node.type || '').toLowerCase() === 'image') {
+      return { kind: kindForced === 'svg' || domKindForced === 'svg' ? 'svg' : 'image', url: '', interactive: false }
+    }
     if (domTag === 'IFRAME' && domSrcDoc) {
       if (/<\s*script\b/i.test(domSrcDoc)) return null
       if (/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i.test(domSrcDoc)) return null
@@ -495,7 +496,6 @@ function computeNodeMediaSpec(node: GraphNode): NodeMediaSpec | null {
 
   return { kind, url: resolvedUrl, interactive }
 }
-
 export function getNodeMediaSpec(node: GraphNode): NodeMediaSpec | null {
   const props = (node.properties || {}) as Record<string, unknown>
   const cacheKey = getCacheKey(node, props)

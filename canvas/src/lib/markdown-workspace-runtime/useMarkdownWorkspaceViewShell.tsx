@@ -1,6 +1,7 @@
 import React from 'react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { requestSharedXrSurfaceDeparture } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { WorkspaceModeSelect } from '@/features/markdown-workspace/WorkspaceModeSelect'
@@ -9,7 +10,7 @@ import {
   scheduleMarkdownWorkspaceInlineEditStateSync,
 } from './markdownWorkspaceRuntime.stateSync'
 import type { FolderModeContract } from './markdownWorkspaceRuntime.shared'
-import { applyMarkdownWorkspaceSuccessStatus } from './markdownWorkspaceStatusTransitions'
+import { applyMarkdownWorkspaceSuccessStatus, applyMarkdownWorkspaceErrorStatus } from './markdownWorkspaceStatusTransitions'
 import { buildWorkspaceEntriesIndex, hasWorkspaceFileEntry } from './workspaceEntriesIndex'
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 
@@ -19,6 +20,7 @@ export function useMarkdownWorkspaceViewShell(args: {
   folderModeContract: FolderModeContract
   setFolderModeContract: React.Dispatch<React.SetStateAction<FolderModeContract>>
   activePath: WorkspacePath | null
+  activeText?: string
   selectionPath: WorkspacePath | null
   selectionEntryKind: WorkspaceEntry['kind'] | null
   setActivePathSafe: (path: WorkspacePath) => void
@@ -29,6 +31,7 @@ export function useMarkdownWorkspaceViewShell(args: {
   pickFolderContractTargetPath: (folderPath: WorkspacePath, preferredMode: FolderModeContract) => WorkspacePath | null
   revealLineInEditor: (line: number) => void
   setStatusWithAutoClear: (label: string, ttlMs?: number) => void
+  setStatusError: (label: string) => void
   streamingWorkspacePath?: WorkspacePath | null
 }) {
   const {
@@ -47,6 +50,7 @@ export function useMarkdownWorkspaceViewShell(args: {
     pickFolderContractTargetPath,
     revealLineInEditor,
     setStatusWithAutoClear,
+    setStatusError,
     streamingWorkspacePath,
   } = args
 
@@ -82,6 +86,15 @@ export function useMarkdownWorkspaceViewShell(args: {
   const selectPathAndActivate = React.useCallback(
     (path: WorkspacePath, activeTarget: WorkspacePath | null) => {
       const normalized = normalizeWorkspacePath(path)
+      if (activePath && activeTarget && normalizeWorkspacePath(activeTarget) !== normalizeWorkspacePath(activePath)) {
+        try {
+          // Release transient gameplay before source commits wait for its write fence.
+          requestSharedXrSurfaceDeparture()
+        } catch (error) {
+          applyMarkdownWorkspaceErrorStatus({ setStatusError, prefix: 'Source switch failed', error })
+          return
+        }
+      }
       setSelectionSource('editor')
       const applyActivePath = () => { if (activeTarget) setActivePathSafe(normalizeWorkspacePath(activeTarget)) }
       const pendingSelection = setSelectionPathSafe(normalized)
@@ -93,7 +106,7 @@ export function useMarkdownWorkspaceViewShell(args: {
       }
       applyActivePath()
     },
-    [setActivePathSafe, setSelectionPathSafe, setSelectionSource],
+    [activePath, setActivePathSafe, setSelectionPathSafe, setSelectionSource, setStatusError],
   )
 
   const onSelectFile = React.useCallback(
@@ -117,7 +130,7 @@ export function useMarkdownWorkspaceViewShell(args: {
         if (summary) {
           return (
             <span
-              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-700"
+              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-xs leading-none text-amber-700"
               aria-label={`Frontmatter warning in ${renderArgs.entry.name}`}
               title={summary}
             >
@@ -165,44 +178,27 @@ export function useMarkdownWorkspaceViewShell(args: {
     ],
   )
 
+  const revealPendingRef = React.useRef(false)
   const revealInFinder = React.useCallback(
-    (path: WorkspacePath) => {
-      const normalized = normalizeWorkspacePath(path)
-      const source = sourcesByPath[normalized]
-      if (source && source.kind === 'url' && String(source.url || '').trim()) {
-        try {
-          window.open(String(source.url || '').trim(), '_blank', 'noopener,noreferrer')
-          applyShellStatus('Opened source URL', UI_TOAST_TTL_MS.statusAutoClose)
-          return
-        } catch {
-          void 0
-        }
-      }
-      const localName = source && source.kind === 'local' ? String(source.originalName || '').trim() : ''
-      const localLooksAbsolute = !!localName && (localName.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(localName))
-      if (localLooksAbsolute) {
-        try {
-          window.open(`file://${localName.replace(/\\/g, '/')}`, '_blank', 'noopener,noreferrer')
-          applyShellStatus('Opened local file URL', UI_TOAST_TTL_MS.statusAutoCloseMedium)
-          return
-        } catch {
-          void 0
-        }
-      }
-      if (source && source.kind === 'local') {
-        try {
-          void navigator.clipboard?.writeText(normalized.replace(/^\/+/, '') || normalized)
-          applyShellStatus('Copied workspace-relative path', UI_TOAST_TTL_MS.statusAutoCloseSlow)
-        } catch {
-          void 0
-        }
-      }
-      setSelectionSource('editor')
-      setSelectionPathSafe(normalized)
-      setActivePathSafe(normalized)
-      applyShellStatus('Revealed in Source Files explorer', UI_TOAST_TTL_MS.statusAutoCloseSlow)
+    async (path: WorkspacePath) => {
+      if (revealPendingRef.current) return
+      revealPendingRef.current = true
+      try {
+        const normalized = normalizeWorkspacePath(path)
+        const entry = entriesIndex.byPath.get(normalized)
+        if (!entry) throw new Error('The selected workspace item no longer exists')
+        const text = entry.kind === 'file' ? (normalized === activePath ? args.activeText ?? entry.text : entry.text) : undefined
+        const source = sourcesByPath[normalized]
+        const { revealWorkspaceFileInManager } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+        const message = await revealWorkspaceFileInManager({ path: normalized,
+          kind: entry.kind, text, source, entries: entry.kind === 'folder' ? entries.map(item =>
+            item.path === activePath && typeof args.activeText === 'string' ? { ...item, text: args.activeText } : item) : undefined })
+        applyShellStatus(message, UI_TOAST_TTL_MS.statusAutoCloseMedium)
+      } catch (error) {
+        applyMarkdownWorkspaceErrorStatus({ setStatusError, prefix: 'Reveal failed', error })
+      } finally { revealPendingRef.current = false }
     },
-    [applyShellStatus, setActivePathSafe, setSelectionPathSafe, setSelectionSource, sourcesByPath],
+    [activePath, args.activeText, applyShellStatus, entries, entriesIndex, setStatusError, sourcesByPath],
   )
 
   const openBacklink = React.useCallback(

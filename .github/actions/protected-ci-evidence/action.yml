@@ -25,7 +25,9 @@ runs:
       run: |
         owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
         export "$owner_inputs"
-        node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs lookup --policy="$POLICY" --output="$RUNNER_TEMP/ci-evidence-lookup.json"
+        timeout --foreground --signal=TERM --kill-after=10s 90s \
+          node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs lookup \
+          --policy="$POLICY" --output="$RUNNER_TEMP/ci-evidence-lookup.json"
     - name: Download protected source evidence
       id: download
       if: steps.lookup.outputs.available == 'true'

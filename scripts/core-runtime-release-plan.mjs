@@ -24,7 +24,7 @@ export const CORE_RUNTIME_MIGRATIONS = Object.freeze([
   '0001_agentic-graph_storage.sql', '0008_chat_auth_and_audit.sql',
   '0015_storage_publication_contract.sql', '0016_storage_browser_identity.sql',
   '0019_storage_chunk_document_identity.sql', '0020_storage_child_sync_state.sql',
-  '0021_storage_oauth_budget.sql',
+  '0021_storage_oauth_budget.sql', '0022_agentic_graph_r2_free_quota.sql',
 ])
 // Audited trigger/index changes preserve the prior storage schema and data.
 // Compatibility tests exercise prior writes with these exact migrations retained.

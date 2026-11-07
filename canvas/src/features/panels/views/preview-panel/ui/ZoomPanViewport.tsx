@@ -345,7 +345,7 @@ export default function ZoomPanViewport({
                 </section>
               </section>
               {showZoomIndicator ? (
-                <section className="absolute right-2 bottom-2 rounded bg-black/60 text-white text-[11px] px-1.5 py-0.5 pointer-events-none">
+                <section className="absolute right-2 bottom-2 rounded bg-black/60 text-white text-xs px-1.5 py-0.5 pointer-events-none">
                   {`${Math.round(zoom * 100)}%`}
                 </section>
               ) : null}

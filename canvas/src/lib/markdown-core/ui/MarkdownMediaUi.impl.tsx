@@ -33,6 +33,7 @@ import {
   useWebpageSnapshotSurfaceAssets,
 } from '@/lib/websites/webpageSnapshotShared'
 import { normalizeSvgDataUriForImg } from './markdownSvgDataUri'
+import { decodeBase64ToUtf8 } from '@/features/markdown/markdownRoundTrip'
 export { MediaWrapper } from './MarkdownMediaWrapper'
 
 const mediaFrameClassName = `rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`
@@ -299,8 +300,8 @@ export const MediaVideoSnapshot = React.memo(function MediaVideoSnapshot({
           )}
           <section aria-hidden={true} className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME}>
             <section className={snapshotOverlayBadgeClassName}>
-              <section className={`text-[11px] font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{fallbackInfo.titleLabel}</section>
-              <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary} truncate`}>{fallbackInfo.hostLabel}</section>
+              <section className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{fallbackInfo.titleLabel}</section>
+              <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary} truncate`}>{fallbackInfo.hostLabel}</section>
             </section>
           </section>
         </section>
@@ -521,7 +522,7 @@ const MediaErrorPlaceholder = ({ alt }: { alt?: string }) => {
   const prefix = UI_COPY.markdownMediaErrorPrefix
   const label = alt ? `${prefix}: ${alt}` : prefix
   return (
-    <section className={`${CARD_MARKDOWN_PREVIEW_MEDIA_ERROR_FRAME_CLASS_NAME} rounded border border-dashed border-red-300 bg-red-50 text-[11px] text-red-700 px-3 text-center`}>
+    <section className={`${CARD_MARKDOWN_PREVIEW_MEDIA_ERROR_FRAME_CLASS_NAME} rounded border border-dashed border-red-300 bg-red-50 text-xs text-red-700 px-3 text-center`}>
       <span>{label}</span>
     </section>
   )
@@ -552,6 +553,14 @@ export const MediaImage = ({
   }
   if (height) style.height = `${Math.round(height)}px`
   const normalizedSrc = normalizeSvgDataUriForImg(src || '')
+  const svgIconSize = React.useMemo(() => {
+    if (!/^data:image\/svg\+xml;base64,/i.test(normalizedSrc) || normalizedSrc.length > 50_000) return null
+    const svg = decodeBase64ToUtf8(normalizedSrc.slice(normalizedSrc.indexOf(',') + 1)) || ''
+    const bounds = svg.match(/<svg\b[^>]*\bviewBox=["']\s*[-\d.]+[ ,]+[-\d.]+[ ,]+([\d.]+)[ ,]+([\d.]+)\s*["']/i)
+    const w = Number(bounds?.[1]), h = Number(bounds?.[2])
+    return w > 0 && h > 0 && w <= 64 && h <= 64 ? { width: w, height: h } : null
+  }, [normalizedSrc])
+  if (svgIconSize && !width && !height) Object.assign(style, svgIconSize, { backgroundColor: '#fff', padding: 4, boxSizing: 'content-box' })
   const primarySrc = applyImageLikeProxySrc(normalizedSrc)
   const [useFallback, setUseFallback] = React.useState(false)
   const activeSrc = useFallback ? normalizedSrc : primarySrc
@@ -564,9 +573,10 @@ export const MediaImage = ({
       kind={kind}
       url={activeSrc}
       title={alt}
-      interactive={false}
+      interactive={cardPreviewMode !== true}
       fit="contain"
       mediaThumbnailDataAttr
+      mediaSelectableSurfaceDataAttr
       mediaStyle={Object.keys(style).length ? style : undefined}
       mediaClassName={[
         cardPreviewMode === true ? CARD_MARKDOWN_PREVIEW_MEDIA_CLASS_NAME : 'block mx-auto max-w-full h-auto',

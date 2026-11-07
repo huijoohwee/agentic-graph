@@ -1,6 +1,19 @@
 import type { GraphState } from '@/hooks/store/types'
+import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
 
 type HistoryEntry = GraphState['history'][number]
+
+// Keep owner indexes: a document's versions can be interleaved in shared history.
+export const selectDocumentVersionHistory = (
+  history: readonly HistoryEntry[],
+  documentName: string | null | undefined,
+): { entry: HistoryEntry; index: number }[] => {
+  const path = normalizeComposedSourcePath(documentName)
+  return history.flatMap((entry, index) => {
+    const entryPath = normalizeComposedSourcePath(entry.markdownDocumentName)
+    return !path || entryPath === path ? [{ entry, index }] : []
+  })
+}
 
 const escapeMermaidLabel = (value: unknown): string => String(value || '')
   .replace(/["\r\n]+/g, ' ')

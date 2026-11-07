@@ -24,6 +24,19 @@ function hasMeterSurface(view, expected) {
   )
 }
 
+export function hasExactAuthoredEnvironmentSubjectEvidence(view) {
+  const records = view?.authoredEnvironmentSubjects
+  if (!Array.isArray(records) || !records.length || records.some(record => !record || typeof record !== 'object' || Array.isArray(record))) return false
+  const authored = records.map(record => record.id)
+  const [source, rendered] = [view?.environmentSubjectIds, view?.renderedEnvironmentSubjectIds]
+  const valid = ids => Array.isArray(ids) && ids.length > 0
+    && ids.every(id => typeof id === 'string' && id.trim().length > 0) && new Set(ids).size === ids.length
+  return [authored, source, rendered].every(valid)
+    && source.length === authored.length && source.every(id => authored.includes(id))
+    && rendered.every(id => authored.includes(id))
+    && view?.selectedEnvironmentSubjectsExact === true && view?.environmentSourceExactlyMatchesOverlay === true
+}
+
 export function hasExactCityMapRetentionEvidence(retention) {
   return retention?.sameMap === true && retention?.removeCalls === 0
 }
@@ -457,8 +470,6 @@ export async function readValidatedFlightSimBrowserRunEvidence({
         && JSON.stringify(view?.environmentPoiIds)
           === JSON.stringify(CITY_REGIONAL_POI_IDS)
         && hasViewportScopedRegionalPoiRendering(view)
-        && view?.selectedEnvironmentSubjectsExact === true
-        && view?.environmentSourceExactlyMatchesOverlay === true
         && ['stage-footprint', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
         )
@@ -466,9 +477,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
           view?.renderedEnvironmentPoiIds?.length === 0
           || view?.renderedEnvironmentKinds?.includes('poi')
         )
-        && view?.renderedEnvironmentSubjectIds?.some(subjectId =>
-          String(subjectId).includes('vehicle-'),
-        )
+        && hasExactAuthoredEnvironmentSubjectEvidence(view)
         && view?.objectiveGuideFeatureCount === 1
         && view?.routeInViewport === true
         && view?.aircraftInViewport === true

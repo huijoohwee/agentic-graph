@@ -423,7 +423,6 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
           onWebpageChangeView={(view) => {
             viewCalls = [...viewCalls, String(view)]
           }}
-          onWebpageUpdateMeta={() => {}}
           activeText={`---\nkgWebpageUrl: "${sourceUrl}"\nkgWebpageView: "html"\n---\n\n[](${sourceUrl})\n`}
           setActiveText={() => {}}
           activeDocumentKey="doc"
@@ -441,7 +440,7 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
       await tick()
       await tick()
     })
-    const viewSelect = dom.window.document.querySelector('select[aria-label="Webpage view mode"]')
+    const viewSelect = dom.window.document.querySelector('button[data-kg-select][aria-label="Webpage view mode"]')
     if (viewSelect) throw new Error('expected Webpage view dropdown to be removed')
 
     const htmlInput = checkboxFor(dom.window.document, 'HTML')
@@ -546,7 +545,6 @@ export async function testMarkdownWorkspaceToolbarViewerAndHtmlRenderTogetherAft
           onWebpageChangeView={next => {
             viewCalls = [...viewCalls, String(next)]
           }}
-          onWebpageUpdateMeta={() => {}}
           activeText={`---\nkgWebpageUrl: "${sourceUrl}"\nkgWebpageView: "markdown"\n---\n\n[](${sourceUrl})\n`}
           setActiveText={() => {}}
           activeDocumentKey="doc-click-path"

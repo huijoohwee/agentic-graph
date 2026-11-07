@@ -64,7 +64,7 @@ export function MarkdownWorkspacePresentationNavMenu(props: {
           title="Previous slide"
           onClick={() => props.presentationApiRef.current?.prev()}
         >
-          <ChevronLeft className={markdownWorkspaceToolbarGlyphClassName} strokeWidth={1.6} />
+          <ChevronLeft className={markdownWorkspaceToolbarGlyphClassName} />
         </button>
       </li>
       <li className="list-none">
@@ -74,7 +74,7 @@ export function MarkdownWorkspacePresentationNavMenu(props: {
           title="Next slide"
           onClick={() => props.presentationApiRef.current?.next()}
         >
-          <ChevronRight className={markdownWorkspaceToolbarGlyphClassName} strokeWidth={1.6} />
+          <ChevronRight className={markdownWorkspaceToolbarGlyphClassName} />
         </button>
       </li>
     </menu>
@@ -115,7 +115,7 @@ export function MarkdownWorkspaceDisplayMenu(props: {
     'pointer-events-none absolute -right-1 -top-1',
     UI_RESPONSIVE_MARKDOWN_TOOLBAR_HIGHLIGHT_BADGE_CLASSNAME,
     getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.markdownTextHighlight),
-    'rounded-sm border px-0.5 text-center text-[9px] leading-3',
+    'rounded-sm border px-0.5 text-center text-xs leading-3',
   ].join(' ')
   const highlightBadgeStyle = buildSemanticHighlightChipStyle({ defaultHighlight: true })
 
@@ -132,7 +132,7 @@ export function MarkdownWorkspaceDisplayMenu(props: {
           {...getSemanticHighlightSurfaceAttributes(SEMANTIC_HIGHLIGHT_SURFACES.markdownTextHighlight)}
           onClick={() => props.setMarkdownTextHighlight(!props.markdownTextHighlight)}
         >
-          <Eye className={markdownWorkspaceToolbarGlyphClassName} strokeWidth={1.6} />
+          <Eye className={markdownWorkspaceToolbarGlyphClassName} />
           {highlightCount > 0 ? (
             <span
               className={highlightBadgeClassName}
@@ -152,7 +152,7 @@ export function MarkdownWorkspaceDisplayMenu(props: {
           title="Toggle word wrap"
           onClick={() => props.setMarkdownWordWrap(!props.markdownWordWrap)}
         >
-          <WrapText className={markdownWorkspaceToolbarGlyphClassName} strokeWidth={1.6} />
+          <WrapText className={markdownWorkspaceToolbarGlyphClassName} />
         </button>
       </li>
     </menu>

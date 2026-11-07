@@ -1,4 +1,5 @@
-import { controlLocalXrScene, inspectLocalXrSceneAssets } from '@/features/three/xrSceneMcpRuntime'
+import { controlSpatialWorkspaceAgent, inspectSpatialWorkspace } from '@/features/three/spatialWorkspaceRuntime'
+import { inspectLocalXrSceneAssets } from '@/features/three/xrSceneMcpRuntime'
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agentic-graph-agent-ready-tool-contract.mjs'
 
 type XrSceneWebMcpContract = Readonly<{
@@ -34,11 +35,11 @@ export function buildXrSceneWebMcpToolBuilders(
   return {
     [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets]: () => buildTool(
       inspectContract,
-      async () => inspectLocalXrSceneAssets(),
+      async () => ({ ...inspectLocalXrSceneAssets(), spatialWorkspace: await inspectSpatialWorkspace() }),
     ),
     [AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene]: () => buildTool(
       controlContract,
-      async input => controlLocalXrScene(input || {}),
+      async input => controlSpatialWorkspaceAgent(input || {}),
     ),
   }
 }

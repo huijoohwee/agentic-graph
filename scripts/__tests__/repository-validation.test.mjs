@@ -1,9 +1,53 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, writeFileSync, readdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
-import { readChangedPaths, readExecutionPartition, partitionAffectedCommands, validateExecutionPartitions } from '../run-affected-ci.mjs'
-import { readContract, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
+import { readChangedPaths, readExecutionPartition, partitionAffectedCommands, validateExecutionPartitions, sourcePlanReuse } from '../run-affected-ci.mjs'
+import { readContract, resolveCiCommandTimeoutMs, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
 import { selectValidationChecks, validateValidationPolicy } from '../../node_modules/agentic-os/bin/agentic-os-validation-policy.mjs'
+
+test('nonempty partitions retain independent immutable reuse decisions', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'graph-partition-reuse-'))
+  t.after(() => rmSync(directory, { recursive: true, force: true }))
+  const environment = { AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: directory,
+    GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' }
+  const partitions = { standard: [['node', 'standard']], 'extended-123456789abc': [['node', 'browser']],
+    'extended-abcdef123456': [] }
+  let captures = 0, verifications = 0
+  const options = { environment, log: () => {}, captureInputs: async () => { captures++; return 'exact-inputs' },
+    verify: (args, env) => {
+      verifications++
+      assert.equal(env.AGENTIC_OS_CI_OWNER_INPUTS, 'exact-inputs')
+      const receipt = { reused: true, runUrl: 'https://example.test/exact-run' }
+      writeFileSync(args.find(arg => arg.startsWith('--output=')).slice(9), JSON.stringify(receipt), { flag: 'wx' })
+      return receipt
+    } }
+  for (const partition of ['standard', 'extended-123456789abc', 'all'])
+    assert.equal((await sourcePlanReuse(partition, partitions, options)).reused, true)
+  assert.equal(await sourcePlanReuse('extended-abcdef123456', partitions, options), null)
+  assert.equal(captures, 3)
+  assert.equal(verifications, 3)
+  assert.equal(readdirSync(directory).length, 3, 'later partitions must not collide with the first receipt')
+  const snapshots = readdirSync(directory).map(file => [file, readFileSync(join(directory, file), 'utf8')])
+  assert.equal(await sourcePlanReuse('standard', partitions, options), null, 'a genuine repeated write falls back to fresh checks')
+  for (const [file, bytes] of snapshots) assert.equal(readFileSync(join(directory, file), 'utf8'), bytes)
+})
+
+test('empty plans and non-main events make no provider or input-capture calls', async () => {
+  const environment = { AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: '/unused',
+    GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' }
+  let calls = 0
+  const forbidden = () => { calls++; return null }
+  for (const partitions of [{ standard: [] }, { standard: [], 'extended-123456789abc': [['node', 'other']] }])
+    assert.equal(await sourcePlanReuse('standard', partitions, { environment, verify: forbidden, captureInputs: forbidden }), null)
+  for (const override of [{ GITHUB_ACTIONS: 'false' }, { GITHUB_EVENT_NAME: 'pull_request' },
+    { GITHUB_REF: 'refs/heads/task' }, { AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: '' }])
+    assert.equal(await sourcePlanReuse('standard', { standard: [['node', 'check']] }, {
+      environment: { ...environment, ...override }, verify: forbidden, captureInputs: forbidden,
+    }), null)
+  assert.equal(calls, 0, 'ineligible selection must not capture inputs or contact the provider')
+})
 
 test('local affected inventory joins committed, working and untracked paths', () => {
   const paths = readChangedPaths({ environment: {}, gitText: args => {
@@ -91,6 +135,23 @@ test('execution groups preserve every affected check once and retain contract ti
   assert.throws(() => partitionAffectedCommands([browser, browser], contract), /duplicate/)
 })
 
+test('declared command budgets fit both native stages and their enclosing checks', async () => {
+  const contract = await readContract()
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  const commands = contract.ci_command_timeout_overrides.map(entry => entry.command)
+  const groups = partitionAffectedCommands(commands, contract)
+  assert(contract.ci_command_timeout_ms <= 900000, 'native stages allow at most 15 minutes')
+  for (const [partition, group] of Object.entries(groups)) {
+    const parent = policy.checks.find(check => readExecutionPartition(check.command.slice(4)) === partition)
+    assert(parent, `missing native check for ${partition}`)
+    for (const command of group) {
+      const timeout = resolveCiCommandTimeoutMs(command, contract)
+      assert(timeout <= Math.min(900000, parent.timeoutMs),
+        `${command.join(' ')} exceeds its native execution budget`)
+    }
+  }
+})
+
 test('affected CLI defaults to all checks and rejects misspelled or repeated partitions', () => {
   assert.equal(readExecutionPartition([]), 'all')
   for (const value of ['standard', 'extended-5bcce945a301']) assert.equal(readExecutionPartition([`--partition=${value}`]), value)
@@ -107,7 +168,7 @@ test('native partition drift fails before any affected check can be omitted', as
     assert.throws(() => validateExecutionPartitions(groups, { ...policy, checks }), /exactly once/)
   }
   const extra = structuredClone(contract)
-  extra.ci_command_timeout_overrides.push({ command: ['npm', 'run', 'runtime:test:core'], timeout_ms: 600000 })
+  extra.ci_command_timeout_overrides.push({ command: ['npm', 'run', 'spatial-workspace:browser'], timeout_ms: 600000 })
   validateContract(extra)
   assert.throws(() => validateExecutionPartitions(partitionAffectedCommands([], extra), policy), /exactly once/)
   const foreign = structuredClone(policy)
@@ -172,4 +233,21 @@ test('selected CI control checks run first without adding or repeating catalog c
     commands.map(JSON.stringify).sort())
   const product = commands.filter(command => !controlKeys.has(JSON.stringify(command)))
   assert.deepEqual(partitionAffectedCommands(product, contract), partitionAffectedCommands(product, ordinary))
+})
+
+test('measured slow checks are isolated without raising their command timeout', async () => {
+  const contract = await readContract()
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  const isolated = contract.ci_command_timeout_overrides.filter(row => row.timeout_ms === contract.ci_command_timeout_ms)
+  assert.equal(isolated.length, 5)
+  const ordinary = { ...contract, ci_command_timeout_overrides: [] }
+  const commands = isolated.map(row => row.command)
+  const groups = partitionAffectedCommands(commands, contract)
+  validateExecutionPartitions(groups, policy)
+  for (const { command } of isolated) {
+    assert.equal(resolveCiCommandTimeoutMs(command, contract), resolveCiCommandTimeoutMs(command, ordinary))
+    const key = JSON.stringify(command)
+    assert(!groups.standard.some(row => JSON.stringify(row) === key))
+    assert.equal(Object.values(groups).flat().filter(row => JSON.stringify(row) === key).length, 1)
+  }
 })

@@ -2,7 +2,11 @@ import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_COPY } from '@/lib/config'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { cn } from '@/lib/utils'
+import { MainPanelField } from '@/features/panels/ui/MainPanelField'
+import { MainPanelIconButton } from '@/features/panels/ui/MainPanelIconButton'
+import type { MainPanelFieldHelp } from '@/features/panels/ui/mainPanelRowHelp'
 import {
   JSON_IMPORT_WORKSPACE_TARGET_LABELS,
   JSON_IMPORT_WORKSPACE_TARGET_OPTIONS,
@@ -14,7 +18,7 @@ import {
   JSON_MARKDOWN_TABLE_LIMIT_MAX,
   JSON_MARKDOWN_TABLE_LIMIT_MIN,
 } from '@/features/markdown/jsonMarkdownPreferences'
-import type { JsonToMarkdownMode } from '@/features/markdown/jsonToMarkdown'
+import { JSON_TO_MARKDOWN_DEFAULT_TABLE_MAX_COLUMNS, JSON_TO_MARKDOWN_DEFAULT_TABLE_MAX_ROWS, type JsonToMarkdownMode } from '@/features/markdown/jsonToMarkdown'
 import { workspaceTablePreferencesStore } from '@/features/workspace-table/workspaceTablePreferencesStore'
 import {
   WORKSPACE_EDITOR_MODE_OPTIONS,
@@ -28,9 +32,7 @@ import {
 } from '@/features/workspace-table/cellSelectPanelPlacement'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceEditorPane'
 import { MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME } from '@/features/panels/ui/mainPanelSettingsSelectClass'
-import { PanelField, PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
-import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
-import { uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 
 type WorkspaceTableModeControlProps = {
   className?: string
@@ -83,8 +85,8 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
   }, [editorWorkspacePane, setEditorWorkspacePane, setWorkspaceCanvasPaneOpen, setWorkspaceViewMode, setWorkspaceViewState, workspaceCanvasPaneOpen, workspaceViewMode])
 
   const handleWorkspaceEditorModeChanged = React.useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const next = event.currentTarget.value as WorkspaceEditorMode
+    (nextValue: string) => {
+      const next = nextValue as WorkspaceEditorMode
       workspaceTablePreferencesStore.setWorkspaceEditorMode(next)
       openWorkspaceMultiDimTableFromControl()
     },
@@ -93,12 +95,12 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
 
   const handleOpenTable = openWorkspaceMultiDimTableFromControl
 
-  const handleJsonImportTargetChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setJsonImportTarget(event.currentTarget.value as JsonImportWorkspaceTarget)
+  const handleJsonImportTargetChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setJsonImportTarget(nextValue as JsonImportWorkspaceTarget)
   }, [])
 
-  const handleJsonMarkdownModeChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setJsonMarkdownMode(event.currentTarget.value as JsonToMarkdownMode)
+  const handleJsonMarkdownModeChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setJsonMarkdownMode(nextValue as JsonToMarkdownMode)
   }, [])
 
   const handleJsonTableMaxRowsChanged = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,26 +111,31 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
     workspaceTablePreferencesStore.setJsonTableMaxColumns(event.currentTarget.value)
   }, [])
 
-  const handleWorkspaceCellSelectPanelPlacementChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setWorkspaceCellSelectPanelPlacement(event.currentTarget.value as WorkspaceCellSelectPanelPlacement)
+  const handleWorkspaceCellSelectPanelPlacementChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setWorkspaceCellSelectPanelPlacement(nextValue as WorkspaceCellSelectPanelPlacement)
   }, [])
 
-  const inlineFieldRowClassName = `${uiToolbarRowScrollJustifyBetweenClassName} gap-2 text-xs`
-  const inlineFieldLabelClassName = `mb-0 min-w-0 ${UI_TEXT_TRUNCATE}`
-  const numberFieldClassName = `App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`
+  const typography = usePanelTypography()
+  const selectClassName = cn(MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, typography.panelTextClass, 'flex-1 text-right')
+  const numberFieldClassName = cn(typography.keyValueInputClass, typography.panelTextClass)
+  const fieldHelp = (key: string, defaultValue: string | number, outcome: string): MainPanelFieldHelp => ({
+    role: 'Operator', actions: [`configure ${key}`], outcome,
+    value: { key, type: typeof defaultValue === 'number' ? 'number' : 'string', defaultValue, impact: outcome,
+      ...(typeof defaultValue === 'number' ? {
+        min: JSON_MARKDOWN_TABLE_LIMIT_MIN, max: JSON_MARKDOWN_TABLE_LIMIT_MAX, interval: 1,
+        expansionNote: 'Larger limits include more table content', contractionNote: 'smaller limits reduce table size.',
+      } : {}),
+    },
+  })
 
   return (
-    <section className={className || 'flex min-w-0 max-w-full flex-col gap-2 overflow-hidden'} aria-label={UI_COPY.markdownDataViewTitleDefault}>
-      <PanelField
-        label="Workspace editor view"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+    <section className={cn('min-w-0 max-w-full overflow-hidden', className)} aria-label={UI_COPY.markdownDataViewTitleDefault}>
+      <MainPanelField label="Workspace editor view" type="enum"
+        help={fieldHelp('Workspace editor view', 'Table View', 'choose the workspace layout for browsing and editing')}>
         <PanelSelect
-          className={MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME}
+          className={selectClassName}
           value={workspaceEditorMode}
-          onChange={handleWorkspaceEditorModeChanged}
+          onValueChange={handleWorkspaceEditorModeChanged}
           aria-label="Workspace editor view"
         >
           {WORKSPACE_EDITOR_MODE_OPTIONS.map(option => (
@@ -137,27 +144,16 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
             </option>
           ))}
         </PanelSelect>
-      </PanelField>
-      <button
-        type="button"
-        className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
-        onClick={handleOpenTable}
-        disabled={tableWorkspaceOpen}
-      >
-        <span className={UI_TEXT_TRUNCATE}>
-          {tableWorkspaceOpen ? UI_COPY.toolbarMultiDimTableWorkspaceOnTooltip : UI_COPY.toolbarMultiDimTableToggleTitle}
-        </span>
-      </button>
-      <PanelField
-        label="Select panel position"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+        <MainPanelIconButton iconKey="mainPanel.workflowManager"
+          label={tableWorkspaceOpen ? UI_COPY.toolbarMultiDimTableWorkspaceOnTooltip : UI_COPY.toolbarMultiDimTableToggleTitle}
+          onClick={handleOpenTable} disabled={tableWorkspaceOpen} />
+      </MainPanelField>
+      <MainPanelField label="Select panel position" type="enum"
+        help={fieldHelp('Select panel position', 'Above cell', 'place selection controls above or below the active cell')}>
         <PanelSelect
-          className={MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME}
+          className={selectClassName}
           value={workspaceCellSelectPanelPlacement}
-          onChange={handleWorkspaceCellSelectPanelPlacementChanged}
+          onValueChange={handleWorkspaceCellSelectPanelPlacementChanged}
           aria-label="Select panel position"
         >
           {WORKSPACE_CELL_SELECT_PANEL_PLACEMENT_OPTIONS.map(option => (
@@ -166,17 +162,13 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
             </option>
           ))}
         </PanelSelect>
-      </PanelField>
-      <PanelField
-        label="JSON import target"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+      </MainPanelField>
+      <MainPanelField label="JSON import target" type="enum"
+        help={fieldHelp('JSON import target', 'Multi-dimensional Table', 'choose where imported JSON opens')}>
         <PanelSelect
-          className={MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME}
+          className={selectClassName}
           value={jsonImportTarget}
-          onChange={handleJsonImportTargetChanged}
+          onValueChange={handleJsonImportTargetChanged}
           aria-label="JSON import target"
         >
           {JSON_IMPORT_WORKSPACE_TARGET_OPTIONS.map(option => (
@@ -185,17 +177,13 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
             </option>
           ))}
         </PanelSelect>
-      </PanelField>
-      <PanelField
-        label="JSON markdown mode"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+      </MainPanelField>
+      <MainPanelField label="JSON markdown mode" type="enum"
+        help={fieldHelp('JSON markdown mode', 'Auto', 'choose how JSON is represented in Markdown')}>
         <PanelSelect
-          className={MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME}
+          className={selectClassName}
           value={jsonMarkdownMode}
-          onChange={handleJsonMarkdownModeChanged}
+          onValueChange={handleJsonMarkdownModeChanged}
           aria-label="JSON markdown mode"
         >
           {JSON_MARKDOWN_MODE_SELECT_OPTIONS.map(option => (
@@ -204,39 +192,33 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
             </option>
           ))}
         </PanelSelect>
-      </PanelField>
-      <PanelField
-        label="JSON table max rows"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+      </MainPanelField>
+      <MainPanelField label="JSON table max rows" type="number"
+        help={fieldHelp('JSON table max rows', JSON_TO_MARKDOWN_DEFAULT_TABLE_MAX_ROWS, 'bound the number of rows in generated Markdown tables')}>
         <PanelTextInput
           type="number"
           className={numberFieldClassName}
           value={jsonTableMaxRows}
           min={JSON_MARKDOWN_TABLE_LIMIT_MIN}
           max={JSON_MARKDOWN_TABLE_LIMIT_MAX}
+          step={1}
           onChange={handleJsonTableMaxRowsChanged}
           aria-label="JSON table max rows"
         />
-      </PanelField>
-      <PanelField
-        label="JSON table max columns"
-        variant="section"
-        className={inlineFieldRowClassName}
-        labelClassName={inlineFieldLabelClassName}
-      >
+      </MainPanelField>
+      <MainPanelField label="JSON table max columns" type="number"
+        help={fieldHelp('JSON table max columns', JSON_TO_MARKDOWN_DEFAULT_TABLE_MAX_COLUMNS, 'bound the number of columns in generated Markdown tables')}>
         <PanelTextInput
           type="number"
           className={numberFieldClassName}
           value={jsonTableMaxColumns}
           min={JSON_MARKDOWN_TABLE_LIMIT_MIN}
           max={JSON_MARKDOWN_TABLE_LIMIT_MAX}
+          step={1}
           onChange={handleJsonTableMaxColumnsChanged}
           aria-label="JSON table max columns"
         />
-      </PanelField>
+      </MainPanelField>
     </section>
   )
 }

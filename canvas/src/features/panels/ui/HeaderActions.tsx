@@ -1,6 +1,7 @@
 import IconButton from '@/components/IconButton'
+import { FloatingPanelCloseButton } from '@/components/ui/FloatingPanel'
 import { PinToggleIconButton } from '@/components/PinToggleIconButton'
-import { Search as SearchIcon, X as CloseIcon, Save as SaveIcon, RotateCcw as ResetIcon, Minimize2, Maximize2 } from 'lucide-react'
+import { Search as SearchIcon, Save as SaveIcon, RotateCcw as ResetIcon, Minimize2, Maximize2 } from 'lucide-react'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui'
@@ -105,9 +106,8 @@ export default function HeaderActions({
       )}
 
       {showCloseButton ? (
-        <IconButton className="App-toolbar__btn" title={UI_LABELS.close} onClick={onClose} showTooltip>
-          <CloseIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-        </IconButton>
+        <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!}
+          iconClassName={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
       ) : null}
     </section>
   )

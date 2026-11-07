@@ -8,7 +8,7 @@ const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
   { cssVar: '--kg-panel-bg', light: '#ffffff', dark: '#020b2a' },
   { cssVar: '--kg-panel-bg-hover', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
   { cssVar: '--kg-border', light: '#e5e7eb', dark: '#4b5563' },
-  { cssVar: '--kg-divider', light: '#d1d5db', dark: '#4b5563' },
+  { cssVar: '--kg-divider', light: '#e5e7eb', dark: '#4b5563' },
   { cssVar: '--kg-text-primary', light: '#111827', dark: '#f3f4f6' },
   { cssVar: '--kg-text-secondary', light: '#4b5563', dark: '#9ca3af' },
   { cssVar: '--kg-text-tertiary', light: '#6b7280', dark: '#6b7280' },
@@ -19,7 +19,7 @@ const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
   { cssVar: '--kg-code-text', light: '#0f172a', dark: '#e2e8f0' },
   { cssVar: '--kg-control-height', light: '28px', dark: '28px' },
   { cssVar: '--kg-status-pill-height', light: '24px', dark: '24px' },
-  { cssVar: '--kg-table-row-height', light: '44px', dark: '44px' },
+  { cssVar: '--kg-table-row-height', light: 'var(--agentic-row-height)', dark: 'var(--agentic-row-height)' },
   { cssVar: '--kg-focus-ring', light: '#3b82f6', dark: '#60a5fa' },
   { cssVar: '--kg-accent', light: '#3b82f6', dark: '#60a5fa' },
   { cssVar: '--kg-accent-contrast', light: '#ffffff', dark: '#020617' },
@@ -143,11 +143,13 @@ export const AG_TOKEN_DEFS: readonly KgTokenDef[] = tokenValues.map(value => {
     ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent', black: 'canvas-accent' } } : {}) }
 })
 
-export const buildKgTokensCssText = (theme: KgTheme, options: { selector?: string } = {}): string =>
-  renderKgTokensCss(AG_TOKEN_DEFS, theme, options.selector ?? (
+export const buildKgTokensCssText = (theme: KgTheme, options: { selector?: string } = {}): string => {
+  const selector = options.selector ?? (
     theme === 'black' ? ":root[data-theme='dark'][data-dark-variant='black']"
       : theme === 'dark' ? ":root[data-theme='dark']" : ':root'
-  ), true)
+  )
+  return renderKgTokensCss(AG_TOKEN_DEFS, theme, selector, true, { inheritLayout: theme !== 'light' && selector !== ':root' })
+}
 
 export const getKgThemeFromDom = (): KgTheme => {
   if (typeof document === 'undefined') return 'light'

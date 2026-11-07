@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { downloadBlob, saveBlobWithPicker } from '@/lib/graph/save'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { UiToastInput } from '@/hooks/store/types'
@@ -57,7 +58,7 @@ export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportD
     '  <style>',
     '    :root{color-scheme:light dark;--kg-bg:#f7f8fa;--kg-panel:#ffffff;--kg-border:#d7dde5;--kg-text:#172033;--kg-muted:#5d687a;--kg-accent:#2563eb}',
     '    *{box-sizing:border-box}',
-    '    body{margin:0;background:var(--kg-bg);color:var(--kg-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}',
+    `    body{margin:0;background:var(--kg-bg);color:var(--kg-text);font-family:${UI_FONT_SANS}}`,
     '    header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--kg-border);background:var(--kg-panel)}',
     '    h1{margin:0;font-size:16px;line-height:1.25;font-weight:650}',
     '    .kg-meta{margin:4px 0 0;color:var(--kg-muted);font-size:12px;line-height:1.4}',
@@ -65,7 +66,7 @@ export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportD
     '    nav a{color:var(--kg-accent);text-decoration:none;border:1px solid var(--kg-border);border-radius:6px;padding:5px 8px;background:var(--kg-panel)}',
     '    main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px;padding:12px;height:calc(100vh - 70px);min-height:560px}',
     '    section{min-width:0;min-height:0;border:1px solid var(--kg-border);border-radius:8px;background:var(--kg-panel);overflow:hidden;display:flex;flex-direction:column}',
-    '    h2{margin:0;padding:9px 11px;border-bottom:1px solid var(--kg-border);font-size:13px;line-height:1.2;font-weight:650}',
+    '    h2{margin:0;padding:9px 11px;border-bottom:1px solid var(--kg-border);font-size:14px;line-height:1.2;font-weight:650}',
     '    iframe{display:block;width:100%;height:100%;min-height:0;border:0;background:#fff;flex:1}',
     '    @media (max-width: 960px){header{display:block}nav{margin-top:10px}main{grid-template-columns:1fr;height:auto;min-height:0}section{height:72vh}}',
     '    @media (prefers-color-scheme:dark){:root{--kg-bg:#11151c;--kg-panel:#171d26;--kg-border:#303948;--kg-text:#e7ecf4;--kg-muted:#a8b2c2;--kg-accent:#8ab4ff}iframe{background:#fff}}',

@@ -13,6 +13,7 @@ import {
 } from '@/features/three/xrMotionReferenceCoordinates'
 import { resolveXrCanonicalSceneSpatialSource } from '@/features/three/xrCanonicalSceneSpatialSource'
 import { useXrStageMotionControlCleanup } from '@/features/three/useXrStageMotionControlCleanup'
+import { resolveXrStageFitScale } from '@/features/three/xrSceneScale'
 
 export function XrMotionReferenceGraphStage({ data, paused = false }: { data: GraphData; paused?: boolean }) {
   useXrStageMotionControlCleanup()
@@ -26,7 +27,7 @@ export function XrMotionReferenceGraphStage({ data, paused = false }: { data: Gr
     projection: 'authored',
     stageId: runtime.plan.stageId,
   })
-  const stageScale = XR_MOTION_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+  const stageScale = resolveXrStageFitScale(stage.sizeMeters, XR_MOTION_STAGE_SPAN)
   return (
     <group ref={stageRootRef} name="agentic_os_graph_xr_stage">
       <XrMotionReferenceStage

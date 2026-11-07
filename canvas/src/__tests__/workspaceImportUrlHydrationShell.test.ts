@@ -38,7 +38,7 @@ export async function testWorkspaceImportUrlImportRejectsUnrecoveredHydrationShe
       fs: createMemoryWorkspaceFs(),
       urlRaw: url,
       viewHint: 'markdown',
-    }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('Authenticated browser session required'))
+    }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('authentication or loading shell'))
     if (!rejected) throw new Error('expected unrecovered hydration shell import to reject instead of persisting a low-fidelity docs_ artifact')
     if (!calls.some(call => call.startsWith('/__webpage_proxy?'))) throw new Error('expected shared webpage proxy to be attempted before shell rejection')
   } finally {

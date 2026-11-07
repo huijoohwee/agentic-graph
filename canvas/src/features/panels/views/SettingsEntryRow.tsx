@@ -1,4 +1,4 @@
-import Tooltip from '@/features/panels/ui/Tooltip'
+import { MainPanelCellHelp } from '@/features/panels/ui/mainPanelRowHelp'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { RightAlignedValueCell } from '@/features/panels/ui/canvasKeyTypeValueValueCell'
 import { MainPanelTypeIcon, resolveMainPanelSettingTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
@@ -99,16 +99,14 @@ export function SettingsEntryRow({
         id={anchorId}
         dataKgAnchor={anchorId}
         keyNode={(
-          <Tooltip
+          <MainPanelCellHelp
             content={keyTooltip}
-            maxWidthPx={250}
             className="w-full min-w-0 max-w-full overflow-hidden"
-            contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
           >
             <span className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
               <span className={UI_TEXT_TRUNCATE}>{setting.key}</span>
             </span>
-          </Tooltip>
+          </MainPanelCellHelp>
         )}
         typeNode={(
           <span

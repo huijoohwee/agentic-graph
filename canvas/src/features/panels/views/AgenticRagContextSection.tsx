@@ -15,7 +15,7 @@ import {
 } from '@/lib/graph/jsonld/index'
 import type { GraphData } from '@/lib/graph/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getPillClass } from '@/lib/ui'
+import { getPillClass } from '@/lib/ui/icons'
 import { UI_RESPONSIVE_BADGE_CHIP_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 

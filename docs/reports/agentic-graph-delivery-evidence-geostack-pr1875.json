@@ -1,0 +1,93 @@
+{
+  "schema": "agentic-graph/adlc-delivery-evidence/v1",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "status": "no-deploy-path-exclusion",
+  "production": {
+    "runId": 41021713269,
+    "sourceRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
+    "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+    "sourceReleaseReceiptDigest": "5bc1ecc62edd778f91b88cf392d40d7cd16e68496fbd95ca1c8db298479567a7",
+    "deploymentReceiptDigest": "85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612",
+    "d1ReconciliationReceiptDigest": "cb2e152f8572a525c2b0ca8990b56f8d19ee7aefd8ab90658df0657af98a6469",
+    "runtimeVerificationReceiptDigest": "28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838",
+    "publicationReceiptDigest": "e2eba14895b83945e3d2bcd4a410b21442ab452ce350ef69a13d6b5607111b8f",
+    "pagesDeploymentId": "d4bf1bde-c77b-4495-8085-0874d43450ca",
+    "rollbackBaseline": {
+      "pagesDeploymentId": "d4bf1bde-c77b-4495-8085-0874d43450ca",
+      "mirrorRevision": "7ac091ffbab60eece371a2d09cfb53d29c208244",
+      "d1ContractDigest": "8b7ec9f3a37727785a7b9b9e42a196d4bf27a77b918fc2a7f5add490374b585c",
+      "d1ReadbackDigest": "a669fb19a6bfac145906c8a49cdd9fce0473c27960b924a08de9118d3da3ccb1"
+    }
+  },
+  "artifactBoundary": {
+    "buildCommand": "npm run pages:build-sync",
+    "selectorPath": "scripts/production-mirror-artifact-entries.mjs",
+    "selectorRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+    "selectorSha256": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
+    "syncPath": "scripts/pages-mirror-sync.mjs",
+    "syncRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+    "syncSha256": "34c5bb1d0886976aca0b84de0a43f33752c9c67949353aa9117d89850da0d9d7",
+    "selectorPolicy": "The Pages sync takes generated canvas/dist files and named generated outputs; it does not copy canvas/src test files or the Graph repository root. The production artifact stage then copies its fixed mirror allowlist and generated Agent Ready static files. Root package manifests, the runtime contract, PRD, delivery ledger, and evidence reports are outside both output sets.",
+    "changedPathsExcludedFromProductArtifact": [
+      ".agentic-os-delivery-dispositions.json",
+      "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts",
+      "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md",
+      "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
+      "docs/runtime-readiness-contract.md",
+      "package-lock.json",
+      "package.json"
+    ]
+  },
+  "assessments": [
+    {
+      "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
+      "laneHead": "20245223a00f8770bc7f7b4e48b56069645ddc5d",
+      "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts",
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "no-deploy",
+      "reason": "PR #1875 changes only a test import and the Agentic OS source pin, plus their readiness and delivery records. Each exact path in this assessment is excluded from the product artifact by the fixed Pages and mirror artifact boundary. The previously approved candidate remains the deployed product; this assessment grants no deployment or mirror authority."
+    },
+    {
+      "ref": "agent/device-0232231d4a19/local-poi-adlc-closeout",
+      "baseRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md",
+        "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "no-deploy",
+      "reason": "This closeout changes only the Agentic OS source pin, its runtime-readiness reference, and PRD and delivery evidence. Every exact path in this assessment, including docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json, is excluded from the product artifact by the fixed Pages and mirror artifact boundary. The existing deployed POI candidate remains unchanged; this assessment grants no deployment or mirror authority."
+    }
+  ],
+  "evidenceSources": [
+    {
+      "path": "docs/reports/production-delivery-evidence-41021713269.json",
+      "sha256": "5f35bf4013ec6a1f7b91dda89ab17ff3bff96fa643aa08d4239f8d574a4ac757"
+    },
+    {
+      "path": "scripts/production-mirror-artifact-entries.mjs",
+      "revision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "sha256": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf"
+    },
+    {
+      "path": "scripts/pages-mirror-sync.mjs",
+      "revision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "sha256": "34c5bb1d0886976aca0b84de0a43f33752c9c67949353aa9117d89850da0d9d7"
+    },
+    {
+      "path": "package.json",
+      "revision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "sha256": "d4eb500d26ed02a324ad2c2e9d3dca7519b491568f68f294aadf84fee5b08bd6"
+    }
+  ]
+}

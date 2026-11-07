@@ -48,11 +48,14 @@ import type {
 } from './core'
 
 export type FloatingPanelView =
+  | 'sequence'
   | 'propsPanel'
   | 'skillsCommands'
+  | 'blockLibrary'
   | 'promptPresets'
   | 'view'
   | 'media'
+  | 'preview'
   | 'animation'
   | 'motionControl'
   | 'gameMode'
@@ -61,6 +64,7 @@ export type FloatingPanelView =
   | 'camera'
   | 'design'
   | 'chat'
+  | 'console'
   | 'geo'
   | 'renderer'
   | 'storyboardWidget'
@@ -311,9 +315,6 @@ export interface GraphStateChatImport {
 
   webpageViewerScriptPolicy: 'strip' | 'allow';
   setWebpageViewerScriptPolicy: (v: 'strip' | 'allow') => void;
-
-  webpageArtifactFidelityMaxLevel: number;
-  setWebpageArtifactFidelityMaxLevel: (v: number) => void;
 
   websiteImportDiscoverSitemap: boolean;
   setWebsiteImportDiscoverSitemap: (v: boolean) => void;

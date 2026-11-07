@@ -1,4 +1,5 @@
 import { expandInlineTranscriptMarkdownLines } from './transcriptMarkdownLines'
+import { collapseRepeatedBlockquotePayload, restoreEncodedBlockquotePrefix } from './markdownStructuralEntities'
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 
 function countUnescapedPipes(line: string): number {
@@ -214,7 +215,7 @@ export function restoreWebpageMarkdownSyntaxFidelity(markdown: string): string {
       out.push(normalizeRecoveredFenceCodeLine(rawLine))
       continue
     }
-    const withPrefixes = restoreLinePrefixes(rawLine)
+    const withPrefixes = collapseRepeatedBlockquotePayload(restoreEncodedBlockquotePrefix(restoreLinePrefixes(rawLine)))
     const withSimplifiedHtmlWrappers = normalizeSimpleHtmlWrapperLine(withPrefixes)
     const expandedLines = expandInlineTranscriptMarkdownLines(withSimplifiedHtmlWrappers)
     if (!expandedLines.length) {

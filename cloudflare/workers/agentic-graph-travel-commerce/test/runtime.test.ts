@@ -148,14 +148,14 @@ describe('durable travel-commerce runtime', () => {
       INFERENCE_OVERFLOW_TOKEN: 'b'.repeat(16),
     } as unknown as TravelCommerceEnv
     const response = await handler.fetch(new Request('https://test/readyz'), healthy, createExecutionContext())
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(503)
     const readyBody = await response.json() as { ok: boolean; lane: string; checks: unknown[] }
-    expect(readyBody).toMatchObject({ ok: true, lane: 'Staging_Lane' })
+    expect(readyBody).toMatchObject({ ok: false, lane: 'Staging_Lane' })
     expect(readyBody.checks).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'bundle-graph', ok: true }),
       expect.objectContaining({ name: 'envelope-ledger', ok: true }),
       expect.objectContaining({ name: 'balance-cache', ok: true }),
-      expect.objectContaining({ name: 'provenance-archive', ok: true }),
+      expect.objectContaining({ name: 'provenance-archive', ok: false, reason: 'provider-cost-evidence-unavailable' }),
     ]))
 
     const missingSecrets = {

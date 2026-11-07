@@ -2,11 +2,13 @@ import { useSyncExternalStore } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { RunTrace } from './missionControlProjection'
 import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/canvasViewInvocationContract.mjs'
+import { executeCanvasViewControl } from '@/lib/canvas/canvasViewControlRuntime'
 
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
 let snapshot: AgentRunInspection | null = null
 let workspace: { view: AgentRunView; source?: string | null } | null = null
+let selectedFolder: string | null = null
 let cleanup: (() => void) | null = null
 let restoreView: (() => void) | null = null
 let timer: number | undefined
@@ -17,6 +19,10 @@ const read = () => snapshot
 export const readAgentRunInspectionSnapshot = () => snapshot
 export const useAgentRunInspection = () => useSyncExternalStore(subscribe, read, () => null)
 export const readAgentRunWorkspace = () => workspace
+export const readAgentRunFolderSelection = () => selectedFolder
+export const useAgentRunFolderSelection = () => useSyncExternalStore(subscribe, readAgentRunFolderSelection, () => null)
+/** Selecting an observation folder does not open a document or activate a Canvas view. */
+export function selectAgentRunFolder(path: string): void { selectedFolder = path; emit() }
 export const subscribeAgentRunWorkspace = subscribe
 export const useAgentRunWorkspace = () => useSyncExternalStore(subscribe, readAgentRunWorkspace, () => null)
 
@@ -30,6 +36,7 @@ export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surfa
     listenForRevocation()
   }
   // A fresh invocation resolves the current manifest; file selection supplies an explicit source.
+  selectedFolder = null
   workspace = { ...workspace, view, source }
   if (snapshot) snapshot = { ...snapshot, view }
   useGraphStore.getState().setWorkspaceViewState({ mode: surface,
@@ -51,7 +58,7 @@ function listenForRevocation() {
 
 /** One explicit handoff, never a source file, persistent cache, credential or execution capability. */
 export function closeAgentRunInspection(): void {
-  cleanup?.(); cleanup = null; snapshot = null; workspace = null
+  cleanup?.(); cleanup = null; snapshot = null; workspace = null; selectedFolder = null
   const restore = restoreView; restoreView = null; restore?.(); emit()
 }
 function validated(input: Omit<AgentRunInspection, 'view'> & { view?: AgentRunView }): AgentRunInspection {
@@ -91,8 +98,9 @@ export function updateAgentRunInspection(input: Pick<AgentRunInspection, 'trace'
   snapshot = validated({ ...snapshot, ...input }); scheduleExpiry(); emit()
 }
 export function selectAgentRunSource(source: string | null): void {
-  if (!workspace) return
-  workspace = { ...workspace, source }; emit()
+  selectedFolder = null
+  if (workspace) workspace = { ...workspace, source }
+  emit()
 }
 export function selectAgentRunView(view: string): void {
   if (!workspace || !Object.hasOwn(AGENT_RUN_CANVAS_VIEWS, view)) return
@@ -116,7 +124,7 @@ export function filterAgentRunInspection(search: string): void {
 /** Shared explicit preset/Chat entry; malformed or unrelated options never execute. */
 export function activateAgentRunPrompt(prompt: string): void {
   const { optionId } = parseCanvasViewInvocation(prompt)
-  if (optionId === 'renderer:dashboard') { activateAgentRunWorkspace('tree'); return }
+  if (optionId === 'renderer:dashboard') { executeCanvasViewControl({ optionId }); return }
   if (!optionId.startsWith('agent-run:')) throw Error('Choose an agent observability view.')
   activateAgentRunWorkspace(optionId.slice('agent-run:'.length) as AgentRunView)
 }

@@ -25,7 +25,7 @@ const stableKey = (args: {
   domQuietMs: number
   maxElements: number
   scrollCrawl: boolean
-  expandFaq: boolean
+  expandDisclosures: boolean
   preferScriptDisabled: boolean
   clickTextHints: string[]
   textCaptureTarget: WebpageDomTextCaptureTarget
@@ -37,7 +37,7 @@ const stableKey = (args: {
   const key = JSON.stringify([
     args.mode, args.url, args.timeoutMs, args.maxChars, args.waitForNetworkIdle, args.networkIdleMs,
     args.minWaitAfterLoadMs, args.domQuietMs, args.maxElements, args.viewportW, args.viewportH,
-    args.scrollCrawl, args.expandFaq, args.preferScriptDisabled, args.textCaptureTarget,
+    args.scrollCrawl, args.expandDisclosures, args.preferScriptDisabled, args.textCaptureTarget,
     args.clickTextHints,
   ])
   return key.length <= MAX_KEY_UNITS ? key : null
@@ -50,6 +50,8 @@ export async function exportWebpageDomViaHiddenIframe(args: {
   maxChars?: number
   maxElements?: number
   scrollCrawl?: boolean
+  expandDisclosures?: boolean
+  /** @deprecated Use expandDisclosures. Retained for callers compiled against the older capture contract. */
   expandFaq?: boolean
   preferScriptDisabled?: boolean
   clickTextHints?: string[]
@@ -73,6 +75,8 @@ export async function probeWebpageDomViaHiddenIframe(args: {
   maxChars?: number
   maxElements?: number
   scrollCrawl?: boolean
+  expandDisclosures?: boolean
+  /** @deprecated Use expandDisclosures. Retained for callers compiled against the older capture contract. */
   expandFaq?: boolean
   preferScriptDisabled?: boolean
   clickTextHints?: string[]
@@ -102,7 +106,7 @@ export async function probeWebpageDomViaHiddenIframe(args: {
   })()
   const maxElements = typeof args.maxElements === 'number' && Number.isFinite(args.maxElements) ? Math.floor(args.maxElements) : 0
   const scrollCrawl = !!args.scrollCrawl
-  const expandFaq = args.expandFaq !== false
+  const expandDisclosures = args.expandDisclosures !== false && args.expandFaq !== false
   const preferScriptDisabled = args.preferScriptDisabled === true
   const clickTextHints = Array.isArray(args.clickTextHints)
     ? args.clickTextHints.map(value => String(value || '').trim()).filter(Boolean).slice(0, 8)
@@ -133,7 +137,7 @@ export async function probeWebpageDomViaHiddenIframe(args: {
     domQuietMs,
     maxElements,
     scrollCrawl,
-    expandFaq,
+    expandDisclosures,
     preferScriptDisabled,
     clickTextHints,
     textCaptureTarget,
@@ -187,7 +191,7 @@ export async function probeWebpageDomViaHiddenIframe(args: {
     maxChars,
     maxElements: maxElements || undefined,
     scrollCrawl,
-    expandFaq,
+    expandDisclosures,
     preferScriptDisabled,
     clickTextHints,
     textCaptureTarget,

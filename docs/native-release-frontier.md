@@ -28,7 +28,10 @@ Agentic OS metadata through its exported observation API. Ignored runtime files
 outside HEAD and the index, including installed dependencies, are excluded.
 Attached successors select the metadata bound to their actual Git branch. Older
 records at the same path remain in the captured metadata digest and must name
-active, published, or integrated ancestor revisions. Detached worktrees remain retained
+active, published, or integrated lanes whose exact local branch refs still contain
+the recorded commits. A ref may have advanced to a descendant, and historical lanes
+may be siblings; ancestry is checked against each exact retained ref, not the mounted
+checkout. Detached worktrees remain retained
 and require unambiguous metadata bound to their exact head. Missing, ambiguous,
 stale, hidden, unmerged, unsupported, or moving source
 state stops preparation. Symlink targets are never followed. Source parents and

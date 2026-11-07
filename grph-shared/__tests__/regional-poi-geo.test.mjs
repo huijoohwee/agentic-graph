@@ -27,6 +27,13 @@ const EXPECTED_SURFACE_IDS = [
   'esplanade-theatres-on-the-bay:main-building',
   'the-fullerton-hotel:main-building',
   'raffles-hotel:main-building',
+  'national-gallery-singapore:old-city-hall',
+  'national-gallery-singapore:former-supreme-court',
+  'marina-barrage:marina-barrage',
+  'merlion-park:merlion-park',
+  'suntec-singapore-convention-exhibition-centre:suntec-singapore-convention-and-exhibition-centre',
+  'marina-bay-cruise-centre:marina-bay-cruise-centre',
+  'the-shoppes-at-marina-bay-sands:the-shoppes-at-marina-bay-sands',
 ]
 
 function isDeepFrozen(value) {
@@ -38,7 +45,7 @@ test('Singapore major POIs are immutable geographic source data', () => {
   const profile = SINGAPORE_MAJOR_POI_GEO_PROFILE
   assert.equal(profile.schema, 'agentic-graph.regional-poi-profile/v1')
   assert.equal(profile.id, 'adm0:SGP:major-pois/v1')
-  assert.equal(profile.revision, '2026-07-31.2')
+  assert.equal(profile.revision, '2026-10-09.1')
   assert.deepEqual(profile.dataPolicy, {
     storage: 'checked-in',
     runtimeNetwork: 'forbidden',
@@ -52,6 +59,12 @@ test('Singapore major POIs are immutable geographic source data', () => {
       'esplanade-theatres-on-the-bay',
       'the-fullerton-hotel',
       'raffles-hotel',
+      'national-gallery-singapore',
+      'marina-barrage',
+      'merlion-park',
+      'suntec-singapore-convention-exhibition-centre',
+      'marina-bay-cruise-centre',
+      'the-shoppes-at-marina-bay-sands',
     ],
   )
   assert.deepEqual(profile.pois, SINGAPORE_MAJOR_POI_IDENTITIES)
@@ -63,19 +76,20 @@ test('Singapore major POIs are immutable geographic source data', () => {
 
   for (const surface of profile.surfaces) {
     assert.equal(surface.geometry.type, 'Polygon')
-    assert.equal(surface.geometry.coordinates.length, 1)
-    const ring = surface.geometry.coordinates[0]
-    assert.ok(ring.length >= 4)
-    assert.deepEqual(ring[0], ring.at(-1))
-    assert.equal(
-      ring.every(([longitude, latitude]) => (
-        longitude >= 103.85
-        && longitude <= 103.87
-        && latitude >= 1.27
-        && latitude <= 1.30
-      )),
-      true,
-    )
+    assert.ok(surface.geometry.coordinates.length >= 1)
+    for (const ring of surface.geometry.coordinates) {
+      assert.ok(ring.length >= 4)
+      assert.deepEqual(ring[0], ring.at(-1))
+      assert.equal(
+        ring.every(([longitude, latitude]) => (
+          longitude >= 103.84
+          && longitude <= 103.88
+          && latitude >= 1.25
+          && latitude <= 1.31
+        )),
+        true,
+      )
+    }
     assert.ok(surface.heightMeters > surface.baseHeightMeters)
     assert.equal(
       surface.provenance.geometry.snapshotAt,
@@ -106,6 +120,12 @@ test('Singapore major POI locators are source-derived and order-independent', ()
       'esplanade-theatres-on-the-bay',
       'the-fullerton-hotel',
       'raffles-hotel',
+      'national-gallery-singapore',
+      'marina-barrage',
+      'merlion-park',
+      'suntec-singapore-convention-exhibition-centre',
+      'marina-bay-cruise-centre',
+      'the-shoppes-at-marina-bay-sands',
     ],
   )
 
@@ -193,7 +213,7 @@ test('Singapore surface heights and provenance match the dated authorities', () 
     version: surface.provenance.geometry.sourceVersion,
     timestamp: surface.provenance.geometry.snapshotAt,
   }))
-  assert.deepEqual(rows, [
+  assert.deepEqual(rows.slice(0, 12), [
     {
       id: 'marina-bay-sands:tower-1',
       base: 0,
@@ -292,7 +312,36 @@ test('Singapore surface heights and provenance match the dated authorities', () 
     },
   ])
 
-  const additionalBuildings = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.slice(-3)
+  const supplementalSurfaces = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.slice(12)
+  assert.deepEqual(
+    supplementalSurfaces.map(surface => ({
+      id: surface.id,
+      category: surface.category,
+      source: surface.provenance.geometry.sourceId,
+      version: surface.provenance.geometry.sourceVersion,
+      height: surface.heightMeters,
+      heightAccuracy: surface.accuracy.height,
+    })),
+    [
+      { id: 'national-gallery-singapore:old-city-hall', category: 'civic-cultural', source: 'openstreetmap:way/46595597', version: '24', height: 25, heightAccuracy: 'source-recorded' },
+      { id: 'national-gallery-singapore:former-supreme-court', category: 'civic-cultural', source: 'openstreetmap:way/170960936', version: '23', height: 25, heightAccuracy: 'source-recorded' },
+      { id: 'marina-barrage:marina-barrage', category: 'waterfront-infrastructure', source: 'openstreetmap:relation/18019148', version: '3', height: 0.25, heightAccuracy: 'not-modelled' },
+      { id: 'merlion-park:merlion-park', category: 'green-space', source: 'openstreetmap:way/687917300', version: '9', height: 0.25, heightAccuracy: 'not-modelled' },
+      { id: 'suntec-singapore-convention-exhibition-centre:suntec-singapore-convention-and-exhibition-centre', category: 'commercial', source: 'openstreetmap:way/393090489', version: '26', height: 0.25, heightAccuracy: 'not-modelled' },
+      { id: 'marina-bay-cruise-centre:marina-bay-cruise-centre', category: 'transit-waterfront', source: 'openstreetmap:way/510913018', version: '10', height: 0.25, heightAccuracy: 'not-modelled' },
+      { id: 'the-shoppes-at-marina-bay-sands:the-shoppes-at-marina-bay-sands', category: 'commercial-retail', source: 'openstreetmap:relation/2298319', version: '17', height: 15, heightAccuracy: 'source-recorded' },
+    ],
+  )
+  for (const surface of supplementalSurfaces) {
+    assert.ok(surface.provenance.geometry.sourceUrl.includes('/way/') || surface.provenance.geometry.sourceUrl.includes('/relation/'))
+    assert.ok(surface.provenance.geometry.snapshotAt)
+    assert.ok(surface.accuracy.statement.length > 0)
+    assert.deepEqual(surface.provenance.geometry, surface.provenance.height)
+  }
+
+  const additionalBuildings = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.filter(
+    surface => ['esplanade-theatres-on-the-bay', 'the-fullerton-hotel', 'raffles-hotel'].includes(surface.poiId),
+  )
   assert.deepEqual(
     additionalBuildings.map(surface => ({
       category: surface.category,
@@ -520,6 +569,6 @@ test('the checked-in Singapore geometry has an exact revision digest', () => {
     .digest('hex')
   assert.equal(
     digest,
-    '0de647529528b0dc76663d6ecb4029e7074d93db9c6b6e45aecce0175ba4870e',
+    'cc3619654731f146562536f086c727e0a2cc454eeaed5b64105990bee4f68a9f',
   )
 })

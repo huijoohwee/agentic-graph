@@ -51,3 +51,14 @@ export function resolveAgentMissionSource(trace: RunTrace | null | undefined, so
   return projection.entries.some(row => row.kind === 'file' && row.path === source) ? source!
     : trace && !trace.workflowManifest ? projection.markdownPath : projection.manifestPath
 }
+
+/** Resolve only this trace's native virtual documents; archive text is never reconstructed or relabeled. */
+export function agentMissionSourceDocument(trace: RunTrace | null | undefined, source: string | null | undefined,
+  codebase?: MissionCodebaseIndex): { path: string; text: string; kind: 'manifest' | 'reference' } | null {
+  if (!source) return null
+  const projection = agentMissionWorkspace(trace, codebase)
+  if (source === projection.manifestPath && trace?.workflowManifest)
+    return { path: source, text: trace.workflowManifest.text, kind: 'manifest' }
+  const reference = projection.references.get(source)
+  return reference ? { path: source, text: JSON.stringify(reference, null, 2), kind: 'reference' } : null
+}

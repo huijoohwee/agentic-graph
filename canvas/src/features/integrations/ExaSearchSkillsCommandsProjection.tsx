@@ -15,7 +15,7 @@ import {
 export function ExaSearchSkillsCommandsProjection() {
   return (
     <section
-      className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+      className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
       aria-label="Exa Search API coding-agent integration"
       data-kg-exa-search-skills-projection="configuration-only"
     >
@@ -36,7 +36,7 @@ export function ExaSearchSkillsCommandsProjection() {
         {EXA_SEARCH_API_DEFAULT_SEARCH_TYPE} · {EXA_SEARCH_API_DEFAULT_NUM_RESULTS} results · highlights · host-owned auth
       </p>
       <code
-        className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}
+        className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-xs', UI_THEME_TOKENS.text.secondary)}
         data-kg-exa-search-invocation="canonical"
         data-kg-exa-search-invocation-chip-renderer="shared-markdown-sigil"
       >

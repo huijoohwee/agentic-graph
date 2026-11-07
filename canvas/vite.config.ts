@@ -1,9 +1,11 @@
+import { webGpuManualChunk } from './viteManualChunks'
+import { createPwaPrecacheAdmission } from './vitePwaPrecacheAdmission.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
-import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'
+import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'; import offlinePublicAssets from './src/features/evidence-analysis/profiles/offline-assets.json'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,13 +44,14 @@ import {
   stripWebpageScriptTags,
 } from './src/lib/websites/webpageSandboxDoc'
 import { WEBPAGE_SHELL_PATTERN_REGEX_SOURCES } from './src/lib/websites/webpageShellHeuristics'
+import { expandWebpageDisclosures } from './src/lib/websites/webpageDisclosureExpansion'
 import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBase64 } from './src/features/workspace-fs/workspaceSourceMirrorFormats'
 import { DEFAULT_VITE_WATCH_IGNORED, buildWorkspaceMirrorWatchIgnoredRoots, createWorkspaceMirrorWatchPathIgnore } from './viteWorkspaceMirrorWatch'
 import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { buildPwaRuntimeCachingRules } from './vitePwaRuntimeCachePolicy'
+import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -65,7 +68,7 @@ const resolvedReactDom = nodeRequire.resolve('react-dom')
 const resolvedReactDomClient = nodeRequire.resolve('react-dom/client')
 const resolvedThreeSrc = nodeRequire.resolve('three/src/Three.js')
 const resolvedD3Entry = nodeRequire.resolve('d3')
-const resolvedMaplibreEntry = path.join(path.dirname(nodeRequire.resolve('maplibre-gl/package.json')), 'src/index.ts')
+const resolvedMaplibreEntry = nodeRequire.resolve('maplibre-gl/dist/maplibre-gl.mjs')
 const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zustandCompat.ts')
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
@@ -1868,36 +1871,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     res.end(JSON.stringify(payload))
     return true
   }
-  const parseSseFrames = (buffer: string): { frames: Array<{ event: string; data: string }>; rest: string } => {
-    const lines = buffer.split(/\r?\n/)
-    const frames: Array<{ event: string; data: string }> = []
-    let eventName = 'message'
-    let dataLines: string[] = []
-    let idx = 0
-    while (idx < lines.length) {
-      const line = lines[idx]
-      idx += 1
-      if (line === '') {
-        if (dataLines.length) {
-          frames.push({ event: eventName, data: dataLines.join('\n') })
-        }
-        eventName = 'message'
-        dataLines = []
-        continue
-      }
-      if (line.startsWith('event:')) {
-        eventName = line.slice('event:'.length).trim() || 'message'
-        continue
-      }
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice('data:'.length).trim())
-      }
-    }
-    const terminated = /\r?\n\r?\n$/.test(buffer)
-    if (terminated) return { frames, rest: '' }
-    const restLines = lines.slice(Math.max(lines.length - 1, 0))
-    return { frames: frames.slice(0, Math.max(frames.length - (dataLines.length ? 1 : 0), 0)), rest: restLines.join('\n') }
-  }
   const toActionableChatProxyError = (message: string): string => {
     const normalized = String(message || '').trim()
     const lowered = normalized.toLowerCase()
@@ -1914,168 +1887,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return 'Local AI gateway is not running or unreachable. Start the gateway and retry.'
     }
     return normalized
-  }
-  const listLocalGatewayModelIds = async ({
-    upstreamBase,
-    controller,
-  }: {
-    upstreamBase: URL
-    controller: AbortController
-  }): Promise<string[]> => {
-    try {
-      const localGatewayModelsUrl = new URL('/api/models', upstreamBase)
-      const res = await fetch(localGatewayModelsUrl.toString(), {
-        method: 'GET',
-        signal: controller.signal,
-      })
-      if (res.ok) {
-        const data = (await res.json()) as { models?: Array<{ name?: unknown }> }
-        const fromApi = (Array.isArray(data.models) ? data.models : [])
-          .map(item => (typeof item?.name === 'string' ? item.name.trim() : ''))
-          .filter(Boolean)
-        if (fromApi.length) return fromApi
-      }
-    } catch {
-      void 0
-    }
-    return []
-  }
-  const handleLocalGatewayChatCompletions = async ({
-    body,
-    upstreamBase,
-    controller,
-    res,
-  }: {
-    body: Buffer
-    upstreamBase: URL
-    controller: AbortController
-    res: import('node:http').ServerResponse
-  }): Promise<void> => {
-    const payload = (() => {
-      try {
-        const parsed = JSON.parse(body.toString('utf8')) as {
-          model?: unknown
-          messages?: Array<{ role?: unknown; content?: unknown }>
-        }
-        return parsed
-      } catch {
-        return null
-      }
-    })()
-    if (!payload || !Array.isArray(payload.messages)) {
-      writeJson(res, 400, { ok: false, error: 'Invalid local gateway chat payload' })
-      return
-    }
-    const threadCreateUrl = new URL('/api/langgraph/threads', upstreamBase)
-    const normalizedMessages = payload.messages
-      .map(msg => {
-        const role = typeof msg?.role === 'string' ? msg.role.trim() : ''
-        const content = typeof msg?.content === 'string' ? msg.content : ''
-        if (!role || !content) return null
-        return { role, content }
-      })
-      .filter(Boolean) as Array<{ role: string; content: string }>
-    const requestedModel = typeof payload.model === 'string' ? payload.model.trim() : ''
-    const availableModelIds = await listLocalGatewayModelIds({
-      upstreamBase,
-      controller,
-    })
-    const effectiveModel = requestedModel && availableModelIds.includes(requestedModel)
-      ? requestedModel
-      : (availableModelIds[0] || requestedModel)
-    if (!effectiveModel) {
-      writeJson(
-        res,
-        502,
-        { ok: false, error: "No chat model could be resolved. Please configure at least one model in config.yaml or provide a valid 'model_name'/'model' in the request." },
-      )
-      return
-    }
-    const streamBody = {
-      assistant_id: 'lead_agent',
-      input: { messages: normalizedMessages },
-      config: {
-        configurable: {
-          model_name: effectiveModel,
-          model: effectiveModel,
-          thinking_enabled: false,
-          is_plan_mode: false,
-        },
-      },
-      stream_mode: ['messages', 'values', 'custom'],
-    }
-    const threadCreateRes = await fetch(threadCreateUrl.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metadata: { source: 'agentic-graph-chat-proxy' } }),
-      signal: controller.signal,
-    })
-    if (!threadCreateRes.ok) {
-      const detail = await threadCreateRes.text()
-      writeJson(res, threadCreateRes.status, { ok: false, error: detail || 'Failed to create local gateway thread' })
-      return
-    }
-    const threadData = (await threadCreateRes.json()) as { thread_id?: unknown }
-    const threadId = typeof threadData.thread_id === 'string' ? threadData.thread_id.trim() : ''
-    if (!threadId) {
-      writeJson(res, 502, { ok: false, error: 'Invalid local gateway thread response' })
-      return
-    }
-    const streamUrl = new URL(`/api/langgraph/threads/${encodeURIComponent(threadId)}/runs/stream`, upstreamBase)
-    const localGatewayRes = await fetch(streamUrl.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify(streamBody),
-      signal: controller.signal,
-    })
-    if (!localGatewayRes.ok) {
-      const detail = await localGatewayRes.text()
-      writeJson(res, localGatewayRes.status, { ok: false, error: detail || 'Local gateway run failed' })
-      return
-    }
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
-    res.setHeader('Cache-Control', 'no-store')
-    res.setHeader('Connection', 'keep-alive')
-    const reader = localGatewayRes.body?.getReader()
-    if (!reader) {
-      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: '' } }] })}\n\n`)
-      res.write('data: [DONE]\n\n')
-      res.end()
-      return
-    }
-    let buffer = ''
-    while (true) {
-      const chunk = await reader.read()
-      if (chunk.done) break
-      if (!chunk.value || chunk.value.byteLength === 0) continue
-      buffer += Buffer.from(chunk.value).toString('utf8')
-      const parsed = parseSseFrames(buffer)
-      buffer = parsed.rest
-      parsed.frames.forEach(frame => {
-        if (!frame.data) return
-        if (frame.event === 'end') {
-          res.write('data: [DONE]\n\n')
-          return
-        }
-        let text = ''
-        try {
-          const data = JSON.parse(frame.data) as { content?: unknown; role?: unknown }
-          if (typeof data.content === 'string' && String(data.role || '').toLowerCase() === 'assistant') {
-            text = data.content
-          }
-        } catch {
-          text = ''
-        }
-        if (!text) return
-        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`)
-      })
-    }
-    res.write('data: [DONE]\n\n')
-    res.end()
   }
   return async (req, res, next) => {
     const method = String(req.method || 'GET').toUpperCase()
@@ -2116,7 +1927,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const aiGatewayBaseRaw = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
     const aiGatewayGatewayId = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
     const gatewayMode = String(process.env.AGENTIC_OS_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
-    const localGatewayOnly = gatewayMode === 'local-only' || (gatewayMode.endsWith('-only') && gatewayMode !== 'openai-only')
+    const localGatewayOnly = gatewayMode === 'local-only'
     const localProviderSelected = providerHeader === 'lmstudio-local'
     const bytePlusProviderSelected = providerHeader === 'byteplus-modelark'
     const miromindProviderSelected = providerHeader === 'miromind'
@@ -2134,11 +1945,9 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requestedUpstreamRaw = readSingleHeader(req.headers['x-kg-chat-upstream'])
     const aiGatewayRequested = providerHeader === 'openai' && !!aiGatewayBaseRaw && !!aiGatewayRoute
     const upstreamBaseRaw = (() => {
-      const legacyLocalUpstreamKey = ['AGENTIC_OS_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
-      const legacyLocalUpstream = String((process.env as Record<string, string | undefined>)[legacyLocalUpstreamKey] || '').trim()
       const localGatewayBase = String(process.env.AGENTIC_OS_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
       if (localGatewayOnly || localProviderSelected) {
-        return localGatewayBase || legacyLocalUpstream || String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+        return localGatewayBase || String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
       }
       if (aiGatewayRequested) return aiGatewayBaseRaw
       if (bytePlusProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_BYTEPLUS_AP_SOUTHEAST_HOST}`
@@ -2335,42 +2144,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       const ctrl = new AbortController()
       controller = ctrl
       timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.AGENTIC_OS_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
-      if (localProviderSelected && method === 'GET' && upstreamPath === '/v1/models') {
-        let localGatewayModelsRes: Response | null = null
-        try {
-          const localGatewayModelsUrl = new URL('/api/models', upstreamBase)
-          localGatewayModelsRes = await fetch(localGatewayModelsUrl.toString(), {
-            method: 'GET',
-            signal: ctrl.signal,
-          })
-        } catch {
-          localGatewayModelsRes = null
-        }
-        if (!localGatewayModelsRes) {
-          writeJson(res, 502, { ok: false, error: 'Failed to load local gateway models' })
-          return
-        }
-        const data = (await localGatewayModelsRes.json()) as { models?: Array<{ name?: unknown }> }
-        const list = Array.isArray(data.models) ? data.models : []
-        const mapped = list
-          .map(item => {
-            const id = typeof item?.name === 'string' ? item.name.trim() : ''
-            if (!id) return null
-            return { id, object: 'model' }
-          })
-          .filter(Boolean)
-        writeJson(res, localGatewayModelsRes.status, { data: mapped })
-        return
-      }
-      if (localProviderSelected && method === 'POST' && upstreamPath === '/v1/chat/completions') {
-        await handleLocalGatewayChatCompletions({
-          body,
-          upstreamBase,
-          controller: ctrl,
-          res,
-        })
-        return
-      }
       const headers = new Headers()
       const contentType = String(req.headers['content-type'] || '').trim()
       const accept = String(req.headers.accept || '').trim()
@@ -4185,153 +3958,18 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
     '              void 0;',
     '            }',
     '          };',
-    '          const expandAriaControls = () => {',
-    '            try {',
-    '              document.querySelectorAll("[aria-controls]").forEach((t2) => {',
-    '                try {',
-    '                  const expanded = String(t2.getAttribute("aria-expanded") || "").toLowerCase();',
-    '                  const controls = String(t2.getAttribute("aria-controls") || "").trim();',
-    '                  if (!controls) return;',
-    '                  if (expanded && expanded !== "false") return;',
-    '                  const target = document.getElementById(controls);',
-    '                  if (target) safeReveal(target);',
-    '                  try { t2.setAttribute("aria-expanded", "true"); } catch { void 0; }',
-    '                  safeClick(t2);',
-    '                } catch { void 0; }',
-    '              });',
-    '            } catch { void 0; }',
-    '          };',
-    '          const revealAccordionContainers = () => {',
-    '            try {',
-    '              const candidates = [];',
-    '              const push = (el) => { if (el && candidates.indexOf(el) < 0) candidates.push(el); };',
-    '              document.querySelectorAll("[class]").forEach((el2) => {',
-    '                try {',
-    '                  const cls = String(el2.className || "").toLowerCase();',
-    '                  if (!cls) return;',
-    '                  if (cls.includes("accordion") || cls.includes("faq")) push(el2);',
-    '                } catch { void 0; }',
-    '              });',
-    '              for (const box of candidates.slice(0, 60)) {',
-    '                try {',
-    '                  box.querySelectorAll("[hidden],[aria-hidden=\\"true\\"]").forEach((x) => safeReveal(x));',
-    '                  box.querySelectorAll("[style*=\\"display:none\\"],[style*=\\"display: none\\"]").forEach((x) => safeReveal(x));',
-    '                } catch { void 0; }',
-    '              }',
-    '            } catch { void 0; }',
-    '          };',
-    '          const autoExpandFaq = async () => {',
-    '            try {',
-    '              const sleep = (ms) => new Promise(r => setTimeout(r, ms));',
-    '              const waitNetIdle = async (timeoutMs) => {',
-    '                try {',
-    '                  const t0 = Date.now();',
-    '                  while (Date.now() - t0 < (timeoutMs || 0)) {',
-    '                    if (!AG_NET_PENDING) return;',
-    '                    await sleep(60);',
-    '                  }',
-    '                } catch { void 0; }',
-    '              };',
-    '              const opened = new Set();',
-    '              const tryOpenDetails = () => {',
-    '                try {',
-    '                  document.querySelectorAll("details:not([open])").forEach((d2) => {',
-    '                    try { d2.open = true; opened.add(d2); } catch { void 0; }',
-    '                  });',
-    '                } catch { void 0; }',
-    '              };',
-    '              const tryClickSummaries = () => {',
-    '                try {',
-    '                  document.querySelectorAll("details summary").forEach((s2) => {',
-    '                    try { safeClick(s2); } catch { void 0; }',
-    '                  });',
-    '                } catch { void 0; }',
-    '              };',
-    '              const selectors = [',
-    '                "[aria-expanded=\\"false\\"][aria-controls]",',
-    '                "button[aria-expanded=\\"false\\"]",',
-    '                "[role=\\"button\\"][aria-expanded=\\"false\\"]",',
-    '                ".accordion__header, .accordion-header, .faq__question, .faq-question",',
-    '                ".t-accordion__header, .t-accordion__trigger, .t-accordion__title",',
-    '              ];',
-    '              const collect = () => {',
-    '                const out = [];',
-    '                try {',
-    '                  for (const sel of selectors) {',
-    '                    try { document.querySelectorAll(sel).forEach((el2) => out.push(el2)); } catch { void 0; }',
-    '                  }',
-    '                } catch { void 0; }',
-    '                return out;',
-    '              };',
-    '              const clickBatch = (els) => {',
-    '                let n = 0;',
-    '                for (let i = 0; i < els.length; i += 1) {',
-    '                  const el2 = els[i];',
-    '                  if (!el2 || opened.has(el2)) continue;',
-    '                  if (safeClick(el2)) { opened.add(el2); n += 1; }',
-    '                  if (n >= 24) break;',
-    '                }',
-    '                return n;',
-    '              };',
-    '              const keywordClickWithin = (root) => {',
-    '                try {',
-    '                  if (!root || !root.querySelectorAll) return 0;',
-    '                  const needles = ["faq", "question", "questions", "apply", "contact"];',
-    '                  const els = Array.from(root.querySelectorAll("a,button,[role=button],[role=tab],[role=switch]"));',
-    '                  let n = 0;',
-    '                  for (let i = 0; i < els.length; i += 1) {',
-    '                    const el2 = els[i];',
-    '                    if (!el2 || opened.has(el2)) continue;',
-    '                    const txt = String(el2.textContent || "").trim().toLowerCase();',
-    '                    if (!txt) continue;',
-    '                    let hit = false;',
-    '                    for (const k of needles) { if (txt.includes(k)) { hit = true; break; } }',
-    '                    if (!hit) continue;',
-    '                    if (safeClick(el2)) { opened.add(el2); n += 1; }',
-    '                    if (n >= 12) break;',
-    '                  }',
-    '                  return n;',
-    '                } catch {',
-    '                  return 0;',
-    '                }',
-    '              };',
-    '              tryOpenDetails();',
-    '              tryClickSummaries();',
-    '              expandAriaControls();',
-    '              revealAccordionContainers();',
-    '              try {',
-    '                const boxes = Array.from(document.querySelectorAll("[class*=\\"accordion\\"],[class*=\\"Accordion\\"],[class*=\\"faq\\"],[class*=\\"Faq\\"]")).slice(0, 40);',
-    '                for (const b of boxes) keywordClickWithin(b);',
-    '              } catch { void 0; }',
-    '              try { keywordClickWithin(document.body || document.documentElement); } catch { void 0; }',
-    '              await waitNetIdle(900);',
-    '              for (let round = 0; round < 4; round += 1) {',
-    '                const els = collect();',
-    '                const clicked = clickBatch(els);',
-    '                await sleep(clicked ? 350 : 150);',
-    '                tryOpenDetails();',
-    '                expandAriaControls();',
-    '                revealAccordionContainers();',
-    '                try {',
-    '                  const boxes = Array.from(document.querySelectorAll("[class*=\\"accordion\\"],[class*=\\"Accordion\\"],[class*=\\"faq\\"],[class*=\\"Faq\\"]")).slice(0, 40);',
-    '                  let kclicked = 0;',
-    '                  for (const b of boxes) { kclicked += keywordClickWithin(b); if (kclicked >= 12) break; }',
-    '                } catch { void 0; }',
-    '                await waitNetIdle(clicked ? 1200 : 500);',
-    '              }',
-    '            } catch {',
-    '              void 0;',
-    '            }',
-    '          };',
-      '          const waitForHydration = async () => {',
+    `          const autoExpandDisclosures = ${expandWebpageDisclosures.toString()};`,
+      '          const waitForHydration = async (minimumWaitMs = 700) => {',
       '            try {',
       '              const maxWaitMs = mode === "layout" ? 7000 : 18000;',
       '              const started = Date.now();',
+      '              const minimumWait = Math.max(0, Math.min(2200, Number(minimumWaitMs) || 0));',
       '              let best = 0;',
       '              let stable = 0;',
       '              while (Date.now() - started < maxWaitMs) {',
       '                if (mode === "layout") {',
       '                  const raw = String(readLayout() || "");',
+      '                  const ready = Date.now() - started >= minimumWait && AG_NET_PENDING === 0 && Date.now() - AG_DOM_LAST_MUT_AT >= 240;',
       '                  let score = 0;',
       '                  try {',
       '                    const parsed = JSON.parse(raw);',
@@ -4340,9 +3978,9 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '                  } catch {',
       '                    score = raw.trim().length;',
       '                  }',
-      '                  if (score >= 140) return;',
+      '                  if (score >= 140 && ready) return;',
       '                  if (score > best + 4) { best = score; stable = 0; } else { stable += 1; }',
-      '                  if (stable >= 12 && best > 0) return;',
+      '                  if (stable >= 12 && best > 0 && Date.now() - started >= Math.max(800, minimumWait)) return;',
       '                  await new Promise(r => setTimeout(r, 120));',
       '                  continue;',
       '                }',
@@ -4350,21 +3988,33 @@ function injectWebpageProxyHtml(opts: { html: string; originalUrl: string; scrip
       '                const n = raw.trim().length;',
       '                const shellLike = looksLikeShellText(raw);',
       '                const minChars = mode === "text" ? 260 : 1200;',
-      '                if (n >= minChars && !shellLike) return;',
+      '                const ready = Date.now() - started >= minimumWait && AG_NET_PENDING === 0 && Date.now() - AG_DOM_LAST_MUT_AT >= 240;',
+      '                if (n >= minChars && !shellLike && ready) return;',
       '                if (n > best + 20) { best = n; stable = 0; } else { stable += 1; }',
-      '                if (stable >= 12 && best > 0 && !shellLike) return;',
+      '                if (stable >= 12 && best > 0 && !shellLike && Date.now() - started >= Math.max(800, minimumWait)) return;',
       '                await new Promise(r => setTimeout(r, shellLike ? 220 : 120));',
       '              }',
       '            } catch {',
       '              void 0;',
       '            }',
       '          };',
+      '          const waitForDisclosureWork = async () => {',
+      '            const started = Date.now(); let idleSince = 0;',
+      '            while (Date.now() - started < 2200) {',
+      '              const quiet = AG_NET_PENDING === 0 && Date.now() - AG_DOM_LAST_MUT_AT >= 240;',
+      '              if (quiet) { if (!idleSince) idleSince = Date.now(); if (Date.now() - started >= 500 && Date.now() - idleSince >= 300) return; } else idleSince = 0;',
+      '              await new Promise(r => setTimeout(r, 60));',
+      '            }',
+      '          };',
     '          const run = async () => {',
     '            await waitForHydration();',
     '            await clickInteractionTarget();',
-    '            if (d && d.expandFaq) await autoExpandFaq();',
     '            if (d && d.scrollCrawl) await maybeCrawl();',
-    '            await waitForHydration();',
+    '            if (d && d.expandDisclosures !== false && d.expandFaq !== false) {',
+    '              const expansion = await autoExpandDisclosures({ maxControls: 120, maxRounds: 8, maxDurationMs: 3500 });',
+    '              if (expansion && (expansion.detailsOpened || expansion.controlsActivated)) await waitForDisclosureWork();',
+    '            }',
+    '            await waitForHydration(0);',
     '            if (!includeChildren) { replyNow(); return; }',
     '          const iframes = Array.from(document.querySelectorAll("iframe")).slice(0, 8);',
     '          if (!iframes.length) { replyNow(); return; }',
@@ -6593,6 +6243,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
+  const pwaBuildPhase = process.env.AGENTIC_GRAPH_PWA_BUILD_PHASE || 'single'; const isPwaFinalizer = command === 'build' && pwaBuildPhase === 'finalize'; const precacheAdmission = createPwaPrecacheAdmission(undefined, pwaBuildPhase)
   const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
@@ -6635,7 +6286,7 @@ export default defineConfig(({ command, mode }) => {
       'mermaid',
       'maplibre-gl', 'maplibre-gl/dist/maplibre-gl.js',
       'dagre',
-      '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js',
+      '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/src/renderers/webgpu/WebGPURenderer.js',
       'yjs',
     ],
     exclude: ['gympgrph', 'grph-shared', 'entities'],
@@ -6655,7 +6306,7 @@ export default defineConfig(({ command, mode }) => {
       ],
     },
   },
-  build: {
+  build: { ...(isPwaFinalizer ? { emptyOutDir: false } : {}),
     sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
     minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
     reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
@@ -6665,7 +6316,7 @@ export default defineConfig(({ command, mode }) => {
     },
     // Keep Vite quiet for known lazy vendor chunks; hygiene keeps tighter per-chunk budgets for regressions.
     chunkSizeWarningLimit: 3000,
-    rollupOptions: {
+    rollupOptions: { ...(isPwaFinalizer ? { input: 'virtual:agentic-graph-pwa-finalizer' } : {}),
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
         ...(process.env.AG_LOW_MEM_BUILD === '1'
           ? { inlineDynamicImports: true as const }
@@ -6710,9 +6361,7 @@ export default defineConfig(({ command, mode }) => {
                 if (mermaidInternalChunk) return `mermaid-${mermaidInternalChunk[1]}`
                 if (moduleId.includes('/node_modules/mermaid/dist/')) return 'mermaid'
                 if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'
-                if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'
-                if (moduleId.includes('/node_modules/@react-three/fiber/')) return 'three-fiber'
-                if (moduleId.includes('/node_modules/three/')) return 'three-core'
+                const gpuChunk = webGpuManualChunk(moduleId); if (gpuChunk) return gpuChunk
                 if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
                 if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'
                 if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
@@ -6744,7 +6393,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^react$/, replacement: resolvedReact },
       { find: 'react-dom/client', replacement: resolvedReactDomClient },
       { find: /^react-dom$/, replacement: resolvedReactDom },
-      { find: /^three$/, replacement: resolvedThreeSrc },
+      { find: /^three$/, replacement: resolvedThreeSrc }, { find: /^three\/src\/(.*)$/, replacement: path.join(path.dirname(resolvedThreeSrc), '$1') },
       { find: /^d3$/, replacement: resolvedD3Entry },
       { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
@@ -6781,14 +6430,14 @@ export default defineConfig(({ command, mode }) => {
       ]
     }
   },
-  plugins: [
+  plugins: [...(isPwaFinalizer ? [{ name: 'agentic-graph-pwa-finalizer-entry', enforce: 'pre' as const, resolveId: (id: string) => id === 'virtual:agentic-graph-pwa-finalizer' ? '\0virtual:agentic-graph-pwa-finalizer' : null, load: (id: string) => id === '\0virtual:agentic-graph-pwa-finalizer' ? 'export {}' : null }] : []),
     tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision),
-    VitePWA({
-      registerType: 'autoUpdate',
+    inlineHtmlStylesheetAssetsPlugin(), ...(isPwaFinalizer ? [] : [precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets)]),
+    VitePWA({ disable: Boolean(process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST),
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts', integration: { closeBundleOrder: 'post' },
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
@@ -6852,13 +6501,10 @@ export default defineConfig(({ command, mode }) => {
           },
         },
       },
-      workbox: {
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        navigateFallback: null,
-        importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
-        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
-        globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
-        runtimeCaching: buildPwaRuntimeCachingRules(),
+        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,mjs,cjs,css,woff,woff2,ttf}'],
+        manifestTransforms: [precacheAdmission.manifestTransform],
       },
     }),
     ...(command === 'build' ? [] : [

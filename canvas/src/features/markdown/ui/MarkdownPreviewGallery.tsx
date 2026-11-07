@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
 import { getKanbanCardDragVisualState } from '@/features/markdown/ui/kanban/kanbanDragVisualState'
@@ -172,9 +173,9 @@ function MarkdownPreviewGalleryCard(props: {
   return (
     <article
       className={[
-        'relative min-w-0 overflow-hidden rounded-md border p-0 shadow-sm transition-transform duration-150',
+        'relative min-w-0 overflow-hidden rounded-md border p-0 shadow-none transition-transform duration-150',
         UI_THEME_TOKENS.panel.bg,
-        props.selected ? 'border-blue-300 ring-1 ring-blue-300' : UI_THEME_TOKENS.panel.border,
+        props.selected ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.panel.border,
         cardDragVisualState.className,
         dragging ? '' : 'hover:-translate-y-[1px]',
       ].join(' ')}
@@ -277,12 +278,12 @@ function MarkdownPreviewGalleryCard(props: {
             markdownPreview="auto"
             rows={3}
             onCommit={nextValue => props.onCommitCardText(card.id, 'summary', nextValue)}
-            displayClassName={`m-0 line-clamp-2 text-[10px] leading-4 ${UI_THEME_TOKENS.text.secondary}`}
-            editorClassName={`${UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME} text-[10px] leading-4`}
+            displayClassName={`m-0 line-clamp-2 text-xs leading-4 ${UI_THEME_TOKENS.text.secondary}`}
+            editorClassName={`${UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME} text-xs leading-4`}
           />
         </section>
         <p
-          className={`m-0 mt-1 text-[9px] font-medium uppercase leading-3 ${UI_THEME_TOKENS.text.tertiary}`}
+          className={`m-0 mt-1 text-xs font-medium uppercase leading-3 ${UI_THEME_TOKENS.text.tertiary}`}
           data-kg-markdown-gallery-card-source-meta="1"
         >
           Slide {card.position + 1} / Lines {card.startLine}-{card.endLine}
@@ -470,7 +471,7 @@ export function MarkdownPreviewGallery(props: MarkdownPreviewGalleryProps) {
       <header className="flex min-w-0 items-center gap-3 border-b border-[var(--kg-border)] px-3 py-3">
         <section className="min-w-0">
           <h3 className={`m-0 truncate text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}>Gallery</h3>
-          <p className={`m-0 mt-0.5 truncate text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
+          <p className={`m-0 mt-0.5 truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
             {slideCount} slides{activeSlideHeading ? ` / ${activeSlideHeading}` : ''}
           </p>
         </section>

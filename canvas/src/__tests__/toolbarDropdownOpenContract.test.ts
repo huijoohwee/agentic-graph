@@ -50,18 +50,11 @@ export const testToolbarDropdownCallsitesUseSharedContract = () => {
   const helperText = readUtf8('src/components/toolbar/dropdownOpenEvents.ts')
   const selectText = readUtf8('src/components/toolbar/ToolbarDropdownSelect.tsx')
 
-  if (!helperText.includes('export const TOOLBAR_DROPDOWN_OPEN_EVENT')) {
-    throw new Error('expected toolbar dropdown event constant to live in the shared helper module')
+  if (!helperText.includes("from '@agentic-base/views-react/controls'")) throw new Error('toolbar menu must use the Base owner')
+  for (const name of ['TOOLBAR_DROPDOWN_OPEN_EVENT', 'emitToolbarDropdownOpen', 'subscribeToolbarDropdownOpen', 'readToolbarDropdownOpenEventDetail']) {
+    if (!helperText.includes(name)) throw new Error('missing shared contract: ' + name)
   }
-  if (!helperText.includes('export function emitToolbarDropdownOpen')) {
-    throw new Error('expected toolbar dropdown helper module to expose a shared emitter')
-  }
-  if (!helperText.includes('export function subscribeToolbarDropdownOpen')) {
-    throw new Error('expected toolbar dropdown helper module to expose a shared subscription helper')
-  }
-  if (!helperText.includes('export function readToolbarDropdownOpenEventDetail')) {
-    throw new Error('expected toolbar dropdown helper module to expose shared detail parsing')
-  }
+  if (/dispatchEvent|addEventListener/.test(helperText)) throw new Error('Graph must not retain a duplicate menu coordinator')
   if (!selectText.includes('emitToolbarDropdownOpen(dropdownIdRef.current)')) {
     throw new Error('expected ToolbarDropdownSelect to emit via the shared toolbar dropdown helper')
   }

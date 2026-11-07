@@ -1,4 +1,6 @@
 import React from 'react'
+import { MainPanelIconButton } from '../ui/MainPanelIconButton'
+import { collaborationFieldHelp } from './collaborationFieldHelp'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { RightAlignedValueCell } from '@/features/panels/ui/canvasKeyTypeValueValueCell'
@@ -168,7 +170,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Display name', displayName, 'peer') && (
       <KeyTypeValueRow
         key="session-display-name"
-        keyNode="Display Name"
+        keyNode="Display Name" help={collaborationFieldHelp.displayName}
         typeNode={renderTypeIcon('collaboration.peer')}
         valueNode={(
           <RightAlignedTooltipInput
@@ -183,7 +185,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Session', sessionId, role, phase) && (
       <KeyTypeValueRow
         key="session-state"
-        keyNode="Session"
+        keyNode="Session" help={collaborationFieldHelp.session}
         typeNode={renderTypeIcon('collaboration.session')}
         valueNode={(
           <RightAlignedValueCell>
@@ -214,7 +216,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Peers', peers.length, connectedRemotePeers.length, ownerPeerId) && (
       <KeyTypeValueRow
         key="session-peer-count"
-        keyNode="Peer Count"
+        keyNode="Peer Count" help={collaborationFieldHelp.peerCount}
         typeNode={renderTypeIcon('collaboration.peer')}
         valueNode={(
           <RightAlignedValueCell>
@@ -236,7 +238,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Runtime status', statusText, errorText) && (
       <KeyTypeValueRow
         key="session-status"
-        keyNode="Runtime Status"
+        keyNode="Runtime Status" help={collaborationFieldHelp.runtime}
         typeNode={renderTypeIcon('collaboration.runtime')}
         valueNode={(
           <RightAlignedValueCell>
@@ -250,7 +252,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Follow mode', followModeEnabled ? 'on' : 'off', localCaretLine) && (
       <KeyTypeValueRow
         key="session-follow-mode"
-        keyNode="Follow Mode"
+        keyNode="Follow Mode" help={collaborationFieldHelp.follow}
         typeNode={renderTypeIcon('collaboration.follow')}
         valueNode={(
           <RightAlignedValueCell>
@@ -258,6 +260,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
               <button
                 type="button"
                 className={followModeEnabled ? activeButtonClassName : buttonClassName}
+                aria-pressed={followModeEnabled}
                 onClick={() => setFollowModeEnabled(true)}
               >
                 On
@@ -265,6 +268,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
               <button
                 type="button"
                 className={!followModeEnabled ? activeButtonClassName : buttonClassName}
+                aria-pressed={!followModeEnabled}
                 onClick={() => setFollowModeEnabled(false)}
               >
                 Off
@@ -283,25 +287,19 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Host or disconnect', 'start host', 'disconnect') && (
       <KeyTypeValueRow
         key="session-actions"
-        keyNode={hasAuthenticatedRoomTransport ? 'Room Session' : 'Host Session'}
+        keyNode={hasAuthenticatedRoomTransport ? 'Room Session' : 'Host Session'} help={collaborationFieldHelp.connection}
         typeNode={renderTypeIcon('collaboration.connection')}
         valueNode={(
           <RightAlignedValueCell>
             <section className={rowValueClassName}>
-              <button
-                type="button"
+              <MainPanelIconButton iconKey="action.connect" label={hostActionLabel}
                 className={activeButtonClassName}
                 onClick={() => queueStartHost()}
-              >
-                {hostActionLabel}
-              </button>
-              <button
-                type="button"
+              />
+              <MainPanelIconButton iconKey="action.disconnect" label="Disconnect"
                 className={buttonClassName}
                 onClick={() => queueDisconnect()}
-              >
-                Disconnect
-              </button>
+              />
             </section>
           </RightAlignedValueCell>
         )}
@@ -313,7 +311,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     !hasAuthenticatedRoomTransport && matchesQuery('Invite link', inviteUrl, inviteToken) && (
       <KeyTypeValueRow
         key="invite-link"
-        keyNode="Invite Link"
+        keyNode="Invite Link" help={collaborationFieldHelp.invite}
         typeNode={renderTypeIcon('collaboration.link')}
         valueNode={(
           <RightAlignedValueCell>
@@ -325,18 +323,14 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
                 placeholder="Host generates one invite per guest."
                 containerClassName={UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME}
               />
-              <button
-                type="button"
+              <MainPanelIconButton iconKey="collaboration.copy" label="Copy"
                 className={buttonClassName}
                 disabled={!inviteUrl}
                 onClick={() => {
                   if (!inviteUrl) return
                   void copyText(inviteUrl, 'Collaboration invite copied')
                 }}
-              >
-                {renderTypeIcon('collaboration.copy')}
-                Copy
-              </button>
+              />
             </section>
           </RightAlignedValueCell>
         )}
@@ -345,7 +339,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     !hasAuthenticatedRoomTransport && matchesQuery('Join invite', inviteInput, 'guest') && (
       <KeyTypeValueRow
         key="invite-join"
-        keyNode="Join Invite"
+        keyNode="Join Invite" help={collaborationFieldHelp.join}
         typeNode={renderTypeIcon('collaboration.connection')}
         valueNode={(
           <RightAlignedValueCell>
@@ -357,13 +351,10 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
                 placeholder="Paste invite link or token"
                 containerClassName={UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME}
               />
-              <button
-                type="button"
+              <MainPanelIconButton iconKey="action.connect" label="Join"
                 className={activeButtonClassName}
                 onClick={() => queueJoinInvite()}
-              >
-                Join
-              </button>
+              />
             </section>
           </RightAlignedValueCell>
         )}
@@ -375,7 +366,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     !hasAuthenticatedRoomTransport && matchesQuery('Guest answer', answerToken, 'copy answer') && (
       <KeyTypeValueRow
         key="answer-token"
-        keyNode="Guest Answer"
+        keyNode="Guest Answer" help={collaborationFieldHelp.answer}
         typeNode={renderTypeIcon('collaboration.copy')}
         valueNode={(
           <RightAlignedValueCell>
@@ -387,18 +378,14 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
                 placeholder="Join an invite to generate the answer token."
                 containerClassName={UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME}
               />
-              <button
-                type="button"
+              <MainPanelIconButton iconKey="collaboration.copy" label="Copy"
                 className={buttonClassName}
                 disabled={!answerToken}
                 onClick={() => {
                   if (!answerToken) return
                   void copyText(answerToken, 'Collaboration answer copied')
                 }}
-              >
-                {renderTypeIcon('collaboration.copy')}
-                Copy
-              </button>
+              />
             </section>
           </RightAlignedValueCell>
         )}
@@ -407,7 +394,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     !hasAuthenticatedRoomTransport && matchesQuery('Apply answer', answerInput, 'host') && (
       <KeyTypeValueRow
         key="answer-apply"
-        keyNode="Apply Answer"
+        keyNode="Apply Answer" help={collaborationFieldHelp.apply}
         typeNode={renderTypeIcon('collaboration.runtime')}
         valueNode={(
           <RightAlignedValueCell>
@@ -419,13 +406,10 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
                 placeholder="Paste answer token"
                 containerClassName={UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME}
               />
-              <button
-                type="button"
+              <MainPanelIconButton iconKey="action.connect" label="Connect"
                 className={activeButtonClassName}
                 onClick={() => queueApplyAnswer()}
-              >
-                Connect
-              </button>
+              />
             </section>
           </RightAlignedValueCell>
         )}
@@ -439,7 +423,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
       .map(peer => (
         <KeyTypeValueRow
           key={`peer-roster-${peer.peerId}`}
-          keyNode={peer.displayName}
+          keyNode={peer.displayName} help={collaborationFieldHelp.peer}
           typeNode={renderTypeIcon('collaboration.peer')}
           valueNode={(
             <RightAlignedValueCell>
@@ -460,36 +444,26 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
                 </span>
                 {!peer.isLocal ? (
                   <>
-                    <button
-                      type="button"
+                    <MainPanelIconButton iconKey="collaboration.follow" label="Follow"
                       className={followModeEnabled && followPeerId === peer.peerId ? activeButtonClassName : buttonClassName}
                       onClick={() => {
                         setFollowModeEnabled(true)
                         setFollowPeerId(peer.peerId)
                       }}
-                    >
-                      Follow
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <MainPanelIconButton iconKey="action.cancel" label="Unfollow"
                       className={!followModeEnabled || followPeerId !== peer.peerId ? buttonClassName : activeButtonClassName}
                       onClick={() => {
                         if (followPeerId === peer.peerId) {
                           setFollowPeerId(null)
                         }
                       }}
-                    >
-                      Unfollow
-                    </button>
+                    />
                     {isOwner && peer.ownership !== 'owner' ? (
-                      <button
-                        type="button"
+                      <MainPanelIconButton iconKey="collaboration.removePeer" label="Remove"
                         className={buttonClassName}
                         onClick={() => queueRemovePeer(peer.peerId)}
-                      >
-                        {renderTypeIcon('collaboration.removePeer')}
-                        Remove
-                      </button>
+                      />
                     ) : null}
                   </>
                 ) : null}
@@ -501,7 +475,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
     matchesQuery('Transport', phase, statusText) && (
       <KeyTypeValueRow
         key="peer-transport"
-        keyNode="Transport"
+        keyNode="Transport" help={collaborationFieldHelp.transport}
         typeNode={phase === 'connected' ? renderTypeIcon('collaboration.runtime') : renderTypeIcon('collaboration.transport')}
         valueNode={(
           <RightAlignedValueCell>

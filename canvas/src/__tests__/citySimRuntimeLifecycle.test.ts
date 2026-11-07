@@ -23,6 +23,7 @@ import {
   zoneCityParcel,
 } from '@/features/game-city-sim/citySimRuntime'
 import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
+import { publishCityCoopSnapshot } from '@/features/game-city-sim/cityCoopState'
 import {
   exitCitySimSurfaceAndWait,
 } from '@/features/game-city-sim/citySimSurfaceExit'
@@ -74,6 +75,71 @@ export async function testCitySimRuntimeFailsClosedWithoutSavedOrAuthoredSource(
     assert.equal(saved.lastResult?.code, 'source-unavailable')
     const reset = resetCitySim()
     assert.equal(reset.lastResult?.code, 'authored-source-missing')
+  } finally {
+    exitCitySimSurface({ restorePreviousSurface: false })
+    resetCitySimRuntimeForTests({ webglSupported: true })
+    useGraphStore.setState(priorStore as never)
+    restore()
+  }
+}
+
+export async function testCitySimRuntimeRejectsGuestMutationAndPersistenceRoutes() {
+  const { restore } = initJsdomHarness()
+  const priorStore = captureStoreState()
+  try {
+    prepareCitySurface()
+    resetCitySimRuntimeForTests({ webglSupported: true })
+    const hostWorkspace = createCityWorkspace()
+    const opened = await openCitySimSurface({ workspace: hostWorkspace, webglSupported: true })
+    assert.equal(opened.active, true)
+
+    let reads = 0
+    let writes = 0
+    const baseWorkspace = createCityWorkspace()
+    const guardedWorkspace: WorkspaceFs = {
+      ...baseWorkspace,
+      readFileText: async path => {
+        reads += 1
+        return baseWorkspace.readFileText(path)
+      },
+      writeFileText: async (path, text) => {
+        writes += 1
+        return baseWorkspace.writeFileText(path, text)
+      },
+    }
+    publishCityCoopSnapshot({
+      role: 'guest',
+      connected: true,
+      connectedPeerCount: 1,
+      sessionId: 'test-city-session',
+      documentHash: '0123456789abcdef',
+      message: 'Connected as a read-only guest.',
+    })
+
+    const before = serializeCityGridDocument(readCitySimSnapshot().city)
+    const outcomes = [
+      await openCitySimSurface({ workspace: guardedWorkspace, webglSupported: true }),
+      await startCitySim({ workspace: guardedWorkspace, webglSupported: true }),
+      await loadCitySim({ workspace: guardedWorkspace }),
+      await saveCitySim({ workspace: guardedWorkspace }),
+      stopCitySim(),
+      restartCitySim(),
+      resetCitySim(),
+      advanceCitySimByFixedStep(),
+      zoneCityParcel('gardens-by-the-bay', 'residential'),
+    ]
+
+    assert.equal(reads, 0, 'guest open/load cannot read local City persistence')
+    assert.equal(writes, 0, 'guest save cannot write local City persistence')
+    assert.deepEqual(
+      outcomes.map(result => result.lastResult?.code),
+      Array.from({ length: outcomes.length }, () => 'guest-read-only'),
+    )
+    assert.equal(
+      serializeCityGridDocument(readCitySimSnapshot().city),
+      before,
+      'guest lifecycle and zoning APIs must preserve the host City snapshot',
+    )
   } finally {
     exitCitySimSurface({ restorePreviousSurface: false })
     resetCitySimRuntimeForTests({ webglSupported: true })

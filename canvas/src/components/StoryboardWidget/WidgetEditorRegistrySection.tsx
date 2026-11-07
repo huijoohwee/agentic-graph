@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { PORT_HANDLE_STROKE_CLASS } from '@/components/StoryboardWidget/portHandleUi'
 import type { WidgetRegistryEntry, WidgetRegistryFieldOption, WidgetRegistryPort } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
@@ -356,7 +357,7 @@ export const WidgetEditorRegistrySection = React.memo(function WidgetEditorRegis
         keyNode,
         valueNode: (
           <section className="w-full">
-            <select
+            <PanelSelect
               id={id}
               className={cn(
                 keyValueInputClass,
@@ -367,8 +368,8 @@ export const WidgetEditorRegistrySection = React.memo(function WidgetEditorRegis
                 UI_THEME_TOKENS.input.text,
               )}
               value={effectiveValue}
-              onChange={e => {
-                const raw = String(e.target.value || '').trim()
+              onValueChange={selectedValueInput => {
+                const raw = String(selectedValueInput || '').trim()
                 if (!raw) {
                   setValue(undefined)
                   return
@@ -388,7 +389,7 @@ export const WidgetEditorRegistrySection = React.memo(function WidgetEditorRegis
                   </option>
                 )
               })}
-            </select>
+            </PanelSelect>
             {connectedMeta}
           </section>
         ),

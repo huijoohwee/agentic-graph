@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import FloatingPanelChat from '@/features/chat/FloatingPanelChat'
@@ -65,13 +66,12 @@ export async function testFloatingPanelChatRendersSelectedTextGenerationProvider
     if (keyInput?.getAttribute('aria-label') !== 'BytePlus ModelArk API key') {
       throw new Error(`expected selected BytePlus card to own the credential label, got ${keyInput?.getAttribute('aria-label')}`)
     }
-    const modelSelect = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLSelectElement | null
+    const modelSelect = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLButtonElement | null
     if (modelSelect?.value !== 'seed-2-0-lite-260228') {
       throw new Error(`expected selected BytePlus card to own the footer model, got ${modelSelect?.value}`)
     }
     await act(async () => {
-      modelSelect.value = 'gpt-5-nano'
-      modelSelect.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(modelSelect, 'gpt-5-nano')
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     const updatedNode = useGraphStore.getState().graphData?.nodes.find(node => node.id === 'byteplus-card')

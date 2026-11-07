@@ -23,6 +23,11 @@ import {
   SINGAPORE_MAJOR_POI_GEO_PROFILE,
 } from '../../grph-shared/src/geospatial/singaporeMajorPoiGeo.ts'
 
+const SINGAPORE_REFERENCE = Object.freeze({
+  anchor: [103.851959, 1.29027] as const,
+  presentationBounds: [[103.7, 1.1], [104.0, 1.5]] as const,
+})
+
 type FakeSource = {
   data: unknown
   serialize: () => { data: unknown }
@@ -180,7 +185,7 @@ test('Singapore XR environment projects its stage, named POIs, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  })
+  }, SINGAPORE_REFERENCE)
 
   assert.equal(environment.id, 'singapore')
   assert.deepEqual(environment.anchor, [103.851959, 1.29027])
@@ -302,7 +307,7 @@ test('Singapore XR environment projects its stage, named POIs, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  })
+  }, SINGAPORE_REFERENCE)
   assert.notEqual(
     recolored.revision,
     environment.revision,
@@ -314,7 +319,7 @@ test('four MapLibre modes keep planar 2D footprints and native 3D extrusions on 
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, SINGAPORE_REFERENCE)
   const overlay = createOverlay(environment)
   const { layers, map, sources, visibility } = createFakeMap()
 
@@ -356,7 +361,7 @@ test('environment layer creation fails closed when the active style rejects a re
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, SINGAPORE_REFERENCE)
   const overlay = createOverlay(environment)
   const { map } = createFakeMap()
   map.addLayer = () => {

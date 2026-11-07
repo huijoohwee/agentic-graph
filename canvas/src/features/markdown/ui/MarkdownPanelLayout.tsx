@@ -3,7 +3,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_COPY } from '@/lib/config'
 import type { TokenWithLines } from './markdownPreviewLex'
 import { slugify } from 'grph-shared/markdown/slugify'
-import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
+import { bindResizeSeparatorDragRuntime } from '@/lib/ui/resizeSeparatorDrag'
 import type {
   MarkdownSourceFilesPanelIntegration,
   MarkdownSourceFileListItem,
@@ -126,72 +126,20 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
     }).sidebarWidthPx
   })
 
-  const handleSidebarResizePointerDown = React.useCallback(
-    (e: React.PointerEvent) => {
-      if (!showSidebar) return
-      if (e.button !== 0) return
-
-      const startWidth = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, Math.floor(sidebarWidthPx)))
-      const startX = e.clientX
-      let raf = 0
-      let pendingWidth = startWidth
-      let lastWidth = startWidth
-      const rafFn = (cb: FrameRequestCallback) => {
-        if (typeof window !== 'undefined' && window.requestAnimationFrame) {
-          return window.requestAnimationFrame(cb)
-        }
-        return setTimeout(() => cb(Date.now()), 0) as unknown as number
-      }
-      const cancelRafFn = (id: number) => {
-        if (typeof window !== 'undefined' && window.cancelAnimationFrame) {
-          window.cancelAnimationFrame(id)
-          return
-        }
-        clearTimeout(id)
-      }
-      startPointerDrag({
-        ev: e.nativeEvent,
-        cursor: 'col-resize',
-        shouldStart: ev => {
-          if (ev.button !== undefined && ev.button !== 0) return false
-          return true
-        },
-        onMove: mv => {
-          const delta = mv.clientX - startX
-          const signedDelta = sidebarPosition === 'right' ? -delta : delta
-          const next = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, Math.floor(startWidth + signedDelta)))
-          pendingWidth = next
-          if (raf) return
-          raf = rafFn(() => {
-            raf = 0
-            lastWidth = pendingWidth
-            setSidebarWidthPx(prev => (prev === pendingWidth ? prev : pendingWidth))
-          })
-        },
-        onEnd: () => {
-          if (raf) {
-            cancelRafFn(raf)
-            raf = 0
-          }
-          lastWidth = pendingWidth
-          setSidebarWidthPx(prev => (prev === pendingWidth ? prev : pendingWidth))
-          persistMarkdownExplorerChromeState(
-            { sidebarWidthPx: lastWidth },
-            { minWidthPx: SIDEBAR_MIN_PX, maxWidthPx: SIDEBAR_MAX_PX, defaultWidthPx: 256 },
-          )
-        },
-        onCancel: () => {
-          if (raf) {
-            cancelRafFn(raf)
-            raf = 0
-          }
-          lastWidth = pendingWidth
-          setSidebarWidthPx(prev => (prev === pendingWidth ? prev : pendingWidth))
-        },
-      })
-    },
-    [showSidebar, sidebarPosition, sidebarWidthPx],
-  )
+  const [resizeHandleEl, setResizeHandleEl] = React.useState<HTMLHRElement | null>(null)
+  React.useEffect(() => {
+    if (!resizeHandleEl || !showSidebar) return
+    return bindResizeSeparatorDragRuntime<number>({
+      resizeHandleEl, cursor: 'col-resize', readCurrentValue: () => sidebarWidthPx,
+      setPreviewValue: setSidebarWidthPx,
+      commitValue: next => persistMarkdownExplorerChromeState(
+        { sidebarWidthPx: next },
+        { minWidthPx: SIDEBAR_MIN_PX, maxWidthPx: SIDEBAR_MAX_PX, defaultWidthPx: 256 },
+      ),
+      resolveNextValueFromPointerDrag: ({ startValue, deltaX }) => Math.max(SIDEBAR_MIN_PX,
+        Math.min(SIDEBAR_MAX_PX, Math.round(startValue + (sidebarPosition === 'right' ? -deltaX : deltaX)))),
+    })
+  }, [resizeHandleEl, showSidebar, sidebarPosition, sidebarWidthPx])
   const sidebarFrameTitleClassName = buildMarkdownSidebarTitleClassName({
     uiPanelTextFontClass,
     uiPanelMicroLabelTextSizeClass,
@@ -282,8 +230,8 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
         <VerticalResizeSeparatorHr
           ariaLabel="Resize explorer"
           tabIndex={0}
-          onPointerDown={handleSidebarResizePointerDown}
-          visualStyle="centerGrip"
+          ref={setResizeHandleEl}
+          visualStyle="line"
           className="relative z-20 flex-shrink-0 self-stretch pointer-events-auto"
         />
       ) : null}
@@ -292,8 +240,8 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
         <VerticalResizeSeparatorHr
           ariaLabel="Resize explorer"
           tabIndex={0}
-          onPointerDown={handleSidebarResizePointerDown}
-          visualStyle="centerGrip"
+          ref={setResizeHandleEl}
+          visualStyle="line"
           className="relative z-20 flex-shrink-0 self-stretch pointer-events-auto"
         />
       ) : null}

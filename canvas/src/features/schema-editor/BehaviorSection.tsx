@@ -76,10 +76,10 @@ export default function BehaviorSection({
           <span className={inlineLabelClassName}>Drag Constraint</span>
           <PanelSelect
             value={schema.behavior.dragConstraint ?? 'free'}
-            onChange={e => {
+            onValueChange={selectedValueInput => {
               const v: GraphBehavior['dragConstraint'] =
-                e.target.value === 'axis-x' || e.target.value === 'axis-y' || e.target.value === 'none'
-                  ? e.target.value
+                selectedValueInput === 'axis-x' || selectedValueInput === 'axis-y' || selectedValueInput === 'none'
+                  ? selectedValueInput
                   : 'free'
               setBehavior({ dragConstraint: v })
             }}
@@ -143,8 +143,8 @@ export default function BehaviorSection({
             <span className={inlineLabelClassName}>Select Mode</span>
             <PanelSelect
               value={schema.behavior.selectMode ?? 'single'}
-              onChange={e => {
-                const raw = e.target.value
+              onValueChange={selectedValueInput => {
+                const raw = selectedValueInput
                 const v: GraphBehavior['selectMode'] = raw === 'multi' || raw === 'lasso' ? raw : 'single'
                 setBehavior({ selectMode: v })
               }}
@@ -159,8 +159,8 @@ export default function BehaviorSection({
             <span className={inlineLabelClassName}>Create Mode</span>
             <PanelSelect
               value={schema.behavior.createMode ?? 'shift-drag'}
-              onChange={e => {
-                const raw = e.target.value
+              onValueChange={selectedValueInput => {
+                const raw = selectedValueInput
                 const v: GraphBehavior['createMode'] =
                   raw === 'click-source-target' || raw === 'panel-only' ? raw : 'shift-drag'
                 setBehavior({ createMode: v })
@@ -177,7 +177,7 @@ export default function BehaviorSection({
           <span className={inlineLabelClassName}>Default Node Type</span>
           <PanelSelect
             value={schema.behavior.defaultNodeType ?? ''}
-            onChange={e => setBehavior({ defaultNodeType: e.target.value || undefined })}
+            onValueChange={selectedValueInput => setBehavior({ defaultNodeType: selectedValueInput || undefined })}
             className={UI_RESPONSIVE_PANEL_INLINE_FIELD_CLASSNAME}
           >
             <option value="">(none)</option>

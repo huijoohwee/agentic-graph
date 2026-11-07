@@ -6,6 +6,8 @@ import type { ZoomRequest } from '@/lib/zoom/requests'
 import { readZoomScaleExtent } from '@/lib/graph/layoutDefaults'
 import { DEFAULT_TOOLBAR_ZOOM_CONFIG } from '@/lib/zoom/toolbarZoom'
 import { resolveZoomRequest2d } from '@/lib/zoom/resolveZoomRequest2d'
+import { resolveWorkspaceVisibleViewport } from '@/lib/zoom/workspaceVisibleViewport'
+import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
 
 export type { ZoomRequest } from '@/lib/zoom/requests'
 
@@ -45,6 +47,7 @@ export const applyZoomRequest = (
     graphData: GraphData | null;
     width: number;
     height: number;
+    workspaceVisibleViewport?: boolean;
     selectedNodeId: string | null;
     selectedEdgeId: string | null;
     selectedGroupId?: string | null;
@@ -82,14 +85,25 @@ export const applyZoomRequest = (
         return { minK, maxK }
       })()
     : { minK: curMinK, maxK: curMaxK }
+  // Fit in the visible part of the physical surface; gestures and explicit
+  // transforms retain their original full-surface coordinate system.
+  const fitViewport = ctx.workspaceVisibleViewport !== false && node && positionedGraph?.nodes.length
+    && (zoomRequest.type === 'fit' || zoomRequest.type === 'reset' || zoomRequest.type === 'selection')
+    ? resolveWorkspaceVisibleViewport({
+        viewportW: width,
+        viewportH: height,
+        workspaceEditorOverlayOpen: isWorkspaceEditorOverlayOpen(state),
+        surfaceElement: node,
+      })
+    : null
   const resolved = resolveZoomRequest2d({
     zoomRequest,
     graphData: positionedGraph,
     schema,
     documentSemanticMode: (state.documentSemanticMode as 'document' | 'keyword' | undefined) ?? undefined,
     graphDataRevision: state.graphDataRevision || 0,
-    viewportW: width,
-    viewportH: height,
+    viewportW: fitViewport?.width ?? width,
+    viewportH: fitViewport?.height ?? height,
     viewportFitReferenceWidth: state.viewportFitReferenceWidth,
     viewportFitReferenceHeight: state.viewportFitReferenceHeight,
     fitFillRatio: state.viewportFitFillRatio,
@@ -122,7 +136,11 @@ export const applyZoomRequest = (
       zoom.scaleExtent([nextMinScale, maxK0])
     }
   }
-  applyTransform(svg, zoom, resolved.nextTransform, resolved.durationMs)
+  const fitted = resolved.nextTransform
+  const nextTransform = fitViewport
+    ? d3.zoomIdentity.translate(fitted.x + fitViewport.left, fitted.y + fitViewport.top).scale(fitted.k)
+    : fitted
+  applyTransform(svg, zoom, nextTransform, resolved.durationMs)
   try {
     useGraphStore.getState().setLifecycleStage('zoomUpdate')
   } catch {

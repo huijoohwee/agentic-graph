@@ -11,7 +11,7 @@ export function WorkspaceDataViewFloatingPanelView() {
     return (
       <section className="flex h-full items-center justify-center p-4" aria-label={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}>
         <p className={['max-w-sm text-center text-sm', UI_THEME_TOKENS.text.secondary].join(' ')}>
-          Open a table, multi-dimensional table, kanban, or geospatial Viewer surface to edit View settings here.
+          Open a table, multi-dimensional table, kanban, Calendar, or geospatial Viewer surface to edit View settings here.
         </p>
       </section>
     )
@@ -26,6 +26,9 @@ export function WorkspaceDataViewFloatingPanelView() {
       viewerLayout={binding.viewerLayout}
       viewerMode={binding.viewerMode}
       allowMultiDimLayout={binding.allowMultiDimLayout}
+      sourceView={binding.sourceView}
+      viewScope={binding.viewScope}
+      onSelectSavedView={binding.onSelectSavedView}
       columns={binding.columns}
       groupByColumnId={binding.groupByColumnId}
       viewConfig={binding.viewConfig}

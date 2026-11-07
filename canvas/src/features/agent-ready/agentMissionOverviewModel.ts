@@ -6,11 +6,14 @@ import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { inspectNodeImpact, impactSourcePath } from '@/features/graph-inspector/lib/nodeImpact'
 import type { TraceSpan } from './missionControlProjection'
+import { joinAgentMissionProvenance, type AgentMissionProvenanceContext } from './agentMissionProvenance'
 
 /** Only exact recorded component identities bind a span to code; names are never fuzzy matched. */
-export function agentMissionSpanImpact(span: TraceSpan | null, graph: GraphData | null) {
+export function agentMissionSpanImpact(span: TraceSpan | null, graph: GraphData | null, provenance?: AgentMissionProvenanceContext) {
   const empty = { nodeIds: [] as string[], edgeIds: [] as string[], incomplete: false }
   if (!span || !graph) return { ...empty, reason: 'Select a span to inspect its codebase impact.' }
+  const joined = provenance === undefined ? null : joinAgentMissionProvenance(span, graph, provenance)
+  if (joined && joined.status !== 'matched') return { ...empty, provenance: joined, reason: joined.reason }
   const lookup = getCachedGraphLookup({ cacheScope: 'mission-codebase', graphData: graph })!
   const identity = record(graph.metadata?.agentGraphProjection), digest = span.component.digest
   if (!/^[a-f0-9]{64}$/.test(digest)) return { ...empty, reason: 'Impact unobserved: this span has no source digest.' }
@@ -28,7 +31,7 @@ export function agentMissionSpanImpact(span: TraceSpan | null, graph: GraphData 
     impact?.nodeIds.forEach(id => nodes.add(id)); impact?.edgeIds.forEach(id => edges.add(id))
     incomplete ||= impact?.incomplete === true
   }
-  return { nodeIds: [...nodes], edgeIds: [...edges], incomplete,
+  return { nodeIds: [...nodes], edgeIds: [...edges], incomplete, ...(joined ? { provenance: joined } : {}),
     reason: `${nodes.size} source-bound nodes · static one-hop impact${incomplete ? ' · Partial projection' : ''}. Runtime execution is not inferred.` }
 }
 

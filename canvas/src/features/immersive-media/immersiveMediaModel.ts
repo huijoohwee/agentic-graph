@@ -1,3 +1,5 @@
+import type { ImmersivePhoto } from './immersivePhotoProjection'
+
 export const IMMERSIVE_MEDIA_SCHEMA = 'agentic-graph-immersive-media/v1'
 
 export type ImmersiveMediaSourceKind = 'procedural' | 'image' | 'video'
@@ -58,7 +60,7 @@ export type ImmersiveMediaSnapshot = Readonly<{
   revision: number
   active: boolean
   phase: 'idle' | 'entering' | 'ready' | 'transitioning' | 'error'
-  source: Readonly<{ kind: ImmersiveMediaSourceKind; url: string }>
+  source: Readonly<{ kind: ImmersiveMediaSourceKind; url: string; photo?: ImmersivePhoto }>
   title: string
   description: string
   crop: ImmersiveMediaCrop
@@ -184,8 +186,9 @@ export function normalizeColor(value: unknown, fallback = '#67e8f9'): string {
   return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : fallback
 }
 
-export function normalizeMediaUrl(value: unknown): string | null {
+export function normalizeMediaUrl(value: unknown, maxImageDataLength = 2048): string | null {
   const url = String(value || '').trim()
+  if (/^data:image\/(png|jpeg|webp);base64,/i.test(url) && url.length <= maxImageDataLength) return url
   if (!url || url.length > 2048) return null
   if (url.startsWith('data:')) return /^data:(image|video)\//i.test(url) ? url : null
   try {

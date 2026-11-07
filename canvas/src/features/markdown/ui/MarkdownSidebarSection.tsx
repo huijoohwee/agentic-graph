@@ -51,9 +51,9 @@ export function MarkdownSidebarSection(props: MarkdownSidebarSectionProps) {
               aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
             >
               {collapsed ? (
-                <ChevronRight className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.5} aria-hidden="true" />
+                <ChevronRight className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
               ) : (
-                <ChevronDown className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.5} aria-hidden="true" />
+                <ChevronDown className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
               )}
               <h3 className={headerLabelClassName}>{title}</h3>
             </button>

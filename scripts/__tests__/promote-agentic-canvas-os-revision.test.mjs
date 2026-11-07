@@ -43,6 +43,10 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
   assert.ok(detectIndex >= 0)
   assert.ok(detectIndex < installIndex)
   assert.match(workflow, /cron: '17 3 \* \* \*'/)
+  assert.ok(load(workflow).on.workflow_dispatch !== undefined,
+    'maintainers can advance the exact source pin without waiting for the daily schedule')
+  assert.equal(load(workflow).jobs.promote.if, "github.ref == 'refs/heads/main'",
+    'manual dispatch must use protected main as its source')
   assert.match(workflow, /runs-on: ubuntu-slim/)
   assert.match(
     workflow,

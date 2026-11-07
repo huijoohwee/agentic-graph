@@ -1,3 +1,4 @@
+import { type MainPanelFieldHelp } from './mainPanelRowHelp'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { renderKeyTypeValueMarkdownSigilBridgeNode } from '@/features/panels/ui/canvasKeyTypeValueMarkdownBridge'
@@ -5,6 +6,7 @@ import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvas
 import { KeyTypeValueStaticRow as SharedKeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
 
 export interface KeyTypeValueRowProps {
+  help?: MainPanelFieldHelp
   keyNode: React.ReactNode
   typeNode?: React.ReactNode
   valueNode: React.ReactNode
@@ -23,6 +25,7 @@ export type CanvasKeyTypeValueStaticRowProps = KeyTypeValueRowProps
 
 export function CanvasKeyTypeValueStaticRow({
   keyNode,
+  help,
   typeNode,
   valueNode,
   align,
@@ -35,7 +38,7 @@ export function CanvasKeyTypeValueStaticRow({
   isActive,
   useMarkdownSigilBridge = true,
 }: CanvasKeyTypeValueStaticRowProps) {
-  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density, undefined, help)
   const activeClassName = isActive
     ? UI_THEME_TOKENS.table.rowSelected
     : UI_THEME_TOKENS.table.rowHoverHighlight

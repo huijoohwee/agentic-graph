@@ -26,11 +26,14 @@ describe('reconciliation custody and operator decisions', () => {
     const healthy = await worker.fetch(
       new Request('https://travel.test/readyz'), distinct, createExecutionContext(),
     )
-    expect(healthy.status).toBe(200)
+    expect(healthy.status).toBe(503)
     expect(await healthy.json()).toMatchObject({
-      ok: true,
+      ok: false,
       checks: expect.arrayContaining([
         expect.objectContaining({ name: 'reconciliation-operator-auth', ok: true }),
+        expect.objectContaining({
+          name: 'provenance-archive', ok: false, reason: 'provider-cost-evidence-unavailable',
+        }),
       ]),
     })
     for (const candidate of ['', 'weak', 'a'.repeat(32)]) {

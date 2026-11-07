@@ -51,7 +51,7 @@ export default function MainPanelGraphFieldsHeader({
       <section className="flex flex-wrap items-center gap-1">
         <span
           className={getChipClass('default', {
-            textSizeClass: 'text-[9px]',
+            textSizeClass: 'text-xs',
             textColorClass: UI_THEME_TOKENS.text.secondary,
             extraClassName: `font-medium ${UI_THEME_TOKENS.button.neutralSubtle} ${UI_THEME_TOKENS.input.border}`,
           })}
@@ -62,7 +62,7 @@ export default function MainPanelGraphFieldsHeader({
           <span
             key={entry.kind}
             className={getChipClass('selected', {
-              textSizeClass: 'text-[9px]',
+              textSizeClass: 'text-xs',
               textColorClass: 'text-blue-700',
               extraClassName: `inline-flex max-w-full items-center gap-1 ${uiIconPillClass}`,
             })}

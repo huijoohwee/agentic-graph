@@ -97,6 +97,34 @@ export async function testWorkspaceImportUrlChromePruningDoesNotTruncateSubstant
   }
 }
 
+export async function testWorkspaceImportUrlChromePruningSkipsLeadingCookieConsentWall(): Promise<void> {
+  const pruned = pruneWebpageChromeText([
+    'We use cookies and similar tools ("cookies") for the following purposes.',
+    '',
+    '### Essential',
+    'Essential cookies are necessary to provide our site and services and cannot be deactivated.',
+    'Allowed',
+    '',
+    '### Performance',
+    'Performance cookies provide anonymous statistics about how customers navigate our site so we can improve site experience and performance.',
+    'Allowed',
+    '',
+    '### Functional',
+    'Functional cookies help us provide useful site features, remember your preferences, and display relevant content.',
+    'Allowed',
+    '',
+    '# Event Dashboard',
+    'Original event overview content remains visible after the consent wall is dismissed.',
+    'Session details and logistics stay part of the imported page.',
+  ].join('\n'))
+  if (pruned.includes('We use cookies') || pruned.includes('### Essential') || pruned.includes('Allowed')) {
+    throw new Error(`expected leading cookie-consent wall to be pruned, got:\n${pruned}`)
+  }
+  if (!pruned.includes('# Event Dashboard') || !pruned.includes('Original event overview content')) {
+    throw new Error(`expected substantive page content after the consent wall to remain, got:\n${pruned}`)
+  }
+}
+
 export async function testWorkspaceImportUrlDomChooserRepairsMergedLeadingBoundariesFromRenderedText(): Promise<void> {
   const convertedMarkdown = [
     'Analyze recent oil market reports from major institutions like Goldman Sachs and UBS. Identify a shared logical blind spot. Based on this flaw, re-simulate the global oil price trajectory for the next six months.Show thinking trajectory Summary',
@@ -410,7 +438,7 @@ export async function testWorkspaceImportUrlImportDoesNotReuseCachedConnectionSh
   }) as unknown as typeof fetch
   setWorkspaceWebpageDomExportForTests(async () => null)
   try {
-    const rejectedConnectionShell = await fetchWorkspaceUrlContent(url, { mode: 'import', viewHint: 'markdown' }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('Authenticated browser session required'))
+    const rejectedConnectionShell = await fetchWorkspaceUrlContent(url, { mode: 'import', viewHint: 'markdown' }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('authentication or loading shell'))
     if (!rejectedConnectionShell) throw new Error('expected first import fetch to reject the low-fidelity connection shell before persistence')
     currentHtml = [
       '<!doctype html>',

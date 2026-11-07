@@ -3,6 +3,8 @@ import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Plugin } from 'vite'
+import { createWorkspaceRevealHandler, WORKSPACE_REVEAL_PATH } from './viteWorkspaceReveal'
+import { createWorkspaceProjectMiddleware, WORKSPACE_PROJECT_PATH } from './viteWorkspaceProject'
 
 export const AG_FS_ARTIFACT_PATH = '/__agentic_os_fs_artifact' as const
 export const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' as const
@@ -215,9 +217,13 @@ export const createWorkspaceArtifactBridgePlugin = (repoRoot: string): Plugin =>
     name: 'agentic-graph-workspace-artifact-bridge',
     apply: 'serve',
     configureServer(server) {
+      server.middlewares.use(WORKSPACE_PROJECT_PATH, createWorkspaceProjectMiddleware(server.httpServer))
+      server.middlewares.use(WORKSPACE_REVEAL_PATH, createWorkspaceRevealHandler(repoRoot, policy))
       server.middlewares.use(AG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
     },
     configurePreviewServer(server) {
+      server.middlewares.use(WORKSPACE_PROJECT_PATH, createWorkspaceProjectMiddleware(server.httpServer))
+      server.middlewares.use(WORKSPACE_REVEAL_PATH, createWorkspaceRevealHandler(repoRoot, policy))
       server.middlewares.use(AG_FS_ARTIFACT_PATH, createArtifactHandler(policy))
     },
   }

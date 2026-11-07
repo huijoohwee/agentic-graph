@@ -10,7 +10,10 @@ import { useWorkspaceDataViewConfig } from '@/features/markdown-workspace/main/v
 import type { DataViewCandidate } from '@/features/markdown-workspace/main/viewer/markdownWorkspaceDataViewCandidates'
 import { buildDashboardCanvasModel } from '@/components/DashboardCanvas/dashboardModel'
 import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
-import { activateAgentRunWorkspace, openAgentRunInspection, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+import { activateAgentRunWorkspace, activateAgentRunPrompt, readAgentRunWorkspace, openAgentRunInspection, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+import DashboardView from '@/features/panels/views/DashboardView'
+import { Canvas2dRendererSelect } from '@/components/toolbar/Canvas2dRendererSelect'
+import { executeCanvasViewControl } from '@/lib/canvas/canvasViewControlRuntime'
 import DashboardWidgetPalette from '@/components/DashboardCanvas/DashboardWidgetPalette'
 import { getStoryboardWidgetPanelSelectionChromeClassName } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
@@ -146,17 +149,17 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
 
     const readOrder = () => {
       const cards = Array.prototype.slice.call(
-        container.querySelectorAll('[data-kg-dashboard-section="structure"] [data-kg-dashboard-card]'),
+        container.querySelectorAll('[data-kg-dashboard-section="structure"] [data-agentic-base-dashboard-card]'),
       ) as Element[]
-      return cards.map(card => card.getAttribute('data-kg-dashboard-card') || '')
+      return cards.map(card => card.getAttribute('data-agentic-base-dashboard-card') || '')
     }
     const beforeOrder = readOrder()
     if (beforeOrder.join(',') !== 'node-types,edge-types,degree-leaders') {
       throw new Error(`expected initial dashboard card order, got ${beforeOrder.join(',')}`)
     }
 
-    const sourceCard = container.querySelector('[data-kg-dashboard-card="degree-leaders"]')
-    const targetCard = container.querySelector('[data-kg-dashboard-card="node-types"]')
+    const sourceCard = container.querySelector('[data-agentic-base-dashboard-card="degree-leaders"]')
+    const targetCard = container.querySelector('[data-agentic-base-dashboard-card="node-types"]')
     if (!sourceCard || !targetCard) throw new Error('expected dashboard drag source and target cards')
     stubCardRect(sourceCard)
     stubCardRect(targetCard)
@@ -185,17 +188,17 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
 
     const readMetricOrder = () => {
       const metrics = Array.prototype.slice.call(
-        container.querySelectorAll('[data-kg-dashboard-metric]'),
+        container.querySelector('[data-kg-dashboard-metrics-board]')?.querySelectorAll('[data-agentic-base-dashboard-card]') ?? [],
       ) as Element[]
-      return metrics.map(metric => metric.getAttribute('data-kg-dashboard-metric') || '')
+      return metrics.map(metric => metric.getAttribute('data-agentic-base-dashboard-card') || '')
     }
     const beforeMetricOrder = readMetricOrder()
-    if (beforeMetricOrder.join(',') !== 'nodes,edges,density,signals,grid') {
+    if (beforeMetricOrder.join(',') !== 'nodes,edges,clusters,density,signals,grid') {
       throw new Error(`expected initial dashboard metric order, got ${beforeMetricOrder.join(',')}`)
     }
 
-    const sourceMetric = container.querySelector('[data-kg-dashboard-metric="grid"]')
-    const targetMetric = container.querySelector('[data-kg-dashboard-metric="nodes"]')
+    const sourceMetric = container.querySelector('[data-agentic-base-dashboard-card="grid"]')
+    const targetMetric = container.querySelector('[data-agentic-base-dashboard-card="nodes"]')
     if (!sourceMetric || !targetMetric) throw new Error('expected dashboard metric drag source and target cards')
     stubCardRect(sourceMetric)
     stubCardRect(targetMetric)
@@ -216,9 +219,9 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
       await waitFrame()
     })
 
-    await waitForSavedDisplay(() => readMetricOrder().join(',') === 'grid,nodes,edges,density,signals')
+    await waitForSavedDisplay(() => readMetricOrder().join(',') === 'grid,nodes,edges,clusters,density,signals')
     const afterMetricOrder = readMetricOrder()
-    if (afterMetricOrder.join(',') !== 'grid,nodes,edges,density,signals') {
+    if (afterMetricOrder.join(',') !== 'grid,nodes,edges,clusters,density,signals') {
       throw new Error(`expected shared Dashboard metric drag to reorder within metrics lane, got ${afterMetricOrder.join(',')}`)
     }
   } finally {
@@ -272,7 +275,7 @@ export async function testDashboardCanvasCardFlipConfiguration() {
       await waitFrame()
     })
 
-    const cardSelector = '[data-kg-dashboard-card="node-types"]'
+    const cardSelector = '[data-agentic-base-dashboard-card="node-types"]'
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Configuration must be absent on the front')
     const front = container.querySelector(cardSelector)!
     await act(async () => { Simulate.click(front); await waitFrame() })
@@ -286,8 +289,9 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     await act(async () => { Simulate.click(flipIcon); await waitFrame() })
     const form = frame.querySelector('form[aria-label="Widget configuration"]')!
     if (!form || !frame.querySelector('section.kg-dashboard-widget-face[data-kg-widget-face="back"]')) throw Error('Toolbar Flip must reveal the semantic configuration back')
-    const inputs = form.querySelectorAll('input')
-    const titleEditor = inputs[0], noteEditor = form.querySelector('textarea')!
+    if (frame.querySelector('nav[data-kg-bubble-toolbar]')) throw Error('Configuration controls must not be covered by the front selection toolbar')
+    const titleEditor = [...form.querySelectorAll('label')].find(label => label.firstChild?.textContent === 'Title')!.querySelector('input')!
+    const noteEditor = form.querySelector('textarea')!
     await act(async () => {
       setEditableValue(dom, titleEditor, 'Edited Node Type Trend'); Simulate.change(titleEditor)
       setEditableValue(dom, noteEditor, 'Edited dashboard narrative'); Simulate.change(noteEditor)
@@ -359,13 +363,61 @@ export async function testDashboardEvidenceMetricsReuseReadOnlyWidgets() {
   dom.window.document.body.appendChild(container)
   try {
     await act(async () => { root.render(<DashboardMetricGrid metrics={[{ id: 'tokens', label: 'Tokens', value: 'Unknown', detail: 'No observation', tone: 'slate' }]} />); await waitFrame() })
-    const metric = container.querySelector('[data-kg-dashboard-metric="tokens"]')
+    const metric = container.querySelector('[data-agentic-base-dashboard-card="tokens"]')
     if (!metric || metric.getAttribute('draggable') !== 'false' || !metric.textContent?.includes('Unknown')) throw Error('Evidence must reuse immutable Dashboard metrics without inventing zero')
     await act(async () => { metric.querySelector('[data-kg-card-inline-edit]')?.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, detail: 2 })); await waitFrame() })
     if (container.querySelector('[contenteditable="true"], input, textarea')) throw Error('Evidence labels cannot be authored')
   } finally { await act(async () => root.unmount()); restore() }
   await testDashboardObservationSource()
+  await testDashboardGraphEntry()
   await testEphemeralTableConfiguration()
+}
+
+async function testDashboardGraphEntry() {
+  const { dom, restore } = initJsdomHarness(), container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container), previous = useGraphStore.getState(), graph = buildDashboardDragGraph()
+  graph.nodes[0].properties = { 'visual:community': 0 }
+  graph.nodes[1].properties = { 'visual:community': '0' }
+  graph.nodes[2].properties = { 'visual:community': 7 }
+  const metrics = buildDashboardCanvasModel(graph, null).metrics
+  if (metrics.find(metric => metric.id === 'clusters')?.value !== '2'
+    || metrics.find(metric => metric.id === 'nodes')?.value !== '3'
+    || metrics.find(metric => metric.id === 'edges')?.value !== '2') throw Error('Dashboard must count the full graph and distinct clusters, including zero')
+  let unlocked = true, closed = 0
+  const toolbar = <Canvas2dRendererSelect iconSizeClass="" iconStrokeWidth={1} ensureBaselineUnlocked={() => unlocked}
+    geospatialEnabled={false} onOpenGeospatialMode={() => {}} onActivateGeoXrMode={() => {}} onExitGeospatialMode={() => {}} />
+  const assertGraph = () => {
+    const state = useGraphStore.getState()
+    if (readAgentRunWorkspace() || state.canvas2dRenderer !== 'dashboard' || state.graphData !== graph
+      || state.selectedNodeId !== 'source') throw Error('Dashboard entry must preserve the ordinary graph and selection')
+  }
+  try {
+    useGraphStore.setState({ graphData: graph, canvas2dRenderer: 'd3', canvasRenderMode: '2d',
+      frontmatterModeEnabled: false, multiDimTableModeEnabled: false, selectedNodeId: 'source' })
+    await act(async () => { root.render(toolbar); await waitFrame() })
+    await act(async () => { executeCanvasViewControl({ optionId: 'renderer:dashboard' }); await waitFrame() })
+    assertGraph()
+    await act(async () => { executeCanvasViewControl({ optionId: 'agent-run:tree' }); await waitFrame() })
+    if (!readAgentRunWorkspace()) throw Error('Explicit Mission entry remains available')
+    await act(async () => { activateAgentRunPrompt('/canvas.view.set #canvas-view @canvas-view option=renderer:dashboard'); await waitFrame() })
+    assertGraph()
+    await act(async () => { useGraphStore.getState().setCanvas2dRenderer('d3'); await waitFrame() })
+    await act(async () => { root.render(<>{toolbar}<DashboardView onOpenWorkspace={() => { closed++ }} /></>); await waitFrame() })
+    assertGraph()
+    if (closed !== 1 || useGraphStore.getState().workspaceViewMode !== 'canvas') throw Error('Settings Dashboard must open the Canvas and close its panel')
+    unlocked = false
+    let rejected = false
+    try { executeCanvasViewControl({ optionId: 'renderer:dashboard' }) } catch { rejected = true }
+    if (!rejected) throw Error('Dashboard must honor the existing baseline lock')
+    await act(async () => { root.render(<>{toolbar}<DashboardView key="locked" onOpenWorkspace={() => { closed++ }} /></>); await waitFrame() })
+    if (closed !== 1 || !container.querySelector('[role="alert"]')?.textContent?.includes('baseline')) {
+      throw Error('Locked Dashboard entry must keep the panel open and report its refusal')
+    }
+  } finally {
+    await act(async () => { closeAgentRunInspection(); root.unmount() })
+    useGraphStore.setState(previous); restore()
+  }
 }
 
 async function testEphemeralTableConfiguration() {

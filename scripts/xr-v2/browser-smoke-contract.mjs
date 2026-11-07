@@ -53,7 +53,11 @@ export function assertXrV2SourceCheckoutGraph(context, {
   remoteHeadRevision,
 }) {
   assert.match(originMainRevision, SHA_REVISION_PATTERN)
-  assert.match(remoteHeadRevision, SHA_REVISION_PATTERN)
+  if (context.sourceLane === 'task-local') {
+    assert.equal(context.sourceCheckoutState, 'attached')
+    assert.match(context.sourceBranch, TASK_BRANCH_PATTERN)
+    assert.equal(remoteHeadRevision, null)
+  } else assert.match(remoteHeadRevision, SHA_REVISION_PATTERN)
   assert.ok(Array.isArray(parentRevisions))
   for (const revision of parentRevisions) assert.match(revision, SHA_REVISION_PATTERN)
   if (context.sourceCheckoutState === 'github-pull-request-merge') {
@@ -139,7 +143,7 @@ const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
 ])
 const REQUIRED_MARKERS = Object.freeze([
   'openEditorWorkspace=1',
-  "getByRole('navigation', { name: 'Source files', exact: true })",
+  "getByRole('region', { name: 'Source Files', exact: true })",
   'Folder docs',
   'Folder workspace-seeds',
   'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md',

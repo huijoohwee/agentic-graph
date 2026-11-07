@@ -120,7 +120,7 @@ function NumericField({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="grid min-w-0 gap-1 text-[10px]">
+    <label className="grid min-w-0 gap-1 text-xs">
       <span className={UI_THEME_TOKENS.text.tertiary}>{label}</span>
       <PanelTextInput
         type="number"
@@ -257,12 +257,12 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h3 className="text-[11px] font-semibold uppercase">Simulation</h3>
-          <p className={cn('m-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+          <h3 className="text-xs font-semibold uppercase">Simulation</h3>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Native rigid bodies, fixed-step playback, and authored reset poses.
           </p>
         </section>
-        <output className={cn('shrink-0 text-right text-[9px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)}>
+        <output className={cn('shrink-0 text-right text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
           {physics.phase}<br />{physics.world.bodies.length} bodies
         </output>
       </header>
@@ -271,20 +271,20 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
       <XrV2AuthoringStatusPanel sceneReady={sceneReady} />
 
       {!sceneReady ? (
-        <p className="m-0 rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
+        <p className="m-0 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
           Open or create a graph document to configure the XR simulation.
         </p>
       ) : null}
 
       <section className="grid gap-2" aria-label="XR body component">
-        <label className="grid gap-1 text-[10px]">
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Placed subject</span>
           <PanelSelect
             value={selectedSubject?.id || ''}
             disabled={!subjects.length}
-            onChange={event => {
-              const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
-              if (result.ok) setSelectedSubjectId(event.target.value)
+            onValueChange={selectedValueInput => {
+              const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: selectedValueInput })
+              if (result.ok) setSelectedSubjectId(selectedValueInput)
               else useGraphStore.getState().pushUiToast({ id: 'xr:simulation:select-target', kind: 'error', message: result.message })
             }}
             data-kg-media-xr-simulation-subject="1"
@@ -297,12 +297,12 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
           </PanelSelect>
         </label>
 
-        <label className="grid gap-1 text-[10px]">
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Body mode</span>
           <PanelSelect
             value={bodyDraft.mode}
             disabled={bodyEditingDisabled}
-            onChange={event => setBodyDraft(current => ({ ...current, mode: event.target.value as XrPhysicsBodyMode }))}
+            onValueChange={selectedValueInput => setBodyDraft(current => ({ ...current, mode: selectedValueInput as XrPhysicsBodyMode }))}
             data-kg-media-xr-simulation-body-mode="1"
           >
             {XR_PHYSICS_BODY_MODES.map(mode => <option key={mode} value={mode}>{BODY_MODE_LABELS[mode]}</option>)}
@@ -344,7 +344,7 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
       </section>
 
       <section className={cn('grid gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)} aria-label="XR world settings">
-        <h4 className={cn('m-0 text-[10px] font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>World</h4>
+        <h4 className={cn('m-0 text-xs font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>World</h4>
         <section className="grid grid-cols-3 gap-2">
           <NumericField label="Gravity Y" value={worldDraft.gravityY} min={-100} max={100} step={0.1} disabled={!sceneReady || !stopped} marker="gravity-y" onChange={value => setWorldDraft(current => ({ ...current, gravityY: value }))} />
           <NumericField label="Fixed Hz" value={worldDraft.fixedRateHz} min={30} max={240} step={1} disabled={!sceneReady || !stopped} marker="fixed-rate" onChange={value => setWorldDraft(current => ({ ...current, fixedRateHz: value }))} />

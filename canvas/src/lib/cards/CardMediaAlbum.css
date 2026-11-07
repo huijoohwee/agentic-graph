@@ -50,9 +50,9 @@
   justify-content: center;
   background: rgb(2 6 23 / 58%);
   color: white;
-  font-size: clamp(0.68rem, 8cqi, 1rem);
+  font-size: var(--kg-text-xs);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: normal;
   pointer-events: none;
 }
 

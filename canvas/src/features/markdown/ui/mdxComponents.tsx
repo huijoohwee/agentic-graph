@@ -1,3 +1,4 @@
+import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import React from 'react'
 import { type MermaidInitConfig, useRootThemeMode } from '@/features/panels/views/preview-panel/ui/mermaidConfig'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -117,7 +118,7 @@ export function LiveCode({
       } catch (e) {
         const pre = document.createElement('pre')
         pre.style.whiteSpace = 'pre-wrap'
-        pre.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+        pre.style.fontFamily = ${UI_FONT_MONO}
         pre.textContent = String(e && e.stack ? e.stack : e)
         document.body.appendChild(pre)
       }

@@ -2,9 +2,8 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.7.1"
-status: "spec-complete"
-date: "2026-09-22"
+version: "0.9.1"
+date: "2026-09-24"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -32,30 +31,38 @@ tags:
 historical_local_rung: "runtime-ready-dev"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-0232231d4a19--xr-character-authoring"
-agent_id: "codex-01a0c491"
-guideline_revision: "3.1.0"
-guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/993eb0e28a6d2e9427364df98c39c8a5e10910b4/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-guideline_sha256: "cc49896776a70e372a34d54fb81582ae1a46d46e2f527e2dfd3108cc07a0b1ef"
+worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
+agent_id: "codex-semantic-space"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/db3ca52f5e38a7ad411e989d3df81463eec51a61/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
 adlc_source_revision: "2a86d4321edbcc34ea38f3f4718fd4e49b80d153"
 adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dca686"
 increment_history: "agentic-graph-xr-mode-increments.md"
-reviewed_source_revision: "620471f120ddb31c7aab6ffcc8296f7be6eb3144"
-previous_document_version: "0.7.0"
-prd_revision: "0.7.1"
-tad_revision: "0.7.1"
-adr_revision: "0.7.1"
-mvp_revision: "0.7.1"
-gtm_revision: "0.7.1"
+reviewed_source_revision: "f16ad08ac920ed125072b6de81335e96c790e3f3"
+reviewed_candidate_revision: "020d4f33d322eb1ad4bd34218134d1b25edd4ebb"
+previous_document_version: "0.9.0"
+prd_revision: "0.9.1"
+tad_revision: "0.9.1"
+adr_revision: "0.9.1"
+mvp_revision: "0.9.1"
+gtm_revision: "0.9.1"
 ---
 
-# agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
+# Reference implementation — agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
+
+## Semantic-space increment — reference implementation
+
+The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria retain their original scope. The current source successor connects the prior still/manual slice to deterministic editable geometry; protected integration and deployment remain separate.
+The implemented local path is camera or chosen image → observation → confirmed entity → authored room/object constraints → native CPU recipe and Three.js preview → revision-checked local package/GLB export. Entities keep stable IDs across the photo, graph and scene; supported geometry has explicit authored-approximation provenance. Open-tab offline editing and focused package/geometry tests pass locally. Cold offline reload, Safari/physical camera, actual browser-host WebMCP and headless MCP parity need separate receipts as recorded in the companions.
+
+The [CPU procedural-twin companion](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md) joins revision 0.9.1, owns D01–D10 and ADR-014–017, and records the implemented manual two-object pipeline and remaining quality/device gates. Required generation uses local CPU, no ML/API/GPU compute; optional perception supplies typed inputs only. It reuses the existing recipe, export, renderer and physics owners. Local source proof is not protected integration, device acceptance or production release.
 
 ## Decision
 
-XR Mode is the existing agentic-graph 3D canvas, workspace asset path, and
-progressive WebXR entry—not a parallel immersive application or a second 3D
-pipeline.
+The [spatial-workspace increment](agentic-graph-xr-spatial-workspace-prd-tad-adr-mvp-gtm.md), `PLAN-XR-SPATIAL-WORKSPACE@0.1.0`, extends native scene navigation with a searchable outline and explicitly defers gizmos, spatial constraints and agent proposal review. Existing scene, evidence, renderer and release owners remain authoritative.
+
+XR Mode is the existing agentic-graph 3D canvas, workspace asset path, and progressive WebXR entry—not a parallel immersive application or a second 3D pipeline.
 
 The current product:
 
@@ -260,28 +267,29 @@ Evidence owners: `canvasXrSessionPolicy.test.ts`,
 ## Part B — Technical architecture
 
 ### Ownership topology
-
+**Diagram XR-T** · Class: Component topology · Notation: flowchart TD · Version: 0.9.0. **Caption:** Existing owners retain renderer, scene and capture authority.
 ```mermaid
 flowchart TD
-  F["Frontmatter and toolbar intent"] --> S["Existing canvas store"]
-  S --> T["ThreeGraph implementation"]
-  T --> C["Scene delegation"]
-  C --> X["XrSceneStage"]
-  X --> P["Canonical physics stage"]
-  X --> M["Motion-reference stage"]
-  T --> E["CanvasXrEntryPanel"]
-  E --> W["WebXR session and placement owners"]
-  E --> K["Existing Motion Control camera owner"]
-  I["Workspace import owners"] --> A["Model or spatial manifest"]
-  A --> T
-  H["Deterministic conversion harness"] --> A
-  R["Validated native part recipe"] --> A
+  F["Frontmatter and toolbar intent"]; F -->|"document intent"| S["Existing canvas store"]
+  S -->|"mode and sources"| T["ThreeGraph implementation"]
+  T -->|"delegate scene"| C["Scene delegation"]
+  C -->|"activate stage"| X["XrSceneStage"]
+  X -->|"physics mode"| P["Canonical physics stage"]
+  X -->|"motion mode"| M["Motion-reference stage"]
+  T -->|"capability controls"| E["CanvasXrEntryPanel"]
+  E -->|"immersive session"| W["WebXR session and placement owners"]
+  E -->|"fallback capture"| K["Existing Motion Control camera owner"]
+  I["Workspace import owners"]; I -->|"validated asset"| A["Model or spatial manifest"]
+  A -->|"render source"| T
+  H["Deterministic conversion harness"]; H -->|"compiled artifact"| A
+  R["Validated native part recipe"]; R -->|"native generated asset"| A
 ```
 
 ### Component inventory
 
 | Component | Responsibility | Source owner | Boundary |
 |---|---|---|---|
+| XR-T inventory | F intent, S store, T renderer, C delegate, X stage, P physics, M motion, E entry, W immersive session, K camera, I import, A manifest, H conversion, R recipe | Native component owners below | 14 nodes / 13 labelled edges / 0 clusters |
 | XR preset reader | Translate document intent into existing canvas modes | `canvas/src/features/parsers/canvasFrontmatterPreset.ts` | No renderer-local document state |
 | XR surface ownership | Preserve one active surface/panel authority | `canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts` | No duplicate store |
 | Renderer authority | Resolve graph/model/spatial XR content and common placement | `canvas/src/lib/three/ThreeGraph.impl.tsx` | One canvas/renderer |
@@ -434,7 +442,7 @@ Historical proof remains at the [unchanged evidence section](agentic-graph-xr-mo
 <a id="planning-revision--reference-implementation"></a>
 ## Native authoring increment — reference implementation
 
-All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.1`.
+All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.8.0`.
 PRD criteria below extend Part A; TAD consumes those exact criteria; ADR-007-009
 bind the design; MVP and GTM consume all three. Historical E1-E4 proof and earlier
 increments are preserved in the [evidence companion](agentic-graph-xr-mode-increments.md).
@@ -492,7 +500,7 @@ Every row is Must. Listed checks are required evidence hosts, not passing result
 | `design-token-integration`, `0da7c58ea4aa192f13ea36853d51847184a9ca98` | Active successor to design-review-bounds still owns registry, global tools and collaboration contract. B08/WebMCP/direct Canvas contract changes wait for actual ownership release/admission. |
 | Native publication boundary | Publisher classifies the dependency change as authority-controlling and requires external promotion authority. User source-release grant persists; exact authenticated authority is unverified and separate from source/check evidence. |
 
-The reviewed authoring guideline is v3.1.0 at the exact revision/digest in frontmatter;
+The current authoring guideline is v3.3.0 at the exact revision/digest in frontmatter;
 OS `guides/PRD-TAD-ADR-MVP-GTM.md` is v1.4.3 at its recorded revision/digest.
 These clean local source reads bind planning guidance, not full-guideline conformity.
 
@@ -562,7 +570,7 @@ external dependencies on integrated source or released ownership, with no invent
 
 ### Coverage and remaining findings
 
-Product maintainers own each disposition at this exact 0.7.1 revision. The checks
+Product maintainers own each disposition at this exact 0.8.0 revision. The checks
 below revisit coverage before MVP acceptance and any buyer/audience handoff.
 
 | Domain | Disposition / exact section join | Evidence gap and next check |

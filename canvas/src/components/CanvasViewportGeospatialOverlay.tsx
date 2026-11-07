@@ -9,28 +9,34 @@ import type { GraphData } from '@/lib/graph/types'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
-import { buildGeospatialOverlayGraphData } from '@/features/geospatial/geospatialOverlayGraphData'
+import { applyLocalPoiGraphSelection, buildGeospatialOverlayGraphData, mergeGraphDataUnique } from '@/features/geospatial/geospatialOverlayGraphData'
+import {
+  buildLocalPoiDirectoryGraphData,
+  getLocalPoiDirectoryDatasetSnapshot,
+  subscribeLocalPoiDirectoryDataset,
+} from '@/features/geospatial/localPoiDirectoryRuntime'
+import {
+  buildSupplyChainGeospatialGraphData,
+  isSupplyChainWorkspaceSource,
+} from '@/features/supply-chain/supplyChainGeospatialGraph'
+import { useSupplyChainViewStore } from '@/features/supply-chain/supplyChainViewStore'
+import { SUPPLY_CHAIN_SCENARIO } from '@/features/supply-chain/supplyChainScenario'
 import {
   resolveGeoXrGameplayPresentationOwner,
   type GeoXrOverlayStoreModule,
 } from '@/features/geospatial/geoXrFlightOverlayComposition'
 import { useGeoXrOverlayPublisher } from '@/features/geospatial/useGeoXrOverlayPublisher'
 import {
-  buildGrabMapsPoiRichMediaSrcDoc,
+  GEOSPATIAL_POI_PREVIEW_NODE_ID,
+  buildGrabMapsPoiRichMediaPreviewPayload,
   publishGrabMapsPoiRichMediaPreview,
-  resolveGrabMapsPoiRichMediaPanelNodeId,
   type GrabMapsPoiRichMediaDetail,
 } from '@/features/geospatial/grabMapsPoiRichMedia'
-import {
-  normalizeGeoPoiRichMediaProperties,
-  resolveGeoPoiAddressFromProperties,
-  resolveGeoPoiCategoryFromProperties,
-} from 'grph-shared/geospatial/poiRichMedia'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
-import { createId } from '@/lib/id'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
-import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
+import { readSourceGeospatialSnapshot, subscribeSourceGeospatial, useSourceGeospatialReview, sourceGeospatialReviewBounds } from '@/features/evidence-analysis/geospatialSource'
+import { GeoXrMediaSelectionTargets, useGeoXrGameModePresentation } from './geoXrMediaSelectionTargets'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import {
   isFlightSimHydrationPending,
@@ -38,6 +44,8 @@ import {
   readFlightSimSpatialProfile,
   subscribeFlightSimSnapshot,
 } from '@/features/game-flight-sim/flightSimRuntime'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
+import { selectCityParcel, setCitySimPlayerSelected, moveCitySimPlayerToCoordinate } from '@/features/game-city-sim/citySimRuntime'
 import {
   claimFlightSimReadyPresenter,
   completeFlightSimMapLibreReadyFrame,
@@ -46,29 +54,14 @@ import {
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
-import {
-  readFlightSimGeospatialBootstrapRequested,
-  subscribeFlightSimGeospatialBootstrapRequest,
-} from '@/features/game-flight-sim/flightSimSurfaceOpenLifecycle'
-import {
-  readCitySimSnapshot,
-  selectCityParcel,
-  subscribeCitySimSnapshot,
-} from '@/features/game-city-sim/citySimRuntime'
 
 const EMPTY_STRING_ARRAY: string[] = []
 const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
 
-function readFlightSimActive(): boolean {
-  return readFlightSimSnapshot().active
-}
-
-function readCitySimActive(): boolean {
-  return readCitySimSnapshot().active
-}
 
 type GeospatialOverlayHostProps = {
   active?: boolean
+  keyboardNavigationEnabled?: boolean
   gameplayPresentationOwner: GeospatialPresentationCameraOwner
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
@@ -84,6 +77,7 @@ type GympgrphStoreState = {
 
 type GympgrphModule = GeoXrOverlayStoreModule & {
   useGympgrphStore?: { getState?: () => GympgrphStoreState }
+  requestGeospatialFitToBounds?: (bounds: readonly [number, number, number, number]) => void
   requestGeospatialFitToData?: () => void
   requestGeospatialFitToSelection?: () => void
   GeospatialOverlayHost?: React.ComponentType<GeospatialOverlayHostProps>
@@ -159,25 +153,21 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       semanticMediaOwner?.selectionAttribute.value,
     ],
   )
-  const flightBootstrapRequested = React.useSyncExternalStore(
-    subscribeFlightSimGeospatialBootstrapRequest,
-    readFlightSimGeospatialBootstrapRequested,
-    readFlightSimGeospatialBootstrapRequested,
-  )
-  const flightSimActive = React.useSyncExternalStore(
-    subscribeFlightSimSnapshot,
-    readFlightSimActive,
-    readFlightSimActive,
-  )
-  const citySimActive = React.useSyncExternalStore(
-    subscribeCitySimSnapshot,
-    readCitySimActive,
-    readCitySimActive,
-  )
-  const gameplayPresentationOwner = resolveGeoXrGameplayPresentationOwner({
+  const {
+    citySimActive,
+    flightBootstrapRequested,
+    flightSimActive,
+    gameModeActive,
+    gameModeGeoOverlay,
+    geoXrMediaSelectionAssets,
+    keyboardNavigationEnabled,
+  } = useGeoXrGameModePresentation({ active, composedWithXr })
+  const sourceReview = useSourceGeospatialReview()
+  const gameplayPresentationOwner = sourceReview ? null : resolveGeoXrGameplayPresentationOwner({
     cityActive: citySimActive,
     flightActive: flightSimActive,
     flightBootstrapRequested,
+    gameModeActive,
   })
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
@@ -189,14 +179,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       selectedEdgeId: s.selectedEdgeId,
       openWidgetNodeIds: s.openWidgetNodeIds ?? EMPTY_STRING_ARRAY,
       openWidgetNodeIdsByRenderer: s.openWidgetNodeIdsByRenderer ?? EMPTY_OPEN_WIDGETS_BY_RENDERER,
-      updateOpenWidgetNodeIds: s.updateOpenWidgetNodeIds,
       selectNode: s.selectNode,
       selectEdge: s.selectEdge,
       setSelectionSource: s.setSelectionSource,
       requestZoom: s.requestZoom,
       requestThreeCamera: s.requestThreeCamera,
-      updateNode: s.updateNode,
-      addNode: s.addNode,
       pushUiToast: s.pushUiToast,
       upsertUiToast: s.upsertUiToast,
       dismissUiToast: s.dismissUiToast,
@@ -230,6 +217,21 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     })),
   )
   const graphDataRevision = useGraphStore(s => s.graphDataRevision || 0)
+  const localPoiDataset = React.useSyncExternalStore(
+    subscribeLocalPoiDirectoryDataset,
+    getLocalPoiDirectoryDatasetSnapshot,
+    () => null,
+  )
+  const timelineTransport = useGraphStore(useShallow(s => ({
+    documentKey: s.timelineTransportDocumentKey || '',
+    position: s.timelineTransportPosition || 0,
+  })))
+  const supplyChainView = useSupplyChainViewStore(useShallow(s => ({
+    selection: s.selection,
+    modeFilter: s.modeFilter,
+    entityFilter: s.entityFilter,
+    showLabels: s.showLabels,
+  })))
   const canvasMarkdownDocument = useCanvasAppliedMarkdownDocument({
     name: markdownDocumentName,
     sourceUrl: markdownDocumentSourceUrl,
@@ -247,24 +249,61 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     if (!active) return geoGraphLastRef.current
     const derived = deriveSceneDisplayGraph({ graphData })?.displayGraphData || null
     const base = (derived || graphData) as GraphData
-    return buildGeospatialOverlayGraphData({
+    const withMarkdownGeodata = buildGeospatialOverlayGraphData({
       graphData: base,
       graphRevision: graphDataRevision,
       markdownText: canvasMarkdownDocument.text,
       sourceDocumentPath: canvasMarkdownDocument.name,
       sourceFiles: geospatialSourceFiles,
     })
-  }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision])
+    const localPoiGraph = buildLocalPoiDirectoryGraphData(localPoiDataset)
+    const withLocalPoiDirectory = localPoiGraph
+      ? mergeGraphDataUnique(withMarkdownGeodata, localPoiGraph)
+      : withMarkdownGeodata
+    const selectedIds = new Set([
+      String(gympgrphBridge.selectedNodeId || '').trim(),
+      ...(Array.isArray(gympgrphBridge.selectedNodeIds) ? gympgrphBridge.selectedNodeIds.map(id => String(id || '').trim()) : []),
+    ].filter(Boolean))
+    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return applyLocalPoiGraphSelection(withLocalPoiDirectory, selectedIds)
+    const timeSeconds = timelineTransport.documentKey === `${SUPPLY_CHAIN_SCENARIO.id}@${SUPPLY_CHAIN_SCENARIO.revision}`
+      ? Math.max(0, Math.floor(timelineTransport.position * 60))
+      : 0
+    return applyLocalPoiGraphSelection(buildSupplyChainGeospatialGraphData({
+      graphData: withLocalPoiDirectory,
+      ...supplyChainView,
+      timeSeconds,
+    }), selectedIds)
+  }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision,
+    localPoiDataset, supplyChainView, timelineTransport.documentKey, timelineTransport.position,
+    gympgrphBridge.selectedNodeId, gympgrphBridge.selectedNodeIds])
+
+  const supplyChainFitRequestedRef = React.useRef(false)
+  React.useEffect(() => {
+    const supplyChainActive = active && isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)
+    if (!supplyChainActive) {
+      supplyChainFitRequestedRef.current = false
+      return
+    }
+    if (supplyChainFitRequestedRef.current) return
+    supplyChainFitRequestedRef.current = true
+    let cancelled = false
+    void loadGympgrphModule().then(module => {
+      if (!cancelled) module.requestGeospatialFitToData?.()
+    }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [active, canvasMarkdownDocument.name])
 
   React.useEffect(() => {
     if (!active) return
     geoGraphLastRef.current = geospatialGraphData
   }, [active, geospatialGraphData])
 
+  const sourceGeospatial = React.useSyncExternalStore(subscribeSourceGeospatial, readSourceGeospatialSnapshot, () => null)
   const snapshot = React.useMemo(
     () => ({
       graphData: geospatialGraphData,
-      graphRevision: graphDataRevision,
+      sourceGeospatial,
+      graphRevision: isSupplyChainWorkspaceSource(canvasMarkdownDocument.name) ? 0 : graphDataRevision,
       zoomState: gympgrphBridge.zoomState,
       canvasRenderMode: gympgrphBridge.canvasRenderMode,
       viewportControlsPreset: gympgrphBridge.viewportControlsPreset,
@@ -272,9 +311,12 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       selectedNodeIds: gympgrphBridge.selectedNodeIds,
       selectedEdgeId: gympgrphBridge.selectedEdgeId,
       geospatialPanelNodeIds: storyboardWidgetPanelsActive ? gympgrphBridge.openWidgetNodeIds : [],
+      gameModeGeoOverlay,
     }),
     [
       geospatialGraphData,
+      canvasMarkdownDocument.name,
+      sourceGeospatial,
       graphDataRevision,
       gympgrphBridge.canvasRenderMode,
       gympgrphBridge.openWidgetNodeIds,
@@ -284,75 +326,43 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       storyboardWidgetPanelsActive,
       gympgrphBridge.viewportControlsPreset,
       gympgrphBridge.zoomState,
+      gameModeGeoOverlay,
     ],
   )
 
   const renderPoiInRichMediaPanel = React.useCallback((detail: GrabMapsPoiRichMediaDetail): boolean => {
-    const poiProperties = normalizeGeoPoiRichMediaProperties(detail.properties)
-    const poiAddress = String(detail.address || '').trim() || resolveGeoPoiAddressFromProperties(poiProperties)
-    const poiCategory = String(detail.category || '').trim() || resolveGeoPoiCategoryFromProperties(poiProperties)
-    const normalizedDetail = { ...detail, address: poiAddress, category: poiCategory, properties: poiProperties }
-    const srcDoc = buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)
     const storyboardWidgetOpenWidgetNodeIds = Array.isArray(gympgrphBridge.openWidgetNodeIdsByRenderer?.storyboard)
       ? gympgrphBridge.openWidgetNodeIdsByRenderer.storyboard
       : []
-    let targetNodeId = resolveGrabMapsPoiRichMediaPanelNodeId({
+    const payload = buildGrabMapsPoiRichMediaPreviewPayload({
+      detail,
       graphData,
       selectedNodeId: gympgrphBridge.selectedNodeId,
       selectedNodeIds: gympgrphBridge.selectedNodeIds,
       openWidgetNodeIds: gympgrphBridge.openWidgetNodeIds,
       storyboardWidgetOpenWidgetNodeIds,
     })
-    if (!targetNodeId) {
-      const candidateIds = [
-        String(gympgrphBridge.selectedNodeId || '').trim(),
-        ...(Array.isArray(gympgrphBridge.selectedNodeIds) ? gympgrphBridge.selectedNodeIds : []).map(v => String(v || '').trim()),
-      ].filter(Boolean)
-      let anchorNode = null
-      for (let i = 0; i < candidateIds.length; i += 1) {
-        const resolved = resolveGraphNodeByCanonicalId(graphData, candidateIds[i]) || null
-        if (!resolved) continue
-        if (Number.isFinite(resolved.x) && Number.isFinite(resolved.y)) {
-          anchorNode = resolved
-          break
-        }
-        if (!anchorNode) anchorNode = resolved
-      }
-      const nextId = createId('rich-media-panel')
-      gympgrphBridge.addNode(buildRichMediaPanelNode({ id: nextId, anchor: anchorNode }))
-      targetNodeId = nextId
+    publishGrabMapsPoiRichMediaPreview(payload)
+    gympgrphBridge.setSelectionSource('canvas')
+    if (payload.targetNodeId !== GEOSPATIAL_POI_PREVIEW_NODE_ID
+      && resolveGraphNodeByCanonicalId(graphData, payload.targetNodeId)) {
+      gympgrphBridge.selectNode(payload.targetNodeId)
     }
-    publishGrabMapsPoiRichMediaPreview({
-      targetNodeId,
-      srcDoc,
-      label: String(detail.label || '').trim() || 'POI',
-    })
-    const panelNodeId = targetNodeId
-    gympgrphBridge.updateNode(panelNodeId, {
-      properties: {
-        richMediaActiveTab: 'poi',
-        freezeConnectedOutput: true,
-        richMediaPoiLabel: String(detail.label || '').trim() || 'POI',
-        richMediaPoiAddress: poiAddress,
-        richMediaPoiCategory: poiCategory,
-        richMediaPoiProperties: poiProperties,
-        richMediaPoiLat: Number.isFinite(Number(detail.lat)) ? Number(detail.lat) : null,
-        richMediaPoiLng: Number.isFinite(Number(detail.lng)) ? Number(detail.lng) : null,
-        richMediaPoiCoordinates:
-          Number.isFinite(Number(detail.lat)) && Number.isFinite(Number(detail.lng))
-            ? `${Number(detail.lat).toFixed(6)}, ${Number(detail.lng).toFixed(6)}`
-            : '',
-        output: '',
-        outputSrcDoc: srcDoc,
-      },
-    })
-    gympgrphBridge.updateOpenWidgetNodeIds(prev => (prev.includes(panelNodeId) ? prev : [...prev, panelNodeId]))
-    gympgrphBridge.selectNode(panelNodeId)
     return true
   }, [
     graphData,
     gympgrphBridge,
   ])
+
+  const selectGameModeGeoActor = React.useCallback((targetId: string) => {
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
+    gympgrphBridge.pushUiToast({
+      id: `game-mode:map-target:${targetId}:${result.ok ? 'ok' : 'error'}`,
+      kind: result.ok ? 'success' : 'error',
+      message: result.message,
+    })
+    return result.ok
+  }, [gympgrphBridge.pushUiToast])
 
   const handlers = React.useMemo(
     () => ({
@@ -362,6 +372,9 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       requestZoom: gympgrphBridge.requestZoom,
       requestThreeCamera: gympgrphBridge.requestThreeCamera,
       selectCityParcel,
+      selectGameModeGeoActor,
+      setCityGameplayPlayerSelected: setCitySimPlayerSelected,
+      moveCityGameplayPlayerToCoordinate: moveCitySimPlayerToCoordinate,
       renderPoiInRichMediaPanel,
       pushUiToast: gympgrphBridge.pushUiToast,
       upsertUiToast: gympgrphBridge.upsertUiToast,
@@ -369,12 +382,16 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     }),
     [
       gympgrphBridge.dismissUiToast,
+      moveCitySimPlayerToCoordinate,
       gympgrphBridge.pushUiToast,
       gympgrphBridge.requestThreeCamera,
       gympgrphBridge.requestZoom,
       renderPoiInRichMediaPanel,
+      selectGameModeGeoActor,
       gympgrphBridge.selectEdge,
       gympgrphBridge.selectNode,
+      selectCityParcel,
+      setCitySimPlayerSelected,
       gympgrphBridge.setSelectionSource,
       gympgrphBridge.upsertUiToast,
     ],
@@ -431,10 +448,26 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [active, composedWithXr, flightSimActive])
 
   useGeoXrOverlayPublisher({
-    active,
+    active: active && !sourceReview,
     composedWithXr,
     loadOverlayModule: loadGympgrphModule,
   })
+
+  // The existing composition owner releases gameplay before source review claims framing.
+  // Keyed to source identity, never the moving UTC cursor, so playback preserves user pan/zoom.
+  const reviewSourceKey = sourceReview ? sourceGeospatial?.sourceKey : null
+  React.useEffect(() => {
+    if (!active || !sourceReview) return
+    let disposed = false
+    void loadGympgrphModule().then(module => {
+      if (disposed) return
+      module.clearFlightGeoOverlay()
+      module.clearCityGeoOverlay()
+      const bounds = sourceGeospatialReviewBounds(readSourceGeospatialSnapshot())
+      if (bounds) module.requestGeospatialFitToBounds?.(bounds)
+    })
+    return () => { disposed = true }
+  }, [active, sourceReview, reviewSourceKey])
 
   const handleFlightOverlayPresented = React.useCallback((
     presentation: FlightGeoOverlayPresentation,
@@ -488,8 +521,14 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
         active && composedWithXr && !threeOverlayComposed ? '1' : undefined
       }
     >
+      <GeoXrMediaSelectionTargets
+        active={active && composedWithXr && geoXrMediaSelectionAssets.length > 0}
+        assets={geoXrMediaSelectionAssets}
+        onSelect={selectGameModeGeoActor}
+      />
       <GeospatialOverlayHostLazy
         active={active}
+        keyboardNavigationEnabled={keyboardNavigationEnabled}
         gameplayPresentationOwner={gameplayPresentationOwner}
         semanticMediaOwner={stableSemanticMediaOwner}
         snapshot={snapshot}

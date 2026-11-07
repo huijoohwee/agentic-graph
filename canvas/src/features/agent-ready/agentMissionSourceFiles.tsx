@@ -1,7 +1,8 @@
 import React from 'react'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
-import { activateAgentRunWorkspace, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
-import { agentMissionWorkspace, resolveAgentMissionSource } from './agentMissionWorkspace'
+import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { activateAgentRunWorkspace, selectAgentRunFolder, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
+import { agentMissionWorkspace } from './agentMissionWorkspace'
 import { useAgentMissionCodebaseIndex, type MissionCodebaseIndex } from './useAgentMissionCodebaseIndex'
 import { record } from './missionControlProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -12,17 +13,23 @@ export const matchesAgentMissionSource = (search = '') =>
   '.workspace .worktrees agent-mission manifest.json inspection.json manifest.ref.json'.includes(search.trim().toLowerCase())
 
 /** A discoverable session source, never a persisted copy of private run evidence. */
-export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
+export function AgentMissionSourceFile({ search = '', activePath, renderEntryLeading }: {
+  search?: string
+  activePath: string | null
+  renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
+}) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
   const projection = React.useMemo(() => agentMissionWorkspace(inspection?.trace, codebase.data), [inspection?.trace, codebase.data])
   if (!matchesAgentMissionSource(search) && !projection.entries.some(row => row.name.toLowerCase().includes(search.trim().toLowerCase()))) return null
   return <><MarkdownFileTree entries={projection.entries} readOnly
+    renderEntryLeading={renderEntryLeading}
     expandedPaths={new Set(['/', ...projection.folders.filter(path => search || !collapsed.has(path))])}
     toggleExpanded={path => setCollapsed(previous => {
       const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next
-    })} activePath={resolveAgentMissionSource(inspection?.trace, workspace?.source, codebase.data, projection)}
+    })} activePath={activePath}
+    onSelectFolder={selectAgentRunFolder}
     onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
     {codebase.error ? <p role="status">{codebase.error}</p> : null}</>
 }

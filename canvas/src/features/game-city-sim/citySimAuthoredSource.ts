@@ -30,6 +30,16 @@ function sourceFrontmatter(document: string): string {
   return document.slice(4, closingIndex)
 }
 
+export function isCitySimAuthoredSourceCandidate(document: string | null | undefined): boolean {
+  const text = String(document || '')
+  if (!text.startsWith('---\n')) return false
+  const closingIndex = text.indexOf('\n---\n', 4)
+  if (closingIndex < 0) return false
+  const frontmatter = text.slice(4, closingIndex)
+  return /^city_runtime:\s*$/m.test(frontmatter)
+    || /^schema_id:\s*["']?agentic-graph-city-poi-zoning\/v1["']?\s*$/m.test(frontmatter)
+}
+
 function section(frontmatter: string, name: string): readonly string[] {
   const lines = frontmatter.split('\n')
   const header = `${name}:`
@@ -103,6 +113,11 @@ function encodeFrontmatterString(value: string): string {
 }
 
 function parseAuthoredCity(frontmatter: string, document: string): CityGrid {
+  if (!/^city_runtime:\s*$/m.test(frontmatter)) {
+    const parsed = parseCityGridDocument(document)
+    if (parsed.ok === false) throw new Error(parsed.error.message)
+    return parsed.city
+  }
   const runtime = section(frontmatter, 'city_runtime')
   const initial = section(frontmatter, 'city_initial')
   const schemaId = quotedString(sectionValue(runtime, 'schema_id'), 'City schema id')
@@ -172,10 +187,6 @@ export function parseCitySimAuthoredSource(
   try {
     const normalizedDocument = String(document)
     const frontmatter = sourceFrontmatter(normalizedDocument)
-    const runReady = section(frontmatter, 'run_ready_demo')
-    if (quotedString(sectionValue(runReady, 'id'), 'Run-ready demo id') !== 'city-sim') {
-      throw new Error('City source run_ready_demo.id must be city-sim')
-    }
     const source = Object.freeze({
       city: parseAuthoredCity(frontmatter, normalizedDocument),
     })

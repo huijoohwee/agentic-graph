@@ -157,19 +157,19 @@ export function DesignEditorOverviewPanel(props: {
       <section className={DESIGN_EDITOR_OVERVIEW_METRIC_GRID_CLASS_NAME} aria-label="Design editor state">
         <section className={statClass}>
           <section className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>Mode</section>
-          <section className={cn('mt-0.5 truncate font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>
+          <section className={cn('mt-0.5 truncate font-mono text-xs', UI_THEME_TOKENS.text.primary)}>
             {props.active ? 'design' : 'inactive'}
           </section>
         </section>
         <section className={statClass}>
           <section className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>Selected</section>
-          <section className={cn('mt-0.5 truncate font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>{selectedCount}</section>
+          <section className={cn('mt-0.5 truncate font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{selectedCount}</section>
         </section>
         <section className={statClass}>
           <section className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>Layers</section>
           <button
             type="button"
-            className={cn('mt-0.5 flex max-w-full items-center gap-1 truncate font-mono text-[11px]', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+            className={cn('mt-0.5 flex max-w-full items-center gap-1 truncate font-mono text-xs', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
             onClick={props.onOpenLayers}
             disabled={!props.onOpenLayers}
           >
@@ -179,7 +179,7 @@ export function DesignEditorOverviewPanel(props: {
         </section>
         <section className={statClass}>
           <section className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>Snap</section>
-          <section className={cn('mt-0.5 truncate font-mono text-[11px]', snapGrid.enabled ? UI_THEME_TOKENS.text.primary : UI_THEME_TOKENS.text.tertiary)}>
+          <section className={cn('mt-0.5 truncate font-mono text-xs', snapGrid.enabled ? UI_THEME_TOKENS.text.primary : UI_THEME_TOKENS.text.tertiary)}>
             {snapGrid.enabled ? 'on' : 'off'}
           </section>
         </section>
@@ -207,7 +207,7 @@ export function DesignEditorOverviewPanel(props: {
           ].map(([label, value]) => (
             <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
               <dt className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
-              <dd className={cn('m-0 mt-0.5 font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>{value}</dd>
+              <dd className={cn('m-0 mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
             </section>
           ))}
         </dl>

@@ -5,7 +5,6 @@ import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensu
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { bulkSetWorkspaceEntrySources, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
@@ -30,11 +29,6 @@ import { summarizeCorpusImportManifest } from '@/features/queryable-corpus/sourc
 import { inferCorpusMediaKind } from '@/features/queryable-corpus/corpusGraph'
 import { registerStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
 import { registerVideoSequenceSourceFiles } from '@/components/timeline/videoSequenceSourceRegistry'
-import {
-  buildStrybldrStoryboardDocument,
-  buildStrybldrWorkspaceDocumentName,
-  serializeStrybldrStoryboardMarkdown,
-} from '@/features/strybldr/strybldrStoryboard'
 import { activateStrybldrImportSurface } from '@/features/strybldr/strybldrImportSurface'
 
 const loadWorkspaceImportRuntimeActions = (): Promise<typeof import('./importRuntimeActions')> => import('./importRuntimeActions')
@@ -121,13 +115,6 @@ export function useWorkspaceImportActions(args: {
         await hydratePendingImportedPaths(fs, result.createdPaths)
       }
       const createdPath = await pickFirstCreatedFilePathForImportFocus(fs, result.createdPaths)
-      if (args.applyToGraph && createdPath) {
-        try {
-          useMarkdownExplorerStore.getState().setActivePath(createdPath as WorkspacePath)
-        } catch {
-          void 0
-        }
-      }
       const refreshed = await refresh()
       await applyWorkspaceImportToCanvasBestEffort({
         fs,
@@ -216,6 +203,8 @@ export function useWorkspaceImportActions(args: {
           })
         }))
         if (importJobRef.current !== jobId) return
+        const imageSourceUnits = (res.corpusManifest?.sourceUnits || []).filter(unit => unit.mediaKind === 'image')
+        if (imageSourceUnits.length > 0) registerStrybldrImageFiles({ sourceUnits: imageSourceUnits, files: snapshot })
         registerVideoSequenceSourceFiles(snapshot)
         const applyToGraph = await resolveWorkspaceImportApplyToGraph(fs, res, importRuntime)
         if (importJobRef.current !== jobId) return
@@ -247,69 +236,9 @@ export function useWorkspaceImportActions(args: {
         status.setStatusWarning('Import Image: no supported image files selected')
         return
       }
-      const jobId = (importJobRef.current += 1)
-      status.setStatusProgress('Importing image', 0, images.length)
-      try {
-        const fs = await getFs()
-        await fs.ensureSeed()
-        const importRuntime = await loadWorkspaceImportRuntimeActions()
-        let storyPath: string | null = null
-        const res = importRuntime.normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() => {
-          suppressNextWorkspaceFsChangedEvent()
-          return importWorkspaceLocalFiles({
-            fs,
-            files: images,
-            parentPath: WORKSPACE_ROOT_PATH,
-            onProgress: p => {
-              if (importJobRef.current !== jobId) return
-              status.setStatusProgress(p.label || 'Importing image', p.current, p.total, p.bytesCurrent, p.bytesTotal)
-            },
-          })
-        }))
-        if (importJobRef.current !== jobId) return
-        const imageSourceUnits = (res.corpusManifest?.sourceUnits || []).filter(unit => unit.mediaKind === 'image')
-        const mediaUrlBySourceUnitId = registerStrybldrImageFiles({ sourceUnits: imageSourceUnits, files: images })
-        if (imageSourceUnits.length > 0) {
-          const storyDoc = buildStrybldrStoryboardDocument({
-            sourceUnits: imageSourceUnits,
-            mediaUrlBySourceUnitId,
-          })
-          const storyName = storyDoc.sources.length === 1
-            ? buildStrybldrWorkspaceDocumentName(storyDoc.sources[0]!)
-            : `${storyDoc.runId}.strybldr.md`
-          const createdStoryPath = await fs.createFile({
-            parentPath: WORKSPACE_ROOT_PATH,
-            name: storyName,
-            text: serializeStrybldrStoryboardMarkdown(storyDoc),
-          })
-          storyPath = createdStoryPath
-          res.createdPaths = [createdStoryPath, ...res.createdPaths.filter(path => path !== createdStoryPath)]
-          res.sources = [
-            { path: createdStoryPath, source: { kind: 'local', originalName: storyName } },
-            ...res.sources.filter(item => item.path !== createdStoryPath),
-          ]
-          res.applyToGraph = true
-        }
-        if (importJobRef.current !== jobId) return
-        const { createdPath, jsonSourceText } = await finalizeWorkspaceImportCommit({
-          fs,
-          result: res,
-          hydratePending: false,
-          applyToGraph: true,
-        })
-        activateStrybldrImportSurface({ canvas2dRenderer: 'storyboard' })
-        const focusPath = storyPath || createdPath
-        if (focusPath) {
-          await focusAfterImport(focusPath, { applyToGraph: true, jsonSourceText: focusPath === createdPath ? jsonSourceText : null, jobId })
-        }
-        status.setStatusInfo(formatWorkspaceImportSummary('Imported image', res).message)
-        return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
-      } catch (e) {
-        if (importJobRef.current !== jobId) return
-        status.setStatusError(`Import Image failed: ${String((e as { message?: unknown })?.message ?? e)}`)
-      }
+      return handleImportLocalFiles(images)
     },
-    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status],
+    [handleImportLocalFiles, status],
   )
 
   const handleImportLocalFolder = React.useCallback(
@@ -352,7 +281,7 @@ export function useWorkspaceImportActions(args: {
   )
 
   const handleImportUrl = React.useCallback(
-    async (urlRaw: string, opts?: { canvas2dRenderer?: Canvas2dRendererId | null; documentSemanticMode?: 'document' | 'keyword' | null }) => {
+    async (urlRaw: string, opts?: { canvas2dRenderer?: Canvas2dRendererId | null; documentSemanticMode?: 'document' | 'keyword' | null; preserveActiveDocument?: boolean; browserSessionId?: string; destinationPath?: string }) => {
       const url = normalizeWorkspaceImportUrlInput(urlRaw)
       if (!url) {
         status.setStatusError('Import failed: enter a valid URL or local file path')
@@ -384,6 +313,8 @@ export function useWorkspaceImportActions(args: {
             parentPath: WORKSPACE_ROOT_PATH,
             canvas2dRenderer: selectedCanvas2dRenderer,
             documentSemanticMode: selectedDocumentSemanticMode,
+            browserSessionId: opts?.browserSessionId,
+            destinationPath: opts?.destinationPath,
             viewHint: selectedCanvas2dRenderer ? 'html' : undefined,
             onProgress: p => {
               if (importJobRef.current !== jobId) return
@@ -430,12 +361,14 @@ export function useWorkspaceImportActions(args: {
         }
         if (importJobRef.current !== jobId) return bridgeResult
         const summary = formatWorkspaceImportSummary('Imported URL', res)
-        const applyToGraph = typeof res.applyToGraph === 'boolean'
-          ? res.applyToGraph
-          : await importRuntime.resolveImportedCanvasDocumentApplyToGraph({
-              fs,
-              createdPaths: res.createdPaths,
-            })
+        const applyToGraph = opts?.preserveActiveDocument === true
+          ? false
+          : typeof res.applyToGraph === 'boolean'
+            ? res.applyToGraph
+            : await importRuntime.resolveImportedCanvasDocumentApplyToGraph({
+                fs,
+                createdPaths: res.createdPaths,
+              })
         if (importJobRef.current !== jobId) return bridgeResult
         const { createdPath, sourceUrl, jsonSourceText } = await finalizeWorkspaceImportCommit({
           fs,
@@ -445,7 +378,7 @@ export function useWorkspaceImportActions(args: {
           resolveSourceUrl: true,
         })
 
-        if (createdPath) {
+        if (createdPath && opts?.preserveActiveDocument !== true) {
           await focusAfterImport(createdPath, { sourceUrl, jsonSourceText, applyToGraph, jobId })
         }
         if (selectedCanvas2dRenderer === 'design') {

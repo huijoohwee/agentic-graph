@@ -1,7 +1,11 @@
 import React from 'react'
 import { useTimelineMediaReaderSummaries, useTimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
 import { resolveTimelinePlanSourceUrl } from '@/components/timeline/timelinePlanSync'
-import type { VideoSequenceTimelineInsertedLane, VideoSequenceTimelineSourceThumbnailSet, VideoSequenceTimelineThumbnailWindow } from '@/components/timeline/VideoSequenceTimelineRuler'
+import type { VideoSequenceTimelineClipOverlayRenderer, VideoSequenceTimelineInsertedLane, VideoSequenceTimelineSourceThumbnailSet, VideoSequenceTimelineThumbnailWindow } from '@/components/timeline/VideoSequenceTimelineRuler'
+import { VideoSequenceSourceAnnotationLayer } from '@/components/timeline/VideoSequenceFrameSampleRail'
+import { readVideoSequenceSourceAnnotations, resolveVideoSequenceSourceAnnotations, resolveVideoSequenceAnnotationTimelinePosition } from '@/components/timeline/videoSequenceSourceAnnotations'
+import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
+import { observeRichMediaTimelineTargetScope, requestRichMediaTimelineTargetFrame } from '@/lib/render/richMediaTimelineSync'
 import { useGanttTimelineTransportChromeModel } from './useGanttTimelineTransportChromeModel'
 import { useGanttTimelineTransportCommandModel } from './useGanttTimelineTransportCommandModel'
 import { useGanttTimelineTransportInteractionModel } from './useGanttTimelineTransportInteractionModel'
@@ -17,18 +21,18 @@ import {
 } from './useGanttTimelineTransportShellModel'
 import type { GanttTimelineTransportChromeModel } from './useGanttTimelineTransportChromeModel'
 import { useGanttTimelineDisplayModel } from './useGanttTimelineDisplayModel'
-import { type CardMediaKind } from '@/lib/cards/cardMediaPreviewUtils'
 import {
   VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
   isCompactSourceMediaSpan,
+  readVideoSequenceTimelineModelFromMarkdown,
   resolveVideoSequenceTimelineLane,
-  resolveVisibleVideoSequenceTimelineLaneCount,
+  resolveVisibleVideoSequenceTimelineLaneCount, resolveVideoSequenceTimelineDisplayLaneId,
   type VideoSequenceTimelineSource,
 } from '@/components/timeline/videoSequenceTimeline'
 import { resolveVideoSequenceTimelineScaleMaxMinutes } from '@/components/timeline/videoSequenceTimelineZoom'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { type GanttTimelineTransportAudioPlaybackBridgeModel } from './GanttTimelineTransportAudioPlaybackBridge'
-import { type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
+import { readTimelineTransportMediaPreviewKind, type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
 import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
 
@@ -38,6 +42,8 @@ export type GanttTimelineTransportSurfaceModel = {
   mediaPlayerModel: GanttTimelineTransportMediaPlayerModel
   rulerModel: GanttTimelineTransportRulerModel
   shellModel: GanttTimelineTransportShellModel
+  renderAnnotationOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  annotationLanes?: readonly VideoSequenceTimelineInsertedLane[]
 }
 
 type TimelineTransportThumbnailSourceItem = {
@@ -48,6 +54,14 @@ type TimelineTransportThumbnailSourceItem = {
 }
 
 const clean = (value: unknown): string => String(value || '').trim()
+
+// Ownership and seeks outlive panel mounts; closing Inspector alone retains queued READY replay.
+const stopObservingTargetScope = useGraphStore.subscribe(
+  state => [clean(state.markdownDocumentName), state.timelineTransportPlaying, state.timelineTransportPosition] as const,
+  ([documentKey, playing, position]) => observeRichMediaTimelineTargetScope({ documentKey, playing, position }),
+  { fireImmediately: true, equalityFn: (a, b) => a.every((value, index) => value === b[index]) },
+)
+import.meta.hot?.dispose(stopObservingTargetScope)
 
 const readTimelineTransportSourceLabel = (source: VideoSequenceTimelineSource): string => (
   clean(source.originalName)
@@ -64,19 +78,6 @@ const readTimelineTransportThumbnailSourceKind = (source: VideoSequenceTimelineS
     source.sourceUrl,
   ].join(' ').toLowerCase()
   return /\bimage\b|\.avif\b|\.gif\b|\.jpe?g\b|\.png\b|\.svg\b|\.webp\b/.test(signature) ? 'image' : 'video'
-}
-
-const readTimelineTransportMediaPreviewKind = (source: VideoSequenceTimelineSource | null, fallbackUrl: string): CardMediaKind => {
-  const signature = [
-    source?.mimeHint,
-    source?.originalName,
-    source?.relativePath,
-    source?.sourceUrl,
-    fallbackUrl,
-  ].join(' ').toLowerCase()
-  if (/\bimage\b|\.avif\b|\.gif\b|\.jpe?g\b|\.png\b|\.svg\b|\.webp\b/.test(signature)) return 'image'
-  if (/\baudio\b|\.aac\b|\.aiff?\b|\.flac\b|\.m4a\b|\.mp3\b|\.oga\b|\.ogg\b|\.opus\b|\.wav\b/.test(signature)) return 'audio'
-  return 'video'
 }
 
 const collectTimelineTransportThumbnailSourceItems = (plans: readonly (ReturnType<typeof useGanttTimelineTransportSession>['exportPlan'])[]): TimelineTransportThumbnailSourceItem[] => {
@@ -136,6 +137,68 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     setTransportSelectedRowKey(nextRowKey)
     onSelectedRowKeyChange?.(nextRowKey || null)
   }, [onSelectedRowKeyChange, setTransportSelectedRowKey])
+  const annotationSources = React.useMemo(() => readVideoSequenceTimelineModelFromMarkdown(transportSession.markdownText)?.sources || [], [transportSession.markdownText])
+  const annotationGroups = React.useMemo(() => resolveVideoSequenceSourceAnnotations({
+    associations: readVideoSequenceSourceAnnotations(transportSession.markdownText),
+    taskSpans: transportSession.timelineModel.taskSpans,
+    sources: annotationSources,
+  }), [annotationSources, transportSession.markdownText, transportSession.timelineModel.taskSpans])
+  const presentedSpans = React.useMemo(() => {
+    const folded = new Set(annotationGroups.map(group => group.annotationSpan.rowKey))
+    return transportSession.timelineModel.taskSpans.filter(span => !folded.has(span.rowKey))
+  }, [annotationGroups, transportSession.timelineModel.taskSpans])
+  React.useEffect(() => {
+    const foldedSelection = annotationGroups.find(group => group.annotationSpan.rowKey === transportSession.selectedRowKey)
+    if (foldedSelection) handleSelectedRowKeyChange(foldedSelection.videoSpan.rowKey)
+  }, [annotationGroups, handleSelectedRowKeyChange, transportSession.selectedRowKey])
+  const [expandedAnnotations, setExpandedAnnotations] = React.useState<{ documentKey: string; ids: string[] }>({ documentKey: '', ids: [] })
+  const expandedIds = expandedAnnotations.documentKey === transportSession.documentKey ? expandedAnnotations.ids : []
+  React.useEffect(() => {
+    const valid = new Set(annotationGroups.map(group => group.association.videoTrackId))
+    setExpandedAnnotations(previous => {
+      const ids = previous.documentKey === transportSession.documentKey ? previous.ids.filter(id => valid.has(id)) : []
+      return previous.documentKey === transportSession.documentKey && ids.length === previous.ids.length ? previous : { documentKey: transportSession.documentKey, ids }
+    })
+  }, [annotationGroups, transportSession.documentKey])
+  const annotationLanes = React.useMemo<VideoSequenceTimelineInsertedLane[]>(() => annotationGroups.filter(group => expandedIds.includes(group.association.videoTrackId)).map(group => {
+    const anchor = resolveVideoSequenceTimelineDisplayLaneId(group.videoSpan, presentedSpans, { disabledLaneIds })
+    return { id: `source-annotations:${group.association.videoTrackId}`, insertAfterLaneId: anchor, dragLaneId: anchor,
+      label: 'Annotations', selectRowKey: group.videoSpan.rowKey, content: null }
+  }), [annotationGroups, disabledLaneIds, expandedIds, presentedSpans])
+  const [selectedAnnotation, setSelectedAnnotation] = React.useState<{ rowKey: string; timestampSeconds: number } | null>(null)
+  React.useEffect(() => setSelectedAnnotation(null), [transportSession.documentKey, transportSession.playing])
+  const renderAnnotationOverlay = React.useCallback<VideoSequenceTimelineClipOverlayRenderer>(({ span }) => {
+    const group = annotationGroups.find(item => item.videoSpan.rowKey === span.rowKey)
+    if (!group) return null
+    return React.createElement(VideoSequenceSourceAnnotationLayer, {
+      samples: group.samples,
+      open: expandedIds.includes(group.association.videoTrackId),
+      onOpenChange: open => setExpandedAnnotations(previous => {
+        const ids = previous.documentKey === transportSession.documentKey ? previous.ids : []
+        const id = group.association.videoTrackId
+        return { documentKey: transportSession.documentKey, ids: open ? [...new Set([...ids, id])] : ids.filter(item => item !== id) }
+      }),
+      selectedTimeSeconds: selectedAnnotation?.rowKey === span.rowKey ? selectedAnnotation.timestampSeconds : undefined,
+      onSelect: sample => {
+        const position = resolveVideoSequenceAnnotationTimelinePosition(group, sample.timestampSeconds)
+        const source = annotationSources.find(item => item.id === group.association.sourceId)
+        const sourceUrl = source ? resolveTimelinePlanSourceUrl(source) : ''
+        const state = useGraphStore.getState()
+        if (position === null || !sourceUrl || !state.graphData?.nodes.some(node => node.id === group.association.frameAnalysisNodeId)) return
+        transportSession.setTransportPlaying(false)
+        transportSession.setTransportPlaybackPosition(position)
+        handleSelectedRowKeyChange(span.rowKey)
+        setMediaPlayerVisible(true)
+        setSelectedAnnotation({ rowKey: span.rowKey, timestampSeconds: sample.timestampSeconds })
+        state.setSelectionSource('editor')
+        state.selectNodesExpanded({ nodeIds: [group.association.frameAnalysisNodeId], activeNodeId: group.association.frameAnalysisNodeId, edgeIds: [], groupIds: [] })
+        requestRichMediaTimelineTargetFrame({ documentKey: transportSession.documentKey,
+          overlayId: group.association.frameAnalysisNodeId, sourceUrl, position,
+          sourceTimestampMs: sample.timestampSeconds * 1000, frameSampleUrl: sample.url })
+        emitMainPanelOpen({ tab: 'workflowManager', workflowManagerTab: 'graph', workflowManagerEntryLabel: 'Inspector' })
+      },
+    })
+  }, [annotationGroups, annotationSources, expandedIds, handleSelectedRowKeyChange, selectedAnnotation, transportSession])
   const compactSourceTimeline = React.useMemo(() => (
     !workflowMode
     && transportSession.timelineModel.taskSpans.length > 0
@@ -144,8 +207,8 @@ export function useGanttTimelineTransportSurfaceModel(args: {
   const rulerVisibleLaneCount = React.useMemo(() => (
     workflowMode
       ? (transportSession.timelineModel.taskSpans.length ? 1 : 0)
-      : resolveVisibleVideoSequenceTimelineLaneCount(transportSession.timelineModel.taskSpans, { disabledLaneIds })
-  ), [disabledLaneIds, transportSession.timelineModel.taskSpans, workflowMode])
+      : resolveVisibleVideoSequenceTimelineLaneCount(presentedSpans, { disabledLaneIds })
+  ), [disabledLaneIds, presentedSpans, transportSession.timelineModel.taskSpans, workflowMode])
   const selectedPreviewEmpty = !!transportSession.selectedSpan && !transportSession.previewPlan
   const mediaPreviewSourceUrl = React.useMemo(() => {
     if (selectedPreviewEmpty) return ''
@@ -433,7 +496,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     sourceThumbnails: thumbnailSummary.thumbnails,
     sourceThumbnailWindows,
     sourceThumbnailSets,
-    taskSpans: transportSession.timelineModel.taskSpans,
+    taskSpans: presentedSpans,
     timelineZoom: transportInteractionModel.timelineZoom,
     totalLabel: transportClockDisplayModel.totalLabel,
     viewportRef: rulerViewportRef,
@@ -473,5 +536,6 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     mediaPlayerModel,
     rulerModel,
     shellModel,
+    renderAnnotationOverlay, annotationLanes,
   }
 }

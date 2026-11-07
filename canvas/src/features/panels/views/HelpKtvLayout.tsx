@@ -1,4 +1,6 @@
 import React from 'react'
+import { PanelCaption, PanelCode } from '@/features/panels/ui/PanelText'
+import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import {
   KeyTypeValueStaticRow,
   RightAlignedValueCell,
@@ -57,24 +59,12 @@ export function HelpKtvRow({
   id,
   dataKgAnchor,
 }: HelpKtvRowProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
-  const uiPanelRowDensityDefaultClass = useGraphStore(
-    s => s.uiPanelRowDensityDefaultClass || 'py-1',
-  )
-  const uiPanelRowDensityCompactClass = useGraphStore(
-    s => s.uiPanelRowDensityCompactClass || 'py-0.5',
-  )
+  const rowProps = useCanvasKeyTypeValueStaticRowProps(density)
   const resolvedTypeNode = typeNode ?? (iconKey ? <HelpKtvTypeIcon iconKey={iconKey} /> : null)
-  const densityClassName =
-    density === 'compact' ? uiPanelRowDensityCompactClass : uiPanelRowDensityDefaultClass
 
   return (
     <KeyTypeValueStaticRow
+      {...rowProps}
       keyNode={keyNode}
       typeNode={resolvedTypeNode}
       valueNode={(
@@ -83,10 +73,6 @@ export function HelpKtvRow({
         </RightAlignedValueCell>
       )}
       align={align}
-      textSizeClassName={uiPanelKeyValueTextSizeClass}
-      fontClassName={uiPanelTextFontClass}
-      densityClassName={densityClassName}
-      activeClassName={UI_THEME_TOKENS.table.rowHoverHighlight}
       className={className}
       id={id}
       dataKgAnchor={dataKgAnchor}
@@ -121,7 +107,7 @@ export function HelpKtvValueStack({
   return (
     <section
       className={[
-        'flex min-w-0 max-w-full flex-col items-start gap-0.5 text-left leading-snug sm:items-end sm:text-right',
+        'flex min-w-0 max-w-full flex-col items-start gap-0.5 text-left sm:items-end sm:text-right',
         className || '',
       ]
         .filter(Boolean)
@@ -177,12 +163,11 @@ export function HelpKtvPill({
 export function HelpKtvCode({
   children,
   className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+  ...props
+}: React.HTMLAttributes<HTMLElement>) {
   return (
-    <code
+    <PanelCode
+      {...props}
       className={[
         `max-w-full break-all ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary}`,
         className || '',
@@ -191,7 +176,7 @@ export function HelpKtvCode({
         .join(' ')}
     >
       {children}
-    </code>
+    </PanelCode>
   )
 }
 
@@ -203,9 +188,9 @@ export function HelpKtvMutedText({
   className?: string
 }) {
   return (
-    <span className={[UI_THEME_TOKENS.text.secondary, className || ''].filter(Boolean).join(' ')}>
+    <PanelCaption className={[UI_THEME_TOKENS.text.secondary, className || ''].filter(Boolean).join(' ')}>
       {children}
-    </span>
+    </PanelCaption>
   )
 }
 

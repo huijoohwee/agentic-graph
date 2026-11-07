@@ -10,6 +10,7 @@ import {
   resolveWorkspaceRunReadyDemoSeed,
   resolveWorkspaceValidationSeedRelPath,
 } from './workspaceRunReadyDemos'
+import { SUPPLY_CHAIN_OVERVIEW_SEED_SPEC, SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainWorkspaceSeedSpec'
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
   loadXrPhysicsDemoSeedSource,
@@ -25,9 +26,7 @@ import {
   snapshotShadowEntries,
   upsertShadowEntry,
 } from './workspaceFsShadow'
-
 import { notifyWorkspaceFsDegraded } from './workspaceFsDegraded'
-
 let fsSingleton: WorkspaceFs | null = null
 let warnedDegraded = false
 let fsGeneration = 0
@@ -48,14 +47,13 @@ const waitConflictRetryTick = async (attemptIndex: number): Promise<void> => {
     setTimeout(resolve, delayMs)
   })
 }
-
 const MAX_RX_CONFLICT_RETRIES = 3
-
 export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGeneration): WorkspaceFs => {
   const run = async <T>(op: keyof WorkspaceFs, fn: (fs: WorkspaceFs) => Promise<T>): Promise<T> => {
     try {
       return await fn(inner)
     } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'WebsiteCollectionMigrationError') throw e
       if (isRxConflictError(e)) {
         let conflictError: unknown = e
         for (let attempt = 0; attempt < MAX_RX_CONFLICT_RETRIES; attempt += 1) {
@@ -119,8 +117,8 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
         }
         return readShadowFileText(p)
       }),
-    writeFileText: (path: WorkspacePath, text: string, options) =>
-      run('writeFileText', async fs => {
+    writeFileText: (path: WorkspacePath, text: string, options) => {
+      const write = async (fs: WorkspaceFs) => {
         await fs.writeFileText(path, text, options)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -131,9 +129,12 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           text: String(text ?? '').slice(0, SHADOW_MAX_FILE_TEXT_CHARS),
           updatedAtMs: Date.now(),
         })
-      }),
-    createFile: args =>
-      run('createFile', async fs => {
+      }
+      // A conditional save must never degrade into a shadow-memory write.
+      return options && Object.hasOwn(options, 'expectedText') ? write(inner) : run('writeFileText', write)
+    },
+    createFile: args => {
+      const create = async (fs: WorkspaceFs) => {
         const path = await fs.createFile(args)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -145,7 +146,10 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           updatedAtMs: Date.now(),
         })
         return path
-      }),
+      }
+      // Exact creation preserves durable collision results without a shadow copy.
+      return args.requireExactPath ? create(inner) : run('createFile', create)
+    },
     createFolder: args =>
       run('createFolder', async fs => {
         const path = await fs.createFolder(args)
@@ -178,6 +182,7 @@ export function getWorkspaceFs(): Promise<WorkspaceFs> {
       initialized = createResilientWorkspaceFs(createWorkspacePersistedFs(), generation)
       await initialized.ensureSeed()
     } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'WebsiteCollectionMigrationError') throw error
       const { createMemoryWorkspaceFs } = await import('./workspaceFsMemory.ts')
       const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
       initialized = createResilientWorkspaceFs(memory, generation)
@@ -361,6 +366,7 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
     sourceRelPaths: GEOSPATIAL_WORKSPACE_SEED_REL_PATH_CANDIDATES,
     fallbackText: DEFAULT_GEOSPATIAL_WORKSPACE_SEED_TEXT,
   },
+  SUPPLY_CHAIN_OVERVIEW_SEED_SPEC,
   ...(CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED ? [{
     path: XR_PHYSICS_WORKSPACE_SEED_PATH,
     basename: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
@@ -368,19 +374,12 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
     fallbackText: '',
     sourceLoader: loadXrPhysicsDemoSeedSource,
   }] : []),
-].filter(seed => !REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE || seed.path === TEST_VALIDATION_WORKSPACE_SEED_PATH)
+].filter(seed => !REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE || seed.path === TEST_VALIDATION_WORKSPACE_SEED_PATH || seed.path === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH)
 const WORKSPACE_SEED_PATH_SET = new Set<WorkspacePath>(WORKSPACE_SEED_SPECS.map(seed => seed.path))
-const WORKSPACE_SEED_SOURCE_REL_PATH_SET = new Set<WorkspacePath>(
-  WORKSPACE_SEED_SPECS
-    .flatMap(seed => seed.sourceRelPaths.map(path => normalizeWorkspacePath(path)))
-    .filter((path): path is WorkspacePath => Boolean(path && path !== WORKSPACE_ROOT_PATH)),
-)
-const WORKSPACE_INITIALIZATION_PATH_SET = new Set<WorkspacePath>([
-  ...WORKSPACE_SEED_PATH_SET,
-  ...WORKSPACE_SEED_SOURCE_REL_PATH_SET,
-])
+const WORKSPACE_SEED_SOURCE_REL_PATH_SET = new Set<WorkspacePath>(WORKSPACE_SEED_SPECS.flatMap(seed => seed.sourceRelPaths.map(path => normalizeWorkspacePath(path))).filter((path): path is WorkspacePath => Boolean(path && path !== WORKSPACE_ROOT_PATH)))
+const WORKSPACE_INITIALIZATION_PATH_SET = new Set<WorkspacePath>([...WORKSPACE_SEED_PATH_SET, ...WORKSPACE_SEED_SOURCE_REL_PATH_SET])
 const DEFAULT_WORKSPACE_SEED_FAMILY_PATHS = new Set<WorkspacePath>([
-  ...WORKSPACE_SEED_SPECS.map(seed => seed.path),
+  ...WORKSPACE_SEED_SPECS.map(seed => seed.path).filter(path => path !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH),
 ])
 
 export const loadWorkspaceSeedText = async (args: {
@@ -466,12 +465,15 @@ export function expandWorkspaceSeedFileEntries(path: WorkspacePath, text: string
   return out
 }
 
-export async function getWorkspaceSeedFiles(): Promise<WorkspaceSeedFile[]> {
+export async function getWorkspaceSeedFiles(options?: { includeSupplyChainOverview?: boolean }): Promise<WorkspaceSeedFile[]> {
   const docsMirrorEntries = REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE
     ? []
     : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+  const seedSpecs = WORKSPACE_SEED_SPECS.filter(seed => (
+    seed.path !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH || options?.includeSupplyChainOverview === true
+  ))
   const loaded = await Promise.all(
-    WORKSPACE_SEED_SPECS.map(async seed => {
+    seedSpecs.map(async seed => {
       if (seed.sourceLoader) {
         const text = String(await seed.sourceLoader() || '')
         return text.trim() ? { path: seed.path, text, isFallback: false } : null

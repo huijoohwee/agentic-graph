@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -52,7 +53,7 @@ export async function testFloatingPanelChatFooterModelSelectStaysNativeLabeledAn
       throw new Error('expected model row to render a fixed-width model icon cell when BYOK is absent')
     }
 
-    const select = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLSelectElement | null
+    const select = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLButtonElement | null
     if (!select) throw new Error('expected chat model select to expose the stable data hook')
     if (select.disabled) throw new Error('expected chat model select to stay enabled when not loading and multiple options exist')
     if (select.getAttribute('aria-label') !== 'Model') throw new Error('expected chat model select to expose a semantic label')
@@ -68,8 +69,7 @@ export async function testFloatingPanelChatFooterModelSelectStaysNativeLabeledAn
     }
 
     await act(async () => {
-      select.value = 'gpt-5-mini'
-      select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(select, 'gpt-5-mini')
       await waitForFrames(dom.window as unknown as Window, 1)
     })
     if (changedModels[0] !== 'gpt-5-mini') {
@@ -132,7 +132,7 @@ export async function testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIco
     )
 
     const modelControl = container.querySelector('[data-kg-chat-model-control="true"]') as HTMLElement | null
-    const modelSelect = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLSelectElement | null
+    const modelSelect = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLButtonElement | null
     const toggle = container.querySelector('[data-kg-chat-api-key-toggle="true"]') as HTMLButtonElement | null
     if (!modelControl || !modelSelect || !toggle) {
       throw new Error('expected BYOK footer to render model control, model select, and API-key toggle')

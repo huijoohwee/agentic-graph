@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import {
   KeyTypeValueHeader as SharedKeyTypeValueHeader,
@@ -19,6 +20,7 @@ export function KeyTypeValueHeader({
   className,
   useMarkdownSigilBridge = true,
 }: CanvasKeyTypeValueHeaderProps) {
+  const { panelTextClass } = usePanelTypography()
   const renderedKeyLabel = renderKeyTypeValueMarkdownSigilBridgeNode(keyLabel, useMarkdownSigilBridge)
   const renderedTypeLabel = renderKeyTypeValueMarkdownSigilBridgeNode(typeLabel, useMarkdownSigilBridge)
   const renderedValueLabel = renderKeyTypeValueMarkdownSigilBridgeNode(valueLabel, useMarkdownSigilBridge)
@@ -31,6 +33,7 @@ export function KeyTypeValueHeader({
       actions={actions}
       stickyOffsetClassName={stickyOffsetClassName}
       className={className}
+      typographyClassName={panelTextClass}
     />
   )
 }

@@ -79,7 +79,7 @@ export async function testStaticRichMediaPanelPreviewRendersImageVideoAndIframe(
           }),
           React.createElement(StaticRichMediaPanelPreview, {
             tag: 'IFRAME',
-            url: 'https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck',
+            url: 'https://docs.fixture.invalid/articles/sample-article',
             titleChip: 'IFrame',
             innerX: 505,
             innerY: 10,

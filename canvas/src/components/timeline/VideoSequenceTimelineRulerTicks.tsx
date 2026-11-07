@@ -1,8 +1,10 @@
+import React from 'react'
 import type { MermaidGanttTimelineTick } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { resolveVideoSequenceRulerInsetLeft } from './videoSequenceTimelineRulerGeometry'
 
 export type VideoSequenceTimelineRulerTicksProps = {
   displayTicks: readonly MermaidGanttTimelineTick[]
+  onSeek?: (minutes: number) => void
 }
 
 function formatVideoSequenceTimeAxisLabel(label: string): string {
@@ -11,10 +13,12 @@ function formatVideoSequenceTimeAxisLabel(label: string): string {
   return `${match[1].padStart(2, '0')}:${match[2]}`
 }
 
-function resolveVideoSequenceTickDateTime(tick: MermaidGanttTimelineTick): string {
+function resolveVideoSequenceTickDateTime(tick: MermaidGanttTimelineTick): string | undefined {
   const match = String(tick.label || '').trim().match(/^(\d+):(\d{2})$/)
   if (match) return `PT${Math.max(0, Number(match[1]) * 60 + Number(match[2]))}S`
-  return `PT${Math.max(0, Math.round(tick.minutes * 60))}S`
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tick.label)) return tick.label
+  if (/^\d+f$/i.test(tick.label)) return `PT${Math.max(0, Math.round(tick.minutes * 60))}S`
+  return undefined
 }
 
 function resolveVideoSequenceTickMajor(tick: MermaidGanttTimelineTick): boolean {
@@ -24,22 +28,25 @@ function resolveVideoSequenceTickMajor(tick: MermaidGanttTimelineTick): boolean 
   return true
 }
 
-export function VideoSequenceTimelineRulerTicks({ displayTicks }: VideoSequenceTimelineRulerTicksProps) {
+export function VideoSequenceTimelineRulerTicks({ displayTicks, onSeek }: VideoSequenceTimelineRulerTicksProps) {
   return (
     <>
       {displayTicks.map(tick => (
-        <span
+        <button
+          type="button"
+          aria-label={`Seek to ${formatVideoSequenceTimeAxisLabel(tick.label)}`}
+          disabled={!onSeek}
+          onClick={() => onSeek?.(tick.minutes)}
           key={`${tick.minutes}:${tick.label}`}
           className="timeline-transport-ruler-tick"
           style={{ left: resolveVideoSequenceRulerInsetLeft(tick.percent) }}
           data-kg-gantt-timeline-tick="1"
           data-kg-video-sequence-major-tick={resolveVideoSequenceTickMajor(tick) ? '1' : undefined}
         >
-          <span className="timeline-transport-ruler-tick-line" aria-hidden="true" />
           <time className="timeline-transport-ruler-tick-label" dateTime={resolveVideoSequenceTickDateTime(tick)}>
             {formatVideoSequenceTimeAxisLabel(tick.label)}
           </time>
-        </span>
+        </button>
       ))}
     </>
   )

@@ -1,3 +1,6 @@
+import { UI_TEXT_SCALE } from 'grph-shared/ui/typography'
+import { tailwindTextSizeClassToPx } from 'grph-shared/ui/tailwindTextSize'
+
 export const getMarkdownHeadingTextSizeClass = (args: { depth: number; presentation: boolean }): string => {
   const depth = Math.min(6, Math.max(1, Math.floor(args.depth)))
   const presentation = args.presentation === true
@@ -18,24 +21,9 @@ export const getMarkdownHeadingTextSizeClass = (args: { depth: number; presentat
 }
 
 export const getMarkdownHeadingFontSizePx = (args: { depth: number; presentation: boolean }): number => {
-  const depth = Math.min(6, Math.max(1, Math.floor(args.depth)))
-  const presentation = args.presentation === true
-  if (presentation) {
-    if (depth === 1) return 48
-    if (depth === 2) return 36
-    if (depth === 3) return 30
-    if (depth === 4) return 24
-    if (depth === 5) return 20
-    return 18
-  }
-  if (depth === 1) return 36
-  if (depth === 2) return 30
-  if (depth === 3) return 24
-  if (depth === 4) return 20
-  if (depth === 5) return 18
-  return 16
+  return tailwindTextSizeClassToPx(getMarkdownHeadingTextSizeClass(args)) ?? UI_TEXT_SCALE.base.size
 }
 
 export const getMarkdownBodyFontSizePx = (args: { presentation: boolean }): number => {
-  return args.presentation ? 18 : 14
+  return args.presentation ? UI_TEXT_SCALE.lg.size : UI_TEXT_SCALE.sm.size
 }

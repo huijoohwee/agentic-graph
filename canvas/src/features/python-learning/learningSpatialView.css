@@ -1,0 +1,13 @@
+.learning-spatial-ui { color: var(--kg-text-primary); }
+.learning-spatial-ui :is(button, input, fieldset, section, footer, nav, span, p, div)[class*="border"] { border-color: var(--kg-border); }
+.learning-spatial-ui button { cursor: pointer; }
+.learning-spatial-ui button:focus-visible, .learning-spatial-ui [role="button"]:focus-visible { outline: 2px solid #438dce; outline-offset: 3px; }
+.learning-spatial-ui button[aria-pressed="true"] { background: color-mix(in srgb, #438dce 12%, var(--kg-panel-bg)); color: var(--kg-text-primary); }
+.learning-spatial-ui svg [role="button"]:focus { outline: none; filter: drop-shadow(0 0 .04px #438dce); }
+@media (pointer: coarse), (max-width: 768px) {
+  .learning-plan-frame { padding-bottom: calc(var(--kg-safe-bottom) + var(--kg-canvas-viewport-edge-gap) + var(--kg-toolbar-compact-surface-height, 38px) + 0.75rem); }
+}
+@media (min-width: 769px) {
+  .learning-plan-frame { right: var(--learning-panel-clearance, 0px); }
+  .learning-scene-controls { right: var(--learning-panel-clearance, 8px); }
+}

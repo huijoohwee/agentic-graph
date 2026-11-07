@@ -94,11 +94,11 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   resetToNativeAnimationGrammar()
   try {
     const expectedCharacterMotions = ['fight', 'dance', 'sit', 'drink', 'jump', 'play-cards', 'squirt-gun']
-    const expectedActionPaths = ['helicopter-orbit', 'car-chase', 'collapsing-debris']
+    const expectedActionPaths = ['helicopter-orbit', 'car-chase', 'collapsing-debris', 'patrol-sweep', 'pursuit-dash', 'street-cruise']
     if (XR_CHARACTER_MOTION_PRESET_IDS.join('|') !== expectedCharacterMotions.join('|')) {
       throw new Error(`expected all requested native character motions, got ${XR_CHARACTER_MOTION_PRESET_IDS.join(', ')}`)
     }
-    if (XR_ACTION_PATH_PRESET_IDS.join('|') !== expectedActionPaths.join('|') || XR_ANIMATION_PRESETS.length !== 10) {
+    if (XR_ACTION_PATH_PRESET_IDS.join('|') !== expectedActionPaths.join('|') || XR_ANIMATION_PRESETS.length !== 13) {
       throw new Error(`expected all requested native action paths, got ${XR_ACTION_PATH_PRESET_IDS.join(', ')}`)
     }
 
@@ -123,6 +123,9 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       ['helicopter-orbit', 9],
       ['car-chase', 6],
       ['collapsing-debris', 5],
+      ['patrol-sweep', 7],
+      ['pursuit-dash', 6],
+      ['street-cruise', 4],
     ])
     for (const presetId of XR_ACTION_PATH_PRESET_IDS) {
       const marks = buildXrAnimationActionPath({ presetId, durationSeconds: 8, origin: [0, 0, 0], stageSizeMeters: [20, 16] })

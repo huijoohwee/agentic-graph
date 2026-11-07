@@ -1,6 +1,5 @@
 import React from 'react'
 import { TimelineTransportTimeAxisMark } from '@/components/timeline/TimelineTransportControls'
-import { XR_MOTION_REFERENCE_SELECTION_COLOR } from './xrMotionReferenceModel'
 import { jumpToXrTimelineCue } from './xrTimelineCueRuntime'
 import type { XrRehearsalTimelineBeat } from './xrRehearsalTimelineBeats'
 
@@ -46,7 +45,7 @@ export function XrRehearsalTimelineBeatMarks({
             data-kg-xr-lane-scene-beat={index + 1}
             data-kg-xr-lane-mark-shape="circle-only"
           >
-            <span style={{ backgroundColor: active ? XR_MOTION_REFERENCE_SELECTION_COLOR : '#64748b' }}>{index + 1}</span>
+            <span>{index + 1}</span>
           </TimelineTransportTimeAxisMark>
         )
       })}

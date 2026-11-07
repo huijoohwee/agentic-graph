@@ -126,7 +126,7 @@ export const deriveGraphGroups = (
   const communities = (() => {
     const nodes = Array.isArray(data.nodes) ? data.nodes : []
     const byCommunity = new Map<string, string[]>()
-    const propsByCommunity = new Map<string, { depth?: number; xIndex?: number; yIndex?: number }>()
+    const propsByCommunity = new Map<string, { depth?: number; xIndex?: number; yIndex?: number; label?: string }>()
 
     for (let i = 0; i < nodes.length; i += 1) {
       const n = nodes[i]
@@ -141,12 +141,15 @@ export const deriveGraphGroups = (
       if (!key) continue
       pushGroupBucketMember(byCommunity, key, n.id)
       const explicitDepth = typeof props['visual:depth'] === 'number' ? props['visual:depth'] : typeof props['visual:zIndex'] === 'number' ? props['visual:zIndex'] : undefined
-      propsByCommunity.set(key, readUpdatedBucketLayoutMeta(propsByCommunity.get(key), {
+      const currentProps = propsByCommunity.get(key)
+      const layout = readUpdatedBucketLayoutMeta(currentProps, {
         bucketValue: raw,
         explicitDepth,
         xIndex: props['visual:xIndex'],
         yIndex: props['visual:yIndex'],
-      }))
+      })
+      const label = typeof props['visual:communityLabel'] === 'string' ? props['visual:communityLabel'].trim() : ''
+      propsByCommunity.set(key, { ...layout, ...(label || currentProps?.label ? { label: label || currentProps?.label } : {}) })
     }
     const out: GraphGroup[] = []
     byCommunity.forEach((memberNodeIds, key) => {
@@ -155,7 +158,7 @@ export const deriveGraphGroups = (
       const props = propsByCommunity.get(key)
       out.push({
         id: `community:${key}`,
-        label: `Community ${key}`,
+        label: props?.label || `Community ${key}`,
         source: 'community',
         depth: props?.depth ?? 0,
         xIndex: props?.xIndex,

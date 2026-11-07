@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import { Simulate } from 'react-dom/test-utils'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { withGlbExporterFileReader } from '@/tests/lib/glbExporterFileReaderHarness'
@@ -24,9 +25,10 @@ import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/
 import { publishCameraFramingRuntime, readCameraFramingRuntime, readCameraFramingRuntimeDocumentKey } from '@/features/strybldr/cameraFramingRuntime'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { readCinematicControlMode, setCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsValidDraft() {
-  const prior = useGraphStore.getState(), priorRuntime = readXrMotionReferenceRuntime()
+  const prior = useGraphStore.getState(), priorRuntime = readXrMotionReferenceRuntime(), priorControlMode = readCinematicControlMode()
   const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
   const container = env.dom.window.document.getElementById('root')!, root = createRoot(container)
   const plan = readXrMotionReferencePlan({ stageId: 'neutral-volume', subjects: [{ id: 'shared-id', assetId: 'prop-crate', label: 'Crate' }] })
@@ -45,10 +47,15 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
   const focus = (input: HTMLInputElement) => input.dispatchEvent(new env.dom.window.FocusEvent('focusin', { bubbles: true }))
   const blur = (input: HTMLInputElement) => input.dispatchEvent(new env.dom.window.FocusEvent('focusout', { bubbles: true }))
   try {
+    setCinematicControlMode('agent')
     completeSourceFilesBootstrap()
     const originalA = install('/draft-a.md')
     await mountReactRoot(root, <XrSubjectTransformEditor />)
     assert.ok(container.querySelector('input[aria-label="Subject description"]'), 'Catalog subjects retain the opt-in construction entry')
+    assert.equal(readCinematicControlMode(), 'agent', 'AI / LLM / MCP owns the default scene controls')
+    assert.equal(container.querySelector<HTMLFieldSetElement>('[aria-label="Human object controls"]')?.disabled, true)
+    await act(async () => { setCinematicControlMode('human') })
+    assert.equal(container.querySelector<HTMLFieldSetElement>('[aria-label="Human object controls"]')?.disabled, false)
     const old = nameInput()
     await act(async () => { focus(old); old.value = 'Stale from A' })
     let originalB = ''
@@ -140,14 +147,23 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     const openParts = async () => {
       const details = [...container.querySelectorAll('details')].find(node => node.querySelector('summary')?.textContent === 'Parts & rig')!
       await act(async () => { details.open = true; Simulate.toggle(details) })
-      assert.ok(container.querySelector('select[aria-label="Part"]'), 'Part fields are lazily projected from the native document')
+      assert.ok(container.querySelector('button[data-kg-select][aria-label="Part"]'), 'Part fields are lazily projected from the native document')
     }
     const changeField = async (label: string, value: string) => {
-      const input = container.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="${label}"]`)!
-      await act(async () => { input.value = value; Simulate.change(input) })
+      const input = container.querySelector<HTMLInputElement | HTMLButtonElement>(`[aria-label="${label}"]`)!
+      if (input.matches('button[data-kg-color-picker]')) {
+        await act(async () => Simulate.click(input))
+        await act(async () => { await import('@/lib/ui/ColorPalette'); await new Promise(resolve => setTimeout(resolve, 35)) })
+        const palette = document.querySelector<HTMLElement>('[role="dialog"][aria-label="Part color palette"]')!
+        assert.ok(palette, 'Colour editing opens the shared semantic palette')
+        await act(async () => Simulate.change(palette.querySelector('[aria-label="Hex colour"]')!, { target: { value } } as never))
+        await act(async () => Simulate.keyDown(palette, { key: 'Escape' }))
+        return
+      }
+      await act(async () => { if (input.matches('button[data-kg-select]')) selectMenuValue(input as HTMLButtonElement, value); else { input.value = value; Simulate.change(input) } })
     }
     await openParts()
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'body')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'body')
     assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Size (m) X"]')!.value, '1.1', 'Inspector shows the effective procedural value')
     await changeField('Size (m) X', '1.3')
     await changeField('Position (m) Y', '1.6')
@@ -170,11 +186,11 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(useGraphStore.getState().markdownDocumentText, partSavedSource, 'A parent cycle retains the exact last valid source')
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument)
     await act(async () => Simulate.click(button('Reset part draft')))
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Parent part"]')!.value, '')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Parent part"]')!.value, '')
 
-    const clipField = () => container.querySelector<HTMLSelectElement>('[aria-label="Authored clip"]')!
+    const clipField = () => container.querySelector<HTMLButtonElement>('[aria-label="Authored clip"]')!
     assert.equal(clipField().value, 'walk', 'Legacy construction selects its first clip')
-    assert.deepEqual([...clipField().options].map(option => option.value), ['', 'walk', 'salute'])
+    assert.deepEqual([...readMenuOptions(clipField())].map(option => option.value), ['', 'walk', 'salute'])
     await changeField('Authored clip', 'salute')
     await changeField('At clip end', 'hold')
     const pendingClipField = clipField()
@@ -190,7 +206,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(readXrMotionReferenceRuntime().selectedShotTargetId, 'shared-id')
     await act(async () => { hydrateCanonicalXrMotionReferenceRuntime(); selectXrMotionReferenceShotTarget('shared-id') })
     assert.equal(clipField().value, 'salute', 'Source rehydration restores clip selection')
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.value, 'hold')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="At clip end"]')!.value, 'hold')
     const beforeMissingClip = readXrMotionReferenceRuntime()
     assert.throws(() => setXrSubjectConstruction('shared-id', { ...reopenedClip, playback: { clipId: 'missing', loop: true } }), XrSubjectConstructionError)
     assert.equal(readXrMotionReferenceRuntime(), beforeMissingClip)
@@ -198,7 +214,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     await changeField('Authored clip', '')
     await act(async () => Simulate.click(button('Apply playback')))
     assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].construction!.playback, { clipId: null, loop: false })
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.disabled, true)
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="At clip end"]')!.disabled, true)
     await changeField('Authored clip', 'walk')
     await changeField('At clip end', 'repeat')
     await act(async () => Simulate.click(button('Apply playback')))
@@ -216,15 +232,15 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     await changeField('Pivot (m) Y', '0.05')
     await save('Apply part')
     editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'Saving a non-first part preserves its selection')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head', 'Saving a non-first part preserves its selection')
     assert.equal(JSON.parse(editedDocument).lastValid.parts.find((part: { id: string }) => part.id === 'head').pivot[1], 0.05)
     const partSelection = readXrMotionReferenceRuntime().selectedSubjectPart
     await act(async () => { root.render(<ConstructionHarness key="reopened-inspector" />) })
     await openParts()
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'A remounted inspector uses canonical part selection')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head', 'A remounted inspector uses canonical part selection')
     await act(async () => { setXrMotionReferencePlayhead(1.25); hydrateCanonicalXrMotionReferenceRuntime() })
     assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, partSelection, 'Seek and same-document hydration preserve the canonical selection record')
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head')
 
     let finishFs: (() => void) | undefined
     resolveFs = () => new Promise(resolve => { finishFs = () => resolve(fs) })
@@ -365,6 +381,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
   } finally {
     await unmountReactRoot(root)
     await settleWorkspaceSourceTextWrites()
+    setCinematicControlMode(priorControlMode)
     useGraphStore.setState(prior); restoreXrMotionReferenceRuntimeSnapshot(priorRuntime)
     env.restore()
   }

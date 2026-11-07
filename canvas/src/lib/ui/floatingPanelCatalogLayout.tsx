@@ -8,11 +8,11 @@ type DataAttributes = Record<`data-${string}`, string | undefined>
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT = 'compact-list'
 export const FLOATING_PANEL_CATALOG_COMPACT_ICON_FRAME_CLASSNAME = 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border'
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TITLE_CLASSNAME = 'm-0 truncate text-xs font-semibold'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME = 'm-0 mt-0.5 truncate text-[11px]'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME = 'shrink-0 truncate font-mono text-[10px]'
+export const FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME = 'm-0 mt-0.5 truncate text-xs'
+export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME = 'shrink-0 truncate font-mono text-xs'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT = 'media-3-rows'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_GRID_CLASSNAME = 'grid-cols-[6.875rem_minmax(0,1fr)]'
-export const FLOATING_PANEL_CATALOG_THREE_ROW_THUMBNAIL_FRAME_CLASSNAME = 'group relative inline-flex h-[4.625rem] w-[6.475rem] shrink-0 overflow-visible rounded border p-[2px] shadow-sm'
+export const FLOATING_PANEL_CATALOG_THREE_ROW_THUMBNAIL_FRAME_CLASSNAME = 'group relative inline-flex h-[4.625rem] w-[6.475rem] shrink-0 overflow-visible rounded border p-[2px] shadow-none'
 
 export function floatingPanelCatalogSurfaceClassName(extraClassName?: string): string {
   return cn('flex h-full min-h-0 flex-col overflow-hidden px-1 pb-2', extraClassName)
@@ -33,7 +33,7 @@ export function floatingPanelCatalogCompactIconFrameClassName(extraClassName?: s
 
 export function floatingPanelCatalogCompactRowClassName(): string {
   return cn(
-    'grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded border px-2 py-2 text-left shadow-sm transition-colors',
+    'grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded border px-2 py-2 text-left shadow-none transition-colors',
     UI_THEME_TOKENS.panel.border,
     UI_THEME_TOKENS.panel.bg,
     UI_THEME_TOKENS.button.hoverBg,
@@ -54,7 +54,7 @@ export function floatingPanelCatalogCompactRowTokenClassName(extraClassName?: st
 
 export function floatingPanelCatalogThreeRowClassName(extraClassName?: string): string {
   return cn(
-    'grid min-w-0 gap-2 rounded border p-2 text-left shadow-sm transition-colors',
+    'grid min-w-0 gap-2 rounded border p-2 text-left shadow-none transition-colors',
     FLOATING_PANEL_CATALOG_THREE_ROW_GRID_CLASSNAME,
     UI_THEME_TOKENS.panel.border,
     UI_THEME_TOKENS.panel.bg,
@@ -173,7 +173,7 @@ export function FloatingPanelCatalogHeader({
     >
       <section className="min-w-0 flex-1">
         <h2 className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</h2>
-        <p className={cn('truncate text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
       </section>
       <section className="flex min-w-0 shrink-0 items-center justify-end gap-1" aria-label={actionsLabel}>
         {actions}
@@ -220,7 +220,7 @@ export function FloatingPanelCatalogSearchControl({
     >
       {state.searchOpen ? (
         <section
-          className={cn('absolute right-0 top-[calc(100%+0.25rem)] z-20 flex h-6 shrink-0 items-center gap-1 rounded border px-1.5 shadow-sm', panelWidthClassName, UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
+          className={cn('absolute right-0 top-[calc(100%+0.25rem)] z-20 flex h-6 shrink-0 items-center gap-1 rounded border px-1.5 shadow-[var(--kg-shadow-overlay)]', panelWidthClassName, UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
           aria-label={panelLabel}
           data-kg-floating-panel-catalog-search-panel="overlay"
           {...panelDataAttributes}
@@ -248,7 +248,7 @@ export function FloatingPanelCatalogSearchControl({
               {...clearDataAttributes}
               onClick={state.clearSearchQuery}
             >
-              <X className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
+              <X className="h-3.5 w-3.5" aria-hidden />
             </button>
           ) : null}
         </section>
@@ -263,7 +263,7 @@ export function FloatingPanelCatalogSearchControl({
         {...toggleDataAttributes}
         onClick={state.handleSearchToggle}
       >
-        <Search className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
+        <Search className="h-3.5 w-3.5" aria-hidden />
       </button>
     </section>
   )

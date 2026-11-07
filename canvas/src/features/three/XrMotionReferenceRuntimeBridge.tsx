@@ -21,7 +21,7 @@ import { resolveXrMotionReferencePersistedValue } from './xrMotionReferencePersi
 import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
 import { XrSubjectConstructionError } from './xrSubjectAuthoring'
 import { resolveXrCanonicalSceneSpatialSource } from './xrCanonicalSceneSpatialSource'
-import { resolveXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import { resolveXrSceneDocumentReady, resolveXrDocumentStageAuthority } from './xrSceneDocumentReadiness'
 import {
   hydrateFlightSimSharedXrSceneSource,
   isSourceAuthoredFlightSimDocument,
@@ -81,11 +81,15 @@ export function hydrateCanonicalXrMotionReferenceRuntime(): boolean {
     if (!flightSource.ok) return false
     effectivePersistedValue = flightSource.persistedValue
   }
+  const authoredScene = flightSource.applies || Boolean(resolveXrDocumentStageAuthority({
+    graphData, markdownDocumentName: state.markdownDocumentName, markdownDocumentText: state.markdownDocumentText,
+  }))
   try {
     hydrateXrMotionReferenceRuntime({
-      sceneKey,
-      nodes: graphData?.nodes || [],
-      persistedValue: effectivePersistedValue,
+      // Losing source authority must also discard a dirty retained scene.
+      sceneKey: authoredScene ? sceneKey : `${sceneKey}:empty-xr`,
+      nodes: authoredScene ? graphData?.nodes || [] : [],
+      persistedValue: authoredScene ? effectivePersistedValue : { stageId: 'neutral-volume', castSource: 'subjects-only' },
     })
   } catch (error) {
     if (!(error instanceof XrSubjectConstructionError)) throw error

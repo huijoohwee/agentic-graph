@@ -1,4 +1,5 @@
-import React from 'react';
+import React from 'react'
+import { PanelCode } from '@/features/panels/ui/PanelText';
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection';
 import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
 import { HELP_STEP_COPY } from '@/features/panels/config';
@@ -192,7 +193,7 @@ export function HelpShortcutsSection({
               valueNode={(
                 <HelpKtvValueStack>
                   <HelpKtvInlineGroup>
-                    <HelpKtvCode className="font-mono">{s.input}</HelpKtvCode>
+                    <HelpKtvCode>{s.input}</HelpKtvCode>
                     <HelpKtvPill>{s.category}</HelpKtvPill>
                   </HelpKtvInlineGroup>
                   <HelpKtvMutedText>{s.modes.join(', ')}</HelpKtvMutedText>
@@ -229,22 +230,22 @@ export function HelpShortcutsSection({
               valueNode={(
                 <HelpKtvValueStack>
                   <HelpKtvInlineGroup>
-                    <HelpKtvCode className="font-mono">{shortcut.input}</HelpKtvCode>
+                    <HelpKtvCode>{shortcut.input}</HelpKtvCode>
                     <HelpKtvPill>{shortcut.category}</HelpKtvPill>
                   </HelpKtvInlineGroup>
                   {getShortcutText(shortcut.textKey).value ? (
                     <HelpKtvMutedText>{getShortcutText(shortcut.textKey).value}</HelpKtvMutedText>
                   ) : null}
                   <HelpKtvMutedText>{shortcut.context}</HelpKtvMutedText>
-                  <HelpKtvCode className="font-mono" data-kg-help-xr-shortcut-invocation={shortcut.id}>
+                  <HelpKtvCode data-kg-help-xr-shortcut-invocation={shortcut.id}>
                     {shortcut.invocation
                       ? renderMarkdownSigilInlineText(shortcut.invocation)
                       : 'Invocation grammar hydrating…'}
                   </HelpKtvCode>
                   <HelpKtvMutedText>
-                    MCP <code data-kg-help-xr-shortcut-mcp={shortcut.id}>{shortcut.mcpTool}</code>
+                    MCP <PanelCode data-kg-help-xr-shortcut-mcp={shortcut.id}>{shortcut.mcpTool}</PanelCode>
                   </HelpKtvMutedText>
-                  <HelpKtvCode className="font-mono">{JSON.stringify(shortcut.mcpInput)}</HelpKtvCode>
+                  <HelpKtvCode>{JSON.stringify(shortcut.mcpInput)}</HelpKtvCode>
                 </HelpKtvValueStack>
               )}
               dataKgAnchor={`shortcut.${shortcut.id}`}

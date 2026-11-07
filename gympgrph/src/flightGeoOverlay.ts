@@ -34,6 +34,14 @@ export type FlightGeoEnvironmentProjection = Readonly<{
   anchor: FlightGeoCoordinate
   id: string
   label: string
+  /** Optional local-to-region frame used by shared Geo+XR stage placement. */
+  localLayoutFrame?: Readonly<{
+    /** Local [x, z] southwest and northeast bounds in metres. */
+    sourceBoundsMeters: readonly [
+      southwest: readonly [number, number],
+      northeast: readonly [number, number],
+    ]
+  }>
   presentationBounds: readonly [
     southwest: FlightGeoCoordinate,
     northeast: FlightGeoCoordinate,

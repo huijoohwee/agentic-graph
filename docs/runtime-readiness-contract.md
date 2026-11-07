@@ -4,8 +4,8 @@ title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
-version: "1.0.0"
-date: "2026-09-05"
+version: "1.0.4"
+date: "2026-10-31"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "agentic-graph runtime-readiness"
@@ -13,8 +13,9 @@ local_rung: "runtime-ready"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
-agent_id: "codex:graph_frontmatter_and_docs"
+worktree_id: "device-0232231d4a19--local-poi-adlc-closeout"
+agent_id: "codex:local_poi_adlc_closeout"
+base_sha: "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c"
 doc_path: "docs/runtime-readiness-contract.md"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false
@@ -33,7 +34,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "1d0000c52f5b4e56e1dced82628d35857f25ba4c"
+  ref: "f758c135a4634ae25df9d82b41db6ed58c06955f"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -103,6 +104,27 @@ retired. Start and publish scoped work through the pinned OS `lane` and `land`
 commands. The protected Integration Gate still controls every merge; production
 uses the separate reviewed-candidate workflow. Historical controller revisions
 remain in Git for recovery and are not active lifecycle dependencies.
+
+## Zero-cost provider boundary
+
+The pinned Agentic OS cost rule applies to every repository, worktree, provider,
+and billable effect. Provider calls require current evidence bound to the exact
+provider, resource, operation, and request immediately before dispatch. Included
+quota, usage snapshots, and budget alerts do not establish a hard USD 0 ceiling.
+
+Every deployed Graph R2 binding is wrapped by the shared gate, which uses
+`agentic-os/context/json` and accepts only a provider-enforced USD 0 hard cap for
+Cloudflare R2. Missing, stale, or quota-only evidence blocks the method before
+Cloudflare is called. Storage, Research, and payment bindings have named buckets
+in their Wrangler configuration; `PROVENANCE_ARCHIVE`, Pages source evidence,
+and the optional MCP media binding lack exact bucket names in source and remain
+blocked until their deployed identity is explicitly mapped. The local test
+verifier applies only to in-memory test bindings and grants no deployment
+authority. No current provider verifier or production cap is configured.
+The MCP agent adapter and travel overflow Worker also gate every Workers AI
+inference by exact model, binding, and request. They require a current verified
+Free-plan deny-at-quota proof or provider-enforced USD 0 cap; readiness remains
+blocked without a trusted verifier, and no inference reaches Cloudflare first.
 
 `DURABLE-AGENT-WORKFLOWS-001@0.1.0` source cutover: the local MCP reader verifies the
 clean OS checkout and fetched-main ancestry. The edge reader uses six immutable reads

@@ -13,20 +13,16 @@ type UseSettingsRowBundlesArgs = {
   checkBytePlusHealth: () => void
   checkBytePlusVideoModelPreview: () => void
   checkChatHealth: () => void
-  checkDeerFlowHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>
   createAndSelectChatHistoryFile: () => Promise<unknown>
   createAndSelectAgenticGraphFile: () => Promise<unknown>
   dirtyRef: React.MutableRefObject<Set<string>>
-  deerFlowHealthDetails: string | null
-  deerFlowHealthOk: boolean | null
   grabMapsHealthDetails: string | null
   grabMapsHealthOk: boolean | null
   importCloudUrlForChatHistory: () => void
   importCloudUrlForAgenticGraph: () => void
   isCheckingBytePlusHealth: boolean
   isCheckingBytePlusVideoModelPreview: boolean
-  isCheckingDeerFlowHealth: boolean
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
@@ -61,20 +57,16 @@ export function useSettingsRowBundles({
   checkBytePlusHealth,
   checkBytePlusVideoModelPreview,
   checkChatHealth,
-  checkDeerFlowHealth,
   checkGrabMapsHealth,
   createAndSelectChatHistoryFile,
   createAndSelectAgenticGraphFile,
   dirtyRef,
-  deerFlowHealthDetails,
-  deerFlowHealthOk,
   grabMapsHealthDetails,
   grabMapsHealthOk,
   importCloudUrlForChatHistory,
   importCloudUrlForAgenticGraph,
   isCheckingBytePlusHealth,
   isCheckingBytePlusVideoModelPreview,
-  isCheckingDeerFlowHealth,
   isCheckingGrabMapsHealth,
   isCheckingHealth,
   isUpdatingChatHistoryPath,
@@ -110,13 +102,10 @@ export function useSettingsRowBundles({
     chatHealthDetails,
     chatHealthOk,
     chatHistoryPathStatus,
-    deerFlowHealthDetails,
-    deerFlowHealthOk,
     grabMapsHealthDetails,
     grabMapsHealthOk,
     isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
-    isCheckingDeerFlowHealth,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
@@ -129,13 +118,10 @@ export function useSettingsRowBundles({
     chatHealthDetails,
     chatHealthOk,
     chatHistoryPathStatus,
-    deerFlowHealthDetails,
-    deerFlowHealthOk,
     grabMapsHealthDetails,
     grabMapsHealthOk,
     isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
-    isCheckingDeerFlowHealth,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
@@ -157,7 +143,6 @@ export function useSettingsRowBundles({
     checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
     checkChatHealth,
-    checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
     createAndSelectAgenticGraphFile,
@@ -177,7 +162,6 @@ export function useSettingsRowBundles({
     checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
     checkChatHealth,
-    checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
     createAndSelectAgenticGraphFile,

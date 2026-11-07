@@ -119,6 +119,11 @@ export function useHelpViewLogic({ searchQuery }: UseHelpViewLogicProps) {
     icons: true,
   });
 
+  React.useEffect(() => {
+    if (!normalizedQuery) return
+    setCollapsedBySection(prev => prev.shortcuts ? { ...prev, shortcuts: false } : prev)
+  }, [normalizedQuery]);
+
   const collapseAll = React.useCallback(() => {
     setCollapsedBySection({
       shortcuts: true,

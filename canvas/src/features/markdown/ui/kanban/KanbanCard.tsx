@@ -273,7 +273,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
         </section>
         <menu
           data-kg-kanban-actions="1"
-          className="m-0 p-0 list-none flex items-center gap-1 opacity-0 pointer-events-none transition-opacity"
+          className="m-0 p-0 list-none flex items-center gap-1 transition-opacity"
           aria-label="Card actions"
         >
           {props.onActivateRow ? (
@@ -313,7 +313,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
 
               {menuOpen && props.canMutate ? (
                 <menu
-                  className={['kg-data-view-floating-menu absolute right-0 mt-2 rounded border shadow-sm p-2 z-10', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
+                  className={['kg-data-view-floating-menu absolute right-0 mt-2 rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-10', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
                   role="menu"
                   aria-label={MARKDOWN_DATA_VIEW_COPY.cardActionsLabel}
                 >
@@ -375,7 +375,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
                                 setMoveMenuOpen(false)
                               }}
                             >
-                              <span className={UI_TEXT_TRUNCATE}>{t}</span>
+                              <span className={UI_TEXT_TRUNCATE}>{t || MARKDOWN_DATA_VIEW_COPY.ungroupedLabel}</span>
                             </button>
                           </li>
                         ))}
@@ -460,7 +460,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
             {paragraphEntries.map(entry => {
               return (
                 <section key={`${props.row.id}:text:${entry.id}`} className="rounded border border-black/5 bg-black/[0.025] px-2.5 py-2">
-                  <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                  <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                     {entry.label}
                   </p>
                   <CardInlineTextEditor

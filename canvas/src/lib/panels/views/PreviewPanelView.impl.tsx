@@ -1,6 +1,7 @@
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { MainPanelIconButton } from '@/features/panels/ui/MainPanelIconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import MainPanelBody from '@/features/panels/ui/MainPanelBody'
 import { splitMermaidIntoDiagrams } from 'grph-shared/markdown/mermaidBlocks'
 import {
   type MermaidInitConfig,
@@ -16,8 +17,8 @@ import {
   useCommandMenuRichMediaInventory,
 } from '@/lib/command-menu/commandMenuRichMediaInventory'
 
-const previewEmptyStateClassName = `w-full h-full flex items-center justify-center text-xs ${UI_THEME_TOKENS.text.tertiary}`
-const previewActionButtonClassName = `text-xs px-3 py-2 rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`
+const previewEmptyStateClassName = `w-full h-full flex items-center justify-center ${UI_THEME_TOKENS.text.tertiary}`
+const previewActionButtonClassName = `px-2 py-1 rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`
 const previewPanelHeaderClassName = `shrink-0 border-b ${UI_THEME_TOKENS.panel.divider} bg-[color:var(--kg-panel-bg)]/60`
 export const PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME = `kg-preview-panel-media-frame rounded border ${UI_THEME_TOKENS.panel.border}`
 const PREVIEW_PANEL_EMBED_FRAME_CLASS_NAME = `${PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME} bg-black/5`
@@ -25,7 +26,7 @@ const MermaidDiagramLazy = React.lazy(() =>
   import('@/lib/panels/views/preview-panel/ui/MermaidDiagram.impl').then(mod => ({ default: mod.MermaidDiagram })),
 )
 
-export default function PreviewPanelView() {
+export default function PreviewPanelView({ items, clearOnUnmount = true }: { items?: readonly CommandMenuRichMediaItem[]; clearOnUnmount?: boolean } = {}) {
   const markdownText = useGraphStore(s => s.markdownDocumentText || '')
   const mermaidFocusCode = useGraphStore(s => s.markdownPreviewMermaidFocusCode || '')
   const mermaidFocusConfig = useGraphStore(s => s.markdownPreviewMermaidFocusConfig || null)
@@ -33,17 +34,16 @@ export default function PreviewPanelView() {
   const activeMediaKey = useGraphStore(s => s.markdownPreviewActiveMediaKey || null)
   const setActiveMediaKey = useGraphStore(s => s.setMarkdownPreviewActiveMediaKey)
   const updateNode = useGraphStore(s => s.updateNode)
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const typography = usePanelTypography()
   const frontmatterModeEnabled = useGraphStore(s => s.frontmatterModeEnabled || false)
   const rootThemeMode = useRootThemeMode()
   const {
-    items: mediaItems,
+    items: inventoryItems,
     mermaidFrontmatterConfig,
     frontmatterMermaidCode,
     frontmatterMermaidDiagrams,
   } = useCommandMenuRichMediaInventory()
+  const mediaItems = items ?? inventoryItems
 
   const hasMarkdown = !!(markdownText && markdownText.trim())
   const [overlayPortalTarget, setOverlayPortalTarget] = React.useState<HTMLElement | null>(null)
@@ -54,17 +54,18 @@ export default function PreviewPanelView() {
 
   React.useEffect(() => {
     return () => {
+      if (!clearOnUnmount) return
       setMermaidFocus(null)
       setActiveMediaKey(null)
     }
-  }, [setActiveMediaKey, setMermaidFocus])
+  }, [clearOnUnmount, setActiveMediaKey, setMermaidFocus])
 
   React.useEffect(() => {
     setLoadedEmbedKey(prev => (activeMediaKey ? (prev === activeMediaKey ? prev : '') : ''))
   }, [activeMediaKey])
 
   React.useEffect(() => {
-    if (!frontmatterModeEnabled) return
+    if (items || !frontmatterModeEnabled) return
     if (!frontmatterMermaidCode) return
     const current = String(mermaidFocusCode || '').trim()
     const next = String(frontmatterMermaidDiagrams[0] || '').trim()
@@ -76,6 +77,7 @@ export default function PreviewPanelView() {
       frontmatterConfig: mermaidFrontmatterConfig,
     })
   }, [
+    items,
     frontmatterModeEnabled,
     frontmatterMermaidCode,
     frontmatterMermaidDiagrams,
@@ -85,14 +87,15 @@ export default function PreviewPanelView() {
     setMermaidFocus,
   ])
 
-  const hasMermaidFocus = !!mermaidFocusCode
-
   const activeMediaFromKey = React.useMemo(
     () => (activeMediaKey ? mediaItems.find(m => m.key === activeMediaKey) || null : null),
     [activeMediaKey, mediaItems],
   )
 
-  const activeMedia = hasMermaidFocus || frontmatterModeEnabled ? null : activeMediaFromKey || mediaItems[0] || null
+  const selectedMedia = activeMediaFromKey || mediaItems[0] || null
+  const focusedCode = items ? (selectedMedia?.kind === 'mermaid' ? selectedMedia.code || '' : '') : mermaidFocusCode
+  const hasMermaidFocus = !!focusedCode
+  const activeMedia = hasMermaidFocus || (!items && frontmatterModeEnabled) ? null : selectedMedia
   const previewPanelState = React.useMemo<CommandMenuRichMediaItem['panel'] | null>(() => {
     if (!activeMedia || activeMedia.kind === 'mermaid') return null
     if (activeMedia.panel) return activeMedia.panel
@@ -152,14 +155,9 @@ export default function PreviewPanelView() {
             ) : (
               <section className="w-full h-full flex items-center justify-center">
                 <section className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className={previewActionButtonClassName}
-                    onClick={() => setLoadedEmbedKey(activeMedia.key)}
-                  >
-                    {UI_COPY.markdownMediaLoadEmbedLabel}
-                  </button>
-                  <a className="text-xs underline" href={richMediaOpenUrl} target="_blank" rel="noreferrer">
+                  <MainPanelIconButton iconKey="action.run" label={UI_COPY.markdownMediaLoadEmbedLabel}
+                    className={previewActionButtonClassName} onClick={() => setLoadedEmbedKey(activeMedia.key)} />
+                  <a className="underline" href={richMediaOpenUrl} target="_blank" rel="noreferrer">
                     {UI_COPY.markdownMediaOpenInNewTabLabel}
                   </a>
                 </section>
@@ -174,21 +172,21 @@ export default function PreviewPanelView() {
   }
 
   return (
-    <MainPanelBody header={<header />} scrollable={false}>
+    <section className="h-full min-h-0 min-w-0" aria-label="Selected media preview">
       <section ref={setOverlayPortalRef} className="h-full min-h-0 flex flex-col overflow-hidden relative">
         {!hasMarkdown && mediaItems.length === 0 ? (
-          <section className={['px-2 py-2 text-sm', UI_THEME_TOKENS.text.secondary, uiPanelTextFontClass].join(' ')}>
+          <section className={['px-2 py-2', UI_THEME_TOKENS.text.secondary, typography.panelTextClass].join(' ')}>
             No markdown loaded.
           </section>
         ) : (
           <section className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <header className={previewPanelHeaderClassName}>
-              <section className="px-3 py-2 flex items-center justify-between">
-                <section className={['text-xs font-medium', UI_THEME_TOKENS.text.primary, uiPanelTextFontClass].join(' ')}>
-                  Preview: selected Mermaid diagram or rich media
+              <section className="px-2 py-1 flex items-center justify-between">
+                <section className={['font-medium', UI_THEME_TOKENS.text.primary, typography.panelTextClass].join(' ')}>
+                  Selected media
                 </section>
-                <section className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
-                  Open Command Menu for @ media
+                <section className={`${typography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary}`}>
+                  Select from Media below
                 </section>
               </section>
             </header>
@@ -197,13 +195,13 @@ export default function PreviewPanelView() {
                 <section className="w-full h-full flex items-center justify-center">
                   <section className={PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME}>
                     <section className="w-full h-full overflow-auto">
-                      {splitMermaidIntoDiagrams(mermaidFocusCode).map((code, i) => (
+                      {splitMermaidIntoDiagrams(focusedCode).map((code, i) => (
                         <React.Suspense key={i} fallback={null}>
                           <MermaidDiagramLazy
                             code={code}
                             highlightClass=""
                             frontmatterConfig={
-                              (mermaidFocusConfig as MermaidInitConfig | null) || mermaidFrontmatterConfig
+                              (items ? selectedMedia?.mermaidConfig : mermaidFocusConfig as MermaidInitConfig | null) || mermaidFrontmatterConfig
                             }
                             rootThemeMode={rootThemeMode}
                             overlayScope="container"
@@ -221,6 +219,6 @@ export default function PreviewPanelView() {
           </section>
         )}
       </section>
-    </MainPanelBody>
+    </section>
   )
 }

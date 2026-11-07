@@ -5,6 +5,7 @@ import { readWorkspaceImportShareExportRootPathSetting } from '@/lib/workspace/w
 
 export const WORKSPACE_DOCS_SOURCE_ROOT_PATH = '/docs' as WorkspacePath
 export const WORKSPACE_OUTPUT_SOURCE_ROOT_PATH = '/docs_' as WorkspacePath
+export const WORKSPACE_WEBSITE_IMPORT_SOURCE_ROOT_PATH = '/websites' as WorkspacePath
 export const WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH = '/notes' as WorkspacePath
 export const WORKSPACE_TEMPLATES_SOURCE_ROOT_PATH = '/huijoohwee.github.io/template' as WorkspacePath
 // Agentic Canvas OS documents remain available to the workspace runtime, but are
@@ -13,6 +14,7 @@ export const WORKSPACE_AGENTIC_OS_DOCS_SOURCE_ROOT_PATH = '/agentic-canvas-os/do
 export const DEFAULT_WORKSPACE_SOURCE_ROOT_PATHS: WorkspacePath[] = [
   WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH,
   WORKSPACE_OUTPUT_SOURCE_ROOT_PATH,
+  WORKSPACE_WEBSITE_IMPORT_SOURCE_ROOT_PATH,
   WORKSPACE_DOCS_SOURCE_ROOT_PATH,
   WORKSPACE_TEMPLATES_SOURCE_ROOT_PATH,
   CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT,
@@ -45,6 +47,7 @@ export function resolveWorkspaceSourceRootPaths(args?: {
     WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH,
     docsRoot,
     WORKSPACE_OUTPUT_SOURCE_ROOT_PATH,
+    WORKSPACE_WEBSITE_IMPORT_SOURCE_ROOT_PATH,
     WORKSPACE_DOCS_SOURCE_ROOT_PATH,
     WORKSPACE_TEMPLATES_SOURCE_ROOT_PATH,
     chatRoot,

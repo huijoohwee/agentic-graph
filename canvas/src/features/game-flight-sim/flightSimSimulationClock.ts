@@ -27,6 +27,7 @@ export function createFlightSimSimulationClock(options: Readonly<{
   runStep: () => Promise<void>
   onStepError: (error: unknown) => void
   minimumStepIntervalMs: number
+  readMinimumStepIntervalMs?: () => number
   now?: () => number
   schedule?: (callback: () => void, delayMs: number) => unknown
   cancelScheduled?: (handle: unknown) => void
@@ -44,14 +45,31 @@ export function createFlightSimSimulationClock(options: Readonly<{
   let disposed = false
   let running = false
   let requested = false
-  let scheduled: Readonly<{ handle: unknown }> | null = null
+  let scheduled: Readonly<{ handle: unknown; dueAt: number }> | null = null
   let lastStartedAt = Number.NEGATIVE_INFINITY
 
   const drain = () => {
-    if (disposed || running || !requested || scheduled) return
-    const delayMs = Math.max(0, lastStartedAt + options.minimumStepIntervalMs - now())
+    if (disposed || running || !requested) return
+    let minimumStepIntervalMs: number
+    try {
+      minimumStepIntervalMs = options.readMinimumStepIntervalMs?.() ?? options.minimumStepIntervalMs
+      if (!Number.isFinite(minimumStepIntervalMs) || minimumStepIntervalMs < 0) {
+        throw new Error('Flight Sim clock interval must be a non-negative finite number')
+      }
+    } catch (error) {
+      requested = false
+      options.onStepError(error)
+      return
+    }
+    const dueAt = lastStartedAt + minimumStepIntervalMs
+    const delayMs = Math.max(0, dueAt - now())
+    if (scheduled) {
+      if (delayMs > 0 && scheduled.dueAt === dueAt) return
+      cancelScheduled(scheduled.handle)
+      scheduled = null
+    }
     if (delayMs > 0) {
-      const pending = { handle: undefined as unknown }
+      const pending = { handle: undefined as unknown, dueAt }
       pending.handle = schedule(() => {
         if (scheduled !== pending) return
         scheduled = null
@@ -64,7 +82,7 @@ export function createFlightSimSimulationClock(options: Readonly<{
     running = true
     lastStartedAt = now()
     void Promise.resolve()
-      .then(options.runStep)
+      .then(() => { if (!disposed) return options.runStep() })
       .catch(error => {
         if (!disposed) options.onStepError(error)
       })

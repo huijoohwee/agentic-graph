@@ -3,7 +3,6 @@ import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-file
 import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession, type AgenticGraphStorageBrowserSessionState } from '@/lib/storage/agentic-graph-storage-browser-session'
 import { Cloud, CloudOff, FolderOpen, HardDrive, RefreshCw } from 'lucide-react'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
-import { DOCUMENT_REPOSITORY_DISPLAY_ROOTS } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { requestMarkdownExplorerSourceFilesOpen } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
@@ -16,9 +15,11 @@ import {
 import { readAgenticGraphCollaborationConfig } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import {
   readWorkspaceCloudSyncEnabledSetting,
+  readWorkspaceCloudTransferPathSetting,
   readWorkspaceDocsMirrorRootPathSetting,
   subscribeWorkspaceStoreSyncSettingsChanged,
   writeWorkspaceCloudSyncEnabledSetting,
+  writeWorkspaceCloudTransferPathSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { getUiSectionActionClassName, getUiSectionChipClassName } from '@/lib/ui/sectionChipChrome'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -32,17 +33,15 @@ import { buildSettingsRowAnchorId } from './settingsRowAnchor'
 
 const SEARCH_INDEX = [
   'document storage sync cloud online collaboration offline fallback',
-  'github agentic-graph docs huijoohwee docs workspace seeds',
   'pocketbase yjs cloudflare d1 indexeddb local mirror sync now',
   'source file management configure connection sign in upload download file folder directory',
 ].join(' ')
 
-export const DOCUMENT_STORAGE_SYNC_SETTINGS_ROW_COUNT = 6
+export const DOCUMENT_STORAGE_SYNC_SETTINGS_ROW_COUNT = 5
 
 const ROW_ANCHORS = {
   mode: buildSettingsRowAnchorId('document-storage-sync-row', 'mode'),
   status: buildSettingsRowAnchorId('document-storage-sync-row', 'status'),
-  roots: buildSettingsRowAnchorId('document-storage-sync-row', 'roots'),
   fallback: buildSettingsRowAnchorId('document-storage-sync-row', 'fallback'),
   actions: buildSettingsRowAnchorId('document-storage-sync-row', 'actions'),
 } as const
@@ -69,7 +68,7 @@ export function DocumentStorageSyncSettingsRows() {
   const [syncing, setSyncing] = React.useState(false)
   const [connection, setConnection] = React.useState<AgenticGraphStorageBrowserSessionState | null>(null)
   const [checking, setChecking] = React.useState(false)
-  const [transferScope, setTransferScope] = React.useState('/')
+  const [transferScope, setTransferScope] = React.useState(() => readWorkspaceCloudTransferPathSetting())
   const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
   const [lastStatus, setLastStatus] = React.useState('Not synced in this session')
   const [persistenceState, setPersistenceState] = React.useState<PersistedCollectionPersistenceState | null>(null)
@@ -86,6 +85,10 @@ export function DocumentStorageSyncSettingsRows() {
   React.useEffect(() => subscribeWorkspaceStoreSyncSettingsChanged(() => {
     setSettingsRevision(previous => previous + 1)
   }), [])
+
+  React.useEffect(() => {
+    setTransferScope(readWorkspaceCloudTransferPathSetting())
+  }, [settingsRevision])
 
   React.useEffect(() => subscribeAgenticGraphStoragePersistenceState(state => {
     setPersistenceState(state)
@@ -274,22 +277,6 @@ export function DocumentStorageSyncSettingsRows() {
       </li>
       <li>
         <KeyTypeValueRow
-          id={ROW_ANCHORS.roots}
-          dataKgAnchor={ROW_ANCHORS.roots}
-          keyNode="GitHub document roots"
-          typeNode={<Cloud className="h-4 w-4" aria-hidden="true" />}
-          valueNode={(
-            <section className={VALUE_CLASS_NAME}>
-              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticGraphDocs}</ValuePill>
-              <ValuePill>Workspace: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs}</ValuePill>
-              <ValuePill>Seeds: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds}</ValuePill>
-            </section>
-          )}
-          align="start"
-        />
-      </li>
-      <li>
-        <KeyTypeValueRow
           id={ROW_ANCHORS.fallback}
           dataKgAnchor={ROW_ANCHORS.fallback}
           keyNode="Offline fallback"
@@ -334,11 +321,15 @@ export function DocumentStorageSyncSettingsRows() {
           typeNode={<FolderOpen className="h-4 w-4" aria-hidden="true" />}
           valueNode={(
             <section className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              <input aria-label="Cloud transfer file or folder path" className="min-w-0 rounded border bg-transparent px-2 py-1" value={transferScope} disabled={syncing} onChange={event => setTransferScope(event.target.value)} />
+              <input aria-label="Cloud transfer file or folder path" className="min-w-0 rounded border bg-transparent px-2 py-1" value={transferScope} disabled={syncing} onChange={event => {
+                const value = event.target.value
+                setTransferScope(value)
+                writeWorkspaceCloudTransferPathSetting(value)
+              }} />
               {(['upload', 'download'] as const).map(direction => <button key={direction} type="button" className={actionClassName}
                 disabled={syncing || !online || !storageAvailable || !cloudEnabled || connection?.status !== 'authenticated'}
                 onClick={() => { void transfer(direction) }}>{direction === 'upload' ? 'Upload copies' : 'Download copies'}</button>)}
-              <small className="basis-full">Markdown files and subfolders · 50 files / 5 MiB per transfer. Differing downloads are kept as .cloud copies. No files are deleted; Git remains canonical.</small>
+              <small className="basis-full">This folder path is saved separately for each signed-in user and workspace. Markdown files and subfolders · 50 files / 5 MiB per transfer. Differing downloads are kept as .cloud copies. No files are deleted; Git remains canonical.</small>
               <span role="status" className="basis-full break-words">{syncing ? 'Transfer in progress…' : lastStatus}</span>
             </section>
           )}

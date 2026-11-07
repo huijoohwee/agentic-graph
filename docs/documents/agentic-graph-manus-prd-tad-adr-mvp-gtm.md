@@ -34,7 +34,7 @@ gtm_revision: "0.2.1"
 
 This document preserves the Manus integration concept as a neutral reference. It is not an implementation contract, release note, or source-owner map. The repo currently has no Manus provider, no Manus widget, no Manus runtime adapter, and no Manus authentication path.
 
-The purpose of this update is to prevent a non-shipped integration from competing with implemented providers such as DeerFlow, external video provider, OpenAI-compatible text generation, BytePlus, Gemini, and the Commerce/Stripe surfaces. Manus work can be activated later only by adding source owners, tests, and validation that prove the active runtime path.
+The purpose of this update is to prevent a non-shipped integration from competing with implemented providers such as the external video provider, OpenAI-compatible text generation, BytePlus, Gemini, and the Commerce/Stripe surfaces. Manus work can be activated later only by adding source owners, tests, and validation that prove the active runtime path.
 
 ## Current Repo State
 

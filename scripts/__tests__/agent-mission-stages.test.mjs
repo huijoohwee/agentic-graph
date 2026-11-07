@@ -7,6 +7,29 @@ import { join } from 'node:path'
 import { hasMissionWorkspaceSelection } from '../../canvas/scripts/lib/verify-workspace-observation.mjs'
 import { readContract, selectAffectedCommands, resolveCiCommandTimeoutMs, validateExpansionScripts } from '../collaboration-contract.mjs'
 import { createMissionPhaseObservation } from '../../canvas/scripts/lib/mission-phase-observation.mjs'
+import { executeMissionEntry } from '../../canvas/scripts/lib/verify-mission-dashboard-entry.mjs'
+
+test('Mission entry dispatches once and disposes its module handle on success or dispatch failure', async () => {
+  for (const failure of [null, new Error('Execution context was destroyed')]) {
+    let dispatches = 0, disposed = 0
+    const control = { evaluate: async effect => effect({ executeCanvasViewControl(input) {
+      dispatches++; assert.deepEqual(input, { optionId: 'agent-run:tree' })
+      if (failure) throw failure
+      return { status: 'applied', ...input }
+    } }), dispose: async () => { disposed++ } }
+    const page = { waitForFunction: async (_predicate, _arg, options) => {
+      assert.equal(dispatches, 0); assert.equal(options.timeout, 60000); return control
+    } }
+    if (failure) await assert.rejects(executeMissionEntry(page), error => error === failure)
+    else await executeMissionEntry(page)
+    assert.equal(dispatches, 1); assert.equal(disposed, 1)
+  }
+})
+
+test('failed module readiness never dispatches a Mission entry', async () => {
+  const failure = new Error('module readiness deadline elapsed')
+  await assert.rejects(executeMissionEntry({ waitForFunction: async () => { throw failure } }), error => error === failure)
+})
 
 test('only an unselected repository can use the native workspace source without fixture isolation', async () => {
   const root = await mkdtemp(join(tmpdir(), 'mission-selection-'))
@@ -33,7 +56,7 @@ test('mission expansion retains ingress, both unit selections, browser and lifec
   const plan = selectAffectedCommands(['canvas/scripts/verify_agent_mission_browser_smoke.mjs', 'canvas/scripts/lib/mission-phase-observation.mjs'], contract)
   for (const step of steps) assert.equal(plan.commands.filter(command => JSON.stringify(command) === JSON.stringify(step)).length, 1)
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run agent-mission:check'))
-  assert.equal(resolveCiCommandTimeoutMs(steps[2], contract), 600000)
+  assert.equal(resolveCiCommandTimeoutMs(steps[2], contract), 900000)
   const pkg = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'))
   assert.throws(() => validateExpansionScripts(contract, { ...pkg.scripts, 'preagent-mission:check': 'node required.mjs' }), /lifecycle hooks/)
   assert.throws(() => validateExpansionScripts(contract, { ...pkg.scripts, 'agent-mission:check': 'node incomplete.mjs' }), /expansion drift/)

@@ -67,7 +67,7 @@ not establish a readiness claim.
 - For arbitrary JSON ingest, render only explicit graph entities (`nodes`/`edges`); forbid synthetic placeholder/fallback graph construction when entities are absent.
 - Keep the computing-flow sample and its pipeline docs aligned as the canonical ingest→parse→render fixture/docs pair; oversized docs may split into companion files, but the original filename remains the sub-600 canonical index with continuation links.
 - Long-horizon SuperAgent harness metadata is upstream orchestration context only: it may plan research, code, and create slices, but parser, GraphData, Storyboard Widget, and Rich Media Panel ownership must remain on the shared ingest→parse→render pipeline.
-- DeerFlow may inform harness concepts or act as an optional provider gateway; do not copy DeerFlow code, architecture, prompts, skills, memory layout, or create DeerFlow-specific parser/render/apply branches.
+- External harness projects may inform concepts; do not copy DeerFlow code, architecture, prompts, skills, memory layout, or create DeerFlow-specific parser/render/apply branches.
 - Embedded Markdown GeoJSON must extract requests through one shared helper, then reuse the same graph-load and geospatial auto-enable contract as file imports.
 - Resolve cross‑repo conflicts; remove legacy/conflicting/stale code.
 - Test only bounded diffs; forbid indefinite runs.

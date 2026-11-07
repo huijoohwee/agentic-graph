@@ -25,5 +25,3 @@ export {
 } from './workspaceImport/webpageEntryText'
 
 export { importWorkspaceUrl, isWorkspaceRepositoryImportUrl } from './workspaceImport/urlImport'
-
-export { importWorkspaceUrlViaDeerFlow } from './workspaceImport/deerflowUrlImport'

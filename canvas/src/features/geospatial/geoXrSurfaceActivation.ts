@@ -5,20 +5,22 @@ import {
   commitCanvasGeospatialModeEnabled,
 } from '@/features/geospatial/geospatialModeCommit'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
+import type { XrSceneSurfaceActivation } from '@/features/three/xrSceneSurfaceRuntime'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
 export type GeoXrSurfaceActivationDependencies = Readonly<{
   readGeospatialEnabled: () => boolean
   preloadGeospatial: () => Promise<void>
   commitGeospatialEnabled: (enabled: boolean) => Promise<boolean>
-  activateXr: () => boolean
+  activateXr: (activation?: XrSceneSurfaceActivation) => boolean
 }>
 
 const DEFAULT_DEPENDENCIES: GeoXrSurfaceActivationDependencies = {
   readGeospatialEnabled: readGeospatialOverlayEnabledPreference,
   preloadGeospatial: preloadGeospatialMapRuntime,
   commitGeospatialEnabled: commitCanvasGeospatialModeEnabled,
-  activateXr: () => activateXrSceneSurface({
+  activateXr: activation => activateXrSceneSurface({
+    ...activation,
     geospatialComposite: true,
     preserveGameplay: true,
   }),
@@ -44,6 +46,7 @@ const restoreGeospatialOwner = async (
  */
 async function performGeoXrSurfaceActivation(
   dependencyOverrides: Partial<GeoXrSurfaceActivationDependencies> = {},
+  activation: Omit<XrSceneSurfaceActivation, 'geospatialComposite' | 'preserveGameplay'> = {},
 ): Promise<boolean> {
   const dependencies = { ...DEFAULT_DEPENDENCIES, ...dependencyOverrides }
 
@@ -55,7 +58,7 @@ async function performGeoXrSurfaceActivation(
     if (!enabled) {
       throw new Error('The native geospatial Canvas owner remained disabled.')
     }
-    if (!dependencies.activateXr()) {
+    if (!dependencies.activateXr(activation)) {
       throw new Error('The shared Geo+XR Mode surface is unavailable for this document.')
     }
     return true
@@ -74,12 +77,13 @@ async function performGeoXrSurfaceActivation(
 
 export function activateGeoXrSurfaceAtomically(
   dependencyOverrides: Partial<GeoXrSurfaceActivationDependencies> = {},
+  activation: Omit<XrSceneSurfaceActivation, 'geospatialComposite' | 'preserveGameplay'> = {},
 ): Promise<boolean> {
   if (activationInFlight) return activationInFlight
 
-  const activation = performGeoXrSurfaceActivation(dependencyOverrides)
+  const activationRun = performGeoXrSurfaceActivation(dependencyOverrides, activation)
   let trackedActivation: Promise<boolean>
-  trackedActivation = activation.finally(() => {
+  trackedActivation = activationRun.finally(() => {
     if (activationInFlight === trackedActivation) activationInFlight = null
   })
   activationInFlight = trackedActivation

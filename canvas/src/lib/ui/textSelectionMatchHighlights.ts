@@ -1,4 +1,5 @@
 import React from 'react'
+import { collectKeywordEvidence, KEYWORD_TEXT_LIMIT } from '@/lib/semantic-mode/keywordEvidence'
 
 export type TextSelectionMatchHighlightRect = {
   id: string
@@ -99,7 +100,7 @@ const shouldSkipTextNode = (node: Text, root: HTMLElement): boolean => {
   return false
 }
 
-const collectTextSegments = (root: HTMLElement): TextSegment[] => {
+const collectTextSegments = (root: HTMLElement, phrase = false): TextSegment[] => {
   const doc = root.ownerDocument
   if (!doc?.createTreeWalker) return []
   const view = doc.defaultView
@@ -108,12 +109,18 @@ const collectTextSegments = (root: HTMLElement): TextSegment[] => {
   const walker = doc.createTreeWalker(root, showText)
   const segments: TextSegment[] = []
   let cursor = 0
+  // One lookahead character lets the shared matcher reject a word cut by its scan cap.
+  let previousBlock: Element | null = null
   let current = walker.nextNode()
-  while (current) {
+  while (current && (!phrase || cursor < KEYWORD_TEXT_LIMIT + 1)) {
     if (current.nodeType === textNodeType) {
       const node = current as Text
       if (!shouldSkipTextNode(node, root)) {
-        const text = String(node.nodeValue || '')
+        const block = node.parentElement?.closest('p,h1,h2,h3,h4,h5,h6,li,td,th,pre,div,section') ?? null
+        if (phrase && segments.length && block !== previousBlock) cursor++
+        previousBlock = block
+        if (phrase && cursor >= KEYWORD_TEXT_LIMIT + 1) break
+        const text = String(node.nodeValue || '').slice(0, phrase ? KEYWORD_TEXT_LIMIT + 1 - cursor : undefined)
         segments.push({ node, start: cursor, end: cursor + text.length, text })
         cursor += text.length
       }
@@ -232,36 +239,73 @@ export const readSelectionMatchQuery = (
   }
 }
 
+/** Range geometry can extend beyond a truncated label even when its glyphs are hidden. */
+const clipPhraseRect = (root: HTMLElement, range: Range, rect: DOMRect) => {
+  let left = rect.left, right = rect.right, top = rect.top, bottom = rect.bottom
+  for (let parent = range.startContainer.parentElement; parent && parent !== root; parent = parent.parentElement) {
+    const style = root.ownerDocument.defaultView?.getComputedStyle(parent)
+    if (!style) continue
+    const clipsX = /hidden|clip|auto|scroll/.test(style.overflowX || style.overflow)
+    const clipsY = /hidden|clip|auto|scroll/.test(style.overflowY || style.overflow)
+    if (!clipsX && !clipsY) continue
+    const bounds = parent.getBoundingClientRect()
+    if (clipsX) {
+      if (style.textOverflow === 'ellipsis' && (left < bounds.left || right > bounds.right)) return null
+      left = Math.max(left, bounds.left); right = Math.min(right, bounds.right)
+    }
+    if (clipsY) { top = Math.max(top, bounds.top); bottom = Math.min(bottom, bounds.bottom) }
+    if (right <= left || bottom <= top) return null
+  }
+  return { left, top, width: right - left, height: bottom - top }
+}
+
 export const collectTextSelectionMatchHighlightRects = (args: {
   root: HTMLElement
-  query: TextSelectionMatchQuery
+  query?: TextSelectionMatchQuery | null
+  phrase?: { text: string; locale: string } | null
   maxRects?: number
 }): TextSelectionMatchHighlightRect[] => {
-  const { root, query } = args
-  const maxRects = Math.max(1, args.maxRects || MAX_SELECTION_MATCH_RECTS)
-  const segments = collectTextSegments(root)
+  const { root, query, phrase } = args
+  if (!query && !phrase) return []
+  const maxRects = Math.min(MAX_SELECTION_MATCH_RECTS, Math.max(1, args.maxRects || MAX_SELECTION_MATCH_RECTS))
+  const segments = collectTextSegments(root, !!phrase)
   if (!segments.length) return []
-  const searchText = query.text
-  const source = buildNormalizedTextIndex(segments)
+  const searchText = query?.text ?? ''
+  const source = phrase ? { text: '', rawOffsets: [] } : buildNormalizedTextIndex(segments)
+  const phraseMatches: Array<{ start: number; end: number }> = []
+  if (phrase) {
+    const text = segments.map((segment, index) => `${index && segment.start > segments[index - 1]!.end ? '\n' : ''}${segment.text}`).join('')
+    try {
+      collectKeywordEvidence(text, [phrase.text], phrase.locale, (start, end) => {
+        if (phraseMatches.length < maxRects) phraseMatches.push({ start, end })
+      })
+    } catch { return [] }
+  }
   const sourceText = source.text
-  if (!sourceText || sourceText.length < searchText.length) return []
+  if (!phrase && (!sourceText || sourceText.length < searchText.length)) return []
   const rootRect = root.getBoundingClientRect()
   const out: TextSelectionMatchHighlightRect[] = []
   let searchFrom = 0
   let matchIndex = 0
   while (out.length < maxRects) {
-    const matchStart = sourceText.indexOf(searchText, searchFrom)
-    if (matchStart < 0) break
-    const matchEnd = matchStart + searchText.length
-    searchFrom = Math.max(matchEnd, matchStart + 1)
-    const rawRange = readRawRangeForNormalizedMatch(source, matchStart, matchEnd)
-    if (!rawRange) continue
+    let rawRange = phrase ? phraseMatches[matchIndex] : undefined
+    if (!phrase) {
+      const matchStart = sourceText.indexOf(searchText, searchFrom)
+      if (matchStart < 0) break
+      const matchEnd = matchStart + searchText.length
+      searchFrom = Math.max(matchEnd, matchStart + 1)
+      rawRange = readRawRangeForNormalizedMatch(source, matchStart, matchEnd) ?? undefined
+    }
+    if (!rawRange) break
+    matchIndex++
     const matchRange = buildRangeForMatch(root, segments, rawRange.start, rawRange.end)
     if (!matchRange) continue
-    if (rangesIntersect(matchRange, query.range)) continue
+    if (!phrase && query && rangesIntersect(matchRange, query.range)) continue
     let rectIndex = 0
     const rects = Array.from(matchRange.getClientRects())
-    for (const rect of rects) {
+    for (const rawRect of rects) {
+      const rect = phrase ? clipPhraseRect(root, matchRange, rawRect) : rawRect
+      if (!rect) continue
       if (out.length >= maxRects) break
       if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) continue
       if (rect.width <= 0 || rect.height <= 0) continue
@@ -276,12 +320,11 @@ export const collectTextSelectionMatchHighlightRects = (args: {
       })
       rectIndex += 1
     }
-    matchIndex += 1
   }
   return out
 }
 
-const buildHighlightSignature = (query: TextSelectionMatchQuery | null, rects: TextSelectionMatchHighlightRect[]): string => {
+const buildHighlightSignature = (query: { text: string } | null, rects: TextSelectionMatchHighlightRect[]): string => {
   if (!query || rects.length <= 0) return ''
   return [
     query.text,
@@ -349,13 +392,14 @@ export const useTextSelectionMatchHighlights = (args: {
   rootRef: React.RefObject<HTMLElement | null>
   resetKey?: string
   enabled?: boolean
+  phrase?: { text: string; locale: string } | null
 }): TextSelectionMatchHighlightRect[] => {
-  const { rootRef, resetKey, enabled = true } = args
+  const { rootRef, resetKey, enabled = true, phrase } = args
   const [state, setState] = React.useState<{ signature: string; rects: TextSelectionMatchHighlightRect[] }>({
     signature: '',
     rects: [],
   })
-  const stateSignatureRef = React.useRef('')
+  const stateSignatureRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     if (!enabled) {
@@ -385,9 +429,9 @@ export const useTextSelectionMatchHighlights = (args: {
       if (disposed) return
       const root = rootRef.current
       const selection = typeof window !== 'undefined' ? window.getSelection?.() : null
-      const query = readSelectionMatchQuery(root, selection)
-      const rects = root && query ? collectTextSelectionMatchHighlightRects({ root, query }) : []
-      const signature = buildHighlightSignature(query, rects)
+      const query = phrase ? null : readSelectionMatchQuery(root, selection)
+      const rects = root && (query || phrase) ? collectTextSelectionMatchHighlightRects({ root, query, phrase }) : []
+      const signature = buildHighlightSignature(phrase || query, rects)
       if (signature === stateSignatureRef.current) return
       if (!query || rects.length <= 0) invalidateRestore()
       stateSignatureRef.current = signature
@@ -442,8 +486,20 @@ export const useTextSelectionMatchHighlights = (args: {
     document.addEventListener('pointerup', finishPointerSelection)
     document.addEventListener('mouseup', finishPointerSelection)
     root?.addEventListener('keyup', scheduleFromCommittedInput)
+    const resizeObserver = phrase && window.ResizeObserver ? new window.ResizeObserver(scheduleFromCommittedInput) : null
+    if (root) resizeObserver?.observe(root)
+    const observer = phrase && window.MutationObserver ? new window.MutationObserver(records => {
+      if (records.some(record => !(record.target.nodeType === 1 ? record.target as Element : record.target.parentElement)?.closest('[data-kg-selection-match-overlay]'))) scheduleFromCommittedInput()
+    }) : null
+    if (root) observer?.observe(root, { childList: true, subtree: true, characterData: true })
+    root?.addEventListener('load', scheduleFromCommittedInput, true)
+    root?.addEventListener('scroll', scheduleFromCommittedInput, true)
     return () => {
       disposed = true
+      resizeObserver?.disconnect()
+      observer?.disconnect()
+      root?.removeEventListener('load', scheduleFromCommittedInput, true)
+      root?.removeEventListener('scroll', scheduleFromCommittedInput, true)
       clearScheduled()
       invalidateRestore()
       document.removeEventListener('selectionchange', scheduleFromSelectionChange)
@@ -453,9 +509,9 @@ export const useTextSelectionMatchHighlights = (args: {
       document.removeEventListener('pointerup', finishPointerSelection)
       document.removeEventListener('mouseup', finishPointerSelection)
       root?.removeEventListener('keyup', scheduleFromCommittedInput)
-      stateSignatureRef.current = ''
+      stateSignatureRef.current = null
     }
-  }, [enabled, resetKey, rootRef])
+  }, [enabled, resetKey, rootRef, phrase?.text, phrase?.locale])
 
   return state.rects
 }

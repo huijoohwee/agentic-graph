@@ -150,7 +150,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<Columns2 className="w-4 h-4" aria-hidden="true" />}
         menu={({ close }) => (
-          <form className={['kg-graph-data-table-menu-form kg-graph-data-table-menu-form--narrow rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form kg-graph-data-table-menu-form--narrow rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-1">
               <legend className={`${UI_THEME_TOKENS.text.tertiary}`}>Visible columns</legend>
               {props.columns.map(c => (
@@ -179,14 +179,14 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<Filter className="w-4 h-4" aria-hidden="true" />}
         menu={
-          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-2">
               <section className={menuRowClass}>
                 <PanelField label="Match" variant="section" layout="compact" className="min-w-0 flex-1" labelClassName={menuFieldLabelClass}>
                   <PanelSelect
                     variant="transparent"
                     value={props.filterMatch}
-                    onChange={e => props.setFilterMatch(e.target.value === 'any' ? 'any' : 'all')}
+                    onValueChange={selectedValueInput => props.setFilterMatch(selectedValueInput === 'any' ? 'any' : 'all')}
                     className={toolbarFieldClass}
                   >
                     <option value="all">All</option>
@@ -200,7 +200,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={clause.columnId}
-                      onChange={e => updateFilterClause(clause.id, { columnId: e.target.value })}
+                      onValueChange={selectedValueInput => updateFilterClause(clause.id, { columnId: selectedValueInput })}
                       className={toolbarFieldClass}
                     >
                       {props.columns.map(c => (
@@ -214,7 +214,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={clause.operator}
-                      onChange={e => updateFilterClause(clause.id, { operator: e.target.value as GraphDataTableFilterOperator })}
+                      onValueChange={selectedValueInput => updateFilterClause(clause.id, { operator: selectedValueInput as GraphDataTableFilterOperator })}
                       className={toolbarFieldClass}
                     >
                       <option value="contains">contains</option>
@@ -270,7 +270,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
       >
         <PanelSelect
           value={props.groupBy}
-          onChange={e => props.setGroupBy(e.target.value)}
+          onValueChange={selectedValueInput => props.setGroupBy(selectedValueInput)}
           className={toolbarFieldClass}
         >
           <option value="">None</option>
@@ -290,7 +290,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<ArrowUpDown className="w-4 h-4" aria-hidden="true" />}
         menu={
-          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-2">
               {props.sortRules.map(rule => (
                 <section key={rule.id} className={menuRowClass}>
@@ -298,7 +298,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={rule.columnId}
-                      onChange={e => updateSortRule(rule.id, { columnId: e.target.value })}
+                      onValueChange={selectedValueInput => updateSortRule(rule.id, { columnId: selectedValueInput })}
                       className={toolbarFieldClass}
                     >
                       {props.columns.map(c => (
@@ -312,7 +312,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={rule.direction}
-                      onChange={e => updateSortRule(rule.id, { direction: e.target.value as GraphDataTableSortDirection })}
+                      onValueChange={selectedValueInput => updateSortRule(rule.id, { direction: selectedValueInput as GraphDataTableSortDirection })}
                       className={toolbarFieldClass}
                     >
                       <option value="asc">asc</option>
@@ -353,7 +353,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         <span className={UI_TEXT_TRUNCATE}>{`Row height: ${readDataViewRowHeightLabel(props.rowHeightPreset)}`}</span>
         <PanelSelect
           value={props.rowHeightPreset}
-          onChange={e => props.setRowHeightPreset(e.target.value === 'compact' ? 'compact' : 'comfortable')}
+          onValueChange={selectedValueInput => props.setRowHeightPreset(selectedValueInput === 'compact' ? 'compact' : 'comfortable')}
           className={toolbarFieldClass}
         >
           {DATA_VIEW_ROW_HEIGHT_OPTIONS.map(option => (

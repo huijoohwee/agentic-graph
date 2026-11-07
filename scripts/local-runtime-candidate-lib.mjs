@@ -190,7 +190,7 @@ function resolveCanonicalRuntimeRoots(options, deps) {
 }
 
 function inspectRepository(id, root, deps, verifyProtected) {
-  deps.gitText(root, ["fetch", "--quiet", "--prune", "origin", "main"]);
+  refreshProtectedMain(root, deps);
   const headSha = deps.gitText(root, ["rev-parse", "HEAD"]).trim();
   const remoteSha = deps.gitText(root, ["rev-parse", "origin/main"]).trim();
   const treeSha = deps.gitText(root, ["rev-parse", "HEAD^{tree}"]).trim();
@@ -215,6 +215,12 @@ function inspectRepository(id, root, deps, verifyProtected) {
     protectedChecksVerified: checks.length > 0,
     checks,
   };
+}
+
+/** Refresh only the protected tip; local review must preserve every lane ref. */
+export function refreshProtectedMain(root, deps) {
+  deps.gitText(root, ["fetch", "--quiet", "--no-tags", "--no-prune", "--no-write-fetch-head",
+    "--no-auto-maintenance", "origin", "+refs/heads/main:refs/remotes/origin/main"]);
 }
 
 export function classifyCanonicalRuntimeResidue({

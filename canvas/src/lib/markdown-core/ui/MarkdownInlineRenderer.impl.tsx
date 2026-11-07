@@ -30,7 +30,7 @@ import type { InlineRenderOpts } from '@/features/markdown/ui/MarkdownRendererTy
 import { resolveIframeEmbed } from 'grph-shared/rich-media/iframe'
 import { buildYouTubeTimestampPreviewDescriptor } from 'grph-shared/rich-media/providers'
 import { Volume2 } from 'lucide-react'
-import { MediaIframe, MediaVideo, MediaWebpageSnapshot } from '@/lib/markdown-core/ui/MarkdownMediaUi.impl'
+import { MediaIframe, MediaVideo, MediaImage, MediaWebpageSnapshot } from '@/lib/markdown-core/ui/MarkdownMediaUi.impl'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MARKDOWN_INLINE_CODE_VIEW_CLASS } from '@/features/markdown/ui/markdownInlineCodeParity'
@@ -209,7 +209,7 @@ const INLINE_SEMANTIC_BADGE_CLASS = [
   'border-slate-300/70 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200',
 ].join(' ')
 const INLINE_SEMANTIC_LABEL_CLASS = [
-  'uppercase tracking-wide text-[10px] font-semibold',
+  'uppercase tracking-normal text-xs font-semibold',
   UI_THEME_TOKENS.text.secondary,
 ].join(' ')
 const INLINE_SEMANTIC_VALUE_CLASS = 'font-medium'
@@ -633,35 +633,32 @@ export const renderInlineTokens = (tokens: Token[] | undefined, opts: InlineRend
       }
       const isViewportBoundedImage = src.startsWith('/__pdf_assets/') || /^data:image\//i.test(src)
       const isSvgImage = /^data:image\/svg\+xml;base64,/i.test(src) || /\.svg(\?|#|$)/i.test(src)
-      const imageNode = (
-        <CardMediaPreview
+      const imageNode = inlineMediaChipMode ? (
+        <CardMediaPreview key={`${key}-image`} kind={isSvgImage ? 'svg' : 'image'} url={src} title={alt}
+          interactive={false} fit="cover" mediaThumbnailDataAttr mediaClassName={CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_CLASS_NAME} />
+      ) : (
+        <MediaImage
           key={`${key}-image`}
-          kind={isSvgImage ? 'svg' : 'image'}
-          url={src}
-          title={alt}
-          interactive={false}
-          fit={inlineMediaChipMode ? 'cover' : 'contain'}
-          mediaThumbnailDataAttr
-          mediaClassName={[
-            inlineMediaChipMode ? CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_CLASS_NAME : 'max-w-full h-auto rounded border object-contain',
+          src={src}
+          alt={alt}
+          cardPreviewMode={cardPreviewMode}
+          className={[
+            'max-w-full h-auto rounded border object-contain',
             isViewportBoundedImage ? UI_RESPONSIVE_MARKDOWN_BOUNDED_IMAGE_CLASSNAME : '',
-            isSvgImage && !inlineMediaChipMode ? 'bg-black/5 dark:bg-white/5' : '',
-            inlineMediaChipMode ? '' : UI_THEME_TOKENS.panel.border,
+            isSvgImage ? 'bg-black/5 dark:bg-white/5' : '',
+            UI_THEME_TOKENS.panel.border,
           ]
             .filter(Boolean)
             .join(' ')}
         />
       )
       const fullImageNode = inlineMediaToggleEnabled ? (
-        <CardMediaPreview
+        <MediaImage
           key={`${key}-image-full`}
-          kind={isSvgImage ? 'svg' : 'image'}
-          url={src}
-          title={alt}
-          interactive={false}
-          fit="contain"
-          mediaThumbnailDataAttr
-          mediaClassName={[
+          src={src}
+          alt={alt}
+          cardPreviewMode={cardPreviewMode}
+          className={[
             'max-w-full h-auto rounded border object-contain',
             isViewportBoundedImage ? UI_RESPONSIVE_MARKDOWN_BOUNDED_IMAGE_CLASSNAME : '',
             isSvgImage ? 'bg-black/5 dark:bg-white/5' : '',

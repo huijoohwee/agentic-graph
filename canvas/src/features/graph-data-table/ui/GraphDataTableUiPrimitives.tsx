@@ -57,7 +57,7 @@ export function FilterCombobox<T extends string>({ value, options, onChange, cla
           onClose={() => setIsOpen(false)}
           align="bottom-left"
         >
-          <menu className={`z-50 w-40 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-1 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.primary} shadow-md list-none m-0`}>
+          <menu className={`z-50 w-40 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-1 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.primary} shadow-[var(--kg-shadow-overlay)] list-none m-0`}>
             {options.map(option => (
               <button
                 key={option.value}
@@ -154,7 +154,7 @@ export function GraphDataTableEditableCellInput({
 }
 
 export const iconButtonClassName =
-  `inline-flex items-center justify-center whitespace-nowrap rounded-md border ${UI_RESPONSIVE_GRAPH_DATA_TABLE_ICON_BUTTON_CLASSNAME} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.button.text} shadow-sm ${UI_THEME_TOKENS.button.hoverBg} focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50`
+  `inline-flex items-center justify-center whitespace-nowrap rounded-md border ${UI_RESPONSIVE_GRAPH_DATA_TABLE_ICON_BUTTON_CLASSNAME} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.button.text} shadow-none ${UI_THEME_TOKENS.button.hoverBg} focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50`
 
 export const secondaryButtonClassName =
-  `inline-flex items-center justify-center whitespace-nowrap font-normal transition-colors focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50 ${UI_RESPONSIVE_GRAPH_DATA_TABLE_SECONDARY_BUTTON_CLASSNAME} rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.button.text} shadow-sm ${UI_THEME_TOKENS.button.hoverBg}`
+  `inline-flex items-center justify-center whitespace-nowrap font-normal transition-colors focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50 ${UI_RESPONSIVE_GRAPH_DATA_TABLE_SECONDARY_BUTTON_CLASSNAME} rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.button.text} shadow-none ${UI_THEME_TOKENS.button.hoverBg}`

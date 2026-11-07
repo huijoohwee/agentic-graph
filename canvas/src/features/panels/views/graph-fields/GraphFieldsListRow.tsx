@@ -1,4 +1,6 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphField, GraphFieldId, GraphFieldSettingsById, GraphFieldSettingsResolved, GraphFieldType } from '@/features/graph-fields/graphFields'
 import { GRAPH_FIELD_TYPES, parseGraphFieldId } from '@/features/graph-fields/graphFields'
@@ -90,6 +92,7 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
   setDraggingDataTableColumnKey,
   setDragOverDataTableColumnKey,
 }: GraphFieldsListRowProps) {
+  const panelTypography = usePanelTypography()
   const isPropertyColumn = isGraphDataTablePropertyColumnKey(columnKey)
   const isCustomField = settings?.isCustom === true
 
@@ -117,8 +120,6 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
         : null
 
   const scopeColor = borderColor || '#9CA3AF'
-  const colorInputValue =
-    typeof scopeColor === 'string' && scopeColor.trim().startsWith('#') ? scopeColor.trim() : '#000000'
   const fieldInputClassName = `${UI_RESPONSIVE_GRAPH_FIELDS_FIELD_INPUT_CLASSNAME} w-full rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} text-xs ${UI_THEME_TOKENS.text.primary}`
   const typeSelectClassName = [MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, UI_RESPONSIVE_GRAPH_FIELDS_TYPE_SELECT_CLASSNAME, 'text-left'].join(' ')
 
@@ -198,29 +199,12 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
         const tooltipText = UI_COPY.graphFieldsColorSwatchTooltip(scope)
         return (
           <Tooltip content={tooltipText} maxWidthPx={260}>
-            <label className={`inline-flex items-center justify-center relative group ${UI_RESPONSIVE_GRAPH_FIELDS_COMPACT_ICON_CELL_CLASSNAME}`} aria-label={colorLabel}>
-              <FieldColorIcon
-                color={scopeColor}
-                className="inline-flex items-center justify-center"
-                iconClassName={iconSizeClass}
-              />
-              <input
-                type="color"
-                className="absolute inset-0 opacity-0 cursor-pointer bg-transparent"
-                value={colorInputValue}
-                onChange={e => {
-                  const next = String(e.target.value || '').trim()
-                  if (!next || !next.startsWith('#')) return
-                  if (!scope || !styleOwnerKey) return
-                  if (scope === 'node') {
-                    updateNodeStyle(styleOwnerKey, { color: next })
-                  } else {
-                    updateEdgeStyle(styleOwnerKey, { color: next })
-                  }
-                }}
-                aria-label={colorLabel}
-              />
-            </label>
+            <PanelColorPicker value={scopeColor} aria-label={colorLabel}
+              onValueChange={color => {
+                if (!styleOwnerKey) return
+                if (scope === 'node') updateNodeStyle(styleOwnerKey, { color })
+                else updateEdgeStyle(styleOwnerKey, { color })
+              }} />
           </Tooltip>
         )
       })()
@@ -236,13 +220,12 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
       <section
         className={[
           `${UI_RESPONSIVE_GRAPH_FIELDS_LIST_ROW_CLASSNAME} border-b ${UI_THEME_TOKENS.panel.divider} last:border-b-0`,
-          'flex items-center gap-2 border-l-2',
+          'flex items-center gap-2',
           active ? UI_THEME_TOKENS.table.rowSelected : UI_THEME_TOKENS.table.rowHoverHighlight,
           isDragOver ? ['ring-1', UI_RING_PRIMARY_BLUE_INDICATOR].join(' ') : '',
         ]
           .filter(Boolean)
           .join(' ')}
-        style={borderColor ? { borderLeftColor: borderColor } : undefined}
         draggable
         onClick={() => {
           if (graphFieldId) setSelectedFieldId(graphFieldId)
@@ -296,7 +279,7 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
                     />
                     <PanelSelect
                       value={settings.fieldType}
-                      onChange={e => updateGraphFieldSettings(field.id, { fieldType: e.target.value as GraphFieldType })}
+                      onValueChange={selectedValueInput => updateGraphFieldSettings(field.id, { fieldType: selectedValueInput as GraphFieldType })}
                       className={typeSelectClassName}
                       onClick={e => e.stopPropagation()}
                     >
@@ -309,10 +292,10 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
                   </section>
                 ) : (
                   <>
-                    <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                    <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                       <span className="truncate">{settings?.displayName || label}</span>
                     </section>
-                    <section className={`text-sm ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                    <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                       {graphFieldId || columnKey}
                     </section>
                   </>

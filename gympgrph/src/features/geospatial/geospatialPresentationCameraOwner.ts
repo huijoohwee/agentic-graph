@@ -1,7 +1,7 @@
 import { readCityGeoOverlay } from '../../cityGeoOverlay.js'
 import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
 
-export type GeospatialPresentationCameraOwner = 'city' | 'flight' | null
+export type GeospatialPresentationCameraOwner = 'city' | 'flight' | 'game-mode' | null
 
 export type GeospatialPresentationCameraFacts = Readonly<{
   cityOverlayActive: boolean
@@ -21,6 +21,7 @@ export function resolveGeospatialPresentationCameraOwner(
   if (facts.flightOverlayActive && facts.flightOverlayOwner !== null) {
     return facts.flightOverlayOwner
   }
+  if (facts.pendingOwner === 'game-mode') return 'game-mode'
   if (facts.cityOverlayActive) return 'city'
   return facts.pendingOwner ?? null
 }

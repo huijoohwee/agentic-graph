@@ -5,6 +5,7 @@ import {
   Network, Palette, Plane, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type as TextTypeIcon, UserX, Users,
   Workflow,
 } from 'lucide-react'
+import { MAIN_PANEL_ACTION_ICON_KEYS, MAIN_PANEL_ACTION_ICON_META_BY_KEY } from './mainPanelHelpActionIconLibrary'
 import type { MainPanelTabKey } from '@/features/panels/mainPanelTabs'
 import {
   MAIN_PANEL_FIELD_ICON_KEYS,
@@ -15,13 +16,13 @@ import {
   MAIN_PANEL_INVOCATION_SUBJECT_ICON_META_BY_KEY,
 } from './mainPanelHelpInvocationIconLibrary'
 export { resolveMainPanelInvocationSubjectIconKey } from './mainPanelHelpInvocationIconLibrary'
-
 export type MainPanelTypeIconComponent = React.ComponentType<{
   className?: string
   strokeWidth?: number | string
   'aria-hidden'?: boolean | 'true' | 'false'
+  'aria-label'?: string
+  role?: React.AriaRole
 }>
-
 export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'collaboration.peer',
   'collaboration.session',
@@ -67,6 +68,7 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'mainPanel.help',
   'floatingPanel.propsPanel',
   'floatingPanel.skillsCommands',
+  'floatingPanel.blockLibrary',
   'floatingPanel.promptPresets',
   'floatingPanel.view',
   'floatingPanel.media',
@@ -77,6 +79,7 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'floatingPanel.camera',
   'floatingPanel.design',
   'floatingPanel.chat',
+  'floatingPanel.console',
   'floatingPanel.geo',
   'floatingPanel.renderer',
   'floatingPanel.storyboardWidget',
@@ -89,16 +92,14 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'floatingPanel.graphTraversal',
   ...MAIN_PANEL_INVOCATION_SUBJECT_ICON_KEYS,
   ...MAIN_PANEL_FIELD_ICON_KEYS,
+  ...MAIN_PANEL_ACTION_ICON_KEYS,
 ] as const
-
 export type MainPanelTypeIconKey = (typeof MAIN_PANEL_TYPE_ICON_KEYS)[number]
-
 export type MainPanelTypeIconMeta = Readonly<{
   category: string
   label: string
   Icon: MainPanelTypeIconComponent
 }>
-
 export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
   'collaboration.peer': {
     category: 'Collaboration type',
@@ -276,11 +277,7 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Design',
     Icon: Palette,
   },
-  'mainPanel.workflowManager': {
-    category: 'MainPanel surface',
-    label: 'Workflow Manager',
-    Icon: Table,
-  },
+  'mainPanel.workflowManager': { category: 'MainPanel surface', label: 'Workflow Manager', Icon: Table },
   'mainPanel.dashboard': {
     category: 'MainPanel surface',
     label: 'Dashboard',
@@ -315,6 +312,11 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     category: 'FloatingPanel surface',
     label: 'Skills & Commands',
     Icon: SquareTerminal,
+  },
+  'floatingPanel.blockLibrary': {
+    category: 'FloatingPanel surface',
+    label: 'Block library',
+    Icon: LayoutGrid,
   },
   'floatingPanel.promptPresets': {
     category: 'FloatingPanel surface',
@@ -366,6 +368,7 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Chat',
     Icon: MessageCircle,
   },
+  'floatingPanel.console': { category: 'FloatingPanel surface', label: 'Console', Icon: SquareTerminal },
   'floatingPanel.geo': {
     category: 'FloatingPanel surface',
     label: 'Geo',
@@ -398,8 +401,8 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
   },
   ...MAIN_PANEL_INVOCATION_SUBJECT_ICON_META_BY_KEY,
   ...MAIN_PANEL_FIELD_ICON_META_BY_KEY,
+  ...MAIN_PANEL_ACTION_ICON_META_BY_KEY,
 } satisfies Record<MainPanelTypeIconKey, MainPanelTypeIconMeta>
-
 export const MAIN_PANEL_TAB_TYPE_ICON_KEY_BY_TAB = {
   collaboration: 'mainPanel.collaboration',
   integrations: 'mainPanel.integrations',
@@ -410,29 +413,28 @@ export const MAIN_PANEL_TAB_TYPE_ICON_KEY_BY_TAB = {
   design: 'mainPanel.design',
   workflowManager: 'mainPanel.workflowManager',
   dashboard: 'mainPanel.dashboard',
-  preview: 'mainPanel.preview',
   settings: 'mainPanel.settings',
   history: 'mainPanel.history',
   help: 'mainPanel.help',
 } satisfies Record<MainPanelTabKey, MainPanelTypeIconKey>
-
 export const getMainPanelTypeIconComponent = (iconKey: MainPanelTypeIconKey): MainPanelTypeIconComponent => (
   MAIN_PANEL_TYPE_ICON_META_BY_KEY[iconKey].Icon
 )
-
 export const MAIN_PANEL_TAB_TYPE_ICON_BY_KEY = Object.fromEntries(
   Object.entries(MAIN_PANEL_TAB_TYPE_ICON_KEY_BY_TAB).map(([tabKey, iconKey]) => [
     tabKey,
     getMainPanelTypeIconComponent(iconKey),
   ]),
 ) as Record<MainPanelTabKey, MainPanelTypeIconComponent>
-
 export type FloatingPanelTypeIconView =
+  | 'sequence'
   | 'propsPanel'
   | 'skillsCommands'
+  | 'blockLibrary'
   | 'promptPresets'
   | 'view'
   | 'media'
+  | 'preview'
   | 'animation'
   | 'motionControl'
   | 'gameMode'
@@ -441,6 +443,7 @@ export type FloatingPanelTypeIconView =
   | 'camera'
   | 'design'
   | 'chat'
+  | 'console'
   | 'geo'
   | 'renderer'
   | 'storyboardWidget'
@@ -451,13 +454,15 @@ export type FloatingPanelTypeIconView =
   | 'architecture'
   | 'eventModeling'
   | 'graphTraversal'
-
 export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
+  sequence: 'floatingPanel.timeline',
   propsPanel: 'floatingPanel.propsPanel',
   skillsCommands: 'floatingPanel.skillsCommands',
+  blockLibrary: 'floatingPanel.blockLibrary',
   promptPresets: 'floatingPanel.promptPresets',
   view: 'floatingPanel.view',
   media: 'floatingPanel.media',
+  preview: 'mainPanel.preview',
   animation: 'floatingPanel.animation',
   motionControl: 'floatingPanel.motionControl',
   gameMode: 'floatingPanel.gameMode',
@@ -466,6 +471,7 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   camera: 'floatingPanel.camera',
   design: 'floatingPanel.design',
   chat: 'floatingPanel.chat',
+  console: 'floatingPanel.console',
   geo: 'floatingPanel.geo',
   renderer: 'floatingPanel.renderer',
   storyboardWidget: 'floatingPanel.storyboardWidget',
@@ -477,18 +483,15 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   eventModeling: 'floatingPanel.eventModeling',
   graphTraversal: 'floatingPanel.graphTraversal',
 } satisfies Record<FloatingPanelTypeIconView, MainPanelTypeIconKey>
-
 export const FLOATING_PANEL_TYPE_ICON_BY_VIEW = Object.fromEntries(
   Object.entries(FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW).map(([view, iconKey]) => [
     view,
     getMainPanelTypeIconComponent(iconKey),
   ]),
 ) as Record<FloatingPanelTypeIconView, MainPanelTypeIconComponent>
-
 export function getMainPanelTypeIconMeta(iconKey: MainPanelTypeIconKey): MainPanelTypeIconMeta {
   return MAIN_PANEL_TYPE_ICON_META_BY_KEY[iconKey]
 }
-
 export function resolveMainPanelSettingTypeIconKey(typeLabel: string): MainPanelTypeIconKey {
   const normalized = String(typeLabel || '').trim().toLowerCase()
   if (!normalized) return 'setting.text'
@@ -551,7 +554,6 @@ export function resolveMainPanelSettingTypeIconKey(typeLabel: string): MainPanel
   }
   return 'setting.text'
 }
-
 export function resolveMainPanelKtvTypeIconKey(typeLabel: string): MainPanelTypeIconKey {
   const normalized = String(typeLabel || '').trim().toLowerCase()
   if (!normalized) return 'setting.text'
@@ -569,18 +571,18 @@ export function resolveMainPanelKtvTypeIconKey(typeLabel: string): MainPanelType
   if (normalized === 'mb' || normalized.includes('byte') || normalized.includes('size')) return 'ktv.type.size'
   return resolveMainPanelSettingTypeIconKey(normalized)
 }
-
 export function MainPanelTypeIcon({
   iconKey,
   className,
   strokeWidth,
-  ariaHidden = true,
+  ariaHidden = false,
 }: {
   iconKey: MainPanelTypeIconKey
   className?: string
   strokeWidth?: number | string
   ariaHidden?: boolean | 'true' | 'false'
 }) {
-  const Icon = MAIN_PANEL_TYPE_ICON_META_BY_KEY[iconKey].Icon
-  return <Icon className={className} strokeWidth={strokeWidth} aria-hidden={ariaHidden} />
+  const { Icon, label } = MAIN_PANEL_TYPE_ICON_META_BY_KEY[iconKey]
+  const hidden = ariaHidden === true || ariaHidden === 'true'
+  return <Icon className={className} strokeWidth={strokeWidth} aria-hidden={hidden || undefined} role={hidden ? undefined : 'img'} aria-label={hidden ? undefined : label} />
 }

@@ -54,7 +54,7 @@ export type CanvasViewOption = {
   label: string
   description?: string
   badges?: readonly string[]
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  Icon: React.ComponentType<Pick<React.SVGProps<SVGSVGElement>, 'className' | 'strokeWidth' | 'role' | 'aria-label'>>
   children?: readonly CanvasViewOption[]
   isActive?: boolean
   dividerBefore?: boolean
@@ -67,7 +67,7 @@ export type CanvasViewRendererOption = {
   id: Canvas2dRendererId
   title: string
   valueLabel: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  Icon: React.ComponentType<Pick<React.SVGProps<SVGSVGElement>, 'className' | 'strokeWidth' | 'role' | 'aria-label'>>
   label: string
   description: string
   badges: readonly string[]

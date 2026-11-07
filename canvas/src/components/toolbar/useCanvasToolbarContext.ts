@@ -1,3 +1,4 @@
+import { emitFloatingPanelOpen } from '@/features/canvas/utils'
 import React, { useCallback, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -8,6 +9,7 @@ import {
   type MainPanelTabKey,
   type WorkflowManagerTabKey,
 } from '@/features/toolbar/hooks/useMainPanelDrag'
+import { isMainPanelTabKey } from '@/features/panels/mainPanelTabs'
 import { MAIN_PANEL_OPEN_EVENT, MAIN_PANEL_OPEN_READY_EVENT } from '@/features/panels/utils/useMainPanelRect'
 import { useLaunchSpotlight } from '@/features/panels/hooks/useLaunchSpotlight'
 import { LS_KEYS, UI_COPY } from '@/lib/config'
@@ -211,13 +213,17 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
     if (typeof window === 'undefined') return
     const handler = (ev: Event) => {
       const e = ev as CustomEvent<{
-        tab?: MainPanelTabKey
+        tab?: MainPanelTabKey | 'preview'
         searchQuery?: string
         anchorId?: string
         workflowManagerTab?: WorkflowManagerTabKey
         workflowManagerEntryLabel?: string
       } | undefined>
       const detailTab = e.detail && e.detail.tab
+      if (detailTab === 'preview') {
+        emitFloatingPanelOpen({ tab: 'preview', open: true })
+        return
+      }
       if (detailTab === 'design') {
         activateDesignEditorSurface()
         return
@@ -229,20 +235,7 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
         e.detail && typeof e.detail.workflowManagerEntryLabel === 'string'
           ? e.detail.workflowManagerEntryLabel.trim()
           : ''
-      const tab: MainPanelTabKey =
-        detailTab === 'collaboration'
-        || detailTab === 'integrations'
-        || detailTab === 'mcp'
-        || detailTab === 'maps'
-        || detailTab === 'commerce'
-        || detailTab === 'workflowManager'
-        || detailTab === 'help'
-        || detailTab === 'dashboard'
-        || detailTab === 'preview'
-        || detailTab === 'settings'
-        || detailTab === 'history'
-          ? detailTab
-          : 'help'
+      const tab: MainPanelTabKey = typeof detailTab === 'string' && isMainPanelTabKey(detailTab) ? detailTab : 'help'
       const options: MainPanelOpenOptions = {
         ...(detailSearchQuery ? { searchQuery: detailSearchQuery } : {}),
         ...(detailAnchorId ? { anchorId: detailAnchorId } : {}),
@@ -263,7 +256,7 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
       ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = false
       window.removeEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)
     }
-  }, [openMainPanel])
+  }, [openMainPanel, setMainPanelCollapsed])
 
   React.useEffect(() => {
     return onGeospatialModeChanged(detail => {

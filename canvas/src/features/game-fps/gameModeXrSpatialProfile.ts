@@ -98,7 +98,23 @@ export function readGameModeXrSpatialProfile(): GameFpsSpatialProfile {
   const halfWidth = perimeter.halfWidthMeters
   const halfDepth = perimeter.halfDepthMeters
   const [centerX, centerZ] = perimeter.centerMeters
-  const map = Object.freeze({ centerX, centerZ, halfWidth, halfDepth, blockers: Object.freeze(blockers) })
+  const walkableSurfaces = Object.freeze((spatialSource.stage.walkableSurfaces || []).map(surface => Object.freeze({
+    id: `stage:${surface.id}`,
+    centerX: surface.centerMeters[0],
+    centerZ: surface.centerMeters[1],
+    halfWidth: surface.sizeMeters[0] / 2,
+    halfDepth: surface.sizeMeters[1] / 2,
+    topMeters: surface.topMeters,
+    kind: surface.kind,
+  })))
+  const map = Object.freeze({
+    centerX,
+    centerZ,
+    halfWidth,
+    halfDepth,
+    blockers: Object.freeze(blockers),
+    walkableSurfaces,
+  })
   const playerPosition = resolveSpawn({ x: centerX, z: centerZ + halfDepth * 0.42 }, map, [])
   const npcPreferences = [
     { id: 'npc-scout' as const, x: centerX, z: centerZ - halfDepth * 0.24 },

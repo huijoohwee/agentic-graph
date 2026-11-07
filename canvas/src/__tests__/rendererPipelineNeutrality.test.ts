@@ -5,7 +5,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   const root = resolve(process.cwd(), 'src')
   const renderConfigText = readFileSync(resolve(root, 'lib', 'config.render.ts'), 'utf8')
   const canvasViewportText = readFileSync(resolve(root, 'components', 'CanvasViewport.tsx'), 'utf8')
-  const dashboardCanvasText = readFileSync(resolve(root, 'components', 'DashboardCanvas', 'index.tsx'), 'utf8')
+  const dashboardCanvasText = ['index.tsx', 'DashboardCharts.tsx'].map(file => readFileSync(resolve(root, 'components', 'DashboardCanvas', file), 'utf8')).join('\n')
   const dashboardModelText = readFileSync(resolve(root, 'components', 'DashboardCanvas', 'dashboardModel.ts'), 'utf8')
   const rendererSelectText = readFileSync(resolve(root, 'components', 'toolbar', 'Canvas2dRendererSelect.tsx'), 'utf8')
   const canvasViewMenuText = readFileSync(resolve(root, 'components', 'toolbar', 'canvasViewMenu.ts'), 'utf8')
@@ -66,7 +66,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   const gitGraphCanvasText = readFileSync(resolve(root, 'components', 'MermaidGitGraphCanvas.tsx'), 'utf8')
   const gitGraphFloatingPanelText = readFileSync(resolve(root, 'features', 'gitgraph', 'GitGraphFloatingPanelView.tsx'), 'utf8')
   const gitGraphDocumentHookText = readFileSync(resolve(root, 'features', 'gitgraph', 'useMermaidGitGraphDocument.ts'), 'utf8')
-  const svgSurfaceZoomRuntimeText = readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', 'useSvgSurfaceZoomRuntime.ts'), 'utf8')
+  const svgSurfaceZoomRuntimeText = ['useSvgSurfaceZoomRuntime.ts', 'svgSurfaceGeometry.ts', 'svgSurfaceSelection.ts'].map(file => readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', file), 'utf8')).join('\n')
 
   if (!renderConfigText.includes('export const getCanvas2dSurfaceId')) {
     throw new Error('expected shared renderer surface helper in config.render')
@@ -114,7 +114,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewportText.includes('getCanvas2dSurfaceId(canvas2dRenderer)')) {
     throw new Error('expected CanvasViewport to derive the active 2D surface from the shared renderer surface helper')
   }
-  if (!canvasViewportText.includes("import('@/components/DashboardCanvas')") || !canvasViewportText.includes("active2dSurface === 'dashboard'")) {
+  if (!canvasViewportText.includes("import('@/components/DashboardCanvas/Surface')") || !canvasViewportText.includes("active2dSurface === 'dashboard'")) {
     throw new Error('expected CanvasViewport to mount Dashboard through the shared 2D surface branch')
   }
   if (!canvasViewportText.includes("import('@/components/MediaCanvas')") || !canvasViewportText.includes("active2dSurface === 'media'")) {
@@ -260,7 +260,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
     !ganttTransportShellModelText.includes("ariaLabel: 'Scrub Gantt-timeline position'") ||
     !ganttTransportShellModelText.includes("chromeClassName: 'timeline-transport-chrome--mermaid-gantt p-2'") ||
     !ganttTransportShellModelText.includes("shellClassName: 'timeline-transport-shell--video-sequence'") ||
-    !ganttTransportShellModelText.includes('showInlineProgress: false') ||
+    !ganttTransportShellModelText.includes('showInlineProgress: true') ||
     !ganttTransportShellModelText.includes('showRange: false') ||
     !ganttTransportShellText.includes('GanttTimelineTransportShell') ||
     !ganttTransportShellText.includes('TimelineTransportChrome') ||
@@ -432,7 +432,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (
     !gitGraphFloatingPanelText.includes('data-kg-gitgraph-command-line') ||
     !gitGraphFloatingPanelText.includes("scrollIntoView({ block: 'center' })") ||
-    !gitGraphFloatingPanelText.includes('ring-2')
+    !gitGraphFloatingPanelText.includes('uiSelectedRowStateClassName')
   ) {
     throw new Error('expected GitGraph FloatingPanel rows to highlight and scroll to canvas-selected commands')
   }
@@ -527,11 +527,11 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewMenuText.includes('getCanvas2dRendererMenuDescription(id)') || !canvasViewMenuText.includes('getCanvas2dRendererMenuBadges(id)')) {
     throw new Error('expected Canvas view menu renderer options to derive UX metadata from the shared renderer spec')
   }
-  if (!rendererSelectText.includes('option.description') || !rendererSelectText.includes('option.badges')) {
-    throw new Error('expected Canvas2dRendererSelect to render shared renderer UX metadata without local option aliases')
+  if (!rendererSelectText.includes('getOptionTooltip={buildCanvasViewOptionHelp}')) {
+    throw new Error('expected Canvas2dRendererSelect to delegate renderer UX metadata to shared hover/focus help')
   }
-  if (!rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
-    throw new Error('expected rich renderer menu metadata to use shared toolbar sizing and copy wrapping primitives')
+  if (rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
+    throw new Error('expected renderer rows to use shared toolbar sizing without legacy wrapping metadata')
   }
   if (!animaticTimelineModelText.includes('buildScopedGraphSemanticKey') || !animaticTimelineModelText.includes("'animatic-timeline-model'")) {
     throw new Error('expected Animatic timeline model caching to reuse the shared graph semantic-key helper')
@@ -539,13 +539,13 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!toolbarRendererViewText.includes('isD3Like2dRenderer(canvas2dRenderer)')) {
     throw new Error('expected renderer settings panel to reuse the shared D3-like helper')
   }
-  if (!rendererGraphTopologySummaryText.includes("RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-2'")) {
-    throw new Error('expected renderer topology stats to use a mobile-first responsive grid owner')
+  if (!rendererGraphTopologySummaryText.includes("RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'min-w-0'")) {
+    throw new Error('expected renderer topology stats to retain its stack while shared KTV rows own column alignment')
   }
-  if (rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
+  if (!rendererGraphTopologySummaryText.includes('<SimpleKeyValueRow label="Nodes">') || rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
     throw new Error('expected renderer topology stats to avoid fixed mobile two-column grid literals')
   }
-  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
+  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type, options\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
     throw new Error('expected the shared zoom dispatcher to route 2D requests before Three camera controls')
   }
   if (
@@ -583,35 +583,4 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   }
 }
 
-export function testWorkspaceJsonPipelineStaysNeutralAndFileAgnostic() {
-  const text = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'active-graph-data', 'workspaceStructuredGraph.ts'), 'utf8')
-  const perDocumentUiStateText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'persistence', 'perDocumentUiState.ts'), 'utf8')
-  const canvasSliceText = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'store', 'canvasSlice.ts'), 'utf8')
-  if (!text.includes("const WORKSPACE_GRAPH_PARSE_HINT = 'workspace:inline-data'")) {
-    throw new Error('expected neutral inline workspace parse hint for JSON fallback parsing')
-  }
-  if (text.includes("parseGraph(name || 'workspace.json', text)")) {
-    throw new Error('expected workspace JSON fallback parsing to avoid file-specific workspace.json')
-  }
-  if (text.includes("parseGraph(name || 'workspace.data.json', text)")) {
-    throw new Error('expected workspace JSON fallback parsing to avoid hardcoded .json file hints')
-  }
-  if (!text.includes('buildFlowchartSourceMeta({')) {
-    throw new Error('expected workspace flowchart parsing to carry shared source metadata')
-  }
-  if (!text.includes("const WORKSPACE_GRAPH_SOURCE = 'workspace:graph'")) {
-    throw new Error('expected workspace JSON pipeline to use a neutral workspace graph source identity')
-  }
-  if (!text.includes("const WORKSPACE_GRAPH_SOURCE_KIND = 'workspace'")) {
-    throw new Error('expected workspace JSON pipeline to tag workspace source kind explicitly')
-  }
-  if (text.includes('return { ...graphData, nodes: [], edges: [] }')) {
-    throw new Error('expected flowchart path to avoid synthetic empty graph placeholders')
-  }
-  if (!perDocumentUiStateText.includes('isCanvas2dRendererId(record.canvas2dRenderer)')) {
-    throw new Error('expected per-document UI persistence to reuse the shared 2D renderer id validator')
-  }
-  if (!canvasSliceText.includes('isCanvas2dRendererId(v) ? v : DEFAULT_CANVAS_2D_RENDERER')) {
-    throw new Error('expected canvas slice bootstrap to reuse the shared 2D renderer id validator')
-  }
-}
+export { testWorkspaceJsonPipelineStaysNeutralAndFileAgnostic } from './rendererWorkspaceNeutrality.test'

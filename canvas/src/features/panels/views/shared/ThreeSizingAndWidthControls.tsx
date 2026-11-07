@@ -59,8 +59,8 @@ export default function ThreeSizingAndWidthControls({
             <PanelSelect
               className={uiPanelKeyValueInputClass}
               value={nodeSizingFormula}
-              onChange={e => {
-                const next: 'schema' | 'importance' = e.target.value === 'importance' ? 'importance' : 'schema'
+              onValueChange={selectedValueInput => {
+                const next: 'schema' | 'importance' = selectedValueInput === 'importance' ? 'importance' : 'schema'
                 setThreeConfig({ nodeSizingFormula: next })
               }}
             >
@@ -76,8 +76,8 @@ export default function ThreeSizingAndWidthControls({
             <PanelSelect
               className={uiPanelKeyValueInputClass}
               value={edgeWidthFormula}
-              onChange={e => {
-                const next: 'schema' | 'weight' = e.target.value === 'weight' ? 'weight' : 'schema'
+              onValueChange={selectedValueInput => {
+                const next: 'schema' | 'weight' = selectedValueInput === 'weight' ? 'weight' : 'schema'
                 setThreeConfig({ edgeWidthFormula: next })
               }}
             >
@@ -153,9 +153,9 @@ export default function ThreeSizingAndWidthControls({
               <PanelSelect
                 className={[UI_RESPONSIVE_CONSTRAINED_VALUE_FIELD_CLASSNAME, 'text-right', uiPanelKeyValueInputClass].filter(Boolean).join(' ')}
                 value={nodeSizingFormula}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   const v: 'schema' | 'importance' =
-                    e.target.value === 'importance' ? 'importance' : 'schema'
+                    selectedValueInput === 'importance' ? 'importance' : 'schema'
                   setThreeConfig({ nodeSizingFormula: v })
                 }}
               >
@@ -191,9 +191,9 @@ export default function ThreeSizingAndWidthControls({
               <PanelSelect
                 className={[UI_RESPONSIVE_CONSTRAINED_VALUE_FIELD_CLASSNAME, 'text-right', uiPanelKeyValueInputClass].filter(Boolean).join(' ')}
                 value={edgeWidthFormula}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   const v: 'schema' | 'weight' =
-                    e.target.value === 'weight' ? 'weight' : 'schema'
+                    selectedValueInput === 'weight' ? 'weight' : 'schema'
                   setThreeConfig({ edgeWidthFormula: v })
                 }}
               >

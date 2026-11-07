@@ -1,19 +1,37 @@
 import { waitForMissionAsync } from './mission-card-face.mjs'
 
+export const BASE_FLOATING_PANEL_ROOT_SELECTOR = '[data-agentic-base-floating-panel="true"]'
+
 const readFloatingPanelOpen = targetPage => targetPage.evaluate(
   async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen === true,
 )
+const floatingPanelCard = (targetPage, candidates) => candidates.and(targetPage.locator(
+  `${BASE_FLOATING_PANEL_ROOT_SELECTOR}:not([data-kg-strybldr-bottom-timeline-panel])`,
+)).first()
+
+// Use the rendered control so this also works against the production preview,
+// where source-module imports are unavailable.
+export async function dismissVisibleFloatingPanel(
+  targetPage,
+  floatingPanel = targetPage.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR),
+) {
+  const panel = floatingPanelCard(targetPage, floatingPanel)
+  if (!(await panel.isVisible())) return false
+  await panel.getByRole('button', { name: 'Close', exact: true }).click({ timeout: 30000 })
+  await panel.waitFor({ state: 'detached', timeout: 30000 })
+  return true
+}
 
 export async function closeFloatingPanel(
   targetPage,
-  floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]'),
+  floatingPanel = targetPage.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR),
 ) {
   if (!(await readFloatingPanelOpen(targetPage))) return
-  const panel = floatingPanel.first()
-  await panel.waitFor({ state: 'visible', timeout: 30000 })
-  const closeButton = panel.getByRole('button', { name: 'Close', exact: true })
+  const panel = floatingPanelCard(targetPage, floatingPanel)
+  // Editor Workspace can retain an open Canvas panel without mounting its card.
+  // Dismiss a rendered card first; otherwise clear the retained state below.
   try {
-    await closeButton.click({ timeout: 5000 })
+    await dismissVisibleFloatingPanel(targetPage, panel)
   } catch {
     try {
       await targetPage.keyboard.press('Escape')

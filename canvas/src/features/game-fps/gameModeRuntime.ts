@@ -187,7 +187,7 @@ export function openGameModeSurface(options: Readonly<{
   webglSupported?: boolean
 }> = {}): boolean {
   if (!hydrateCanonicalXrMotionReferenceRuntime()) {
-    publish({ launchStatus: 'error', simulationStatus: 'idle', message: 'Game Mode requires a hydrated authored document on the shared XR Mode scene.' })
+    publish({ launchStatus: 'error', simulationStatus: 'idle', message: 'Game Mode requires a loaded workspace document on the shared XR Mode scene.' })
     return false
   }
   hydrateCanonicalXrPhysicsRuntime()

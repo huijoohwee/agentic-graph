@@ -144,7 +144,9 @@ export const DetailsMenu = React.memo(function DetailsMenu(props: DetailsMenuPro
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      e.preventDefault()
       close()
+      summaryRef.current?.focus()
     }
     const onPointerDown = (e: PointerEvent) => {
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -235,7 +237,9 @@ export const DetailsMenu = React.memo(function DetailsMenu(props: DetailsMenuPro
               {menu}
             </section>
           </section>,
-          document.body,
+          // A body portal is inert beneath a native modal's top layer.
+          // Keep the fixed, viewport-clamped menu in its owning dialog.
+          summaryRef.current?.closest('dialog[open]') || document.body,
         )
       : null
 

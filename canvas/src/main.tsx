@@ -7,11 +7,15 @@ import { installPwaRuntime } from '@/lib/pwa/runtime'
 import { installAgenticGraphWebMcpRuntime } from '@/features/agent-ready/webMcpRuntime'
 import { installHtmlVideoBrowserRuntimeAdapters } from '@/features/html-video-renderer/htmlVideoBrowserRuntime'
 
-installAgenticGraphWebMcpRuntime()
-installHtmlVideoBrowserRuntimeAdapters()
+const sharedLearningCanvas = new URLSearchParams(window.location.search).get('kgLearningCanvas') === 'drone'
+// Recorded replay has no workspace tools, media adapters or persistence installation.
+if (!sharedLearningCanvas) {
+  installAgenticGraphWebMcpRuntime()
+  installHtmlVideoBrowserRuntimeAdapters()
+}
 
 if (
-  import.meta.env.VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'
+  !sharedLearningCanvas && import.meta.env.VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'
   && typeof window !== 'undefined'
   && new URLSearchParams(window.location.search)
     .get('kgFlightSimBrowserProof') === '1'
@@ -23,9 +27,9 @@ if (
     })
 }
 
-if (import.meta.env.PROD) {
+if (!sharedLearningCanvas && import.meta.env.PROD) {
   installPwaRuntime()
-} else if (typeof window !== 'undefined') {
+} else if (!sharedLearningCanvas && typeof window !== 'undefined') {
   // Dev safeguard: clear stale SW/cache state that can serve outdated Vite dep chunks.
   const host = String(window.location.hostname || '').toLowerCase()
   const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0'

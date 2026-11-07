@@ -11,8 +11,8 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 70%, var(--kg-panel-bg, #fff));
   color: var(--kg-text-secondary, rgb(71 85 105 / 1));
-  font-size: 10px;
-  line-height: 14px;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
 }
 
 .timeline-transport-clip-context[data-kg-video-sequence-clip-context="empty"] {
@@ -47,9 +47,9 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--kg-canvas-accent, #3b82f6) 9%, var(--kg-panel-bg, #fff));
   color: var(--kg-text-secondary, rgb(51 65 85 / 1));
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 9px;
+  font-family: var(--kg-font-mono);
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  line-height: 14px;
+  line-height: var(--kg-text-xs-line);
   padding-inline: 4px;
 }

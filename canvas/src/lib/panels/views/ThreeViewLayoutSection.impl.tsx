@@ -36,7 +36,7 @@ import {
   VOXEL_IDLE_ROTATE_SPEED_TOOLTIP,
 } from '@/features/panels/views/ThreeViewTuningTooltips'
 import ThreeSizingAndWidthControls from '@/features/panels/views/shared/ThreeSizingAndWidthControls'
-import { THREE_VIEW_FIELD_GRID_CLASS_NAME } from '@/features/panels/views/threeViewResponsiveClasses'
+import { ThreeViewFieldSection } from '@/features/panels/views/threeViewResponsiveClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
 const keyLabelClassName = UI_THEME_TOKENS.text.primary
@@ -358,7 +358,7 @@ export default function ThreeViewLayoutSection({
       headerClassName="px-0"
       stickyOffsetClassName="top-6"
     >
-      <section className={THREE_VIEW_FIELD_GRID_CLASS_NAME}>
+      <ThreeViewFieldSection>
         {rangeRows.map(row => (
           <PanelKeyTypeRangeValueRow
             key={row.label}
@@ -417,7 +417,7 @@ export default function ThreeViewLayoutSection({
             valueNode={renderRangeValueLabel(row.value)}
           />
         ))}
-      </section>
+      </ThreeViewFieldSection>
     </CollapsibleSection>
   )
 }

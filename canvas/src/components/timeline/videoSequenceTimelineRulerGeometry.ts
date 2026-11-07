@@ -1,3 +1,5 @@
+import { VIDEO_SEQUENCE_LANE_HEIGHT_PX, type VideoSequenceTimelineDisplayLane } from './videoSequenceTimeline'
+
 export const VIDEO_SEQUENCE_RULER_AXIS_EDGE_INSET_PX = 14
 
 export function resolveVideoSequenceRulerInsetPixelMetrics(width: number): { insetLeftPx: number; widthPx: number } {
@@ -15,4 +17,34 @@ export function resolveVideoSequenceRulerInsetLeft(percent: number): string {
 
 export function resolveVideoSequenceRulerInsetWidth(percent: number): string {
   return `calc((100% - ${VIDEO_SEQUENCE_RULER_AXIS_EDGE_INSET_PX * 2}px) * ${percent / 100})`
+}
+
+/** Resolve a pointer against the same inset axis used by clips, marks and playheads. */
+export function resolveVideoSequenceRulerPosition(clientX: number, rectLeft: number, rectWidth: number, duration: number): number {
+  if (![clientX, rectLeft, rectWidth, duration].every(Number.isFinite) || rectWidth <= 0 || duration <= 0) return 0
+  const metrics = resolveVideoSequenceRulerInsetPixelMetrics(rectWidth)
+  return Math.min(1, Math.max(0, (clientX - rectLeft - metrics.insetLeftPx) / metrics.widthPx)) * duration
+}
+
+/** Workflow callers can retain one lane or place each source row on its own lane. */
+export function resolveWorkflowTimelineLaneId(rowKey: string, splitRows = false): string {
+  return splitRows ? `workflow:${rowKey}` : 'workflow'
+}
+export function resolveWorkflowTimelineLanes(rows: readonly { rowKey: string; label: string }[], splitRows = false): VideoSequenceTimelineDisplayLane[] {
+  if (!rows.length) return []
+  if (!splitRows) return [{ id: 'workflow', label: 'Workflow', semanticId: 'video' }]
+  const seen = new Set<string>()
+  return rows.map(row => {
+    if (!row.rowKey.trim() || seen.has(row.rowKey)) throw new Error('workflow_timeline_row_identity_invalid')
+    seen.add(row.rowKey)
+    return { id: resolveWorkflowTimelineLaneId(row.rowKey, true), label: row.label, semanticId: 'video' }
+  })
+}
+export function workflowLaneHeight(height?: number): number {
+  return Number.isFinite(height) ? Math.max(VIDEO_SEQUENCE_LANE_HEIGHT_PX, Math.ceil(height!)) : VIDEO_SEQUENCE_LANE_HEIGHT_PX
+}
+export function resolveWorkflowContentLanes(spans: readonly { rowKey: string }[], rows: readonly { rowKey: string; label: string }[]): VideoSequenceTimelineDisplayLane[] {
+  const lanes = resolveWorkflowTimelineLanes(rows, true), keys = new Set(rows.map(row => row.rowKey))
+  if (spans.some(span => !keys.has(span.rowKey))) throw Error('workflow_row_content_missing')
+  return lanes
 }

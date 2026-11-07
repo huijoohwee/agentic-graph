@@ -47,7 +47,7 @@ export async function testMainPanelTypographyUsesUiSettings() {
     const traversal = container.querySelector('[aria-label="Graph Traversal"]')
     if (!traversal) throw new Error('expected main panel to render traversal summary chip')
     const chipClass = String(traversal.getAttribute('class') || '')
-    if (!chipClass.includes('font-serif') || !chipClass.includes('text-[10px]')) {
+    if (!chipClass.includes('font-serif') || !chipClass.includes('text-xs')) {
       throw new Error(`expected traversal chip to use micro label typography, got ${JSON.stringify(chipClass)}`)
     }
 

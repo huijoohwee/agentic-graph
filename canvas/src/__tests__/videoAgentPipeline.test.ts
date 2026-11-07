@@ -447,6 +447,8 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
     runScripts: 'dangerously',
     url: 'http://localhost',
   })
+  const initialImage = projectedDom.window.document.querySelector('[data-kg-video-agent-frame-analysis] img')
+  if (initialImage) Object.defineProperty(initialImage, 'complete', { configurable: true, get: () => true })
   projectedDom.window.dispatchEvent(new projectedDom.window.CustomEvent('agentic-graph:render-frame', {
     detail: { timeMs: laterFrame.timestampMs + 400 },
   }))
@@ -472,7 +474,7 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
   }
   const projectedVisibleImageSrc = String(projectedVisibleImage?.querySelector('img')?.getAttribute('src') || '')
   if (!projectedVisibleImageSrc.includes('time=') || projectedVisibleImageSrc.includes(`time=${expectedFirstFrameTime}`)) {
-    throw new Error(`expected projected Rich Media source frame image to follow the live timeline bucket, got ${projectedVisibleImageSrc}`)
+    throw new Error(`expected projected Rich Media source frame image to follow the active sample, got ${projectedVisibleImageSrc}`)
   }
   projectedDom.window.close()
 

@@ -117,7 +117,7 @@ export function XrCameraAspectMask() {
         style={{ left: geometry.barWidth, top: geometry.barHeight, width: activeWidth, height: activeHeight }}
       >
         <span className="absolute inset-[5%] border border-dashed border-white/20" />
-        <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-1 text-[9px] font-semibold text-white/85">
+        <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-1 text-xs font-semibold text-white/85">
           {settings.aspectRatio} · {settings.sensorId} · {settings.focalLengthMm}mm · {settings.focusDistanceMeters}m
         </span>
       </span>

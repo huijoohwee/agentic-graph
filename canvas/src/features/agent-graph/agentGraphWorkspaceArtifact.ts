@@ -24,6 +24,7 @@ const MANIFEST_LIST_MAX_ITEMS = 64
 export const AGENT_GRAPH_WORKSPACE_ARTIFACT_DIRECTORY =
   `${WORKSPACE_DOCS_SOURCE_ROOT_PATH}/${CODEBASE_GRAPH_DIRECTORY_NAME}` as const
 const PROJECTION_CACHE_DIRECTORY = AGENT_GRAPH_PROJECTION_DIRECTORY
+const HACKAMAP_MANIFEST_PROJECTION_PATH = '/docs/hackamap/manifest.graph.json'
 
 export function buildAgentGraphWorkspaceArtifactFileName(timestampMs: number): string {
   return `${CODEBASE_GRAPH_DOCUMENT_PREFIX}_${formatWorkspaceUtcSessionTimestamp(timestampMs)}.md`
@@ -169,7 +170,9 @@ export async function retainAgentGraphWorkspaceProjection(graph: GraphData): Pro
 
 export async function readAgentGraphWorkspaceProjectionText(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<string> {
   const pathIdentity = retainedAgentGraphDocumentIdentity(target)
-  if (!pathIdentity || pathIdentity.graphId !== expected.graphId || pathIdentity.snapshotDigest !== expected.snapshotDigest) throw new Error('Invalid retained source path')
+  const importedHackamapProjection = target === HACKAMAP_MANIFEST_PROJECTION_PATH
+  if ((!pathIdentity && !importedHackamapProjection)
+    || (pathIdentity && (pathIdentity.graphId !== expected.graphId || pathIdentity.snapshotDigest !== expected.snapshotDigest))) throw new Error('Invalid retained source path')
   const text = await (await getWorkspaceFs()).readFileText(target)
   if (!text || new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Retained source projection unavailable')
   return text

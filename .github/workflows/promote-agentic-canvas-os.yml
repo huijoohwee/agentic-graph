@@ -2,6 +2,7 @@ name: Promote Agentic OS Source Pin
 # runtime-docs-workflow: promoter
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '17 3 * * *'
 
@@ -15,6 +16,7 @@ concurrency:
 jobs:
   promote:
     name: Promote Protected Docs Revision
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-slim
     timeout-minutes: 15
     env:
@@ -60,7 +62,9 @@ jobs:
       - name: Install dependencies
         if: steps.pending.outputs.changed == 'true'
         working-directory: agentic-graph
-        run: npm ci --no-audit --no-fund
+        env:
+          AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
+        run: bash ./scripts/install-agentic-graph-dependencies.sh
 
       - name: Resolve latest protected docs revision
         if: steps.pending.outputs.changed == 'true'

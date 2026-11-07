@@ -1,3 +1,5 @@
+import { UI_TEXT_SCALE } from './typography.js'
+
 export function tailwindTextSizeClassToPx(textSizeClass: string | null | undefined): number | null {
   const raw = typeof textSizeClass === 'string' ? textSizeClass : ''
   if (!raw.trim()) return null
@@ -16,25 +18,6 @@ export function tailwindTextSizeClassToPx(textSizeClass: string | null | undefin
     return Number.isFinite(n) ? n : null
   }
 
-  switch (token) {
-    case 'text-[9px]':
-      return 9
-    case 'text-[10px]':
-      return 10
-    case 'text-[11px]':
-      return 11
-    case 'text-xs':
-      return 12
-    case 'text-sm':
-      return 14
-    case 'text-base':
-      return 16
-    case 'text-lg':
-      return 18
-    case 'text-xl':
-      return 20
-    default:
-      return null
-  }
+  const scale = UI_TEXT_SCALE[token.slice(5) as keyof typeof UI_TEXT_SCALE]
+  return scale?.size ?? null
 }
-

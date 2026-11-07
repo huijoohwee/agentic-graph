@@ -356,7 +356,7 @@ The generate → select → generate cycle across a full thread is the actual ag
 **Component**: Graph Orchestration Engine (routing substrate)
 **Responsibility**: Provides the state-graph execution substrate (nodes, edges, conditional routing) shared by the three harnesses above.
 **Interfaces**: internal — not exposed as an MCP verb itself
-**Dependencies**: none new — already a transitive dependency of the existing Deep-Research Orchestration Kernel (reference: DeerFlow v2, MIT, which vendors LangGraph, MIT)
+**Dependencies**: the native bounded orchestration runtime owns execution; no external harness runtime is required.
 **Configuration**: a second, independent state-graph definition alongside the kernel's existing research-pipeline graph; same process, same runtime host
 **FOSS / Vendor**: FOSS, zero new dependency (see ADR-1)
 **VCC Conditions**: `Verify the probe-tree graph definition loads and executes independently of the kernel's existing research-pipeline graph, with no shared mutable state between them`
@@ -456,7 +456,7 @@ score: 0.86"])
 Probe-tree needs a state-graph execution substrate: nodes as turns, edges as user-selected transitions, with the ability to route conditionally and (later) resume from a checkpoint. A dedicated conversation-tree or dialogue-authoring engine could be introduced for this purpose.
 
 ### Decision
-Author probe-tree as a second, independent state-graph definition on the graph-orchestration library already vendored transitively by the existing Deep-Research Orchestration Kernel (reference: DeerFlow v2, MIT, itself built on LangGraph, MIT). No new engine is installed.
+Author probe-tree through the existing native bounded runtime and its typed state transitions. No external harness or graph engine is installed.
 
 ### Alternatives Considered
 1. Authored-dialogue engines (reference: ink, Yarn Spinner — both MIT): well-suited to static, hand-authored branching narrative, not to dynamically LLM-generated branches informed by a recall layer. Wrong domain fit.

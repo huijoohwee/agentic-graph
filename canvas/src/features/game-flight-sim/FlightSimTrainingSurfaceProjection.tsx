@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { Headphones, Plane, Volume2 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -5,6 +6,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { openFlightSimSurface } from './flightSimRuntime'
+import { controlLocalFlightSim } from './flightSimMcpRuntime'
 import {
   enableFlightSimVoiceInstructor,
   readFlightSimTrainingSnapshot,
@@ -12,12 +14,7 @@ import {
   subscribeFlightSimTrainingSnapshot,
 } from './flightSimTrainingRuntime'
 import {
-  FLIGHT_SIM_TRAINING_FAILURES,
-  FLIGHT_SIM_TRAINING_MISSIONS,
-  selectFlightSimTrainingFailure,
-  selectFlightSimTrainingMission,
-  type FlightSimTrainingFailureId,
-  type FlightSimTrainingMissionId,
+  readFlightSimTrainingScenario,
 } from './flightSimTrainingScenario'
 
 export type FlightSimTrainingSurface =
@@ -47,9 +44,10 @@ export function FlightSimTrainingSurfaceProjection({
     readFlightSimTrainingSnapshot,
     readFlightSimTrainingSnapshot,
   )
+  const profile = readFlightSimTrainingScenario().profile
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const [opening, setOpening] = React.useState(false)
-  const selectionLocked = training.phase === 'ready' || training.phase === 'flying'
+  const selectionLocked = !training.available || training.phase === 'ready' || training.phase === 'flying'
 
   const openTrainer = React.useCallback(async () => {
     if (training.flightActive) {
@@ -70,6 +68,12 @@ export function FlightSimTrainingSurfaceProjection({
       setOpening(false)
     }
   }, [pushUiToast, training.flightActive])
+
+  const selectTraining = React.useCallback((kind: 'mission' | 'failure', id: string) => {
+    void controlLocalFlightSim({ operation: kind, [`${kind}Id`]: id }).then(result => {
+      if (!result.ok) pushUiToast({ id: 'flight-training:selection:error', kind: 'error', message: result.message })
+    })
+  }, [pushUiToast])
 
   const setVoice = React.useCallback((enabled: boolean) => {
     const available = enableFlightSimVoiceInstructor(enabled)
@@ -92,7 +96,7 @@ export function FlightSimTrainingSurfaceProjection({
       aria-label={`Flight training in ${surface}`}
       data-kg-flight-training-surface={surface}
       data-kg-flight-training-mission={training.missionId}
-      data-kg-flight-training-score={training.score}
+      data-kg-flight-training-score={training.available ? training.score : undefined}
       data-kg-flight-training-night={training.night ? '1' : '0'}
       data-kg-flight-training-failure={training.failureId}
       data-kg-flight-training-voice={training.voiceEnabled ? 'enabled' : 'text'}
@@ -101,26 +105,26 @@ export function FlightSimTrainingSurfaceProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h3 className="flex items-center gap-1 text-[11px] font-semibold">
+          <h3 className="flex items-center gap-1 text-xs font-semibold">
             <Plane className="h-3.5 w-3.5" aria-hidden="true" />
             Flight Training · {training.missionTitle}
           </h3>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             {SURFACE_ROLE[surface]}
           </p>
         </section>
-        <output className="shrink-0 text-right text-[10px] font-semibold">
-          {training.score}/100 · {training.grade}
+        <output className="shrink-0 text-right text-xs font-semibold">
+          {training.available ? `${training.score}/100 · ${training.grade}` : 'Unavailable'}
         </output>
       </header>
 
-      <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
         {training.coachingCue}
       </p>
 
       {surface === 'motion-control' ? (
         <p
-          className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}
+          className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
           data-kg-flight-training-motion-controls="connected-handoff"
         >
           Start Motion Control, then return to Flight Sim: lean forward/back for pitch,
@@ -129,15 +133,15 @@ export function FlightSimTrainingSurfaceProjection({
         </p>
       ) : null}
 
-      <section className="grid grid-cols-3 gap-1 text-[9px]" aria-label="Flight training outcomes">
+      {training.available ? <section className="grid grid-cols-3 gap-1 text-xs" aria-label="Flight training outcomes">
         <span><b>Route</b><br />{training.routeProgress}%</span>
         <span><b>Stable</b><br />{training.stabilityPercent}%</span>
         <span><b>Energy</b><br />{training.energyPercent}%</span>
-      </section>
+      </section> : null}
 
       <output
         className={cn(
-          'rounded border px-2 py-1 text-[9px] font-semibold',
+          'rounded border px-2 py-1 text-xs font-semibold',
           training.envelope.severity === 'warning'
             ? 'border-rose-400/40 text-rose-300'
             : training.envelope.severity === 'caution'
@@ -146,47 +150,45 @@ export function FlightSimTrainingSurfaceProjection({
         )}
         aria-label="Flight envelope status"
       >
-        {training.envelope.label} · target {training.envelope.targetSpeedMetersPerSecond[0]}–{training.envelope.targetSpeedMetersPerSecond[1]} m/s
+        {training.envelope.label}{training.envelope.targetSpeedMetersPerSecond
+          ? ` · target ${training.envelope.targetSpeedMetersPerSecond[0]}–${training.envelope.targetSpeedMetersPerSecond[1]} m/s` : ''}
         {' · '}control {Math.round(training.envelope.controlAuthority * 100)}%
       </output>
 
-      <label className="grid gap-1 text-[9px]">
+      <label className="grid gap-1 text-xs">
         <span>Training mission</span>
-        <select
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-[10px]"
+        <PanelSelect
+          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.missionId}
           disabled={selectionLocked}
-          onChange={event => selectFlightSimTrainingMission(
-            event.currentTarget.value as FlightSimTrainingMissionId,
-          )}
+          onValueChange={selectedValueInput => selectTraining('mission', selectedValueInput)}
           data-kg-flight-training-mission-select="1"
         >
-          {FLIGHT_SIM_TRAINING_MISSIONS.map(mission => (
+          {!training.available ? <option value="">Training unavailable</option> : null}
+          {profile?.missions.map(mission => (
             <option key={mission.id} value={mission.id}>{mission.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
 
-      <label className="grid gap-1 text-[9px]">
+      <label className="grid gap-1 text-xs">
         <span>Practice failure</span>
-        <select
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-[10px]"
+        <PanelSelect
+          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.failureId}
           disabled={selectionLocked}
-          onChange={event => selectFlightSimTrainingFailure(
-            event.currentTarget.value as FlightSimTrainingFailureId,
-          )}
+          onValueChange={selectedValueInput => selectTraining('failure', selectedValueInput)}
           data-kg-flight-training-failure-select="1"
         >
-          {FLIGHT_SIM_TRAINING_FAILURES.map(failure => (
+          {!training.available ? <option value="">Training unavailable</option> : null}
+          {profile?.failures.map(failure => (
             <option key={failure.id} value={failure.id}>{failure.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
 
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
-        {training.terrain} · {training.night ? 'night lighting' : 'day lighting'} ·
-        {' '}{training.airspeedReliable ? 'airspeed reliable' : 'airspeed unreliable'}
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+        {training.available ? `${training.terrain} · ${training.night ? 'night lighting' : 'day lighting'} · ${training.airspeedReliable ? 'airspeed reliable' : 'airspeed unreliable'}` : 'Training profile unavailable.'}
       </p>
 
       <div className="flex flex-wrap gap-1">
@@ -222,7 +224,7 @@ export function FlightSimTrainingSurfaceProjection({
         </button>
       </div>
 
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         Systems: {training.systemsChecklist.join(' · ')}
       </p>
     </section>

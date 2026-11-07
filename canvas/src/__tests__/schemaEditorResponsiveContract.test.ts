@@ -5,16 +5,16 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 
 export function testSchemaEditorStructuredRowsUseSharedResponsiveOwners() {
   const schemaRowsText = readUtf8('src/features/schema/ui/SchemaUiEditorRows.tsx')
-  const columnLiteral = 'flex min-h-0 flex-col'
-  const editorLiteral = 'w-full flex-1 min-h-0'
-  const requiredFieldsGridLiteral = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3'
-  const propertyTypeGridLiteral = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2'
-  const layoutControlGridLiteral = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4'
+  const columnLiteral = 'flex min-h-0 min-w-0 flex-col'
+  const editorLiteral = '`${UI_RESPONSIVE_SCHEMA_EDITOR_SERIALIZATION_EDITOR_CLASSNAME} w-full shrink-0`'
+  const requiredFieldsGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-1'
+  const propertyTypeGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-1'
+  const layoutControlGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-2'
 
   if (!schemaRowsText.includes(`SCHEMA_UI_EDITOR_COLUMN_CLASS_NAME = '${columnLiteral}'`)) {
     throw new Error('expected Schema UI editor columns to define one shared responsive owner')
   }
-  if (!schemaRowsText.includes(`SCHEMA_UI_STRUCTURED_TEXT_EDITOR_CLASS_NAME = '${editorLiteral}'`)) {
+  if (!schemaRowsText.includes(`SCHEMA_UI_STRUCTURED_TEXT_EDITOR_CLASS_NAME = ${editorLiteral}`)) {
     throw new Error('expected Schema UI structured text editors to define one shared responsive owner')
   }
   if (schemaRowsText.split(columnLiteral).length !== 2 || schemaRowsText.split(editorLiteral).length !== 2) {

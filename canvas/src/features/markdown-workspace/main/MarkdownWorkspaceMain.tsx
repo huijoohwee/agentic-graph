@@ -1,3 +1,4 @@
+import { useDocumentInsightsSource } from '../documentInsightsRuntime'
 import React from 'react'
 import { useWorkspaceDocumentState } from './useWorkspaceDocumentState'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
@@ -8,7 +9,7 @@ import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import type { MarkdownGeoDatasetIntegration } from '@/features/markdown/ui/MarkdownRendererTypes'
 import { extractYamlFrontmatterBlock, type WebpageFrontmatterMeta, type WebpageViewMode, type WebsiteImportFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { parseGlbAssetDocument } from '@/lib/assets/glbAssetDocument'
-import { summarizeCategorizedSignalsFromMarkdown } from '@/lib/websites/signalTokens'
+import { indexDocumentSignals } from '@/lib/websites/signalTokens'
 import { buildWebpageLayoutWireframeAsciiFromMarkdown } from '@/lib/websites/webpageLayoutWireframe'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
@@ -33,6 +34,8 @@ import { useWorkspaceExportBridge } from './useWorkspaceExportBridge'
 import { workspaceTablePreferencesStore } from '@/features/workspace-table/workspaceTablePreferencesStore'
 import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
 const PythonLearningPaneLazy = React.lazy(() => import('../../python-learning/PythonLearningPane'))
+const BlockEditorPaneLazy = React.lazy(() => import('../../block-editor/BlockEditorPane'))
+const ProgramFormatPaneLazy = React.lazy(() => import('../../block-editor/ProgramFormatPane'))
 const MarkdownWorkspacePresentationSurfaceLazy = React.lazy(
   async (): Promise<{ default: typeof import('./presentation/MarkdownWorkspacePresentationSurface')['MarkdownWorkspacePresentationSurface'] }> =>
     import('./presentation/MarkdownWorkspacePresentationSurface').then(mod => ({ default: mod.MarkdownWorkspacePresentationSurface })),
@@ -73,7 +76,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
     onToggleFullscreen,
     presentationApiRef,
     isMarkdown,
-    webpageWorkspaceMeta, onWebpageChangeView, onWebpageUpdateMeta, contentFormat, onContentFormatChange,
+    webpageWorkspaceMeta, onWebpageChangeView, contentFormat, onContentFormatChange,
     activeText,
     setActiveText,
     jsonSourceText,
@@ -194,7 +197,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       }
       if (next === 'multiDimTable') {
         store.setMultiDimTableModeEnabled(true)
-      } else if (next === 'table' || next === 'kanban') {
+      } else if (next === 'table' || next === 'kanban' || next === 'calendar') {
         store.setMultiDimTableModeEnabled(false)
       }
       if (next !== workspaceEditorMode) {
@@ -300,17 +303,8 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   }, [viewerText, webpageMeta?.url])
 
   const debouncedSignalText = useDebouncedValue(activeText, 450, webpageMeta?.url)
-  const webpageSignalSummary = React.useMemo(() => {
-    if (!webpageMeta?.url) return null
-    const signals = summarizeCategorizedSignalsFromMarkdown(debouncedSignalText, { maxLines: 8000, maxPerKind: 24 })
-    return {
-      nav: signals.nav.length,
-      cta: signals.cta.length,
-      price: signals.price.length,
-      time: signals.time.length,
-    }
-  }, [debouncedSignalText, webpageMeta?.url])
-
+  const documentSignals = React.useMemo(() => indexDocumentSignals(debouncedSignalText), [debouncedSignalText])
+  useDocumentInsightsSource({ key: activeDocumentKey, text: activeText, signals: activeText === debouncedSignalText ? documentSignals : null, revealLine: revealLineInEditor })
   const handleMarkdownViewerRootRef = React.useCallback((el: HTMLElement | null) => {
     viewerRef.current = el
     setViewerEl(prev => (prev === el ? prev : el))
@@ -518,18 +512,20 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
         onExportSvg: props.passive ? undefined : handleExportSvg,
         onToggleFullscreen,
         presentationApiRef,
-        webpageSignalSummary,
-        webpageWorkspaceMeta, onWebpageChangeView, onWebpageUpdateMeta, contentFormat, onContentFormatChange,
+        webpageWorkspaceMeta, onWebpageChangeView, contentFormat, onContentFormatChange,
         forceMarkdownEditorInEditorMode,
       }}
       layoutMode={layoutMode}
       documentNotice={documentNotice}
-      renderMarkdownEditor={renderMarkdownEditorPane}
-      renderJsonEditor={renderJsonEditorPane}
+      renderMarkdownEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program Markdown…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="markdown" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderMarkdownEditorPane}
+      renderJsonEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program JSON…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="json" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderJsonEditorPane}
       pythonPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Python workspace…</p>}>
         <PythonLearningPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey}
           uri={editorUri} editorRef={editorRef} onCaretLine={onEditorCaretLine} themeMode={themeMode}
           wordWrap={markdownWordWrap} readOnly={!!disableEditorMutations || !!props.passive} />
+      </React.Suspense> : null}
+      blockPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Block editor…</p>}>
+        <BlockEditorPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey} readOnly={!!disableEditorMutations || !!props.passive} />
       </React.Suspense> : null}
       binaryPane={binaryPane}
       binaryPaneVisible={binaryPaneVisible}

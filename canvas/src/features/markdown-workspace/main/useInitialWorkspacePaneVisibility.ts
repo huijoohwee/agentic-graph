@@ -22,15 +22,38 @@ export function areMarkdownWorkspacePaneVisibilitiesEqual(
   b: MarkdownWorkspacePaneVisibility,
 ): boolean {
   return !!a.python === !!b.python
+    && !!a.block === !!b.block
     && a.json === b.json
     && a.markdown === b.markdown
     && a.viewer === b.viewer
     && a.html === b.html
 }
 
+const programPaneKey = (documentId: string) => `workspace-program-panes/v1/${encodeURIComponent(documentId)}`
+function savedProgramPaneVisibility(documentId: string): MarkdownWorkspacePaneVisibility | null {
+  if (!documentId || typeof localStorage === 'undefined') return null
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(programPaneKey(documentId)) || 'null')
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    const value = parsed as Record<string, unknown>
+    if (!['python', 'block', 'json', 'markdown', 'viewer'].every(key => typeof value[key] === 'boolean')) return null
+    if (!['python', 'block', 'json', 'markdown', 'viewer'].some(key => value[key] === true)) return null
+    return { python: (value.python || value.block) as boolean, block: value.block as boolean, json: value.json as boolean,
+      markdown: value.markdown as boolean, viewer: value.viewer as boolean, html: false }
+  } catch { return null }
+}
+function saveProgramPaneVisibility(documentId: string, visibility: MarkdownWorkspacePaneVisibility): void {
+  if (!documentId || typeof localStorage === 'undefined') return
+  try { localStorage.setItem(programPaneKey(documentId), JSON.stringify({
+    python: !!visibility.python, block: !!visibility.block, json: visibility.json,
+    markdown: visibility.markdown, viewer: visibility.viewer,
+  })) } catch { /* Local preference storage is optional; source editing remains available. */ }
+}
+
 export function useInitialWorkspacePaneVisibility(args: UseInitialWorkspacePaneVisibilityArgs) {
   const appliedPresetKeyRef = React.useRef('')
   const previousWebpageViewRef = React.useRef<WebpageViewMode | ''>('')
+  const pendingPresetRef = React.useRef<MarkdownWorkspacePaneVisibility | null>(null)
   React.useEffect(() => {
     // Preserve the last applied preset across overlay close/reopen cycles so a
     // user-enabled Viewer pane does not get reset back to markdown-only for the
@@ -47,12 +70,15 @@ export function useInitialWorkspacePaneVisibility(args: UseInitialWorkspacePaneV
     if (appliedPresetKeyRef.current !== presetKey) {
       appliedPresetKeyRef.current = presetKey
       previousWebpageViewRef.current = webpageView
-      const nextVisibility = resolveMarkdownWorkspaceInitialPaneVisibility({
+      const initialVisibility = resolveMarkdownWorkspaceInitialPaneVisibility({
         activeDocumentKey: args.activeDocumentKey,
         modelAssetFormat: args.modelAssetFormat,
         webpageView: args.webpageView || null,
       })
-      if (areMarkdownWorkspacePaneVisibilitiesEqual(args.splitPaneVisibility, nextVisibility)) return
+      const nextVisibility = documentPanePreset === 'python'
+        ? savedProgramPaneVisibility(args.activeDocumentKey || '') || initialVisibility : initialVisibility
+      pendingPresetRef.current = nextVisibility
+      if (areMarkdownWorkspacePaneVisibilitiesEqual(args.splitPaneVisibility, nextVisibility)) { pendingPresetRef.current = null; return }
       args.setSplitPaneVisibility(prev => (
         areMarkdownWorkspacePaneVisibilitiesEqual(prev, nextVisibility)
           ? prev
@@ -60,6 +86,11 @@ export function useInitialWorkspacePaneVisibility(args: UseInitialWorkspacePaneV
       ))
       return
     }
+    if (pendingPresetRef.current) {
+      if (areMarkdownWorkspacePaneVisibilitiesEqual(args.splitPaneVisibility, pendingPresetRef.current)) pendingPresetRef.current = null
+      return
+    }
+    if (documentPanePreset === 'python') saveProgramPaneVisibility(args.activeDocumentKey || '', args.splitPaneVisibility)
     if (previousWebpageViewRef.current === webpageView) return
     previousWebpageViewRef.current = webpageView
     if (webpageView !== 'html') {
@@ -74,6 +105,7 @@ export function useInitialWorkspacePaneVisibility(args: UseInitialWorkspacePaneV
     args.modelAssetFormat,
     args.setSplitPaneVisibility,
     args.splitPaneVisibility.python,
+    args.splitPaneVisibility.block,
     args.splitPaneVisibility.html,
     args.splitPaneVisibility.json,
     args.splitPaneVisibility.markdown,

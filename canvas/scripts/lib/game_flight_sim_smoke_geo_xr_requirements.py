@@ -68,6 +68,61 @@ def _has_viewport_scoped_regional_poi_rendering(last: dict[str, Any]) -> bool:
     )
 
 
+def _identities(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) and bool(item.strip()) for item in value) and len(set(value)) == len(value)
+
+
+def authored_environment_checks(last: dict[str, Any]) -> dict[str, bool]:
+    stage = last.get("authoredEnvironmentStage") or {}
+    stage_id, size = stage.get("id"), stage.get("sizeMeters")
+    valid_size = isinstance(size, list) and len(size) == 2 and all(
+        type(value) in (int, float) and math.isfinite(value) and value > 0 for value in size
+    )
+    authored = last.get("authoredEnvironmentSubjects") or []
+    authored_ids = [subject.get("id") for subject in authored if isinstance(subject, dict)]
+    source_ids, rendered_ids = last.get("environmentSubjectIds"), last.get("renderedEnvironmentSubjectIds")
+    expected_pois, source_pois, rendered_pois = stage.get("poiIds"), last.get("environmentPoiIds"), last.get("renderedEnvironmentPoiIds")
+    bounds = last.get("environmentPresentationBounds")
+    valid_bounds = isinstance(bounds, list) and len(bounds) == 2 and all(
+        isinstance(point, list) and len(point) == 2 and all(type(value) in (int, float) and math.isfinite(value) for value in point)
+        and abs(point[0]) <= 180 and abs(point[1]) < 90 for point in bounds
+    )
+    return {
+        "environmentId": isinstance(stage_id, str) and bool(stage_id) and stage_id == stage.get("resolvedId") == last.get("environmentId"),
+        "environmentPresentationBounds": valid_bounds and bounds[0][0] < bounds[1][0] and bounds[0][1] < bounds[1][1],
+        "environmentSourceFeatures": type(stage.get("surfaceCount")) is int and stage["surfaceCount"] > 0 and last.get("environmentSourceFeatures") == stage["surfaceCount"],
+        "environment.stageFootprintAuthoredMeters": bool(valid_size and _has_authored_environment_surface(
+            last, surface_id=f"{stage_id}:footprint", base_height_meters=0, height_meters=0.08,
+            width_meters=size[0], depth_meters=size[1], require_viewport_bounds=True,
+        )),
+        "environment.authoredSubjectIds": _identities(authored_ids) and len(authored_ids) == len(authored)
+        and _identities(source_ids) and set(source_ids) == set(authored_ids),
+        "renderedEnvironmentSubjectIds": _identities(rendered_ids) and _identities(authored_ids)
+        and (bool(rendered_ids) if authored_ids else not rendered_ids) and set(rendered_ids).issubset(authored_ids),
+        "environment.authoredPoiIds": _identities(expected_pois) and _identities(source_pois) and source_pois == sorted(expected_pois),
+        "environment.renderedAuthoredPoiSubset": _identities(rendered_pois) and _identities(expected_pois) and set(rendered_pois).issubset(expected_pois),
+    }
+
+
+def regional_environment_checks(last: dict[str, Any]) -> dict[str, bool]:
+    return {
+        "environment.regionalId": last.get("environmentId") == "singapore",
+        "environment.regionalPresentationBounds": last.get("environmentPresentationBounds") == [[103.605, 1.158], [104.09, 1.48]],
+        "environment.regionalSourceFeatures": (last.get("environmentSourceFeatures") or 0) >= 10,
+        "environment.regionalStageFootprintAuthoredMeters": _has_authored_environment_surface(
+            last, surface_id="singapore:footprint", base_height_meters=0, height_meters=0.08,
+            width_meters=32, depth_meters=24, require_viewport_bounds=True,
+        ),
+        "environment.majorPoiGeographicMeters": _has_authored_environment_surface(
+            last, surface_id="marina-bay-sands:tower-2", base_height_meters=0, height_meters=193,
+            width_meters=71.82, depth_meters=76.45,
+        ),
+        "environment.majorPoiIds": _identities(last.get("environmentPoiIds")) and bool(last.get("environmentPoiIds"))
+        and last["environmentPoiIds"] == sorted(last["environmentPoiIds"]),
+        "environment.renderedMajorPoiSubset": _has_viewport_scoped_regional_poi_rendering(last),
+    }
+
+
 def unmet_view_requirements(
     last: dict[str, Any],
     *,
@@ -76,6 +131,7 @@ def unmet_view_requirements(
     expected_projection: str,
     expected_style_url: str,
     require_visual_layout: bool,
+    require_regional_scene: bool = False,
 ) -> list[str]:
     layout = last.get("layoutOcclusion") or {}
     pitch = float(last.get("pitch") or 0)
@@ -102,17 +158,12 @@ def unmet_view_requirements(
         "layout.aircraftUnoccluded": layout.get("aircraftUnoccluded") is True,
         "layout.environmentUnoccludedKinds": {
             "stage-footprint",
-            "subject",
-        }.issubset(set(layout.get("environmentUnoccludedKinds") or [])),
+        }.union({"subject"} if last.get("authoredEnvironmentSubjects") else set()).issubset(set(layout.get("environmentUnoccludedKinds") or [])),
         "layout.environmentExtrusionContractExact": layout.get(
             "environmentExtrusionContractExact",
         )
         is True,
         "layout.cameraPadding": bool(layout.get("cameraPadding")),
-        "layout.geographyBoundaryStatus": layout.get(
-            "geographyBoundaryStatus",
-        )
-        == "not-rendered",
     }
     checks = {
         "flightActive": last.get("flightActive") is True,
@@ -143,58 +194,15 @@ def unmet_view_requirements(
         "aircraftImagesReady": last.get("aircraftImagesReady") is True,
         "aircraftImagePixelWidth": (last.get("aircraftImagePixelWidth") or 0)
         >= 40,
-        "environmentId": last.get("environmentId") == "singapore",
-        "environmentPresentationBounds": last.get("environmentPresentationBounds")
-        == [[103.605, 1.158], [104.09, 1.48]],
+        **authored_environment_checks(last),
         "environmentLayersReady": last.get("environmentLayersReady") is True,
-        "environmentSourceFeatures": (last.get("environmentSourceFeatures") or 0)
-        >= 10,
-        "environment.stageFootprintAuthoredMeters": _has_authored_environment_surface(
-            last,
-            surface_id="singapore:footprint",
-            base_height_meters=0,
-            height_meters=0.08,
-            width_meters=32,
-            depth_meters=24,
-            require_viewport_bounds=True,
-        ),
-        "environment.majorPoiGeographicMeters": _has_authored_environment_surface(
-            last,
-            surface_id="marina-bay-sands:tower-2",
-            base_height_meters=0,
-            height_meters=193,
-            width_meters=71.82,
-            depth_meters=76.45,
-        ),
-        "environment.majorPoiIds": (
-            isinstance(last.get("environmentPoiIds"), list)
-            and bool(last.get("environmentPoiIds"))
-            and last.get("environmentPoiIds")
-            == sorted(set(last.get("environmentPoiIds")))
-            and all(
-                isinstance(poi_id, str) and bool(poi_id.strip())
-                for poi_id in last.get("environmentPoiIds")
-            )
-        ),
-        "environment.renderedMajorPoiSubset": (
-            _has_viewport_scoped_regional_poi_rendering(last)
-        ),
-        "environment.selectedSubjectsDirectMeters": last.get(
-            "selectedEnvironmentSubjectsExact"
-        )
-        is True,
-        "environment.sourcePassThrough": last.get(
-            "environmentSourceExactlyMatchesOverlay"
-        )
-        is True,
+        "environment.selectedSubjectsDirectMeters": last.get("selectedEnvironmentSubjectsExact") is True,
+        "environment.sourcePassThrough": last.get("environmentSourceExactlyMatchesOverlay") is True,
         "renderedEnvironmentKinds": (
-            {"stage-footprint", "subject"}
+            {"stage-footprint"}
+            | ({"subject"} if last.get("authoredEnvironmentSubjects") else set())
             | ({"poi"} if last.get("renderedEnvironmentPoiIds") else set())
         ).issubset(set(last.get("renderedEnvironmentKinds") or [])),
-        "renderedEnvironmentSubjectIds": any(
-            "vehicle-" in str(subject_id)
-            for subject_id in last.get("renderedEnvironmentSubjectIds") or []
-        ),
         "flightSourceFeatures": (last.get("flightSourceFeatures") or 0) >= 7,
         "objectiveGuideFeatureCount": last.get("objectiveGuideFeatureCount") == 1,
         "renderedKinds": set(last.get("renderedKinds") or [])
@@ -209,6 +217,10 @@ def unmet_view_requirements(
         "pitch": pitch >= 22 if expected_view.startswith("3d") else abs(pitch) < 0.01,
         "mapPointerHit": bool(map_pointer_hit),
     }
+    if require_regional_scene:
+        checks.update(regional_environment_checks(last))
+        if require_visual_layout:
+            checks["layout.geographyBoundaryStatus"] = layout.get("geographyBoundaryStatus") == "not-rendered"
     if require_visual_layout:
         checks.update(layout_checks)
     return [name for name, passed in checks.items() if not passed]
@@ -223,6 +235,7 @@ def wait_for_view(
     expected_projection: str,
     expected_style_url: str,
     require_visual_layout: bool = False,
+    require_regional_scene: bool = False,
 ) -> dict[str, Any]:
     deadline = time.monotonic() + 30
     last: dict[str, Any] = {}
@@ -235,6 +248,7 @@ def wait_for_view(
             expected_projection=expected_projection,
             expected_style_url=expected_style_url,
             require_visual_layout=require_visual_layout,
+            require_regional_scene=require_regional_scene,
         )
         if not unmet:
             return last
@@ -246,6 +260,7 @@ def wait_for_view(
         expected_projection=expected_projection,
         expected_style_url=expected_style_url,
         require_visual_layout=require_visual_layout,
+        require_regional_scene=require_regional_scene,
     )
     raise AssertionError(
         "timed out waiting for native MapLibre Geo+XR view "

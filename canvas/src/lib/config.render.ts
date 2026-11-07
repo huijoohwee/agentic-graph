@@ -1,14 +1,14 @@
-export const CANVAS_2D_RENDERERS = ['d3', 'dashboard', 'gallery', 'media', 'flowchart', 'multiDimTable', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design'] as const
+export const CANVAS_2D_RENDERERS = ['d3', 'dashboard', 'gallery', 'media', 'flowchart', 'multiDimTable', 'kanban', 'calendar', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design', 'sequence', 'sequenceMermaid'] as const
 
 export type Canvas2dRendererId = (typeof CANVAS_2D_RENDERERS)[number]
 
-export const CANVAS_2D_SURFACES = ['d3', 'dashboard', 'gallery', 'media', 'multiDimTable', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design'] as const
+export const CANVAS_2D_SURFACES = ['d3', 'dashboard', 'gallery', 'media', 'multiDimTable', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design', 'sequence'] as const
 
 export type Canvas2dSurfaceId = (typeof CANVAS_2D_SURFACES)[number]
 
 export const VISUAL_ANNOTATION_E2E_CANVAS_2D_RENDERERS = ['media', 'storyboard'] as const satisfies readonly Canvas2dRendererId[]
 
-export const CANVAS_2D_RENDERER_ORDER: readonly Canvas2dRendererId[] = ['d3', 'dashboard', 'gallery', 'media', 'flowchart', 'multiDimTable', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design']
+export const CANVAS_2D_RENDERER_ORDER: readonly Canvas2dRendererId[] = ['d3', 'dashboard', 'gallery', 'media', 'flowchart', 'multiDimTable', 'kanban', 'calendar', 'gitGraph', 'gantt', 'flow', 'animatic', 'storyboard', 'design', 'sequence', 'sequenceMermaid']
 
 export const CANVAS_2D_RENDERER_MENU_ORDER: readonly Canvas2dRendererId[] = CANVAS_2D_RENDERER_ORDER
 
@@ -22,6 +22,8 @@ type Canvas2dRendererSpec = {
 }
 
 const CANVAS_2D_RENDERER_SPECS: Record<Canvas2dRendererId, Canvas2dRendererSpec> = {
+  sequence: { surfaceId: 'sequence', registryLabel: 'Sequence Diagram', menuLabel: 'Sequence Diagram', menuDescription: 'Interactive authored sequence rehearsal', menuBadges: ['Sequence', 'Local'], supportsStoryboardFlowFrontmatterSyntax: false },
+  sequenceMermaid: { surfaceId: 'sequence', registryLabel: 'Sequence Diagram (Mermaid)', menuLabel: 'Sequence Diagram (Mermaid)', menuDescription: 'Local Mermaid sequence projection', menuBadges: ['Sequence', 'Mermaid'], supportsStoryboardFlowFrontmatterSyntax: false },
   d3: {
     surfaceId: 'd3',
     registryLabel: 'D3',
@@ -70,6 +72,8 @@ const CANVAS_2D_RENDERER_SPECS: Record<Canvas2dRendererId, Canvas2dRendererSpec>
     menuBadges: ['Table', 'Data'],
     supportsStoryboardFlowFrontmatterSyntax: false,
   },
+  kanban: { surfaceId: 'multiDimTable', registryLabel: 'Kanban', menuLabel: 'Kanban', menuDescription: 'Records grouped into lanes', menuBadges: ['Records', 'Groups'], supportsStoryboardFlowFrontmatterSyntax: false },
+  calendar: { surfaceId: 'multiDimTable', registryLabel: 'Calendar', menuLabel: 'Calendar', menuDescription: 'Records placed by explicit date fields', menuBadges: ['Records', 'Dates'], supportsStoryboardFlowFrontmatterSyntax: false },
   gitGraph: {
     surfaceId: 'gitGraph',
     registryLabel: 'GitGraph',
@@ -183,6 +187,8 @@ export const isMultiDimTableCanvas2dRenderer = (id: Canvas2dRendererId | null | 
   return id === 'multiDimTable'
 }
 
+export const isDataViewCanvas2dRenderer = (id: Canvas2dRendererId | null | undefined): boolean => id === 'multiDimTable' || id === 'kanban' || id === 'calendar'
+
 export const isTableGraphCanvas2dRenderer = (id: Canvas2dRendererId | null | undefined): boolean => {
   return isMultiDimTableCanvas2dRenderer(id)
 }
@@ -255,7 +261,7 @@ export const getCanvas2dSurfaceId = (id: Canvas2dRendererId | null | undefined):
 }
 
 export const supportsCanvas2dMinimap = (id: Canvas2dRendererId | null | undefined): boolean => {
-  return getCanvas2dSurfaceId(id) !== null && !isDashboardCanvas2dRenderer(id) && !isGalleryCanvas2dRenderer(id) && !isMediaCanvas2dRenderer(id) && !isMultiDimTableCanvas2dRenderer(id) && !isFlowchartCanvas2dRenderer(id) && !isGitGraphCanvas2dRenderer(id) && !isGanttCanvas2dRenderer(id) && !isAnimaticCanvas2dRenderer(id) && !isStoryboardCanvas2dRenderer(id)
+  return getCanvas2dSurfaceId(id) !== null && getCanvas2dSurfaceId(id) !== 'sequence' && !isDashboardCanvas2dRenderer(id) && !isGalleryCanvas2dRenderer(id) && !isMediaCanvas2dRenderer(id) && !isDataViewCanvas2dRenderer(id) && !isFlowchartCanvas2dRenderer(id) && !isGitGraphCanvas2dRenderer(id) && !isGanttCanvas2dRenderer(id) && !isAnimaticCanvas2dRenderer(id) && !isStoryboardCanvas2dRenderer(id)
 }
 
 export const CANVAS_3D_MODES = ['3d', 'xr', 'voxel'] as const

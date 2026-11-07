@@ -71,7 +71,7 @@ export async function testMarkdownPreviewRendersMarkdownImageAndVideoAudioIframe
       '',
       'Webpage URL:',
       '',
-      '![](https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck)',
+      '![](https://docs.fixture.invalid/articles/sample-article)',
       '',
     ].join('\n')
     root.render(
@@ -195,10 +195,10 @@ export async function testMarkdownPreviewRendersMarkdownImageAndVideoAudioIframe
     const snapshots = Array.from(container.querySelectorAll('[data-kg-webpage-snapshot="1"]')) as Element[]
     const hasExampleSnapshot = snapshots.some(el => String(el.getAttribute('data-src') || '').includes('https://example.com/'))
     if (!hasExampleSnapshot) throw new Error(`expected iframe-marked url to render as snapshot preview; html=${container.innerHTML}`)
-    const hasYcSnapshot = snapshots.some(el =>
-      String(el.getAttribute('data-src') || '').includes('https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck'),
+    const hasArticleSnapshot = snapshots.some(el =>
+      String(el.getAttribute('data-src') || '').includes('https://docs.fixture.invalid/articles/sample-article'),
     )
-    if (!hasYcSnapshot) throw new Error(`expected webpage url to render as snapshot preview; html=${container.innerHTML}`)
+    if (!hasArticleSnapshot) throw new Error(`expected webpage url to render as snapshot preview; html=${container.innerHTML}`)
     root.unmount()
   } finally {
     ;(globalThis as unknown as { fetch?: unknown }).fetch = originalFetch

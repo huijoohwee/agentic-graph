@@ -72,3 +72,26 @@ readiness and anonymous-denial enforcement. The full travel transaction tests
 remain required. Protected merge, fresh local review, fresh candidate evidence,
 explicit candidate authorization, deployment and public readback are distinct
 release steps.
+
+## GameXR artifact admission
+
+The same controller admits the exact GameXR source and artifact in
+`config/production-gamexr.json`. Its successful protected-main CI identity, clean checkout,
+rebuild, complete artifact inventory and source fragment parity are mandatory. The existing
+root routing/header owner must already match the reviewed fragments; drift stops admission.
+Only `content/gamexr` joins the managed release bundle. Candidate browser context hashes include
+these bytes before human authorization, and reconciliation carries the sealed subtree to deployment.
+
+Before activation the owner requires disabled Pages Web Analytics and captures the prior GameXR
+service-worker cache in an isolated browser profile. After activation it verifies exact artifacts,
+MIME/cache policy and `/GameXR` aliases on both immutable and public origins, runs the source's
+WebKit production tests, and proves returning-user cache byte convergence while preserving local
+storage. Any failure occurs before generated mirror publication and enters the existing rollback
+path. The raw release artifact retains `gamexr-before.json`, `gamexr-transition.json` and
+`gamexr-live.json`. Physical-device and human-session claims remain independently unverified.
+
+Protected admission keeps the pinned GameXR WebKit coverage. It installs GameXR's own lockfile
+first, then installs that Playwright version's WebKit system packages with a 15-minute ceiling;
+the WebKit browser download and production test retain separate five-minute ceilings. A slow OS
+package fetch therefore fails before candidate authorization without skipping mobile-browser
+coverage or extending the bounds on source checks and assertions.

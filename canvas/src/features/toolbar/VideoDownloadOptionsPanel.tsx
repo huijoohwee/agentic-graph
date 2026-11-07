@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { Loader2 } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -70,12 +71,12 @@ export function VideoDownloadOptionsPanel(props: {
 
       <label className={cn('mb-1 block', UI_THEME_TOKENS.text.secondary)}>
         Format
-        <select
+        <PanelSelect
           className={cn('mt-1 w-full rounded border px-2 py-1', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}
           aria-label="Video format"
           value={presetValue}
-          onChange={event => {
-            const value = event.target.value
+          onValueChange={selectedValueInput => {
+            const value = selectedValueInput
             props.onOptionsChange({
               ...props.options,
               format: value === CUSTOM_FORMAT_SENTINEL ? '' : value,
@@ -85,18 +86,18 @@ export function VideoDownloadOptionsPanel(props: {
           {VIDEO_DOWNLOAD_FORMAT_PRESETS.map(preset => (
             <option key={preset.id} value={preset.id}>{preset.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
 
       <section className="mb-2 grid min-w-0 grid-cols-2 gap-2">
         <label className={cn('block min-w-0', UI_THEME_TOKENS.text.secondary)}>
           Media
-          <select
+          <PanelSelect
             className={cn('mt-1 w-full rounded border px-2 py-1', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}
             aria-label="Video download media"
             value={mediaKind}
-            onChange={event => {
-              const nextMediaKind = event.target.value === 'audio' ? 'audio' : DEFAULT_MEDIA_KIND
+            onValueChange={selectedValueInput => {
+              const nextMediaKind = selectedValueInput === 'audio' ? 'audio' : DEFAULT_MEDIA_KIND
               props.onOptionsChange({
                 ...props.options,
                 mediaKind: nextMediaKind,
@@ -109,21 +110,21 @@ export function VideoDownloadOptionsPanel(props: {
             {VIDEO_DOWNLOAD_MEDIA_PRESETS.map(preset => (
               <option key={preset.id} value={preset.id}>{preset.label}</option>
             ))}
-          </select>
+          </PanelSelect>
         </label>
 
         <label className={cn('block min-w-0', UI_THEME_TOKENS.text.secondary)}>
           Quality
-          <select
+          <PanelSelect
             className={cn('mt-1 w-full rounded border px-2 py-1', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}
             aria-label="Video download quality"
             value={quality}
-            onChange={event => props.onOptionsChange({ ...props.options, quality: event.target.value as VideoDownloadOptions['quality'] })}
+            onValueChange={selectedValueInput => props.onOptionsChange({ ...props.options, quality: selectedValueInput as VideoDownloadOptions['quality'] })}
           >
             {VIDEO_DOWNLOAD_QUALITY_PRESETS.map(preset => (
               <option key={preset.id} value={preset.id}>{preset.label}</option>
             ))}
-          </select>
+          </PanelSelect>
         </label>
       </section>
 

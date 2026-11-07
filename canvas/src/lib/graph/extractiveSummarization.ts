@@ -1,5 +1,5 @@
 import { tokenizeForStats } from '@/lib/graph/statsUtils'
-import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 import { normalizeWhitespace, splitSentencesWithOffsets, type TextEntity } from '@/lib/graph/textAnalysis'
 
 export type ParagraphRange = { index: number; start: number; end: number; text: string }
@@ -109,7 +109,7 @@ export function buildExtractiveSummary(args: {
       const absStart = para.start + r.start
       const absEnd = para.start + r.end
       const entityMentions = countEntitiesInRange(sortedEntities, absStart, absEnd)
-      const toks = tokenizeForStats(clipped, 3, NLTK_STOPWORDS_EN_SET)
+      const toks = tokenizeForStats(clipped, 3, KEYWORD_FUNCTION_WORDS)
       sentences.push({
         index: sentenceIndex,
         paragraphIndex: para.index,
@@ -126,7 +126,7 @@ export function buildExtractiveSummary(args: {
 
   const tokenCounts = new Map<string, number>()
   for (let i = 0; i < sentences.length; i += 1) {
-    const toks = tokenizeForStats(sentences[i]!.text, 3, NLTK_STOPWORDS_EN_SET)
+    const toks = tokenizeForStats(sentences[i]!.text, 3, KEYWORD_FUNCTION_WORDS)
     for (let k = 0; k < toks.length; k += 1) {
       const tok = toks[k]!
       tokenCounts.set(tok, (tokenCounts.get(tok) || 0) + 1)
@@ -141,7 +141,7 @@ export function buildExtractiveSummary(args: {
 
   for (let i = 0; i < sentences.length; i += 1) {
     const s = sentences[i]!
-    const toks = tokenizeForStats(s.text, 3, NLTK_STOPWORDS_EN_SET)
+    const toks = tokenizeForStats(s.text, 3, KEYWORD_FUNCTION_WORDS)
     let sum = 0
     for (let k = 0; k < toks.length; k += 1) sum += tokenWeight(toks[k]!)
     const lengthPenalty = Math.sqrt(Math.max(1, toks.length))

@@ -404,34 +404,6 @@ export function useMarkdownWorkspaceDerivedViews(args: MarkdownWorkspaceDerivedV
     [activePath, activeTextRef, getFs, lastLoadedRef, persistDerivedWorkspaceText, setStatusProgress, statusAdapter, userEditedActiveTextRef, webpageWorkspaceMeta, websiteImportMeta],
   )
 
-  const updateActiveWebpageWorkspaceMeta = React.useCallback(
-    async (patch: { fidelityLevel?: 1 | 2 | 3 | 4 }) => {
-      if (!activePath || !webpageWorkspaceMeta) return
-      try {
-        setStatusProgress('Updating view')
-        const prevText = await resolveAuthoritativeWorkspaceText({
-          path: activePath,
-          getFs,
-          lastLoadedRef,
-          activeTextRef,
-          userEditedActiveTextRef,
-        })
-        const meta = parseWebpageFrontmatterMeta(prevText) || webpageWorkspaceMeta
-        const nextText = upsertWebpageFrontmatterMeta(prevText, {
-          url: meta.url,
-          view: meta.view,
-          siteRootRel: meta.siteRootRel,
-          fidelityLevel: patch.fidelityLevel,
-        })
-        await persistDerivedWorkspaceText(nextText)
-        statusAdapter.updated()
-      } catch (e) {
-        statusAdapter.updateFailed(e)
-      }
-    },
-    [activePath, activeTextRef, getFs, lastLoadedRef, persistDerivedWorkspaceText, setStatusProgress, statusAdapter, userEditedActiveTextRef, webpageWorkspaceMeta],
-  )
-
   return {
     pdfWorkspaceMeta,
     webpageWorkspaceMeta,
@@ -440,6 +412,5 @@ export function useMarkdownWorkspaceDerivedViews(args: MarkdownWorkspaceDerivedV
     webpageWorkspaceEditorTextOverride,
     webpageWorkspaceViewerTextOverride,
     switchActiveWebpageWorkspaceView,
-    updateActiveWebpageWorkspaceMeta,
   }
 }

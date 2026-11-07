@@ -39,7 +39,7 @@ async function withRendered(element: React.ReactElement, assertions: (container:
 }
 
 const renderedValues = (container: Element): string => Array.from(
-  container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select'),
+  container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement>('input, textarea, button[data-kg-select]'),
   element => element.value,
 ).join('\n')
 

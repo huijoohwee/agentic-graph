@@ -15,6 +15,7 @@ import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMa
 import { commitMarkdownWorkspaceWriteback, resolveMarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceWritebackCommit'
 import { cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import { WORKSPACE_SYNC_TASK_MARKDOWN_EDITOR_SSOT } from '@/lib/async/workspaceSyncKeys'
+import { WorkspaceSourceTextConflictError } from '@/features/workspace-fs/types'
 import {
   resolveWorkspaceSourceFileInlineText,
   upsertWorkspaceEntryInlineText,
@@ -241,7 +242,12 @@ export const writeWorkspaceFileAndSync = async (args: {
         if (currentText !== expectedWorkspaceText && currentText !== text) return false
         if (currentText === text) { committedFs = fs; return true }
       }
-      await fs.writeFileText(path, text)
+      try {
+        await fs.writeFileText(path, text, hasExpectedWorkspaceText ? { expectedText: args.expectedWorkspaceText } : undefined)
+      } catch (error) {
+        if (error instanceof WorkspaceSourceTextConflictError) return false
+        throw error
+      }
       committedFs = fs
     },
   })
@@ -262,6 +268,11 @@ export const writeWorkspaceFileAndSync = async (args: {
     text: textToWrite,
     resetParsedState: args.resetParsedState,
   })
+  const normalizedMirrorPath = `/${String(args.path || '').replace(/^\/+/, '')}`
+  if (committedFs && normalizedMirrorPath.startsWith('/websites/')) {
+    const { saveWorkspaceWebsiteLocalCopy } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+    await saveWorkspaceWebsiteLocalCopy(normalizedMirrorPath, textToWrite)
+  }
   if (typeof args.setGraphRagWorkflowJsonText === 'function') {
     applyWorkspaceSpecialFileEffects({
       path: args.path,

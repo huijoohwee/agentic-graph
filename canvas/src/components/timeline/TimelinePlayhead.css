@@ -1,0 +1,33 @@
+.timeline-playhead-control {
+  position: absolute;
+  left: 0;
+  z-index: 20;
+  display: block;
+  width: var(--kg-control-height, 28px);
+  padding: 0;
+  border: 0;
+  color: var(--kg-canvas-accent, #2563eb);
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+.timeline-playhead-control.timeline-transport-playhead {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  transform: translateX(-50%);
+  border-radius: 0;
+  background: linear-gradient(90deg, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px));
+}
+.timeline-playhead-control.timeline-transport-playhead-marker {
+  top: 0;
+  height: var(--kg-video-sequence-axis-height, 28px);
+  transform: translateX(-50%);
+  border-radius: 0;
+  background: radial-gradient(circle, currentColor 0 6px, var(--island-bg, #fff) 6px 8px, transparent 8px), linear-gradient(90deg, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px));
+}
+.timeline-playhead-control:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

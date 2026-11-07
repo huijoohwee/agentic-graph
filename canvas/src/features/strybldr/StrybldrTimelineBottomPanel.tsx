@@ -1,8 +1,11 @@
+import { usePanelStack } from '@/lib/ui/usePanelStack'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
-import IconButton from '@/components/IconButton'
+import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL } from '@/lib/ui/zIndex'
 import { UI_SELECTORS } from '@/lib/config'
 import { WORKSPACE_LEFT_PANE_SELECTOR } from '@/lib/canvas/viewportMeasureElement'
 import { beginRichMediaPanelResizeDrag, RichMediaPanelResizeHandle } from '@/components/RichMediaPanel'
@@ -14,7 +17,8 @@ import { beginOverlayPanelPositionDrag } from '@/lib/ui/overlayPanelDrag'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { GanttTimelineTransportPlaybackRuntime } from '@/features/gitgraph/GanttTimelineTransportPlaybackRuntime'
-import { ChartGantt, Columns2, FileDiff, GitGraph, History, MonitorPlay, Network, Workflow } from 'lucide-react'
+import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
+import { Activity, ChartGantt, Columns2, FileDiff, GitGraph, History, MonitorPlay, Network, Workflow } from 'lucide-react'
 import { StrybldrTimelinePanel } from './StrybldrTimelinePanel'
 import {
   TIMELINE_BOTTOM_PANEL_FALLBACK_SIZE, TIMELINE_BOTTOM_PANEL_MAX_HEIGHT_RATIO,
@@ -27,6 +31,7 @@ import {
 type TimelineBottomPanelPosition = { top: number; left: number }
 type TimelineBottomPanelSize = { width: number; height: number }
 type TimelineBottomPanelView =
+  | 'activity'
   | 'timeline'
   | 'designTimeline'
   | 'strybldrTimeline'
@@ -36,6 +41,7 @@ type TimelineBottomPanelView =
   | 'gantt'
   | 'architecture'
   | 'eventModeling'
+const WorkspaceActivityPanelLazy = React.lazy(() => import('@/features/agent-ready/WorkspaceActivityPanel'))
 const GitGraphBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphBottomPanelView').then(mod => ({ default: mod.GitGraphBottomPanelView })))
 const FlowchartBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartBottomPanelView').then(mod => ({ default: mod.FlowchartBottomPanelView })))
 const GanttBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GanttBottomPanelView').then(mod => ({ default: mod.GanttBottomPanelView })))
@@ -54,6 +60,14 @@ export function StrybldrTimelineBottomPanel({
   initialView?: TimelineBottomPanelView
   workspaceEditorOverlayOpen?: boolean
 }) {
+  const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const panelStack = usePanelStack(
+    'bottom',
+    workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
+    !workspaceEditorOverlayOpen,
+  )
+  const { panelTextClass } = usePanelTypography()
+  const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
   const rootLayerRef = React.useRef<HTMLElement | null>(null)
   const layerRef = React.useRef<HTMLElement | null>(null)
   const panelRef = React.useRef<HTMLElement | null>(null)
@@ -213,6 +227,7 @@ export function StrybldrTimelineBottomPanel({
   const mermaidArchitectureRequested = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'architecture'
   const mermaidEventModelingRequested = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'eventModeling'
   const bottomSurfaceDiagramRequested =
+    (bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'activity') ||
     documentVersionGraphRequested ||
     mermaidFlowchartRequested ||
     mermaidGitGraphRequested ||
@@ -227,8 +242,8 @@ export function StrybldrTimelineBottomPanel({
   }, [initialView, setBottomSurfaceCollapsed, setBottomSurfaceTab])
   const showStrybldrTimelineView = React.useCallback(() => {
     setView('strybldrTimeline')
-    if (bottomSurfaceDiagramRequested) setBottomSurfaceCollapsed(true)
-  }, [bottomSurfaceDiagramRequested, setBottomSurfaceCollapsed])
+    setBottomSurfaceCollapsed(false)
+  }, [setBottomSurfaceCollapsed])
   const showDocumentVersionGraphView = React.useCallback(() => {
     setView('documentVersionGraph')
     setBottomSurfaceTab('documentVersionGraph')
@@ -327,12 +342,8 @@ export function StrybldrTimelineBottomPanel({
     maxHeight: 'min(62dvh, 24rem)',
   }
   const panelHeightStyle = minimized
-    ? { height: 'var(--kg-toolbar-compact-surface-height)' }
-    : view === 'documentVersionGraph' || view === 'flowchart' || view === 'gitGraph' || view === 'gantt' || view === 'timeline' || view === 'designTimeline' || view === 'architecture' || view === 'eventModeling'
-      ? pinned
-        ? expandedPinnedHeightStyle
-        : expandedUnpinnedHeightStyle
-      : { maxHeight: 'min(32vh, 12rem)' }
+    ? { height: 'auto' }
+    : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
   const panelStyle = pinned
@@ -350,7 +361,11 @@ export function StrybldrTimelineBottomPanel({
   return (
     <section
       ref={rootLayerRef}
-      className="absolute inset-0 z-[230] pointer-events-none"
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: panelStack.zIndex }}
+      data-kg-panel-layer="bottom"
+      onPointerDownCapture={panelStack.onPointerDownCapture}
+      onFocusCapture={panelStack.onFocusCapture}
       aria-label="Timeline bottom panel root"
       data-kg-strybldr-bottom-timeline-root="canvas-viewport"
     >
@@ -379,144 +394,86 @@ export function StrybldrTimelineBottomPanel({
           data-kg-floating-panel-root="true"
           data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-panel="1"
+          data-kg-panel-minimized={minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-minimized={minimized ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-pinned={pinned ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-drag-enabled={!pinned && !minimized ? 'true' : 'false'}
         >
           <header
-            className={cn('flex select-none items-center justify-between gap-2', !pinned && 'cursor-move')}
-            style={{
-              minHeight: 'var(--kg-control-height, 28px)',
-              paddingBlock: 'var(--kg-toolbar-compact-pad-y)',
-              paddingInline: 'var(--kg-toolbar-compact-pad-x)',
-            }}
+            className={cn(
+              'agentic-base-floating-panel-header px-2',
+              !pinned && 'agentic-base-floating-panel-draggable',
+            )}
             onPointerDown={handleHeaderPointerDown}
           >
-            <section className="flex min-w-0 items-center gap-1">
-              <span className="min-w-0 truncate text-xs font-semibold">Timeline</span>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'timeline' || view === 'designTimeline'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+            <PanelViewTabs activeKey={view} aria-label="Bottom panel views">
+              <span className="min-w-0 truncate text-xs font-semibold">{view === 'activity' ? 'Activity' : 'Timeline'}</span>
+              <PanelViewTab title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} /></PanelViewTab>
+              <PanelViewTab
                 title="Timeline"
-                showTooltip
                 aria-pressed={view === 'timeline' || view === 'designTimeline'}
                 onClick={showTimelineView}
                 data-kg-strybldr-bottom-timeline-timeline-toggle="1"
               >
-                <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              {active ? (
-                <IconButton
-                  className={cn(
-                    'App-toolbar__btn',
-                    view === 'strybldrTimeline'
-                      ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                      : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                  )}
-                  title="Strybldr Timeline"
-                  showTooltip
-                  aria-pressed={view === 'strybldrTimeline'}
-                  onClick={showStrybldrTimelineView}
-                  data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
-                >
-                  <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                </IconButton>
-              ) : null}
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'documentVersionGraph'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
+                title="Storyboard"
+                aria-pressed={view === 'strybldrTimeline'}
+                onClick={showStrybldrTimelineView}
+                data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
+              >
+                <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Version Graph"
-                showTooltip
                 aria-pressed={view === 'documentVersionGraph'}
                 onClick={showDocumentVersionGraphView}
                 data-kg-strybldr-bottom-timeline-document-version-graph-toggle="1"
               >
-                <FileDiff className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'flowchart'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <FileDiff className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Flowchart"
-                showTooltip
                 aria-pressed={view === 'flowchart'}
                 onClick={showFlowchartView}
                 data-kg-strybldr-bottom-timeline-flowchart-toggle="1"
               >
-                <Columns2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'gitGraph'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <Columns2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="GitGraph"
-                showTooltip
                 aria-pressed={view === 'gitGraph'}
                 onClick={showGitGraphView}
                 data-kg-strybldr-bottom-timeline-gitgraph-toggle="1"
               >
-                <GitGraph className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'gantt'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <GitGraph className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Gantt-Timeline"
-                showTooltip
                 aria-pressed={view === 'gantt'}
                 onClick={showGanttView}
                 data-kg-strybldr-bottom-timeline-gantt-toggle="1"
               >
-                <ChartGantt className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'architecture'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <ChartGantt className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Architecture"
-                showTooltip
                 aria-pressed={view === 'architecture'}
                 onClick={showArchitectureView}
                 data-kg-strybldr-bottom-timeline-architecture-toggle="1"
               >
-                <Network className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'eventModeling'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <Network className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Event Model"
-                showTooltip
                 aria-pressed={view === 'eventModeling'}
                 onClick={showEventModelingView}
                 data-kg-strybldr-bottom-timeline-event-modeling-toggle="1"
               >
-                <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-            </section>
+                <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+            </PanelViewTabs>
             <HeaderActions
               onPinToggle={handlePinToggle}
               pinned={pinned}
@@ -527,12 +484,12 @@ export function StrybldrTimelineBottomPanel({
           </header>
           {!minimized ? (
             <section
-              className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 overscroll-contain"
+              className={cn("min-h-0 flex-1 overflow-y-auto px-2 pb-2 overscroll-contain", panelTextClass)}
               aria-label="Timeline bottom panel body"
               data-kg-strybldr-bottom-timeline-scroll="body"
             >
-              <GanttTimelineTransportPlaybackRuntime />
-              {view === 'documentVersionGraph' ? (
+              <GanttTimelineTransportPlaybackRuntime active={!warehouseInspectionActive} />
+              {view === 'activity' ? <React.Suspense fallback={null}><WorkspaceActivityPanelLazy /></React.Suspense> : view === 'documentVersionGraph' ? (
                 <React.Suspense fallback={null}>
                   <DocumentVersionGitGraphPanelLazy
                     activePath={markdownDocumentName}
@@ -571,7 +528,7 @@ export function StrybldrTimelineBottomPanel({
                   <EventModelingBottomPanelViewLazy compact />
                 </React.Suspense>
               ) : (
-                <StrybldrTimelinePanel active={active} />
+                <StrybldrTimelinePanel active />
               )}
             </section>
           ) : null}

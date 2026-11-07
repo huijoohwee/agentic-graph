@@ -223,6 +223,13 @@ export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport(
       assert.ok(Math.abs(footprint.sizeMeters[1] - bounds.max.y * 2) < 1e-10, `${name} height spans the ground origin to its scaled top`)
       assert.equal(footprint.halfY, footprint.sizeMeters[1] / 2)
       assert.equal(subject.construction!.proceduralAssetDocument, exactDocument, 'Ground admission does not translate or rewrite the recipe')
+      const reloaded = readXrMotionReferencePlan(serializeXrMotionReferencePlan({ ...plan, subjects: [subject] }))
+      const restored = ProceduralAssetSession.restore(reloaded.subjects[0].construction!.proceduralAssetDocument)
+      try {
+        assert.deepEqual(new THREE.Box3().setFromObject(restored.current.scene), bounds, `${name} keeps its native bounds after scene reload`)
+        assert.deepEqual(resolveXrSubjectFootprint(reloaded.subjects[0]), footprint)
+        assert.equal(restored.serialize(), exactDocument, `${name} retains the editable source recipe`)
+      } finally { restored.dispose() }
     } finally { native.dispose() }
   }
   const elevated = createProceduralAssetFromText('box')

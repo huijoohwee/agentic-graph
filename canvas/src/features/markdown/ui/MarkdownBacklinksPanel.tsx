@@ -78,14 +78,14 @@ export function MarkdownBacklinksPanel(props: MarkdownBacklinksPanelProps) {
                   >
                     <span
                       className={[
-                        'min-w-0 flex-1 text-[12px] truncate',
+                        'min-w-0 flex-1 text-xs truncate',
                         UI_THEME_TOKENS.text.primary,
                         uiPanelTextFontClass,
                       ].join(' ')}
                     >
                       {renderMarkdownSigilInlineText(label)}
                     </span>
-                    <span className={`text-[10px] px-1 py-px rounded ${UI_THEME_TOKENS.badge.chip} ${UI_THEME_TOKENS.text.tertiary}`}>
+                    <span className={`text-xs px-1 py-px rounded ${UI_THEME_TOKENS.badge.chip} ${UI_THEME_TOKENS.text.tertiary}`}>
                       {countLabel}
                     </span>
                   </button>

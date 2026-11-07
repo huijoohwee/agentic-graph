@@ -168,7 +168,7 @@ const renderNestedTableCell = (table: NestedTableCell): React.ReactNode => (
   <table
     aria-label="Nested table cell"
     data-kg-markdown-data-view-nested-table-cell="1"
-    className="w-full min-w-[12rem] border-collapse text-[11px]"
+    className="w-full min-w-[12rem] border-collapse text-xs"
   >
     <thead>
       <tr>
@@ -205,7 +205,7 @@ const renderSourceLineNestedTableCell = (cell: SourceLineNestedTableCell): React
     return (
       <span
         aria-label={`Nested table continuation row ${cell.rowNumber} of ${cell.lineCount}`}
-        className="block max-w-max rounded border border-dashed border-[color:var(--kg-border)] px-2 py-0.5 text-[10px] text-[color:var(--kg-muted-foreground)]"
+        className="block max-w-max rounded border border-dashed border-[color:var(--kg-border)] px-2 py-0.5 text-xs text-[color:var(--kg-muted-foreground)]"
         data-kg-markdown-data-view-nested-table-continuation="1"
         data-kg-markdown-data-view-nested-source-lines={cell.sourceLineRange}
         data-kg-markdown-data-view-nested-level-depth={String(cell.levelDepth)}
@@ -233,7 +233,7 @@ const renderSourceLineNestedTableCell = (cell: SourceLineNestedTableCell): React
       data-kg-markdown-data-view-nested-level-depth={String(cell.levelDepth)}
       style={offsetStyle}
     >
-      <figcaption className="px-1 pb-1 text-[10px] font-medium text-[color:var(--kg-muted-foreground)]">
+      <figcaption className="px-1 pb-1 text-xs font-medium text-[color:var(--kg-muted-foreground)]">
         {caption}
       </figcaption>
       {renderNestedTableCell(cell.table)}

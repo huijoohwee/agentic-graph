@@ -24,6 +24,7 @@ import {
   GAME_MODE_MCP_SCHEMA,
   GAME_MODE_WEB_MCP_TOOL_IDS,
 } from './gameModeMcpContract.mjs'
+import { isGameModeDocumentReady } from './gameModeDocumentCapability'
 
 export type GameModeOperation = 'open' | 'start' | 'stop' | 'restart' | 'fire' | 'reload' | 'save' | 'exit'
 export type GameModeControlInput = Readonly<{
@@ -110,6 +111,16 @@ export async function controlLocalGameMode(input: GameModeControlInput) {
   const control = normalizeGameModeControl(input)
   if (!control) {
     return { ok: false, message: 'Use a supported structured operation or native /game.mode @canvas #gameplay invocation.' }
+  }
+  if (!isGameModeDocumentReady()
+    && control.operation !== 'stop'
+    && control.operation !== 'exit') {
+    return {
+      ok: false,
+      message: 'Open a workspace document before using Game Mode.',
+      operation: control.operation,
+      game: inspectLocalGameMode(),
+    }
   }
   if (control.operation === 'open') {
     const opened = openGameModeSurface()

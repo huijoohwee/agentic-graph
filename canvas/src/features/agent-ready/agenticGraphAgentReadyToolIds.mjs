@@ -15,6 +15,7 @@ import { CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgen
 import { WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
 import { TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
 import { DURABLE_RUN_AGENT_READY_TOOL_IDS } from './durableRunAgentReadyContract.mjs'
+import { SEMANTIC_SPACE_TOOL_IDS } from './semanticSpaceAgentReadyContract.mjs'
 export const AGENTIC_OS_AGENT_READY_TOOL_IDS = Object.freeze({
   search: 'search',
   fetch: 'fetch',
@@ -49,6 +50,7 @@ export const AGENTIC_OS_AGENT_READY_TOOL_IDS = Object.freeze({
   ...WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS,
   ...TOOLBAR_ACTION_AGENT_READY_TOOL_IDS,
   ...DURABLE_RUN_AGENT_READY_TOOL_IDS,
+  ...SEMANTIC_SPACE_TOOL_IDS,
   inspectLocal3dLayoutPositions: 'inspect_local_3d_layout_positions',
   inspectLocalXrSceneAssets: XR_SCENE_WEB_MCP_TOOL_IDS.inspect,
   controlLocalXrScene: XR_SCENE_WEB_MCP_TOOL_IDS.control,

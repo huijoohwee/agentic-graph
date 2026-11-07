@@ -88,7 +88,7 @@ const assertNoSecretOrProviderEndpointMaterial = (text: string): void => {
 }
 
 const readRenderedFormValues = (container: Element): string => (
-  Array.from(container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select'))
+  Array.from(container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement>('input, textarea, button[data-kg-select]'))
     .map(el => el.value)
     .join('\n')
 )

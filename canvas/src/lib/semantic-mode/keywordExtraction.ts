@@ -1,6 +1,6 @@
 import type { TextEntity } from '@/lib/graph/textAnalysis'
-import { inferEntityLabel, isVerbLike, normalizeEntityKey, normalizeWhitespace, splitSentencesWithOffsets } from '@/lib/graph/textAnalysis'
-import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
+import { inferEntityLabel, isVerbLike, normalizeEntityKey, normalizeWhitespace, splitSentencesWithOffsets, segmentWordsWithOffsets } from '@/lib/graph/textAnalysis'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 
 export type DocumentKeywordCandidate = {
   key: string
@@ -36,34 +36,19 @@ type CandidateWork = {
 
 const isUsefulToken = (key: string): boolean => {
   if (!key) return false
-  if (NLTK_STOPWORDS_EN_SET.has(key)) return false
-  if (key.length < 3 && !/\d/.test(key)) return false
+  if (KEYWORD_FUNCTION_WORDS.has(key)) return false
+  if (key.length < 3 && /^[a-z]+$/.test(key)) return false
   if (/^\d+$/.test(key)) return false
   return true
 }
 
-const tokenizeForKeyphrases = (text: string): Token[] => {
-  const raw = String(text || '')
-  if (!raw.trim()) return []
-  const ranges = splitSentencesWithOffsets(raw)
-  const sentenceRanges = ranges.length > 0 ? ranges : [{ start: 0, end: raw.length }]
-  const out: Token[] = []
-  const tokenRe = /[\p{L}\p{N}][\p{L}\p{N}_-]*/gu
-  for (let sIdx = 0; sIdx < sentenceRanges.length; sIdx += 1) {
-    const range = sentenceRanges[sIdx]!
-    const sentence = raw.slice(range.start, range.end)
-    tokenRe.lastIndex = 0
-    for (const m of sentence.matchAll(tokenRe)) {
-      const word = String(m[0] || '').trim()
-      const local = m.index ?? -1
-      if (!word || local < 0) continue
-      const key = normalizeEntityKey(word)
-      if (!key) continue
-      out.push({ raw: word, key, start: range.start + local, end: range.start + local + word.length, sentence: sIdx })
-      if (out.length >= 12_000) return out
-    }
-  }
-  return out
+const tokenizeForKeyphrases = (text: string, locale?: string): Token[] => {
+  const ranges = splitSentencesWithOffsets(text, locale)
+  let sentence = 0
+  return segmentWordsWithOffsets(text, locale).map(word => {
+    while (sentence + 1 < ranges.length && word.start >= ranges[sentence]!.end) sentence++
+    return { ...word, key: normalizeEntityKey(word.raw), sentence }
+  }).filter(word => !!word.key)
 }
 
 const scoreCandidate = (candidate: CandidateWork, tokenFrequency: Map<string, number>, docMagnitude: number): number => {
@@ -92,9 +77,9 @@ const tokenOverlap = (a: DocumentKeywordCandidate, b: DocumentKeywordCandidate):
 
 export const extractDocumentKeywordCandidates = (
   text: string,
-  opts?: { maxCandidates?: number; maxNgram?: number },
+  opts?: { maxCandidates?: number; maxNgram?: number; locale?: string },
 ): DocumentKeywordCandidate[] => {
-  const tokens = tokenizeForKeyphrases(text)
+  const tokens = tokenizeForKeyphrases(text, opts?.locale)
   if (tokens.length === 0) return []
   const maxNgram = Math.max(1, Math.min(4, Math.floor(opts?.maxNgram ?? 3)))
   const maxCandidates = Math.max(12, Math.min(240, Math.floor(opts?.maxCandidates ?? 96)))
@@ -112,6 +97,7 @@ export const extractDocumentKeywordCandidates = (
       const slice = tokens.slice(i, i + n)
       if (slice.length !== n) continue
       if (slice.some(t => t.sentence !== slice[0]!.sentence)) break
+      if (slice.some((t, index) => index > 0 && !/^[ \t]*$/.test(text.slice(slice[index - 1]!.end, t.start)))) break
       const keys = slice.map(t => t.key)
       if (!keys.every(isUsefulToken)) continue
       if (n === 1 && isVerbLike(keys[0] || '')) continue

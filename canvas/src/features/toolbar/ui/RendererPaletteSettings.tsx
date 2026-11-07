@@ -1,6 +1,8 @@
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react';
 import {
-  KeyTypeValueStaticRow,
   RightAlignedValueCell,
 } from 'grph-shared/react/keyTypeValueRow';
 import Tooltip from '@/features/panels/ui/Tooltip';
@@ -16,7 +18,6 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens';
 import { PlainTextInputEditor } from '@/components/ui/PlainTextInputEditor';
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography';
 import {
-  UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME,
   UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME,
   UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses';
@@ -27,24 +28,14 @@ export function RendererPaletteSettings() {
       s.uiPanelKeyValueInputClass ||
       PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass
   );
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    (s) => s.uiPanelKeyValueTextSizeClass || 'text-sm'
-  );
-  const uiPanelTextFontClass = useGraphStore(
-    (s) => s.uiPanelTextFontClass || 'font-sans'
-  );
-  const uiPanelRowDensityCompactClass = useGraphStore(
-    (s) => s.uiPanelRowDensityCompactClass || 'py-0.5'
-  );
-
-  const { palette, handleUpdatePaletteColor, normalizeColorForPicker } = useRendererPalette();
+  const { palette, handleUpdatePaletteColor } = useRendererPalette();
 
   const nodeTypes = ['idea', 'hypothesis', 'execution', 'pivot', 'alert'] as const;
   const edgeTypes = ['critical', 'neutral'] as const;
 
   return (
-    <section className="grid grid-cols-1 gap-1">
-      <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
+    <section className={uiToolbarSettingsPanelBodyClassName}>
+      <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
         <Tooltip
           content={RENDERER_PALETTE_LIFECYCLE_TOOLTIP}
           maxWidthPx={260}
@@ -56,6 +47,7 @@ export function RendererPaletteSettings() {
           </span>
         </Tooltip>
       </section>
+      <section>
       {nodeTypes.map((type) => (
         <KeyTypeValueStaticRow
           key={`node-${type}`}
@@ -82,14 +74,10 @@ export function RendererPaletteSettings() {
                 className="w-full"
               >
                 <section className={UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME}>
-                  <input
-                    type="color"
-                    className={`${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent`}
-                    value={normalizeColorForPicker(
-                      palette.nodes[type],
-                      MVP_COLOR_PALETTE.nodes[type as keyof typeof MVP_COLOR_PALETTE.nodes]
-                    )}
-                    onChange={(e) => handleUpdatePaletteColor('node', type, e.target.value)}
+                  <PanelColorPicker
+
+                    value={palette.nodes[type] || MVP_COLOR_PALETTE.nodes[type as keyof typeof MVP_COLOR_PALETTE.nodes]} aria-label={`${type} colour`}
+                    onValueChange={nextColor => handleUpdatePaletteColor('node', type, nextColor)}
                   />
                   <PlainTextInputEditor
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}
@@ -101,10 +89,6 @@ export function RendererPaletteSettings() {
               </Tooltip>
             </RightAlignedValueCell>
           }
-          textSizeClassName={uiPanelKeyValueTextSizeClass}
-          fontClassName={uiPanelTextFontClass}
-          densityClassName={uiPanelRowDensityCompactClass}
-          activeClassName={UI_THEME_TOKENS.table.rowHoverHighlight}
         />
       ))}
 
@@ -134,14 +118,10 @@ export function RendererPaletteSettings() {
                 className="w-full"
               >
                 <section className={UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME}>
-                  <input
-                    type="color"
-                    className={`${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent`}
-                    value={normalizeColorForPicker(
-                      palette.edges[type],
-                      MVP_COLOR_PALETTE.edges[type as keyof typeof MVP_COLOR_PALETTE.edges]
-                    )}
-                    onChange={(e) => handleUpdatePaletteColor('edge', type, e.target.value)}
+                  <PanelColorPicker
+
+                    value={palette.edges[type] || MVP_COLOR_PALETTE.edges[type as keyof typeof MVP_COLOR_PALETTE.edges]} aria-label={`${type} colour`}
+                    onValueChange={nextColor => handleUpdatePaletteColor('edge', type, nextColor)}
                   />
                   <PlainTextInputEditor
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}
@@ -153,12 +133,9 @@ export function RendererPaletteSettings() {
               </Tooltip>
             </RightAlignedValueCell>
           }
-          textSizeClassName={uiPanelKeyValueTextSizeClass}
-          fontClassName={uiPanelTextFontClass}
-          densityClassName={uiPanelRowDensityCompactClass}
-          activeClassName={UI_THEME_TOKENS.table.rowHoverHighlight}
         />
       ))}
+      </section>
     </section>
   );
 }

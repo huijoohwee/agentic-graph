@@ -239,3 +239,87 @@ export async function testWebpageHtmlToMarkdownArtifactAsyncUsesDataPageEmbedded
     restore()
   }
 }
+
+export async function testWebpageHtmlToMarkdownArtifactPrefersCompleteRenderedArticle() {
+  const { restore } = initJsdomHarness()
+  try {
+    const description = 'A short summary of the lesson.'
+    const data = JSON.stringify({ props: { article: { title: 'A complete lesson', content: description } } }).replace(/"/g, '&quot;')
+    const transcript = 'This is the complete captured explanation, beyond the short summary. '.repeat(8)
+    const html = `<html><head><title>A complete lesson</title></head><body><nav>Unrelated navigation</nav>
+      <div data-page="${data}"><section><div><h1>A complete lesson</h1><p>By the instructor</p></div>
+      <iframe src="https://example.com/video"></iframe><div class="prose"><h2>Chapters</h2><ol><li>Introduction</li><li>Worked example</li></ol></div>
+      <div class="prose"><p>${description}</p><h2>Transcript</h2><p>${transcript}</p></div></section></div><footer>Unrelated footer</footer></body></html>`
+    for (const mode of ['ssot', 'debug'] as const) {
+      for (const sourceHtml of [html, html.replace(/ data-page="[^"]*"/, ''), html.replace('<section>', '<article>').replace('</section>', '</article>')]) {
+        const md = await convertWebpageHtmlToMarkdownArtifactAsync({ html: sourceHtml, url: 'https://unrelated.test/guide', mode, fidelityLevel: 4 })
+        for (const expected of ['A complete lesson', 'By the instructor', 'https://example.com/video', '## Chapters', 'Worked example', '## Transcript', transcript.trim()]) {
+          if (!md.includes(expected)) throw new Error(`${mode}: missing captured article content: ${expected.slice(0, 60)}`)
+        }
+        if (md.split(description).length !== 2) throw new Error('expected the description exactly once')
+        if (md.includes('Unrelated navigation') || md.includes('Unrelated footer')) throw new Error('expected surrounding navigation excluded')
+      }
+    }
+  } finally { restore() }
+}
+
+export async function testWebpageHtmlToMarkdownArtifactEmbeddedFallbackHonorsOptions() {
+  const { restore } = initJsdomHarness()
+  try {
+    const data = JSON.stringify({ props: { article: { title: 'Lesson slides', content: 'Hydration only lesson.\n\n![slide](https://example.com/slide.png)' } } }).replace(/"/g, '&quot;')
+    const html = `<html><head><title>Shell title</title></head><body><section data-page="${data}"></section></body></html>`
+    const md = await convertWebpageHtmlToMarkdownArtifactAsync({ html, url: 'https://example.com/', mode: 'debug', includeImages: false, injectTitleHeading: true })
+    if (!md.includes('# Lesson slides') || !md.includes('Hydration only lesson.')) throw new Error('expected embedded fallback despite head metadata')
+    if (md.includes('slide.png')) throw new Error('expected image exclusion in fallback')
+  } finally { restore() }
+}
+
+export async function testWebpageHtmlToMarkdownArtifactKeepsVisualRowsSeparate() {
+  const { restore } = initJsdomHarness()
+  try {
+    const html = '<h1>Session schedule</h1><div class="flex"><a>09:00</a><div>Welcome</div></div><div style="display:flex"><a>09:15</a><div>Discussion</div></div>'
+    const md = await convertWebpageHtmlToMarkdownArtifactAsync({ html, url: 'https://independent.test/events', fidelityLevel: 4 })
+    if (!md.includes('[09:00]() Welcome\n\n[09:15]() Discussion')) throw new Error(`expected separate rows and cells: ${md}`)
+  } finally { restore() }
+}
+
+export async function testWebsiteImportServerWritesArticleWithoutDiagnostics() {
+  const fs = await import('node:fs/promises')
+  const path = await import('node:path')
+  const os = await import('node:os')
+  const http = await import('node:http')
+  const { createWebsiteImportHandler } = await import('@/lib/websites/server/websiteImportServer')
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'webpage-article-'))
+  const previousStore = process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT
+  process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT = path.join(root, 'store')
+  const handler = createWebsiteImportHandler({ repoRoot: root })
+  const server = http.createServer((req, res) => { void handler(req, res, () => { res.statusCode = 404; res.end() }) })
+  try {
+    await fs.mkdir(path.join(root, 'pages'))
+    await fs.writeFile(path.join(root, 'pages', 'guide.html'), '<head><title>Independent guide</title><meta name="diagnostic" content="capture metadata" /></head><article><h1>Independent guide</h1><h2>First section</h2><p>Complete usable article.</p><iframe src="https://media.example.test/video"></iframe></article>')
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address() as { port: number }
+    const base = `http://127.0.0.1:${address.port}/__website_import`
+    const start = await fetch(`${base}/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'pages/guide.html', options: { maxPages: 1, concurrency: 1, discoverSitemap: false, generateMarkdownArtifacts: true } }) }).then(r => r.json()) as { importId: string }
+    let done = false
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const status = await fetch(`${base}/status?importId=${start.importId}`).then(r => r.json()) as { status: string }
+      if (status.status === 'done') { done = true; break }
+      if (status.status === 'failed') throw new Error('local import failed')
+      await new Promise(resolve => setTimeout(resolve, 25))
+    }
+    if (!done) throw new Error('local import did not complete within the test budget')
+    const manifest = await fetch(`${base}/manifest?importId=${start.importId}`).then(r => r.json()) as { manifest: { nodes: Array<{ nodeId: string }> } }
+    const nodeId = manifest.manifest.nodes[0]?.nodeId
+    const md = await fetch(`${base}/artifact?importId=${start.importId}&nodeId=${nodeId}&kind=markdown`).then(r => r.text())
+    for (const expected of ['# Independent guide', '## First section', 'Complete usable article.', 'https://media.example.test/video']) {
+      if (!md.includes(expected)) throw new Error(`server output missing ${expected}: ${md}; manifest=${JSON.stringify(manifest)}`)
+    }
+    if (/HTML Head|RAW HTML SNAPSHOT|capture metadata/.test(md)) throw new Error('capture diagnostics leaked into imported article')
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    if (previousStore === undefined) delete process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT
+    else process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT = previousStore
+    await fs.rm(root, { recursive: true, force: true })
+  }
+}

@@ -1,3 +1,4 @@
+import { resolvePreviousWorkspacePath } from '@/features/workspace-fs/websiteCollections'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { hasWorkspaceFileEntry, type WorkspaceEntriesIndex } from './workspaceEntriesIndex'
 
@@ -23,7 +24,10 @@ export function resolveMarkdownWorkspaceCanonicalSelection(args: {
   const path = String(args.activePath || '').trim()
   if (!path) return null
 
-  const canonicalPath = resolveMarkdownWorkspaceDocsMirrorCanonicalPath(path as WorkspacePath, args.entriesIndex)
+  const canonicalPath = !hasWorkspaceFileEntry(args.entriesIndex, path)
+    ? resolvePreviousWorkspacePath(path, args.entriesIndex.byPath.values())
+      || resolveMarkdownWorkspaceDocsMirrorCanonicalPath(path as WorkspacePath, args.entriesIndex)
+    : resolveMarkdownWorkspaceDocsMirrorCanonicalPath(path as WorkspacePath, args.entriesIndex)
   if (!canonicalPath || canonicalPath === path) return null
   if (!hasWorkspaceFileEntry(args.entriesIndex, canonicalPath)) return null
 

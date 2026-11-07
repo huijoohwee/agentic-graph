@@ -79,7 +79,7 @@ export async function probeWebpageLayoutSnapshot(args: {
   domQuietMs: number
   minWaitAfterLoadMs: number
   scrollCrawl?: boolean
-  expandFaq?: boolean
+  expandDisclosures?: boolean
   waitForNetworkIdle?: boolean
   signal?: AbortSignal
 }): Promise<
@@ -93,7 +93,7 @@ export async function probeWebpageLayoutSnapshot(args: {
       mode: 'layout',
       maxElements: args.maxElements,
       scrollCrawl: args.scrollCrawl !== false,
-      expandFaq: args.expandFaq !== false,
+      expandDisclosures: args.expandDisclosures !== false,
       timeoutMs: args.timeoutMs,
       waitForNetworkIdle: args.waitForNetworkIdle !== false,
       networkIdleMs: args.networkIdleMs,
@@ -176,7 +176,7 @@ export async function loadWebpageLayoutSnapshotWithCache(args: {
     viewportW: args.layoutPreset.viewportW,
     viewportH: args.layoutPreset.viewportH,
     scrollCrawl: args.layoutPreset.scrollCrawl,
-    expandFaq: args.layoutPreset.expandFaq,
+    expandDisclosures: args.layoutPreset.expandDisclosures,
     waitForNetworkIdle: args.layoutPreset.waitForNetworkIdle,
     signal: args.signal,
   })

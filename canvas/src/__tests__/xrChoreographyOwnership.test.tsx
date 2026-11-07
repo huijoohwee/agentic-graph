@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -10,6 +11,7 @@ import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/fea
 import { controlXrSharedAssetControls, inspectXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { XrChoreographyInspector } from '@/features/three/XrChoreographyInspector'
 import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
+import { MAIN_PANEL_OPEN_EVENT } from '@/features/panels/utils/useMainPanelRect'
 import { CameraMotionMarkRetime } from '@/features/three/CameraMotionMarkRetime'
 import { updateXrSelectionBounds } from '@/features/three/XrSelectionBounds'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -42,10 +44,9 @@ export async function testXrChoreographyOwnership() {
     controlXrSharedAssetControls({ operation: 'select-target', targetId: 'pig' })
     await mountReactRoot(root, <Panels />)
     const change = async (label: string, value: string) => act(async () => {
-      const element = container.querySelector<HTMLSelectElement>(`[aria-label="${label}"]`)!
+      const element = container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!
       assert.ok(element, label)
-      element.value = value
-      element.dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(element, value)
     })
     const second = readXrMotionReferenceRuntime().plan.cast[0]!.marks[1]!
     await change('Cast choreography mark', second.id)
@@ -62,6 +63,16 @@ export async function testXrChoreographyOwnership() {
     const motion = container.querySelector('[data-kg-xr-shared-asset-controls="motion-control"]')!
     assert.equal(motion.getAttribute('data-kg-xr-shared-asset-target'), 'pig')
     assert.equal(motion.querySelector('[data-kg-xr-shared-asset-preset-selector]'), null)
+    let helpRequest: Record<string, unknown> | null = null
+    const captureHelpRequest = (event: Event) => {
+      helpRequest = (event as CustomEvent<Record<string, unknown>>).detail
+    }
+    env.dom.window.addEventListener(MAIN_PANEL_OPEN_EVENT, captureHelpRequest)
+    await act(async () => {
+      motion.querySelector<HTMLButtonElement>('[data-kg-xr-shared-asset-shortcut-help="motion-control"]')?.click()
+    })
+    env.dom.window.removeEventListener(MAIN_PANEL_OPEN_EVENT, captureHelpRequest)
+    assert.deepEqual(helpRequest, { tab: 'help', searchQuery: 'WASD' }, 'asset controls open the shared, filtered Help shortcut catalog')
     await act(async () => { selectXrMotionReferenceCameraMark(readXrMotionReferenceRuntime().plan.camera[0]!.id) })
     await change('Camera mark easing', 'linear')
     assert.equal(readXrMotionReferenceRuntime().plan.camera[0]!.caption, 'The crew arrives.')

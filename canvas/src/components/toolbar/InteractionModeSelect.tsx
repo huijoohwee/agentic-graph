@@ -210,7 +210,7 @@ export function InteractionModeSelect({ iconSizeClass, iconStrokeWidth, ensureBa
       renderButtonContent={() => <Compass className={iconSizeClass} strokeWidth={iconStrokeWidth} />}
       renderOptionContent={option => (
         <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.rowLabel}</span>
           <SelectableRowValue
             label={option.rowLabel}

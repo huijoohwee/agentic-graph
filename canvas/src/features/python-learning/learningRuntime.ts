@@ -71,6 +71,8 @@ export class LearningRuntime {
     if (!validLearningSnapshot(value) || !this.identity || !sameRun(value.identity, this.identity)
       || value.sequence !== this.sequence + 1) return this.fail(new Error('Invalid, duplicate or out-of-order run evidence.'))
     const result = value
+    const previousTicks = this.sequence === 0 ? 0 : this.snapshot.result?.scene.ticks ?? 0
+    if (result.scene.ticks < previousTicks) return this.fail(new Error('Simulation tick evidence moved backwards.'))
     this.sequence = result.sequence
     this.publish({ result, state: result.state, error: result.error, stale: false })
     if (result.state === 'ready' || result.state === 'paused') {
@@ -78,7 +80,11 @@ export class LearningRuntime {
       this.pausedExpiry = setTimeout(() => this.stop('Paused session expired after 15 minutes.'), PYTHON_LIMITS.pausedMs)
     } else if (result.state === 'completed' || result.state === 'failed') {
       this.clearTimers(); this.worker?.terminate(); this.worker = null
-    } else if (!this.deadline) this.watchdog()
+    } else if (!this.deadline || (learningLesson(result.identity.lessonId).vehicle === 'drone' && result.scene.ticks > previousTicks)) {
+      // Paced flight may last longer than five seconds. Only verified tick progress
+      // refreshes the unresponsive-worker deadline; active compute stays worker-bounded.
+      this.watchdog()
+    }
   }
   private fail(error: unknown) { this.terminate(); this.publish({ state: 'failed', error: pythonError(error) }) }
   async start(mode: 'run' | 'step' | 'validate', signal?: AbortSignal): Promise<void> {

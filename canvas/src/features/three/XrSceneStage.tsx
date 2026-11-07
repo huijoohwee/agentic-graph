@@ -14,14 +14,16 @@ export function XrSceneStage({
   authority,
   data,
   geospatialComposite,
+  renderMotionReferenceInComposite = false,
   paused,
 }: {
   authority?: XrGraphStageAuthority
   data: GraphData
   geospatialComposite?: boolean
+  renderMotionReferenceInComposite?: boolean
   paused: boolean
 }) {
-  if (geospatialComposite && authority !== 'native-controller') return null
+  if (geospatialComposite && authority !== 'native-controller' && !renderMotionReferenceInComposite) return null
   if (authority === 'native-controller') return <XrCanonicalPhysicsStage geospatialComposite={geospatialComposite} paused={paused} />
   if (authority === 'motion-reference') return <XrMotionReferenceGraphStageLazy data={data} paused={paused} />
   return null

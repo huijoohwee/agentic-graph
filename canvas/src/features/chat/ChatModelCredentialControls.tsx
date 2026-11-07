@@ -67,13 +67,12 @@ export function ChatModelCredentialControls({
             ].join(' ')}
             onClick={() => setIsApiKeyExpanded(prev => !prev)}
           >
-            <Bot className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+            <Bot className="size-3.5" aria-hidden="true" />
             <ChevronDown
               className={[
                 'size-2.5 transition-transform',
                 isApiKeyExpanded ? 'rotate-180' : '',
               ].join(' ')}
-              strokeWidth={2}
               aria-hidden="true"
             />
           </button>
@@ -88,7 +87,7 @@ export function ChatModelCredentialControls({
               UI_THEME_TOKENS.button.text,
             ].join(' ')}
           >
-            <Bot className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+            <Bot className="size-3.5" aria-hidden="true" />
           </span>
         )}
         <PanelSelect
@@ -96,8 +95,8 @@ export function ChatModelCredentialControls({
           aria-label={UI_COPY.chatModelSelectLabel}
           data-kg-chat-model-select="true"
           value={modelId}
-          onChange={event => {
-            const next = String(event.target.value || '').trim()
+          onValueChange={selectedValueInput => {
+            const next = String(selectedValueInput || '').trim()
             if (!next) return
             onModelChanged(next)
           }}
@@ -123,7 +122,7 @@ export function ChatModelCredentialControls({
               UI_THEME_TOKENS.button.text,
             ].join(' ')}
           >
-            <KeyRound className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+            <KeyRound className="size-3.5" aria-hidden="true" />
           </span>
           <PanelTextInput
             id={chatApiKeyInputId}

@@ -73,7 +73,7 @@ export default function StoryboardWidgetGraphTab({
                 <MultiDimTableSurface active ariaLabel="Workflow Multi-dimensional Table" />
               </section>
             ) : (
-              <section className={cn(UI_RESPONSIVE_FLOW_MANAGER_PANEL_FRAME_CLASSNAME, 'h-full min-h-0 overflow-auto')}>
+              <section className={cn(UI_RESPONSIVE_FLOW_MANAGER_PANEL_FRAME_CLASSNAME, 'h-full min-h-0 overflow-hidden border-0 p-0')}>
                 <GraphFieldsView
                   onStatusChange={graphFieldsStatusNoop}
                   searchQuery={searchQuery}
@@ -94,16 +94,15 @@ export default function StoryboardWidgetGraphTab({
     <section className="h-full min-h-0 flex flex-col" aria-label={UI_LABELS.storyboardWidgetGraph}>
       <header className={cn(UI_RESPONSIVE_FLOW_MANAGER_PANEL_HEADER_CLASSNAME, UI_RESPONSIVE_FLOW_MANAGER_PANEL_HEADER_ROW_CLASSNAME, UI_THEME_TOKENS.panel.border)}>
         <section className="min-w-0" aria-label="Summary">
-          <section className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>{UI_LABELS.status}</section>
-          <section className={cn('text-xs font-semibold truncate', UI_THEME_TOKENS.text.primary)}>
+          <output className={cn(panelTypography.panelTextClass, 'block truncate', UI_THEME_TOKENS.text.secondary)}>
             {UI_LABELS.nodesLabel} {nodeCount} · {UI_LABELS.edgesLabel} {edgeCount} · {UI_LABELS.graphLayersMode} {clusterCount}
-          </section>
+          </output>
         </section>
       </header>
 
       <main className="flex-1 min-h-0 overflow-hidden" aria-label="Graph content">
         <section className={`${UI_RESPONSIVE_FLOW_MANAGER_PANEL_BODY_CLASSNAME} h-full min-h-0`} aria-label="Graph manager">
-          <section className={cn(UI_RESPONSIVE_FLOW_MANAGER_PANEL_FRAME_CLASSNAME, 'min-h-0 h-full overflow-hidden')} aria-label="Graph Fields and Field Settings">
+          <section className={cn(UI_RESPONSIVE_FLOW_MANAGER_PANEL_FRAME_CLASSNAME, 'min-h-0 h-full overflow-hidden border-0 p-0')} aria-label="Graph Fields and Field Settings">
             <section className="h-full min-h-0 overflow-hidden">
               {multiDimTableView ? (
                 <MultiDimTableSurface active ariaLabel="Workflow Multi-dimensional Table" />

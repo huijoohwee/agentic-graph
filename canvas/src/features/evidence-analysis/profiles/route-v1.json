@@ -1,0 +1,242 @@
+{
+  "schema": "evidence-profile/v1",
+  "id": "route-v1",
+  "version": "1.0.0",
+  "bundleSchema": "route-evidence-bundle/v1",
+  "limits": {
+    "maxBytes": 499999,
+    "maxPackBytes": 2000000,
+    "maxEntities": 10,
+    "maxFacts": 2070,
+    "maxSources": 20,
+    "maxSpanSeconds": 86400,
+    "maxTextLength": 2048
+  },
+  "classifications": [
+    "synthetic",
+    "fixture",
+    "imported"
+  ],
+  "rightsStatuses": {
+    "synthetic": [
+      "synthetic-authored"
+    ],
+    "fixture": [
+      "synthetic-authored",
+      "operator-attested"
+    ],
+    "imported": [
+      "operator-attested"
+    ]
+  },
+  "staleAfterSeconds": 60,
+  "gapAfterSeconds": 60,
+  "requiredKinds": [
+    "measured_vertex",
+    "reference_vertex",
+    "measured_start",
+    "measured_end",
+    "reference_start",
+    "reference_end",
+    "route_type"
+  ],
+  "ui": {
+    "title": "Route comparison",
+    "description": "Compare two explicit polylines under a declared spherical model. No fuel, optimality or operational feasibility is inferred.",
+    "entityLabel": "Route case",
+    "fixturePath": "./fixtures/route-singapore-synthetic-v1.json"
+  },
+  "fields": [
+    {
+      "key": "measured_vertex",
+      "label": "Measured vertex",
+      "type": "vector",
+      "nullable": true,
+      "units": [
+        "deg"
+      ],
+      "datums": [
+        "WGS84"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "deg",
+      "conversions": [],
+      "range": null,
+      "components": [
+        {
+          "key": "ordinal",
+          "minimum": 0,
+          "maximum": 99
+        },
+        {
+          "key": "longitude",
+          "minimum": -180,
+          "maximum": 180
+        },
+        {
+          "key": "latitude",
+          "minimum": -90,
+          "maximum": 90
+        }
+      ]
+    },
+    {
+      "key": "measured_start",
+      "label": "Measured start",
+      "type": "utc",
+      "nullable": true,
+      "units": [
+        "UTC"
+      ],
+      "datums": [
+        "not-applicable"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "UTC",
+      "conversions": [],
+      "range": null,
+      "components": []
+    },
+    {
+      "key": "measured_end",
+      "label": "Measured end",
+      "type": "utc",
+      "nullable": true,
+      "units": [
+        "UTC"
+      ],
+      "datums": [
+        "not-applicable"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "UTC",
+      "conversions": [],
+      "range": null,
+      "components": []
+    },
+    {
+      "key": "measured_uncertainty",
+      "label": "Measured per-vertex positional bound",
+      "type": "number",
+      "nullable": true,
+      "units": [
+        "m"
+      ],
+      "datums": [
+        "WGS84"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "m",
+      "conversions": [],
+      "range": [
+        0,
+        100000
+      ],
+      "components": []
+    },
+    {
+      "key": "reference_vertex",
+      "label": "Reference vertex",
+      "type": "vector",
+      "nullable": true,
+      "units": [
+        "deg"
+      ],
+      "datums": [
+        "WGS84"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "deg",
+      "conversions": [],
+      "range": null,
+      "components": [
+        {
+          "key": "ordinal",
+          "minimum": 0,
+          "maximum": 99
+        },
+        {
+          "key": "longitude",
+          "minimum": -180,
+          "maximum": 180
+        },
+        {
+          "key": "latitude",
+          "minimum": -90,
+          "maximum": 90
+        }
+      ]
+    },
+    {
+      "key": "reference_start",
+      "label": "Reference start",
+      "type": "utc",
+      "nullable": true,
+      "units": [
+        "UTC"
+      ],
+      "datums": [
+        "not-applicable"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "UTC",
+      "conversions": [],
+      "range": null,
+      "components": []
+    },
+    {
+      "key": "reference_end",
+      "label": "Reference end",
+      "type": "utc",
+      "nullable": true,
+      "units": [
+        "UTC"
+      ],
+      "datums": [
+        "not-applicable"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "UTC",
+      "conversions": [],
+      "range": null,
+      "components": []
+    },
+    {
+      "key": "reference_uncertainty",
+      "label": "Reference per-vertex positional bound",
+      "type": "number",
+      "nullable": true,
+      "units": [
+        "m"
+      ],
+      "datums": [
+        "WGS84"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "m",
+      "conversions": [],
+      "range": [
+        0,
+        100000
+      ],
+      "components": []
+    },
+    {
+      "key": "route_type",
+      "label": "Declared route type",
+      "type": "string",
+      "nullable": true,
+      "units": [
+        "category"
+      ],
+      "datums": [
+        "not-applicable"
+      ],
+      "sameDatum": true,
+      "canonicalUnit": "category",
+      "conversions": [],
+      "range": null,
+      "components": []
+    }
+  ]
+}

@@ -3,8 +3,8 @@ title: "agentic-graph Browser Git and Multi-Provider File Sync Runtime API"
 id: "md:agentic-graph-storage-git-file-sync-runtime-api"
 author: "airvio / joohwee"
 date: "2026-07-24"
-updated: "2026-07-26"
-version: "1.1.0"
+updated: "2026-10-22"
+version: "1.1.1"
 status: "runtime-ready-dev; provider credentials and release remain operator-owned"
 doc_type: "Runtime API"
 lang: "en-US"
@@ -108,6 +108,13 @@ Structured file-sync input:
 ## Git engine
 
 The local repository persists object metadata, verified content-addressed bytes, refs, repository records, and retained operations under the shared browser storage boundary.
+
+### Storage usage and cache budgets
+
+- Shared in-memory LRU caches retain at most 2 MiB of estimated values per cache by default, in addition to their existing entry and expiry limits. Cache owners can provide a value-size function or a different byte limit. Estimates are intentionally bounded and are not heap or browser-quota measurements.
+- Spatial-capture Cache Storage writes keep one payload body and small identity aliases, avoiding one full body copy per alias. Existing cache entries remain readable. The browser may independently evict Cache Storage under origin pressure.
+- `persistence.getUsage({ namespace, workspaceId })` performs an explicit indexed usage scan scoped to one namespace and workspace. It reports estimated logical bytes for records and outbox entries plus exact binary payload bytes. When supported, it also reports the browser's origin-wide storage estimate; that value includes other origin data and is not attributed to this namespace. The method never deletes records, binaries, or queued recovery work.
+- Durable records, binary payloads, and outbox operations are retained until their owning delete/acknowledgement path runs. Capacity policy must reject or defer new writes with a visible reason; it must not evict unsynced or user-authored data.
 
 - Clone initializes the local branch and HEAD after verified materialization. A later fetch preserves the local branch and advances only the remote-tracking ref, so divergence remains explicit.
 - Cached objects with the same tagged content hash are reused without requesting their bytes again.

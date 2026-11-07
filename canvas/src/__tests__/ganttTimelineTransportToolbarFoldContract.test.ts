@@ -8,7 +8,7 @@ function readSource(...parts: string[]): string {
 }
 
 export function testGanttTimelineTransportToolbarFoldsIntoMenusOnResize() {
-  const controlsCssText = readSource('components', 'timeline', 'TimelineTransportControls.css')
+  const controlsCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const mermaidCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
   const headerToolsText = readSource('features', 'gitgraph', 'GanttTimelineTransportHeaderTools.tsx')
   if (

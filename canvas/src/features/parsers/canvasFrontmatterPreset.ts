@@ -1,4 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { wasFloatingPanelPresetDismissedForDocument } from './floatingPanelPresetDismissal'
 import type { DocumentSemanticMode } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config'
@@ -6,6 +7,7 @@ import { isStoryboardCanvas2dRenderer, isFrontmatterOnlyPolicyActive, resolveCan
 import { normalizeCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import {
   parseCanvasWorkspaceFrontmatterPreset,
+  parseWebsiteImportFrontmatterMeta,
   readBottomSurfaceTabPreset,
   readCanvasWorkspaceFrontmatterPresetFromMeta,
   readFloatingPanelViewPreset,
@@ -158,14 +160,20 @@ export function resolveCanvasFrontmatterPreset(args: {
   graphData?: GraphData | null
   rawText?: string | null
 }): CanvasWorkspaceFrontmatterPreset | null {
-  if (args.preset) return args.preset
   const rawText = String(args.rawText || '')
-  const fromText = rawText ? parseCanvasWorkspaceFrontmatterPreset(rawText) : null
-  if (fromText) return fromText
-
   const metadata = isRecord(args.graphData?.metadata) ? (args.graphData?.metadata as Record<string, unknown>) : null
   const frontmatterMeta = metadata && isRecord(metadata.frontmatterMeta) ? (metadata.frontmatterMeta as Record<string, unknown>) : null
-  return readCanvasWorkspaceFrontmatterPresetFromMeta(frontmatterMeta) || readNormalizedCanvasWorkspacePreset(metadata)
+  const preset = args.preset || (rawText ? parseCanvasWorkspaceFrontmatterPreset(rawText) : null)
+    || readCanvasWorkspaceFrontmatterPresetFromMeta(frontmatterMeta) || readNormalizedCanvasWorkspacePreset(metadata)
+  const websiteImport = parseWebsiteImportFrontmatterMeta(rawText)
+    || (frontmatterMeta?.kgWebsiteImportId && frontmatterMeta?.kgWebsiteNodeId)
+  // Older crawls predate persisted renderer defaults. Resolve their missing
+  // fields here as well, so opening a file cannot inherit another document's view.
+  return websiteImport ? {
+    ...preset,
+    canvasRenderMode: preset?.canvasRenderMode ?? '2d',
+    canvas2dRenderer: preset?.canvas2dRenderer ?? 'd3',
+  } : preset
 }
 
 export function applyCanvasFrontmatterPreset(args: {
@@ -192,7 +200,32 @@ export function applyCanvasFrontmatterPreset(args: {
     defaultCanvasRenderMode: args.defaultCanvasRenderMode,
     defaultCanvas3dMode: args.defaultCanvas3dMode,
   })
-  const isCurrentSurfaceRequest = beginCanvasFrontmatterSurfaceRequest()
+  const geospatialModeEnabled = surfacePreset.geospatialModeEnabled
+  const canvasRenderMode = surfacePreset.canvasRenderMode
+  const canvas3dMode = surfacePreset.canvas3dMode
+  const xrScenePanelView = XR_SCENE_FLOATING_PANEL_VIEWS.find(view => view === preset?.floatingPanelView)
+  const sharedXrSurfaceRequested = canvasRenderMode === '3d' && canvas3dMode === 'xr'
+  const effectiveCanvasRenderMode = canvasRenderMode ?? store.canvasRenderMode
+  const effectiveCanvas3dMode = canvas3dMode ?? store.canvas3dMode
+  const sharedXrPanelRequested = Boolean(xrScenePanelView)
+    && effectiveCanvasRenderMode === '3d'
+    && effectiveCanvas3dMode === 'xr'
+  const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested
+  const liveSharedXrSurface = useGraphStore.getState().canvasRenderMode === '3d'
+    && useGraphStore.getState().canvas3dMode === 'xr'
+  const incomingLeavesSharedXrSurface = canvasRenderMode === '2d' || canvas3dMode === 'voxel'
+  const retainLiveSharedXrSurface = liveSharedXrSurface
+    && !incomingLeavesSharedXrSurface
+    && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
+  // Runtime-authored XR metadata is published back through the active
+  // document's canonical frontmatter parser. Preserve the user's live XR
+  // workspace in that same-document case so its authored panel and closed
+  // bottom-panel defaults do not eject the Media/Timeline authoring surface.
+  const preserveLiveXrWorkspace = retainLiveSharedXrSurface && liveSharedXrSurface
+  const retainPassiveGeospatialSurface = retainLiveSharedXrSurface
+    && args.preserveLiveSharedXrSurface === true && !sharedXrSurfaceRouted
+  const isCurrentSurfaceRequest = retainPassiveGeospatialSurface
+    ? () => false : beginCanvasFrontmatterSurfaceRequest()
   const documentStructureBaselineLock =
     preset?.documentStructureBaselineLock ?? args.defaultDocumentStructureBaselineLock
   const videoSequenceTimelineEnabled = preset?.videoSequenceTimelineEnabled === true
@@ -240,17 +273,6 @@ export function applyCanvasFrontmatterPreset(args: {
     changed = true
   }
 
-  const geospatialModeEnabled = surfacePreset.geospatialModeEnabled
-  const canvasRenderMode = surfacePreset.canvasRenderMode
-  const canvas3dMode = surfacePreset.canvas3dMode
-  const xrScenePanelView = XR_SCENE_FLOATING_PANEL_VIEWS.find(view => view === preset?.floatingPanelView)
-  const sharedXrSurfaceRequested = canvasRenderMode === '3d' && canvas3dMode === 'xr'
-  const effectiveCanvasRenderMode = canvasRenderMode ?? store.canvasRenderMode
-  const effectiveCanvas3dMode = canvas3dMode ?? store.canvas3dMode
-  const sharedXrPanelRequested = Boolean(xrScenePanelView)
-    && effectiveCanvasRenderMode === '3d'
-    && effectiveCanvas3dMode === 'xr'
-  const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested
   const activateSharedXrSurface = (): boolean => {
     const before = useGraphStore.getState()
     const activated = activateXrSceneSurface({
@@ -277,26 +299,20 @@ export function applyCanvasFrontmatterPreset(args: {
     )) changed = true
     return activated
   }
-  const liveSharedXrSurface = useGraphStore.getState().canvasRenderMode === '3d'
-    && useGraphStore.getState().canvas3dMode === 'xr'
-  const incomingLeavesSharedXrSurface = canvasRenderMode === '2d' || canvas3dMode === 'voxel'
-  const retainLiveSharedXrSurface = liveSharedXrSurface
-    && !incomingLeavesSharedXrSurface
-    && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
   if (typeof geospatialModeEnabled === 'boolean') {
-    if (!(retainLiveSharedXrSurface && !sharedXrSurfaceRouted)) {
+    if (!retainPassiveGeospatialSurface && !preserveLiveXrWorkspace) {
       void requestCanvasFrontmatterGeospatialSurface(
         geospatialModeEnabled,
         {
           isCurrent: isCurrentSurfaceRequest,
-          ...(sharedXrSurfaceRouted
+          ...(sharedXrSurfaceRouted && !preserveLiveXrWorkspace
             ? { afterCommit: activateSharedXrSurface }
             : {}),
         },
       )
     }
-    if (sharedXrSurfaceRouted) changed = true
-  } else if (sharedXrSurfaceRouted) {
+    if (sharedXrSurfaceRouted && !preserveLiveXrWorkspace) changed = true
+  } else if (sharedXrSurfaceRouted && !preserveLiveXrWorkspace) {
     activateSharedXrSurface()
   }
   if (!sharedXrSurfaceRouted) {
@@ -359,42 +375,45 @@ export function applyCanvasFrontmatterPreset(args: {
     }
   }
 
-  if (preset?.bottomPanelTab) {
+  if (preset?.bottomPanelTab && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceTab !== preset.bottomPanelTab) {
       current.setBottomSurfaceTab(preset.bottomPanelTab)
       changed = true
     }
   }
-  if (preset?.bottomPanelOpen === true) {
+  if (preset?.bottomPanelOpen === true && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceCollapsed === true) {
       current.setBottomSurfaceCollapsed(false)
       changed = true
     }
   }
-  if (preset?.bottomPanelOpen === false) {
+  if (preset?.bottomPanelOpen === false && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceCollapsed !== true) {
       current.setBottomSurfaceCollapsed(true)
       changed = true
     }
   }
-  if (preset?.floatingPanelView && !(sharedXrSurfaceRouted && xrScenePanelView)) {
+  if (preset?.floatingPanelView && !preserveLiveXrWorkspace && !(sharedXrSurfaceRouted && xrScenePanelView)) {
     const current = useGraphStore.getState()
     if (current.floatingPanelView !== preset.floatingPanelView) {
       current.setFloatingPanelView(preset.floatingPanelView)
       changed = true
     }
   }
-  if (preset?.floatingPanelOpen === true && !(sharedXrSurfaceRouted && xrScenePanelView)) {
+  if (preset?.floatingPanelOpen === true && !preserveLiveXrWorkspace && !(sharedXrSurfaceRouted && xrScenePanelView)) {
     const current = useGraphStore.getState()
-    if (current.floatingPanelOpen !== true) {
+    if (
+      current.floatingPanelOpen !== true
+      && !wasFloatingPanelPresetDismissedForDocument(current.markdownDocumentName)
+    ) {
       current.setFloatingPanelOpen(true)
       changed = true
     }
   }
-  if (preset?.floatingPanelOpen === false && !sharedXrSurfaceRouted) {
+  if (preset?.floatingPanelOpen === false && !preserveLiveXrWorkspace && !sharedXrSurfaceRouted) {
     const current = useGraphStore.getState()
     if (current.floatingPanelOpen !== false) {
       current.setFloatingPanelOpen(false)

@@ -44,6 +44,14 @@
   "r2_buckets": [
     { "binding": "PROVENANCE_ARCHIVE" }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agentic-storage",
+      "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152",
+      "migrations_dir": "../../d1/migrations"
+    }
+  ],
   "ai": { "binding": "AI", "remote": true },
   "services": [
     { "binding": "DISCOVERY_SERVICE", "service": "agentic-mcp-dev" },
@@ -81,6 +89,12 @@
       },
       "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
       "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
+      "d1_databases": [{
+        "binding": "DB",
+        "database_name": "agentic-storage",
+        "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152",
+        "migrations_dir": "../../d1/migrations"
+      }],
       "ai": { "binding": "AI", "remote": true },
       "services": [
         { "binding": "DISCOVERY_SERVICE", "service": "agentic-mcp-staging" },
@@ -118,6 +132,12 @@
       },
       "kv_namespaces": [{ "binding": "BALANCE_CACHE" }],
       "r2_buckets": [{ "binding": "PROVENANCE_ARCHIVE" }],
+      "d1_databases": [{
+        "binding": "DB",
+        "database_name": "agentic-storage",
+        "database_id": "633355bf-1a52-4085-bd3c-eba4220ff152",
+        "migrations_dir": "../../d1/migrations"
+      }],
       "ai": { "binding": "AI", "remote": true },
       "services": [
         { "binding": "DISCOVERY_SERVICE", "service": "agentic-mcp" },

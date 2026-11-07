@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { assertLocalPoiDirectoryContract } from './panelFormControlReuseTestUtils'
 const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
 export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const sharedControlsText = readUtf8('src/lib/ui/panelFormControls.tsx')
@@ -35,7 +36,6 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const widgetEditorFormText = readUtf8('src/components/StoryboardWidget/WidgetEditorForm.tsx')
   const graphEditorInspectorText = readUtf8('src/features/graph-editor/panels/GraphEditorInspectorTab.tsx')
   const researchCompilerText = readUtf8('src/features/panels/views/ResearchCompilerView.tsx')
-  const siteSelectionWidgetText = readUtf8('src/features/maps/SiteSelectionWidget.tsx')
   const workspaceTableModeControlText = readUtf8('src/features/workspace-table/ui/WorkspaceTableModeControl.tsx')
   const designDomInspectPanelText = readUtf8('src/features/design/DesignDomInspectPanel.tsx')
   const settingsUiText = readUtf8('src/features/settings/ui.tsx')
@@ -88,7 +88,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   if (
     !panelKeyTypeColorTextValueRowText.includes("from '@/lib/ui/panelFormControls'") ||
     !panelKeyTypeColorTextValueRowText.includes('PanelTextInput') ||
-    !panelKeyTypeColorTextValueRowText.includes('type="color"')
+    !panelKeyTypeColorTextValueRowText.includes('PanelColorPicker')
   ) {
     throw new Error('expected PanelKeyTypeColorTextValueRow to centralize the specialized color-swatch-plus-text input row on top of the shared panel text input primitive')
   }
@@ -191,8 +191,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     !sharedControlsText.includes('readPanelBooleanChoiceButtonClassName') ||
     !sharedControlsText.includes('React.createContext<PanelFormDensityContextValue | null>(null)') || !sharedControlsText.includes("densityContext?.rowHeightPreset || 'compact'") ||
     !sharedControlsText.includes('const fieldLineRows = nextFieldLineMode ? readDataViewMultiLineControlRows(nextFieldLineMode) : 0') || !sharedControlsText.includes('rows={fieldLineRows > 0 ? fieldLineRows : rows}') ||
-    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded-md border') ||
-    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded border bg-transparent') ||
+    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded-md') || !sharedControlsText.includes('UI_THEME_TOKENS.border.outline') ||
+    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded bg-transparent') ||
     sharedControlsText.includes('w-full resize rounded') ||
     !sharedControlsText.includes('UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME') ||
     !sharedControlsText.includes('type="range"')
@@ -368,10 +368,10 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   if (
     !researchCompilerText.includes("from '@/lib/ui/panelFormControls'") ||
     !researchCompilerText.includes('PanelField') ||
-    !researchCompilerText.includes('PanelReadOnlyField') ||
+    !researchCompilerText.includes('observedFieldHelp') ||
     !researchCompilerText.includes('<PanelTextarea') ||
     !researchCompilerText.includes('<PanelTextInput') ||
-    !researchCompilerText.includes('<PanelReadOnlyField label="Run ID"') ||
+    !researchCompilerText.includes("observed('Run ID'") ||
     !researchCompilerText.includes('variant="transparent"') ||
     researchCompilerText.includes('min-h-24 resize-y rounded border') ||
     researchCompilerText.includes('w-28 rounded border') ||
@@ -380,18 +380,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     throw new Error('expected research compiler prompt, token fields, and run status rows to reuse the shared panel-form primitives')
   }
 
-  if (
-    !siteSelectionWidgetText.includes("from '@/lib/ui/panelFormControls'") ||
-    !siteSelectionWidgetText.includes('PanelField') ||
-    !siteSelectionWidgetText.includes('PanelSelect') ||
-    !siteSelectionWidgetText.includes('PanelTextInput') ||
-    !siteSelectionWidgetText.includes('variant="transparent"') ||
-    !siteSelectionWidgetText.includes('<fieldset') ||
-    siteSelectionWidgetText.includes('bg-transparent border') ||
-    siteSelectionWidgetText.includes('<div key={c.id}')
-  ) {
-    throw new Error('expected site selection widget candidate fields to reuse shared transparent panel-form primitives with semantic fieldsets')
-  }
+  assertLocalPoiDirectoryContract({ nearbyPlacesPanelText: readUtf8('src/features/maps/NearbyPlacesPanel.tsx'), mapsHubViewText: readUtf8('src/features/panels/views/MapsHubView.tsx'), geoViewText: readUtf8('src/lib/toolbar/ToolbarToolMenuGeoView.tsx') })
 
   if (
     !workspaceTableModeControlText.includes("from '@/lib/ui/panelFormControls'") ||
@@ -770,8 +759,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   }
 
   if (
-    !panelLabeledRangeCardText.includes("from '@/lib/ui/panelFormControls'") ||
-    !panelLabeledRangeCardText.includes('PanelRangeInput') ||
+    !panelLabeledRangeCardText.includes("from './PanelLabeledRangeField'") ||
+    !panelLabeledRangeCardText.includes('PanelLabeledRangeField') ||
     panelLabeledRangeCardText.includes('type="range"')
   ) {
     throw new Error('expected PanelLabeledRangeCard to reuse the shared panel range primitive instead of a raw range input')
@@ -786,8 +775,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   }
 
   if (
-    !panelInlineLabeledRangeRowText.includes("from '@/lib/ui/panelFormControls'") ||
-    !panelInlineLabeledRangeRowText.includes('PanelRangeInput') ||
+    !panelInlineLabeledRangeRowText.includes("from './PanelLabeledRangeField'") ||
+    !panelInlineLabeledRangeRowText.includes('PanelLabeledRangeField') ||
     panelInlineLabeledRangeRowText.includes('type="range"')
   ) {
     throw new Error('expected PanelInlineLabeledRangeRow to reuse the shared panel range primitive instead of a raw range input')

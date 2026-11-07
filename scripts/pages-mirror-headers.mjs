@@ -1,3 +1,5 @@
+import { AGENTIC_GRAPH_CSP } from '../cloudflare/pages/agentic-graph-security-headers.mjs'
+
 const GENERATED_AGENT_HEADERS_START = '# BEGIN agentic-graph generated agent-ready headers'
 const GENERATED_AGENT_HEADERS_END = '# END agentic-graph generated agent-ready headers'
 const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN agentic-graph generated app-shell cache headers'
@@ -6,7 +8,10 @@ const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN agentic-graph generated 
 const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END agentic-graph generated homepage discovery headers'
 const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN agentic-graph generated XR runtime permissions headers'
 const GENERATED_XR_RUNTIME_HEADERS_END = '# END agentic-graph generated XR runtime permissions headers'
+const GENERATED_GRAPH_CSP_HEADERS_START = '# BEGIN agentic-graph generated production CSP headers'
+const GENERATED_GRAPH_CSP_HEADERS_END = '# END agentic-graph generated production CSP headers'
 const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
+export { AGENTIC_GRAPH_CSP }
 
 const escapedBlock = marker => marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const replaceOrAppendBlock = (existing, start, end, block) => {
@@ -62,6 +67,15 @@ const stripLegacyProductNamespaceHeaderBlocks = existing => {
   return [stripped, ...policies].filter(Boolean).join('\n\n')
 }
 
+const stripCanonicalGraphCsp = existing => {
+  let route = ''
+  return existing.split('\n').filter(line => {
+    if (/^\S/.test(line) && !line.startsWith('#')) route = line.trim()
+    if (route !== '/agentic-graph/*') return true
+    return !/^[ \t]+(?:![ \t]+)?Content-Security-Policy(?:-Report-Only)?(?::|$)/i.test(line)
+  }).join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
 export const buildAgentReadyHeaders = ({
   existing,
   artifacts,
@@ -80,6 +94,9 @@ export const buildAgentReadyHeaders = ({
   const appShellHeaderBlock = [
     GENERATED_APP_SHELL_HEADERS_START,
     ...productionRuntimeReadinessHeaderLines,
+    '/pitch/agentic-drone-as-a-service/*',
+    '  Cache-Control: public, max-age=0, must-revalidate',
+    '  X-Content-Type-Options: nosniff',
     ...['/81rv10', '/81rv10/', '/81rv10/index.html'].flatMap(route => [
       route,
       '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
@@ -91,6 +108,18 @@ export const buildAgentReadyHeaders = ({
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
     '/content/agentic-graph/sw.js',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+    // Pages rewrites the public Base aliases to these content targets before
+    // applying headers, so define each mutable file once. Fingerprinted assets
+    // continue to use the shared /content/*/assets/* cache rule.
+    ...[
+      '/content/agentic-base/index.html',
+      '/content/agentic-base/manifest.webmanifest',
+      '/content/agentic-base/sw.js',
+    ].flatMap(route => [
+      route,
+      '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
+      '  X-Content-Type-Options: nosniff',
+    ]),
     ...['/content/agentic-graph/agentic-graph-chat-stream-sw.js', '/agentic-graph/agentic-graph-chat-stream-sw.js', '/content/agentic-graph/agentic-graph-service-worker-revision.js', '/agentic-graph/agentic-graph-service-worker-revision.js'].flatMap(route => [route, '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0']),
     '/agentic-graph',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
@@ -119,7 +148,13 @@ export const buildAgentReadyHeaders = ({
     ]),
     GENERATED_XR_RUNTIME_HEADERS_END,
   ].join('\n')
-  let next = stripLegacyProductNamespaceHeaderBlocks(existing).replace(
+  const graphCspHeaderBlock = [
+    GENERATED_GRAPH_CSP_HEADERS_START,
+    '/agentic-graph/*',
+    `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`,
+    GENERATED_GRAPH_CSP_HEADERS_END,
+  ].join('\n')
+  let next = stripCanonicalGraphCsp(stripLegacyProductNamespaceHeaderBlocks(existing)).replace(
     /^\/content\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   ).replace(
@@ -129,5 +164,6 @@ export const buildAgentReadyHeaders = ({
   next = replaceOrAppendBlock(next, GENERATED_AGENT_HEADERS_START, GENERATED_AGENT_HEADERS_END, staticArtifactBlock)
   next = replaceOrAppendBlock(next, GENERATED_APP_SHELL_HEADERS_START, GENERATED_APP_SHELL_HEADERS_END, appShellHeaderBlock)
   next = replaceOrAppendBlock(next, GENERATED_XR_RUNTIME_HEADERS_START, GENERATED_XR_RUNTIME_HEADERS_END, xrRuntimeHeaderBlock)
+  next = replaceOrAppendBlock(next, GENERATED_GRAPH_CSP_HEADERS_START, GENERATED_GRAPH_CSP_HEADERS_END, graphCspHeaderBlock)
   return replaceOrAppendBlock(next, GENERATED_AGENT_HOMEPAGE_HEADERS_START, GENERATED_AGENT_HOMEPAGE_HEADERS_END, homepageHeaderBlock).trimEnd() + '\n'
 }

@@ -119,7 +119,7 @@ export default function GraphRagTextPipelineSection() {
               <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 text-xs">
                 {String((e as { text?: unknown }).text ?? '')}
               </span>
-              <span className={`text-[10px] font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
+              <span className={`text-xs font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
                 {String((e as { label?: unknown }).label ?? '')}
               </span>
             </section>
@@ -242,7 +242,7 @@ export default function GraphRagTextPipelineSection() {
             <section className={`text-xs ${UI_THEME_TOKENS.text.secondary}`}>
               <span className={`font-semibold ${UI_THEME_TOKENS.text.primary}`}>{current.name}</span>
               {current.metrics && typeof current.metrics.latency_ms === 'number' && (
-                <span className={`ml-2 text-[10px] font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
+                <span className={`ml-2 text-xs font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
                   {Math.round(current.metrics.latency_ms)}ms
                 </span>
               )}
@@ -270,7 +270,7 @@ export default function GraphRagTextPipelineSection() {
                   </a>
                 )}
                 {lib.license && (
-                  <span className={`text-[10px] font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
+                  <span className={`text-xs font-mono ${UI_THEME_TOKENS.text.tertiary}`}>
                     {String(lib.license)}
                   </span>
                 )}

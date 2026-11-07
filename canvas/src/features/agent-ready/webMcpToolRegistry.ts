@@ -1,4 +1,5 @@
 import { TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
+import { EVIDENCE_ANALYSIS_TOOL_IDS, isEvidenceToolName } from './evidenceAnalysisAgentReadyContract.mjs'
 import { WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
 import { CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgentReadyContract.mjs'
 import { CANVAS_VIEW_AGENT_READY_TOOL_IDS } from './canvasViewAgentReadyContract.mjs'
@@ -112,6 +113,7 @@ const freezeValidatedTool = (tool: WebMcpTool): WebMcpTool => {
     ...(tool.securitySchemes ? { securitySchemes: cloneFrozenMetadata(tool.securitySchemes) } : {}),
     ...(tool._meta ? { _meta: cloneFrozenMetadata(tool._meta) } : {}),
     execute: async (input?: WebMcpToolInput) => {
+      if (isEvidenceToolName(toolName)) return executeTool(input) // Shared catalog validator preserves errors across transports.
       const { ajv, validate } = await getValidator()
       if (!validate(input ?? {})) {
         const errors = [...(validate.errors || [])]
@@ -172,6 +174,7 @@ const lazyToolBuilders = (names: readonly string[], load: () => Promise<Record<s
   }]))
 }
 const XR_SCENE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene], () => import('./xrSceneWebMcpTools').then(m => m.buildXrSceneWebMcpToolBuilders(findWebToolContract)))
+const SEMANTIC_SPACE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSemanticSpace, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalSemanticSpace], () => import('./semanticSpaceWebMcpTools').then(m => m.buildSemanticSpaceWebMcpToolBuilders(findWebToolContract)))
 const CAMERA_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCamera, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCamera], () => import('./cameraWebMcpTools').then(m => m.buildCameraWebMcpToolBuilders(findWebToolContract)))
 const XR_ANIMATION_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalAnimation], () => import('./xrAnimationWebMcpTools').then(m => m.buildXrAnimationWebMcpToolBuilders(findWebToolContract)))
 const MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMotionControl, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalMotionControl], () => import('./motionControlWebMcpTools').then(m => m.buildMotionControlWebMcpToolBuilders(findWebToolContract)))
@@ -534,6 +537,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS,
   ...GAME_MODE_WEB_MCP_TOOL_BUILDERS,
   ...FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS,
+  ...lazyToolBuilders(Object.values(EVIDENCE_ANALYSIS_TOOL_IDS), () => import('./evidenceAnalysisWebMcpTools').then(m => m.buildEvidenceAnalysisWebMcpToolBuilders())),
   ...IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS,
   ...CITY_SIM_WEB_MCP_TOOL_BUILDERS,
   ...STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS,
@@ -547,6 +551,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...lazyToolBuilders(Object.values(DURABLE_RUN_AGENT_READY_TOOL_IDS), () => import('./durableRunWebMcpTools').then(m => m.buildDurableRunWebMcpToolBuilders(findWebToolContract))),
   ...lazyToolBuilders(Object.values(PYTHON_LEARNING_TOOL_IDS), () => import('../python-learning/learningWebMcp').then(m => m.buildPythonLearningWebMcpToolBuilders(findWebToolContract))),
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
+  ...SEMANTIC_SPACE_WEB_MCP_TOOL_BUILDERS,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),

@@ -47,6 +47,8 @@ export type AgenticGraphStorageWorkerEnv = {
   AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE?: string
   /** Exact browser origins; credentials belong only in Worker secrets. */
   AGENTIC_OS_STORAGE_OAUTH_ORIGINS?: string
+  /** Local development only: allow HTTP loopback origins on runtime-selected ports. */
+  AGENTIC_OS_STORAGE_OAUTH_ALLOW_LOOPBACK_PORTS?: string
   AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID?: string
   AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET?: string
   AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID?: string

@@ -41,13 +41,14 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { createThreeFrameResolutionBudget } from './threeRendererLifecycle'
 import { isVideoSequenceRecorderLeased } from '@/components/timeline/videoSequenceRecorderLifecycle'
 
-export function OverlayFrameSync({ enabled, scheduleRef }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null> }) {
+export function OverlayFrameSync({ enabled, scheduleRef, onResolutionChange }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null>; onResolutionChange: (ratio: number) => void }) {
   const resolutionBudget = React.useMemo(createThreeFrameResolutionBudget, [])
   useFrame((state, delta) => {
     const ratio = resolutionBudget.sample(delta, state.viewport.dpr, state.viewport.initialDpr,
       state.gl.xr.enabled && !state.gl.xr.isPresenting && state.frameloop === 'always' && !isVideoSequenceRecorderLeased()
       && (typeof document === 'undefined' || document.visibilityState === 'visible'))
-    if (ratio !== null) state.setDpr(ratio)
+    // Canvas must own the admitted DPR; frame-local setDpr races its prop on each render.
+    if (ratio !== null) onResolutionChange(ratio)
     if (!enabled) return
     try {
       scheduleRef.current?.()
@@ -404,9 +405,9 @@ export function CanvasXrEntryPanel({
       <section
         aria-label="XR camera fallback"
         data-kg-canvas-xr-fallback="monocular-capture"
-        className="absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-2 shadow-sm backdrop-blur"
+        className="absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-2 shadow-[var(--kg-shadow-raised)] backdrop-blur"
       >
-        <p className="max-w-48 text-[11px] text-[var(--kg-text-secondary)]">
+        <p className="max-w-48 text-xs text-[var(--kg-text-secondary)]">
           Immersive XR is unavailable. Continue through the existing local camera and Motion Control owner.
         </p>
         <button
@@ -432,7 +433,7 @@ export function CanvasXrEntryPanel({
           {...capabilityDataAttributes}
         data-kg-canvas-xr-spatial-fidelity={spatialRuntimeFidelity}
         data-kg-canvas-xr-spatial-runtime={spatialRuntimeStatus}
-        className="absolute left-1/2 top-14 z-[90] -translate-x-1/2 rounded-md bg-slate-900/82 px-4 py-1 text-xs font-medium text-slate-100 shadow-sm backdrop-blur"
+        className="absolute left-1/2 top-14 z-[90] -translate-x-1/2 rounded-md bg-slate-900/82 px-4 py-1 text-xs font-medium text-slate-100 shadow-[var(--kg-shadow-raised)] backdrop-blur"
       >
         <output>{readSpatialCaptureToolLabel(spatialTool)}</output>
       </section>
@@ -464,7 +465,7 @@ export function CanvasXrEntryPanel({
         data-kg-canvas-xr-session-mode={sessionMode}
         data-kg-canvas-xr-ar-supported={sessionSupport['immersive-ar'] === true ? '1' : '0'}
         data-kg-canvas-xr-vr-supported={sessionSupport['immersive-vr'] === true ? '1' : '0'}
-        className={`absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-1 shadow-sm backdrop-blur ${UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME}`}
+        className={`absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-1 shadow-[var(--kg-shadow-raised)] backdrop-blur ${UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME}`}
       >
         {bothModesSupported ? (
           <fieldset className="contents" aria-label="XR session type">

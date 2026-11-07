@@ -183,7 +183,7 @@ export default function ContractsDiagnostics() {
 
         <section className="mt-4 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4">
           <h2 className="text-sm font-semibold">Full Snapshot</h2>
-          <pre className={`mt-2 ${UI_RESPONSIVE_COMPACT_VIEWPORT_SCROLL_PANEL_CLASSNAME} rounded-md bg-black/10 p-3 text-[11px] leading-relaxed ${UI_THEME_TOKENS.text.secondary}`}>
+          <pre className={`mt-2 ${UI_RESPONSIVE_COMPACT_VIEWPORT_SCROLL_PANEL_CLASSNAME} rounded-md bg-black/10 p-3 text-xs leading-relaxed ${UI_THEME_TOKENS.text.secondary}`}>
             {JSON.stringify({ contract, diagnostics }, null, 2)}
           </pre>
         </section>

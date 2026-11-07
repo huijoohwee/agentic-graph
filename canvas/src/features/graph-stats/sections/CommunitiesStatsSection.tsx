@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { AutoHeightMiniBarChart } from '@/features/panels/views/DatasetInspectorMiniViz'
@@ -140,21 +141,21 @@ export default function CommunitiesStatsSection({
                 value={communityTokenFilter}
                 onChange={setCommunityTokenFilter}
               />
-              <select
+              <PanelSelect
                 className={[
                   uiPanelMicroLabelTextSizeClass,
                   uiPanelTextFontClass,
                   `${UI_RESPONSIVE_COMPACT_INLINE_CONTROL_CLASSNAME} rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text}`,
                 ].join(' ')}
                 value={communityTokenSort}
-                onChange={e => {
-                  const raw = e.target.value === 'alpha' ? 'alpha' : 'freq'
+                onValueChange={selectedValueInput => {
+                  const raw = selectedValueInput === 'alpha' ? 'alpha' : 'freq'
                   setCommunityTokenSort(raw)
                 }}
               >
                 <option value="freq">{UI_COPY.statsSortByCountLabel}</option>
                 <option value="alpha">{UI_COPY.statsSortAzLabel}</option>
-              </select>
+              </PanelSelect>
               <section className={`inline-flex rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} overflow-hidden`}>
                 <button
                   type="button"

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
@@ -51,6 +54,10 @@ import {
   presentationHarness,
   withEnvironment,
 } from './helpers/flightSimMapLibrePresentationHarness'
+
+const geographicReference = validateFlightSimGeographicReference(
+  (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
+)!
 
 const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve))
 const applyProviderStyleImmediately = (apply: () => void) => {
@@ -140,7 +147,8 @@ test('native MapLibre presents ready tick zero before expensive store followers'
       { source: 'fixed-follow', view: 'chase' },
       false,
       requestId,
-    ))
+      null, geographicReference,
+    )!)
     events.push('maplibre')
   })
   runtime.subscribePresenter('surface', () => {
@@ -175,7 +183,7 @@ test('native MapLibre presents ready tick zero before expensive store followers'
   assert.equal(harness.listenerCount(), 0)
   assert.equal(
     harness.presentedRevision(),
-    `${ready.runId}:${ready.tick}:ready:0:${spatialProfile.id}:fixed-follow:chase:operator:no-environment:day`,
+    `${ready.runId}:${ready.tick}:ready:0:${spatialProfile.id}:${JSON.stringify(geographicReference)}:fixed-follow:chase:operator:no-environment:day`,
   )
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
   assert.deepEqual(events, ['maplibre', 'hud'])

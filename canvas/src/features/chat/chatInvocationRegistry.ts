@@ -318,7 +318,7 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     group: 'Chat skill',
     sourcePath: 'canvas/src/features/chat/chatSkillRegistry.ts',
     kind: 'skill' as const,
-    keywords: option.keywords,
+    keywords: [...option.keywords, option.summary],
   })),
   ...(['/', '#', '@'] as const).map((prefix): ChatInvocationCatalogEntry => ({
     id: `native:widget:${prefix}`, label: 'Widget Cards', token: prefix === '/' ? '/canvas.widget' : prefix === '#' ? '#widget' : '@dashboard',

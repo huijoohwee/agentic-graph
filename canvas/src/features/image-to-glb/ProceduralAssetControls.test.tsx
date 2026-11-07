@@ -26,9 +26,9 @@ export async function testProceduralControlsRetainInvalidDraftAndPriorModel() {
     useGraphStore.setState({ markdownDocumentName: '/controls.md', markdownDocumentText: '# Source' })
     await act(async () => render())
     assert.equal(doc.querySelectorAll('input[type="number"]').length, 3)
-    assert.ok(doc.querySelector('input[type="color"]'))
+    assert.ok(doc.querySelector('button[data-kg-color-picker]'))
     assert.ok(doc.querySelector('input[type="checkbox"]'))
-    assert.ok(doc.querySelector('select'))
+    assert.ok(doc.querySelector('button[data-kg-select]'))
     const width = doc.querySelector('input[type="number"]') as HTMLInputElement
     await act(async () => Simulate.change(width, { target: { valueAsNumber: 2 } } as never))
     assert.equal(width.value, '2')

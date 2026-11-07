@@ -101,16 +101,6 @@ const INDEX_SPECS: ReadonlyArray<IndexSpec> = [
     apiFamily: 'Maps API',
   },
   {
-    sourceFile: 'canvas/src/features/panels/views/deerflowApiDocs.ts',
-    outputFilename: 'agentic-graph-deerflow-gateway-api-reference-codebase-index.md',
-    endpointPrefix: 'POST /api/llm/chat/completions',
-    provider: 'DeerFlow Gateway',
-    apiFamily: 'Gateway API (OpenAI-compatible)',
-    baseUrl: 'http://localhost:8001',
-    auth: 'None (local gateway handles own auth)',
-    asyncPattern: 'stream',
-  },
-  {
     sourceFile: 'canvas/src/features/integrations/geminiVideoGenerationSsot.ts',
     outputFilename: 'agentic-graph-gemini-veo-video-generation-api-reference-codebase-index.md',
     endpointPrefix: 'POST /v1beta/models/{model}:predictLongRunning',
@@ -129,7 +119,6 @@ const EXPORT_NAME_MAP: Record<string, string> = {
   'canvas/src/features/integrations/byteplusImageGenerationSsot.ts': 'BYTEPLUS_IMAGE_GENERATION_DOC_ROWS',
   'canvas/src/features/integrations/byteplusVideoGenerationSsot.ts': 'BYTEPLUS_VIDEO_GENERATION_DOC_ROWS',
   'canvas/src/features/integrations/grabMapsSsot.rows.ts': 'GRABMAPS_DOC_ROWS',
-  'canvas/src/features/panels/views/deerflowApiDocs.ts': 'DEERFLOW_API_REQUEST_DOC_ENTRIES',
   'canvas/src/features/integrations/geminiVideoGenerationSsot.ts': 'GEMINI_VIDEO_GENERATION_DOC_ROWS',
 }
 

@@ -8,7 +8,7 @@ import type { MediaOverlayNode } from '@/lib/render/mediaOverlayPool'
 import { startMediaOverlayLayoutLoop2d } from '@/lib/render/mediaOverlayLayoutLoop2d'
 import { normalizeRichMediaPanelDensity } from '@/lib/render/richMediaSsot'
 import { readOverlaySizingConfigForDensity, type OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
-import { readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
@@ -120,8 +120,8 @@ export function useDesignCanvasOverlayRuntime(args: OverlayRuntimeArgs) {
       getElementForId: id => designMediaOverlayElsRef.current.get(id) || null,
       getPanelSizeForId: id => {
         const node = localGraphNodeById?.get(id) || null
-        const props = node?.properties && typeof node.properties === 'object' && !Array.isArray(node.properties) ? node.properties as Record<string, unknown> : null
-        return readStableRichMediaPanelSize(props)
+        const size = readRichMediaOverlayFrameSize(node)
+        return size ? { w: size.width, h: size.height } : null
       },
       getNodeWorldCenterForId: id => {
         const node = localGraphNodeById?.get(id) || null

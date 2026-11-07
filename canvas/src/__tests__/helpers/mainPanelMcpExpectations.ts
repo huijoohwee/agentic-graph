@@ -151,7 +151,7 @@ import {
 } from '@/features/panels/views/videodbMcpApiDocs'
 
 const readRenderedFormValues = (container: Element): string => (
-  Array.from(container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select'))
+  Array.from(container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement>('input, textarea, button[data-kg-select]'))
     .map(el => el.value)
     .join('\n')
 )
@@ -187,11 +187,11 @@ export function assertMcpHubRendersConfigurableValueControls(container: Element)
     ['browserMcp.agent_config', 'textarea'],
     ['openaiMcp.server_label', 'input'],
     ['openaiMcp.server_url', 'input'],
-    ['openaiMcp.transport', 'select'],
+    ['openaiMcp.transport', 'button[data-kg-select]'],
     ['openaiMcp.allowed_tools', 'textarea'],
     ['openaiMcp.require_approval', 'input'],
     ['openaiMcp.responses_model', 'input'],
-    ['openaiMcp.auth_mode', 'select'],
+    ['openaiMcp.auth_mode', 'button[data-kg-select]'],
     ['openaiMcp.api_key_env', 'input'],
     ['openaiMcp.vector_store_env', 'input'],
     ['openaiMcp.server_port', 'input[type="number"]'],

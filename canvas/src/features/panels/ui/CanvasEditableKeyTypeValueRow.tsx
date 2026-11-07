@@ -9,6 +9,7 @@ export type CanvasEditableKeyTypeValueRowProps = KeyTypeValueRowProps
 
 export function CanvasEditableKeyTypeValueRow({
   keyNode,
+  help,
   typeNode,
   valueNode,
   align,
@@ -21,7 +22,7 @@ export function CanvasEditableKeyTypeValueRow({
   isActive,
   useMarkdownSigilBridge = true,
 }: CanvasEditableKeyTypeValueRowProps) {
-  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density, undefined, help)
 
   return (
     <KeyTypeValueStaticRow

@@ -33,7 +33,7 @@ export function TypeMenu<T extends string>(props: TypeMenuProps<T>) {
       className={
         [
           UI_RESPONSIVE_TYPE_MENU_PANEL_CLASSNAME,
-          'rounded border shadow-sm p-1 z-20',
+          'rounded border shadow-[var(--kg-shadow-overlay)] p-1 z-20',
           UI_THEME_TOKENS.panel.bg,
           UI_THEME_TOKENS.panel.border,
           props.className || '',

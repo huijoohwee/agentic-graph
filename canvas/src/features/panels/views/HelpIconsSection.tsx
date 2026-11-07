@@ -1,3 +1,4 @@
+import { MainPanelIconButton } from '../ui/MainPanelIconButton'
 import React from 'react';
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection';
 import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows';
@@ -131,13 +132,9 @@ export function HelpIconsSection({ collapsed, onToggle, onOpenSettingsTab }: Hel
             dataKgAnchor={UI_ANCHORS.settingsUiIconScale}
             valueNode={renderHelpIconValue('iconDensity.settings', (
               <HelpKtvActionGroup>
-                <button
-                  type="button"
+                <MainPanelIconButton iconKey="mainPanel.settings" label={UI_COPY.openSettingsUiDensityIconsButton}
                   className={`App-toolbar__btn ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${uiToolbarButtonMutedClassName}`}
-                  onClick={onOpenSettingsTab}
-                >
-                  {UI_COPY.openSettingsUiDensityIconsButton}
-                </button>
+                  onClick={onOpenSettingsTab} />
               </HelpKtvActionGroup>
             ))}
           />

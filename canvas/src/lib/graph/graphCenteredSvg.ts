@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { getNodeRenderRadius } from '@/lib/graph/schema'
@@ -251,11 +252,11 @@ export function exportGraphAsCenteredSvgMarkup(args: {
               `<circle data-role="node-circle" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${escapeXml(nodeStroke)}" stroke-width="1">` +
                 `<animate attributeName="r" values="${r};${pulseR};${r}" dur="1.6s" repeatCount="indefinite" begin="${begin}s"/>` +
               `</circle>` +
-              `<text data-role="node-label" x="${p.x}" y="${p.y - r - labelPadY}" font-size="${fontSizePx}" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" text-anchor="middle" fill="${escapeXml(labelFill)}">${label}</text>` +
+              `<text data-role="node-label" x="${p.x}" y="${p.y - r - labelPadY}" font-size="${fontSizePx}" font-family="${UI_FONT_SANS}" text-anchor="middle" fill="${escapeXml(labelFill)}">${label}</text>` +
             `</g>`
           : `<g data-node-id="${escapeXml(id)}">` +
               `<circle data-role="node-circle" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${escapeXml(nodeStroke)}" stroke-width="1"/>` +
-              `<text data-role="node-label" x="${p.x}" y="${p.y - r - labelPadY}" font-size="${fontSizePx}" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" text-anchor="middle" fill="${escapeXml(labelFill)}">${label}</text>` +
+              `<text data-role="node-label" x="${p.x}" y="${p.y - r - labelPadY}" font-size="${fontSizePx}" font-family="${UI_FONT_SANS}" text-anchor="middle" fill="${escapeXml(labelFill)}">${label}</text>` +
             `</g>`,
       )
     }

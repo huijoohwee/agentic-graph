@@ -259,6 +259,10 @@ npm run goal:run
 
 This repository is the Dev source of truth and the production release source. Normal implementation and pull-request validation stay in Dev. After protected integration, an operator may manually dispatch `.github/workflows/release.yml` for an exact reviewed `main` revision; the protected workflow builds, attests, deploys, browser-verifies, records receipts, and only then publishes the generated mirror. The public surfaces are `https://airvio.co/` and `https://airvio.co/agentic-graph`.
 
+This public repository remains canonical. `agentic-graph-private-archive` is a private,
+frozen history copy, never a build or release source. Follow the [shared private archive
+policy](https://github.com/huijoohwee/agentic-os/blob/main/guides/PRIVATE-ARCHIVE-POLICY.md).
+
 ## Workspace surfaces
 
 | Surface | Purpose |
@@ -323,6 +327,8 @@ npm run dev -- --host 127.0.0.1
 Use `npm run dev:apex` from that same checkout for the supervised Apex runtime, and use `npm run dev:latest` there only when clean `main` needs a safe fast-forward. A clean linked `main` release worktree is not a canonical Dev substitute.
 
 The same `npm run dev` or `npm run dev:apex` command may run from a registered `agent/<device>/<semantic-scope>` worktree for an isolated task preview. The source guard selects task mode automatically; that preview is not canonical Dev or release proof. If `$GITHUB_ROOT/agentic-graph` is occupied by a task branch or `main` is registered elsewhere, preserve the lane and restore canonical ownership through the repository lifecycle workflow before claiming canonical Dev.
+
+For the real HackaMap SSOT in the shared table surface, run `node ./scripts/run-hackamap-multi-dim-table.mjs --host 127.0.0.1 --port 4177`. The launcher reads `../hackamap/site/hackamap-ssot.md`, writes a temporary source-backed `agentic-graph-hackamap.md` seed wrapper under the OS temp directory, and prints the exact loopback URL that opens directly in Multi-dimensional Table mode.
 
 Use focused checks for the behavior being changed:
 

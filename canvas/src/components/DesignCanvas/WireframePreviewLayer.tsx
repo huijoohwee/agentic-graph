@@ -77,7 +77,7 @@ export function DesignCanvasWireframePreviewLayer(props: {
                     strokeWidth={1}
                     strokeOpacity={0.7}
                   />
-                  <text x={preview.innerX + 10} y={preview.innerY + 13} fill="var(--kg-text-tertiary)" fontSize={10} fontWeight={600}>
+                  <text x={preview.innerX + 10} y={preview.innerY + 13} fill="var(--kg-text-tertiary)" fontSize={12} fontWeight={600}>
                     {preview.titleChip}
                   </text>
                   {preview.tag === 'SVG' ? (
@@ -110,7 +110,7 @@ export function DesignCanvasWireframePreviewLayer(props: {
             ) : (
               <g opacity={0.82}>
                 {preview.title ? (
-                  <text x={14} y={34} fill="var(--kg-text-tertiary)" fontSize={10} fontWeight={600}>
+                  <text x={14} y={34} fill="var(--kg-text-tertiary)" fontSize={12} fontWeight={600}>
                     {truncateTextWithEllipsis(preview.title, preview.titleMaxChars)}
                   </text>
                 ) : null}

@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_PANEL_FIELD_INPUT_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -52,15 +53,15 @@ export function GrabMapsDiscoverySettingsGrid(props: {
               </span>
               <span className={`${props.uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>{typeLabel}</span>
               {field.fieldType === 'select' && spec?.options?.length ? (
-                <select
+                <PanelSelect
                   value={valueText}
-                  onChange={event => patch(String(event.target.value || '').trim())}
+                  onValueChange={selectedValueInput => patch(String(selectedValueInput || '').trim())}
                   className={`${UI_RESPONSIVE_COMPACT_PANEL_FIELD_INPUT_CLASSNAME} rounded border ${props.uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.text.primary}`}
                 >
                   {spec.options.map(option => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </select>
+                </PanelSelect>
               ) : field.fieldType === 'number' ? (
                 <input
                   type="number"

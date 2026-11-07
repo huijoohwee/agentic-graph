@@ -14,13 +14,10 @@ export type SettingsRowStatusState = {
   chatHealthDetails: string | null
   chatHealthOk: boolean | null
   chatHistoryPathStatus: string | null
-  deerFlowHealthDetails: string | null
-  deerFlowHealthOk: boolean | null
   grabMapsHealthDetails: string | null
   grabMapsHealthOk: boolean | null
   isCheckingBytePlusHealth: boolean
   isCheckingBytePlusVideoModelPreview: boolean
-  isCheckingDeerFlowHealth: boolean
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
@@ -44,7 +41,6 @@ export type SettingsRowActions = {
   checkBytePlusHealth: () => void
   checkBytePlusVideoModelPreview: () => void
   checkChatHealth: () => void
-  checkDeerFlowHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>
   createAndSelectChatHistoryFile: () => Promise<unknown>
   createAndSelectAgenticGraphFile: () => Promise<unknown>

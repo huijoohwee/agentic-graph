@@ -1,3 +1,5 @@
+import { useWorkspaceDataViewMutations } from './useWorkspaceDataViewMutations'
+import { WorkspaceDataViewCalendarSurface } from './WorkspaceDataViewCalendarSurface'
 import React from 'react'
 import { useWorkspaceDataViewConfig } from './useWorkspaceDataViewConfig'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
@@ -20,8 +22,8 @@ import {
   type MarkdownDataViewColumnKind,
 } from '@/features/markdown/ui/markdownDataViewModel'
 import { serializeMarkdownDataViewToTableLines } from '@/features/markdown/ui/markdownDataViewSerialize'
-import { MarkdownDataViewKanbanView } from '@/features/markdown/ui/MarkdownDataViewKanbanView'
-import { MarkdownDataViewTableView } from '@/features/markdown/ui/MarkdownDataViewTableView'
+const MarkdownDataViewKanbanView = React.lazy(() => import('@/features/markdown/ui/MarkdownDataViewKanbanView').then(module => ({ default: module.MarkdownDataViewKanbanView })))
+const MarkdownDataViewTableView = React.lazy(() => import('@/features/markdown/ui/MarkdownDataViewTableView').then(module => ({ default: module.MarkdownDataViewTableView })))
 import {
   columnTypeToBaseKind,
   defaultColumnTypeForInferredKind,
@@ -65,13 +67,14 @@ const MarkdownWorkspaceHtmlViewerPaneLazy = React.lazy(
     import('./MarkdownWorkspaceHtmlViewerPane').then(mod => ({ default: mod.MarkdownWorkspaceHtmlViewerPane })),
 )
 export type MarkdownWorkspaceDerivedViewerKind = 'markdown' | 'html' | 'json'
-export type MarkdownWorkspaceDerivedViewerMode = 'read' | 'table' | 'multiDimTable' | 'kanban' | 'geospatial'
+export type MarkdownWorkspaceDerivedViewerMode = 'read' | 'table' | 'multiDimTable' | 'kanban' | 'calendar' | 'geospatial'
 
 export type WorkspaceDataViewSource = { id: string; label: string; view: MarkdownDataView;
   selectedRowId?: string | null; onActivateRow?: (rowId: string) => void }
 
 export function MarkdownWorkspaceDerivedViewer(props: {
   dataViewSource?: WorkspaceDataViewSource
+  canvasDataViewSurface?: boolean
   viewerKind: MarkdownWorkspaceDerivedViewerKind
   viewerMode: MarkdownWorkspaceDerivedViewerMode
   onChangeViewerMode?: (mode: MarkdownWorkspaceDerivedViewerMode) => void
@@ -239,8 +242,13 @@ export function MarkdownWorkspaceDerivedViewer(props: {
   }, [candidates, selectedTableId])
 
   const { viewConfig, setViewConfig, commitViewConfig } = useWorkspaceDataViewConfig(
-    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource,
+    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource, !!props.canvasDataViewSurface,
   )
+  const effectiveViewerMode = props.canvasDataViewSurface && viewConfig
+    ? viewConfig.layout === 'calendar' ? 'calendar'
+      : viewConfig.layout === 'kanban' ? 'kanban'
+        : viewConfig.graphEnabled ? 'multiDimTable' : 'table'
+    : props.viewerMode
 
   const canMutate = !props.disableViewerMutations && props.viewerKind !== 'json' && !usingLooseTables && !selected?.readonly
 
@@ -250,7 +258,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
 
   const displayedView = React.useMemo((): MarkdownDataView | null => {
     if (!selected) return null
-    const base: MarkdownDataView = viewConfig?.groupByColumnId ? { ...selected.view, groupByColumnId: viewConfig.groupByColumnId } : selected.view
+    const base: MarkdownDataView = viewConfig ? { ...selected.view, groupByColumnId: viewConfig.groupByColumnId } : selected.view
     return applyWorkspaceDataViewQuery({ view: base, viewConfig, state: headerState })
   }, [headerState.searchQuery, headerState.sortMode, headerState.visibleGroups, selected, viewConfig])
 
@@ -258,220 +266,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
   const visibleColumnIds = viewConfig?.visibleColumnIds ?? structuredSourcePresentation?.visibleColumnIds ?? null
   const columnTypesById = viewConfig?.columnTypesById ?? null
 
-  const onUpdateCell = React.useCallback(
-    (args: { rowId: string; columnId: string; nextValue: string }) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = updateMarkdownDataViewCell({
-        view: selected.view,
-        rowId: args.rowId,
-        columnId: args.columnId,
-        nextValue: args.nextValue,
-      })
-      if (!next) return
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onNewRecord = React.useCallback(
-    (seed?: Partial<Record<string, string>>) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = appendMarkdownDataViewRow({ view: selected.view, seed })
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onReorderRows = React.useCallback(
-    (args: {
-      orderedRowIds: readonly string[]
-      rowPatch?: { rowId: string; columnId: string; nextValue: string }
-    }) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = reorderMarkdownDataViewRows({
-        view: selected.view,
-        orderedRowIds: args.orderedRowIds,
-        rowPatch: args.rowPatch,
-      })
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onActivateRow = React.useCallback(
-    (rowId: string) => {
-      if (props.dataViewSource) { props.dataViewSource.onActivateRow?.(rowId); return }
-      if (!selected) return
-      const line = rowIdToMarkdownLineInTable({
-        rowId,
-        tableStartLine: selected.table.startLine,
-        tableEndLine: selected.table.endLine,
-      })
-      if (line == null) return
-      props.onRevealLineInEditor(line)
-    },
-    [props, selected],
-  )
-
-  const onAddColumn = React.useCallback(
-    (args: { name: string; columnType: MarkdownDataViewColumnType }) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = appendMarkdownDataViewColumn({
-        view: selected.view,
-        name: args.name,
-        kind: columnTypeToBaseKind(args.columnType),
-      })
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-
-      const newColId = next.columns[next.columns.length - 1]?.id
-      if (!newColId) return
-      setViewConfig(prev => {
-        if (!prev) return prev
-        const nextVisible = prev.visibleColumnIds ? [...prev.visibleColumnIds, newColId] : prev.visibleColumnIds
-        const nextTypes = { ...(prev.columnTypesById ?? {}), [newColId]: args.columnType }
-        return { ...prev, visibleColumnIds: nextVisible, columnTypesById: nextTypes }
-      })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onDuplicateColumn = React.useCallback(
-    (columnId: string) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = duplicateMarkdownDataViewColumn({
-        view: selected.view,
-        columnId,
-      })
-      if (next === selected.view) return
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-      const nextColumnId = next.columns.find(column => !selected.view.columns.some(existing => existing.id === column.id))?.id
-      if (!nextColumnId) return
-      setViewConfig(prev => {
-        if (!prev) return prev
-        return duplicateWorkspaceDataViewConfigColumn({
-          viewConfig: prev,
-          sourceColumnId: columnId,
-          nextColumnId,
-        })
-      })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onDeleteColumn = React.useCallback(
-    (columnId: string) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = deleteMarkdownDataViewColumn({
-        view: selected.view,
-        columnId,
-      })
-      if (next === selected.view) return
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-      setViewConfig(prev => {
-        if (!prev) return prev
-        return removeWorkspaceDataViewConfigColumn({
-          viewConfig: prev,
-          columnId,
-          nextGroupByColumnId: next.groupByColumnId,
-        })
-      })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onRenameColumn = React.useCallback(
-    (columnId: string, nextName: string) => {
-      if (!selected) return
-      if (!canMutate) return
-      const next = renameMarkdownDataViewColumn({
-        view: selected.view,
-        columnId,
-        nextName,
-      })
-      if (next === selected.view) return
-      const replacementLines = serializeMarkdownDataViewToTableLines(next)
-      props.onReplaceLineRange({ startLine: selected.table.startLine, endLine: selected.table.endLine, replacementLines })
-    },
-    [canMutate, props, selected],
-  )
-
-  const onChangeColumnType = React.useCallback(
-    (args: { columnId: string; nextType: MarkdownDataViewColumnType }) => {
-      if (!selected) return
-      setViewConfig(prev => {
-        if (!prev) return prev
-        const col = selected.view.columns.find(c => c.id === args.columnId)
-        const defaultType = col ? defaultColumnTypeForInferredKind(col.kind) : 'text'
-        const nextMap = { ...(prev.columnTypesById ?? {}) }
-        if (args.nextType === defaultType) delete nextMap[args.columnId]
-        else nextMap[args.columnId] = args.nextType
-        const normalized = Object.keys(nextMap).length ? nextMap : null
-        return { ...prev, columnTypesById: normalized }
-      })
-    },
-    [selected],
-  )
-
-  const onHideColumnInView = React.useCallback(
-    (columnId: string) => {
-      if (!selected) return
-      setViewConfig(prev => {
-        if (!prev) return prev
-        const allIds = selected.view.columns.map(c => c.id)
-        const base = prev.visibleColumnIds ? prev.visibleColumnIds : allIds
-        const next = base.filter(id => id !== columnId)
-        return { ...prev, visibleColumnIds: next }
-      })
-    },
-    [selected],
-  )
-
-  const onUpsertColumnFilter = React.useCallback(
-    (args: { columnId: string; columnKind: MarkdownDataViewColumnKind; op: WorkspaceDataViewFilterOp; value: string }) => {
-      if (!selected) return
-      const value = String(args.value ?? '').trim()
-      setViewConfig(prev => {
-        if (!prev) return prev
-        const makeId = () => {
-          if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-          return `id_${Math.random().toString(16).slice(2)}_${Date.now()}`
-        }
-        const groups = prev.filterGroups.length ? prev.filterGroups : [{ id: 'g0', rules: [] }]
-        const first = groups[0]
-        const rest = groups.slice(1)
-        const remaining = first.rules.filter(r => r.columnId !== args.columnId)
-        const nextRules = value
-          ? [...remaining, { id: makeId(), columnId: args.columnId, columnKind: args.columnKind, op: args.op, value }]
-          : remaining
-        return { ...prev, filterGroups: [{ ...first, rules: nextRules }, ...rest] }
-      })
-    },
-    [selected],
-  )
-
-  const onSetColumnSort = React.useCallback(
-    (args: { columnId: string; direction: 'asc' | 'desc' }) => {
-      if (!selected) return
-      if (args.columnId !== selected.view.titleColumnId) return
-      setHeaderState(prev => ({
-        ...prev,
-        sortMode: args.direction === 'desc' ? 'title_desc' : 'title_asc',
-      }))
-    },
-    [selected],
-  )
+  const { onUpdateCell, onNewRecord, onReorderRows, onActivateRow, onAddColumn, onDuplicateColumn, onDeleteColumn, onRenameColumn, onChangeColumnType, onHideColumnInView, onUpsertColumnFilter, onSetColumnSort } = useWorkspaceDataViewMutations({ selected, canMutate, setViewConfig, setHeaderState, props })
 
   const handleSelectGeospatialView = React.useCallback(() => {
     setViewConfig(prev => {
@@ -485,33 +280,31 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     if (!props.dataViewSource) void setGeospatialModeEnabled(true).catch(() => void 0)
   }, [props])
 
-  const openViewSettingsPanel = React.useCallback((panel: 'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset') => {
-    setSettingsPanel(panel)
-    emitFloatingPanelOpen({ tab: 'view', open: true })
-  }, [])
-
   const viewSettingsBinding = React.useMemo<WorkspaceDataViewFloatingBinding | null>(() => {
     if (!selected || !viewConfig) return null
     const registrationId = hashSignatureParts([
       'workspace-data-view-floating-settings',
       props.activeDocumentPath ?? '',
       selected.id,
-      props.viewerMode,
+      effectiveViewerMode,
     ])
     return {
       registrationId,
       contextLabel: selected.label,
       activePanel: settingsPanel,
       canMutate,
-      viewerLayout: props.viewerMode === 'kanban' ? 'kanban' : 'table',
-      viewerMode: props.viewerMode === 'kanban'
+      viewerLayout: effectiveViewerMode === 'calendar' ? 'calendar' : effectiveViewerMode === 'kanban' ? 'kanban' : 'table',
+      viewerMode: effectiveViewerMode === 'calendar' ? 'calendar' : effectiveViewerMode === 'kanban'
         ? 'kanban'
-        : props.viewerMode === 'multiDimTable'
+        : effectiveViewerMode === 'multiDimTable'
           ? 'multiDimTable'
           : 'table',
       allowMultiDimLayout: true,
+      sourceView: selected.view,
+      viewScope: { activeDocumentPath: props.activeDocumentPath ?? null, tableId: selected.id, ephemeral: !!props.dataViewSource },
+      onSelectSavedView: next => props.onChangeViewerMode?.(next.layout === 'calendar' ? 'calendar' : next.layout === 'kanban' ? 'kanban' : next.graphEnabled ? 'multiDimTable' : 'table'),
       columns: selected.view.columns,
-      groupByColumnId: viewConfig.groupByColumnId || selected.view.groupByColumnId || null,
+      groupByColumnId: viewConfig.groupByColumnId,
       viewConfig,
       setViewConfig: commitViewConfig,
       onChangeLayout: layout => {
@@ -521,13 +314,13 @@ export function MarkdownWorkspaceDerivedViewer(props: {
         if (viewConfig) {
           commitViewConfig({
             ...viewConfig,
-            layout: mode === 'kanban' ? 'kanban' : 'table',
+            layout: mode === 'calendar' ? 'calendar' : mode === 'kanban' ? 'kanban' : 'table',
             graphEnabled: mode === 'multiDimTable',
             geospatialViewEnabled: false,
           })
         }
         props.onChangeViewerMode?.(mode)
-        if (!props.dataViewSource) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
+        if (!props.dataViewSource && !props.canvasDataViewSurface) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
       },
       onSelectGeospatialView: handleSelectGeospatialView,
       onReset: onResetDataView,
@@ -538,7 +331,6 @@ export function MarkdownWorkspaceDerivedViewer(props: {
       onRenameColumn: canMutate ? onRenameColumn : undefined,
     }
   }, [
-    canMutate,
     canMutate,
     handleSelectGeospatialView,
     onAddColumn,
@@ -551,9 +343,15 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     settingsPanel,
     commitViewConfig,
     viewConfig,
+    effectiveViewerMode,
   ])
 
-  useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)
+  const activateViewSettings = useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)
+  const openViewSettingsPanel = React.useCallback((panel: 'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset') => {
+    activateViewSettings(panel)
+    setSettingsPanel(panel)
+    emitFloatingPanelOpen({ tab: 'view', open: true })
+  }, [activateViewSettings])
 
   if (props.floatingPanelRegistrationOnly === true) return null
 
@@ -595,7 +393,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           className={`h-full w-full overflow-auto ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} ${props.uiPanelMonospaceTextClass}`}
           aria-label="JSON viewer"
         >
-          <pre className="m-0 p-3 text-[11px] leading-snug whitespace-pre-wrap break-words">{props.markdownText}</pre>
+          <pre className="m-0 p-3 text-xs leading-snug whitespace-pre-wrap break-words">{props.markdownText}</pre>
         </section>
       )
     }
@@ -645,10 +443,10 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     <section className={`${UI_RESPONSIVE_WORKSPACE_DATA_VIEW_ROOT_CLASSNAME} h-full w-full flex flex-col`} aria-label="Workspace data view">
       <WorkspaceDataViewHeader
         title={props.title || 'Workspace'}
-        viewerMode={props.viewerMode}
+        viewerMode={effectiveViewerMode}
         canMutate={canMutate}
         columns={(selected?.view.columns ?? [])}
-        groupByColumnId={viewConfig?.groupByColumnId || selected?.view.groupByColumnId || null}
+        groupByColumnId={viewConfig ? viewConfig.groupByColumnId : selected?.view.groupByColumnId || null}
         state={headerState}
         onChangeState={setHeaderState}
         onChangeViewerMode={(mode) => props.onChangeViewerMode?.(mode)}
@@ -676,18 +474,24 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           <section className="p-4" aria-label="No data views">
             <p className={`${UI_THEME_TOKENS.text.tertiary} ${panelTypography.microLabelClass}`}>No eligible Markdown tables found.</p>
           </section>
-        ) : props.viewerMode === 'kanban' ? (
-          <MarkdownDataViewKanbanView
+        ) : (
+          <React.Suspense fallback={<p role="status" className="p-4">Loading data view…</p>}>
+          {effectiveViewerMode === 'calendar' && viewConfig ? (
+            <WorkspaceDataViewCalendarSurface view={displayedView || selected.view} config={viewConfig} onChangeConfig={commitViewConfig} canMutate={canMutate} onUpdateCell={onUpdateCell} onNewRecord={onNewRecord} />
+          ) : effectiveViewerMode === 'kanban' ? (
+            <MarkdownDataViewKanbanView
             view={displayedView || selected.view}
             visibleColumnIds={visibleColumnIds}
+            hiddenGroupIds={viewConfig?.hiddenGroupIds}
+            hideEmptyGroups={viewConfig?.hideEmptyGroups}
             canMutate={canMutate}
             onUpdateCell={onUpdateCell}
             onReorderRows={onReorderRows}
             onNewRecord={onNewRecord}
             onActivateRow={onActivateRow}
-          />
-        ) : (
-          <MarkdownDataViewTableView
+            />
+          ) : (
+            <MarkdownDataViewTableView
             view={displayedView || selected.view}
             visibleColumnIds={visibleColumnIds}
             columnTypesById={columnTypesById}
@@ -706,7 +510,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
             onSetColumnSort={onSetColumnSort}
             renderAllRows={selected.structuredSource === true}
             orientation={viewConfig?.orientation === 'columns' ? 'columns' : 'rows'}
-          />
+            />
+          )}
+          </React.Suspense>
         )}
       </main>
     </section>

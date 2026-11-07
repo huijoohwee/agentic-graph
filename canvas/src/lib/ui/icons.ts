@@ -28,7 +28,7 @@ export function getPillClass(
 ): string {
   const base = options.baseClass || ''
   const legendSize = options.legendTextSizeClass || 'text-xs'
-  const badgeSize = options.badgeTextSizeClass || 'text-[9px]'
+  const badgeSize = options.badgeTextSizeClass || 'text-xs'
   const sizeClass = variant === 'legend' ? legendSize : badgeSize
   const colorClass = options.textColorClass || ''
   const extra = options.extraClassName || ''
@@ -80,7 +80,7 @@ export function getBadgeChipClass(
   const defaultBase = `${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} rounded-full`
   const extraBase = options.baseClass || ''
   const base = extraBase ? `${defaultBase} ${normalizeBadgeChipBaseClassName(extraBase)}` : defaultBase
-  const sizeClass = options.textSizeClass || 'text-[9px]'
+  const sizeClass = options.textSizeClass || 'text-xs'
   const defaultStateClass =
     variant === 'selected'
       ? 'text-blue-700 bg-blue-50 border border-blue-300'

@@ -43,7 +43,7 @@ export function WorkspaceModeSelect<T extends string>(props: {
                   tabIndex={isSelected ? 0 : -1}
                   title={o.label}
                   className={[
-                    `${UI_RESPONSIVE_WORKSPACE_MODE_TAB_CLASSNAME} px-3 text-[10px] font-medium border-b-2 transition-colors`,
+                    `${UI_RESPONSIVE_WORKSPACE_MODE_TAB_CLASSNAME} px-3 text-xs font-medium border-b-2 transition-colors`,
                     isSelected
                       ? ['bg-[color:var(--kg-panel-bg)] text-[color:var(--kg-text-primary)] border-b-[color:var(--kg-accent,#3b82f6)]'].join(' ')
                       : ['bg-transparent text-[color:var(--kg-text-secondary)] border-b-transparent', UI_THEME_TOKENS.button.hoverBg].join(' '),
@@ -93,7 +93,7 @@ export function WorkspaceModeSelect<T extends string>(props: {
     <PanelSelect
       className={`kg-workspace-mode-select h-6 min-w-0 max-w-full rounded px-1 border-0 outline-none ${panelTypography.microLabelClass} font-medium ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${activeClass}`}
       value={props.value}
-      onChange={e => props.onChange(e.target.value as T)}
+      onValueChange={selectedValueInput => props.onChange(selectedValueInput as T)}
       aria-label={props.ariaLabel}
     >
       {props.options.map(o => (

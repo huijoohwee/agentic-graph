@@ -154,23 +154,23 @@ export default function MediaNodesSection({
             ].join(' ')}
           >
             <section className="flex flex-col">
-              <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Media nodes</span>
+              <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Media nodes</span>
               <span className="font-semibold">{String(totalCount)}</span>
             </section>
             <section className="flex flex-col">
-              <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Images/SVG</span>
+              <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Images/SVG</span>
               <span className="font-semibold">{String(imageCount)}</span>
             </section>
             <section className="flex flex-col">
-              <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Video</span>
+              <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Video</span>
               <span className="font-semibold">{String(videoCount)}</span>
             </section>
             <section className="flex flex-col">
-              <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Audio</span>
+              <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Audio</span>
               <span className="font-semibold">{String(audioCount)}</span>
             </section>
             <section className="flex flex-col">
-              <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>IFrame</span>
+              <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>IFrame</span>
               <span className="font-semibold">{String(iframeCount)}</span>
             </section>
           </section>
@@ -347,7 +347,7 @@ export default function MediaNodesSection({
                       <td className="px-2 py-1 truncate" title={label}>{renderMarkdownSigilInlineText(row.label)}</td>
                       <td className="px-2 py-1">
                         <span className="inline-flex items-center gap-1">
-                          <span className={`uppercase tracking-wide ${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>
+                          <span className={`uppercase tracking-normal ${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>
                             {row.media.kind}
                           </span>
                           <span className={`inline-flex h-2 w-2 rounded-full ${UI_THEME_TOKENS.status.neutralDot}`} />

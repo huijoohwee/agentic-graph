@@ -4,12 +4,14 @@ import path from 'node:path'
 import { JSDOM } from 'jsdom'
 
 import {
+  buildGrabMapsPoiRichMediaPreviewPayload,
   GRABMAPS_POI_RICH_MEDIA_PREVIEW_EVENT,
   buildGrabMapsPoiRichMediaSrcDoc,
   publishGrabMapsPoiRichMediaPreview,
   readGrabMapsPoiRichMediaPreviewEventDetail,
   subscribeGrabMapsPoiRichMediaPreview,
 } from '@/features/geospatial/grabMapsPoiRichMedia'
+import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 
 const readUtf8 = (relativePath: string): string => {
   return fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
@@ -71,7 +73,7 @@ export const testGrabMapsPoiPreviewCallsitesUseSharedHelpers = () => {
   if (!helperText.includes('new CustomEventCtor(GRABMAPS_POI_RICH_MEDIA_PREVIEW_EVENT')) {
     throw new Error('expected GrabMaps POI preview emitter to use the shared event constant')
   }
-  if (!viewportText.includes('publishGrabMapsPoiRichMediaPreview({')) {
+  if (!viewportText.includes('publishGrabMapsPoiRichMediaPreview(payload)')) {
     throw new Error('expected CanvasViewportGeospatialOverlay to keep publishing GrabMaps POI previews through the shared helper')
   }
   if (!richMediaPanelText.includes('subscribeGrabMapsPoiRichMediaPreview')) {
@@ -97,8 +99,8 @@ export const testGrabMapsPoiSrcDocIncludesRichGeoMetadataAndNeutralActions = () 
       kgSourceDocumentPath: '/reports/site-selection.md',
     },
   })
-  if (!srcDoc.includes('Coordinates</strong><span>1.283400, 103.860700</span>')) {
-    throw new Error('expected GrabMaps POI srcdoc to include normalized six-decimal coordinates')
+  if (!srcDoc.includes('<dt>Coordinates</dt><dd>1.283400, 103.860700</dd>')) {
+    throw new Error('expected semantic POI details to include normalized six-decimal coordinates')
   }
   if (!srcDoc.includes('Open coordinates in OpenStreetMap')) {
     throw new Error('expected GrabMaps POI srcdoc to include a neutral coordinate map action')
@@ -109,22 +111,81 @@ export const testGrabMapsPoiSrcDocIncludesRichGeoMetadataAndNeutralActions = () 
   if (!srcDoc.includes('&quot;coordinates&quot;: {')) {
     throw new Error('expected GrabMaps POI srcdoc to include a structured payload preview')
   }
-  if (!srcDoc.includes('<strong>C*</strong><span>0.82</span>')) {
-    throw new Error('expected GrabMaps POI srcdoc to preserve generic score metadata from source properties')
+  if (!srcDoc.includes('<dt>C*</dt><dd>0.82</dd>')) {
+    throw new Error('expected semantic place details to preserve generic score metadata')
   }
-  if (!srcDoc.includes('<strong>Decisive Signal</strong><span>zero competition near transit</span>')) {
-    throw new Error('expected GrabMaps POI srcdoc to render qualitative geo metadata from source properties')
+  if (!srcDoc.includes('<dt>Decisive Signal</dt><dd>zero competition near transit</dd>')) {
+    throw new Error('expected semantic place details to render qualitative geo metadata')
   }
-  if (!srcDoc.includes('<strong>Residential POI Count</strong><span>22</span>')) {
-    throw new Error('expected GrabMaps POI srcdoc to render source count metrics without report-specific hardcoding')
+  if (!srcDoc.includes('<dt>Residential POI Count</dt><dd>22</dd>')) {
+    throw new Error('expected semantic place details to render source count metrics')
   }
-  if (!srcDoc.includes('<strong>Source document</strong><span>/reports/site-selection.md</span>')) {
-    throw new Error('expected GrabMaps POI srcdoc to include source provenance when available')
+  if (!srcDoc.includes('<dt>Source document</dt><dd>/reports/site-selection.md</dd>')) {
+    throw new Error('expected semantic place details to include source provenance')
   }
-  if (!srcDoc.includes('aria-label="POI mini-map snapshot"') || !srcDoc.includes('<svg viewBox="0 0 320 170"')) {
-    throw new Error('expected GrabMaps POI srcdoc to include an inline mini-map SVG snapshot block')
+  if (!srcDoc.includes('<article aria-labelledby="poi-title">')
+    || !srcDoc.includes('<nav aria-label="Place actions">')
+    || !srcDoc.includes('<details><summary>View normalized place data</summary>')) {
+    throw new Error('expected semantic Rich Media content and keyboard-operable place controls')
   }
-  if (!srcDoc.includes('<circle cx="') || !srcDoc.includes('fill="#ef4444"')) {
-    throw new Error('expected GrabMaps POI srcdoc mini-map to render a visible POI marker')
+  if (/<\/?div\b|aria-hidden=/u.test(srcDoc)) {
+    throw new Error('expected POI Rich Media content to avoid generic wrappers and hidden decoration')
+  }
+  if (srcDoc.includes('mini-map') || srcDoc.includes('<svg')) {
+    throw new Error('expected the shared main map to remain the only map surface')
+  }
+}
+
+export const testDirectorySelectionReusesTheExistingRichMediaPanelForEachPlace = () => {
+  const panel = buildRichMediaPanelNode({ id: 'existing-rich-media-panel' })
+  const graphData = { type: 'Graph', context: '', nodes: [panel], edges: [] }
+  const central = buildGrabMapsPoiRichMediaPreviewPayload({
+    graphData,
+    selectedNodeId: 'map-feature-central',
+    openWidgetNodeIds: [panel.id],
+    detail: {
+      label: 'Synthetic Demo Place Central',
+      lng: 103.852,
+      lat: 1.286,
+      category: 'shop',
+      properties: { id: 'synthetic:demo-central', kgSourceFeatureId: 'synthetic:demo-central' },
+    },
+  })
+  const south = buildGrabMapsPoiRichMediaPreviewPayload({
+    graphData,
+    selectedNodeId: 'map-feature-south',
+    openWidgetNodeIds: [panel.id],
+    detail: {
+      label: 'Synthetic Demo Place South',
+      lng: 103.83,
+      lat: 1.26,
+      category: 'f&b',
+      properties: { id: 'synthetic:demo-south', kgSourceFeatureId: 'synthetic:demo-south' },
+    },
+  })
+  if (central.targetNodeId !== panel.id || south.targetNodeId !== panel.id) {
+    throw new Error('Directory selections must refresh the same existing Rich Media panel')
+  }
+  if (!central.srcDoc.includes('Synthetic Demo Place Central') || !south.srcDoc.includes('Synthetic Demo Place South')) {
+    throw new Error('Directory selections must replace the shared panel content with the selected place details')
+  }
+  const fallback = buildGrabMapsPoiRichMediaPreviewPayload({
+    graphData: { type: 'Graph', context: '', nodes: [], edges: [] },
+    detail: { label: 'Synthetic Demo Place Central', lng: 103.852, lat: 1.286 },
+  })
+  if (fallback.targetNodeId !== 'geospatial-poi-rich-media-preview') {
+    throw new Error('Directory and map selection must share the same transient Rich Media fallback panel')
+  }
+  const collisionSafeFallback = buildGrabMapsPoiRichMediaPreviewPayload({
+    graphData: {
+      type: 'Graph',
+      context: '',
+      nodes: [{ id: 'geospatial-poi-rich-media-preview', type: 'Place', label: 'Existing place', properties: {} }],
+      edges: [],
+    },
+    detail: { label: 'Synthetic Demo Place Central', lng: 103.852, lat: 1.286 },
+  })
+  if (collisionSafeFallback.targetNodeId === 'geospatial-poi-rich-media-preview') {
+    throw new Error('The transient fallback must not collide with a canonical non-widget graph node')
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, Download, GitBranch, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
+import { ChevronDown, Download, FileDown, GitBranch, Globe, Link, Palette, Workflow } from 'lucide-react'
 import type { UiToastInput } from '@/hooks/store/types'
 import { WORKSPACE_IMPORT_IMAGE_URL_TEST, WORKSPACE_IMPORT_URL_TEST } from '@/lib/config'
 import { readEnvString } from '@/lib/config.env'
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { ImportUrlPrompt } from '@/features/toolbar/ImportUrlPrompt'
 import { VideoDownloadOptionsPanel } from '@/features/toolbar/VideoDownloadOptionsPanel'
 import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
-import type { WorkspaceUrlImportCanvasRendererId, WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
+import { isWorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { VideoDownloadOptions } from '@/lib/video-download/types'
 import { isVideoDownloadEligible } from '@/lib/video-download/isVideoDownloadEligible'
@@ -18,7 +18,6 @@ import { resolveVideoDownloadEndpoint } from '@/lib/video-download/videoDownload
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { VideoAgentValidationImportControls } from '@/features/video-agent/VideoAgentValidationImportControls'
-import { buildAutoWebsiteImportOptions } from './importUrlWebsiteMode'
 import {
   DESIGN_IMPORT_URL_RENDERER_SELECTION,
   ImportUrlRendererSelect,
@@ -162,15 +161,7 @@ export function LaunchDropdownImportUrlItem(props: {
   const importUrlFallback = React.useCallback(
     async (urlRaw: string, opts?: { canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null; documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null }) => {
       const mod = await loadLaunchDropdownFallbackModule()
-      await mod.importUrlFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
-    },
-    [pushUiToast],
-  )
-
-  const importUrlDeerFlowFallback = React.useCallback(
-    async (urlRaw: string, opts?: { canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null; documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null }) => {
-      const mod = await loadLaunchDropdownFallbackModule()
-      await mod.importUrlDeerFlowFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
+      return mod.importUrlFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
     },
     [pushUiToast],
   )
@@ -254,38 +245,20 @@ export function LaunchDropdownImportUrlItem(props: {
     [importUrlFallback, isImportingUrl, agentGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
   )
 
-  const runImportUrlDeerFlow = React.useCallback(
-    async (nextUrlRaw: string) => {
-      const nextUrl = String(nextUrlRaw || '').trim()
-      if (!nextUrl) return
-      try {
-        await targetSkillsCommands()
-      } catch {
-        return
-      }
-      onClose()
-      const opts = selectedImportOpts()
-      if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
-      void importUrlDeerFlowFallback(nextUrl, opts)
-      setUrlInputOpen(false)
-    },
-    [importUrlDeerFlowFallback, onClose, selectedImportOpts, targetSkillsCommands],
-  )
-
   const runWebsiteCrawl = React.useCallback(
     async (nextUrlRaw: string) => {
       const nextUrl = String(nextUrlRaw || '').trim()
       if (!nextUrl) return
-      try {
-        await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
-      } catch {
-        return
-      }
       onClose()
-      getMarkdownWorkspaceActionBridge().importWebsite?.(nextUrl, buildAutoWebsiteImportOptions())
+      try {
+        const { importWebsiteFromSourceFiles } = await import('@/features/source-files/websiteImportSelectionSession')
+        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND), { selectAllOnDiscover: true })
+      } catch (error) {
+        reportSkillsCommandsResolutionFailure(error)
+      }
       setUrlInputOpen(false)
     },
-    [onClose, targetSkillsCommandsCommand],
+    [onClose, targetSkillsCommandsCommand, reportSkillsCommandsResolutionFailure],
   )
 
   const runVideoDownload = React.useCallback(async () => {
@@ -344,15 +317,16 @@ export function LaunchDropdownImportUrlItem(props: {
         data-kg-launch-import-url-skills-commands-target="skillsCommands"
         data-kg-launch-import-url-mcp-tool={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME}
       >
-        <Link className={props.menuIconClass} strokeWidth={1.6} />
+        <Link className={props.menuIconClass} />
         <span className="truncate">Import URL</span>
         <WorkspaceLaunchRowValue label="Import URL" value="Configure" optionId="importUrl:configure" />
-        <ChevronDown className={`ml-auto ${props.menuIconClass} transition-transform ${urlInputOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
+        <ChevronDown className={`ml-auto ${props.menuIconClass} transition-transform ${urlInputOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
       {urlInputOpen ? (
         <section id={importUrlControlsId} className="kg-launch-menu-children kg-click-expand-menu-children mt-1">
           <ImportUrlPrompt
             urlDraft={urlDraft}
+            enablePageCapture
             onChange={next => {
               setUrlDraft(next)
               setRateLimitRecoveryUrl(null)
@@ -360,59 +334,51 @@ export function LaunchDropdownImportUrlItem(props: {
             onCancel={() => setUrlInputOpen(false)}
             autoFocus
             disabled={isImportingUrl}
-            confirmLabel="Import"
+            confirmLabel={agentGraphRepositoryMode || isLaunchAgentGraphRepositoryUrl(urlDraft) ? 'Import codebase graph' : 'Import URL into workspace'}
+            confirmIcon={<FileDown className={props.menuIconClass} aria-hidden="true" />}
             onConfirm={runImportUrl}
             rightAddon={
-              <section className="flex min-w-0 flex-1 items-stretch gap-1">
-                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
-                  <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
+              <>
+                <button
+                  type="button"
+                  className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', agentGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
+                  title="Codebase graph: build a repository knowledge graph with local Git acquisition"
+                  aria-label="Codebase graph"
+                  aria-pressed={agentGraphRepositoryMode}
+                  data-kg-launch-import-url-repository-mode="true"
+                  onClick={() => {
+                    const next = !agentGraphRepositoryMode
+                    setAgentGraphRepositoryMode(next)
+                    setRateLimitRecoveryUrl(null)
+                    void targetSkillsCommands(next
+                      ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest
+                      : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
+                  }}
+                >
+                  <GitBranch className={props.menuIconClass} aria-hidden />
                 </button>
-                <ImportUrlRendererSelect value={importUrlRenderer} onChange={setImportUrlRenderer} />
+                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
+                  <Palette className={props.menuIconClass} aria-hidden={true} />
+                </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', validationConfigOpen ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Video-agent validation config" aria-label="Video-agent validation config" aria-pressed={validationConfigOpen} onClick={() => setValidationConfigOpen(prev => !prev)}>
-                  <Workflow className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                  <Workflow className={props.menuIconClass} aria-hidden="true" />
                 </button>
                 {isVideoEligible ? (
                   <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', downloadOptionsOpen ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Download local video" aria-label="Download local video" aria-pressed={downloadOptionsOpen} onClick={() => setDownloadOptionsOpen(prev => !prev)}>
-                    <Download className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                    <Download className={props.menuIconClass} aria-hidden="true" />
                   </button>
                 ) : null}
-                {typeof bridge.importWebsite === 'function' ? (
-                  <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
-                    <Globe className={props.menuIconClass} strokeWidth={1.6} />
-                  </button>
-                ) : null}
-                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Import URL (DeerFlow)" aria-label="Import URL (DeerFlow)" data-kg-launch-import-url-provider-assisted-target={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME} onClick={() => { void runImportUrlDeerFlow(urlDraft) }}>
-                  <Sparkles className={props.menuIconClass} strokeWidth={1.6} />
+                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Index the site and select up to 500 pages to import" aria-label="Index and import website pages" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
+                  <Globe className={props.menuIconClass} aria-hidden="true" />
                 </button>
-              </section>
+              </>
             }
           />
-          <section className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-xs" aria-label="Codebase graph import mode">
-            <button
-              type="button"
-              className={cn('inline-flex min-h-7 items-center gap-1 rounded border px-2', agentGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
-              title="Build a repository knowledge graph with local Git acquisition"
-              aria-label="Codebase graph"
-              aria-pressed={agentGraphRepositoryMode}
-              data-kg-launch-import-url-repository-mode="true"
-              onClick={() => {
-                const next = !agentGraphRepositoryMode
-                setAgentGraphRepositoryMode(next)
-                setRateLimitRecoveryUrl(null)
-                void targetSkillsCommands(next
-                  ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest
-                  : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
-              }}
-            >
-              <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
-              <span>Codebase graph</span>
-            </button>
-            <span className={UI_THEME_TOKENS.text.secondary}>
-              {agentGraphRepositoryMode
-                ? 'Uses deterministic local Git acquisition.'
-                : 'Use this mode for repository knowledge graphs.'}
-            </span>
-          </section>
+          <label className="mt-2 grid min-w-0 gap-1 px-1 text-xs">
+            <span className={UI_THEME_TOKENS.text.secondary}>Canvas layout after import</span>
+            <ImportUrlRendererSelect value={importUrlRenderer} onChange={setImportUrlRenderer} />
+            <span className={UI_THEME_TOKENS.text.secondary}>Images offer next steps after saving.</span>
+          </label>
           {rateLimitRecoveryUrl ? (
             <section
               className={cn('mt-1 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}
@@ -446,7 +412,12 @@ export function LaunchDropdownImportUrlItem(props: {
               urlsAriaLabel="Video-agent validation import URLs"
               actionsAriaLabel="Video-agent validation URL actions"
               importUrlOpts={selectedImportOpts}
-              importUrlFallback={importUrlFallback}
+              importUrlFallback={async (urlRaw, opts) => {
+                await importUrlFallback(urlRaw, {
+                  canvas2dRenderer: isWorkspaceUrlImportCanvasRendererId(opts?.canvas2dRenderer) ? opts?.canvas2dRenderer : null,
+                  documentSemanticMode: opts?.documentSemanticMode,
+                })
+              }}
               onBeforeImport={beforeValidationImport}
               onSelectUrl={url => {
                 setUrlDraft(url)

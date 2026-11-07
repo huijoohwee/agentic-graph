@@ -278,6 +278,11 @@
       "import": "./dist/geospatial/poiRichMedia.js",
       "default": "./dist/geospatial/poiRichMedia.js"
     },
+    "./geospatial/xrCatalogArtwork": {
+      "types": "./dist/geospatial/xrCatalogArtwork.d.ts",
+      "import": "./dist/geospatial/xrCatalogArtwork.js",
+      "default": "./dist/geospatial/xrCatalogArtwork.js"
+    },
     "./browser/apiNativeBrowserMcpSsot": {
       "types": "./dist/browser/apiNativeBrowserMcpSsot.d.ts",
       "import": "./dist/browser/apiNativeBrowserMcpSsot.js",
@@ -507,6 +512,26 @@
       "types": "./dist/ui/agenticGraphMark.d.ts",
       "import": "./dist/ui/agenticGraphMark.js",
       "default": "./dist/ui/agenticGraphMark.js"
+    },
+    "./spatial-review": {
+      "types": "./dist/spatial-review/index.d.ts",
+      "import": "./dist/spatial-review/index.js",
+      "default": "./dist/spatial-review/index.js"
+    },
+    "./spatial-review/index": {
+      "types": "./dist/spatial-review/index.d.ts",
+      "import": "./dist/spatial-review/index.js",
+      "default": "./dist/spatial-review/index.js"
+    },
+    "./ui/fontStacks": {
+      "types": "./dist/ui/fontStacks.d.ts",
+      "import": "./src/ui/fontStacks.js",
+      "default": "./src/ui/fontStacks.js"
+    },
+    "./ui/typography": {
+      "types": "./dist/ui/typography.d.ts",
+      "import": "./dist/ui/typography.js",
+      "default": "./dist/ui/typography.js"
     }
   },
   "files": [

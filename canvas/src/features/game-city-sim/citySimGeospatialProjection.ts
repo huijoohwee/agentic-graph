@@ -8,6 +8,7 @@ import type { CitySimSnapshot } from './citySimRuntimeState'
 import {
   resolveRegionalPoiProfile,
 } from '@/features/geospatial/regionalPoiProfileCatalog'
+import { createInitialCityGameplay } from './citySimGameplay'
 
 const CITY_GEO_PRESENTATION_REVISION = 'city-poi-zoning-presentation/v1'
 
@@ -31,7 +32,7 @@ const CITY_ZONE_STYLES: Readonly<Record<CityGeoZone, CityGeoZoneStyle>> =
     }),
   })
 
-function projectGeographicProfile(
+export function projectCitySimGeographicProfile(
   regionalPoiProfileId: string,
 ): CityGeographicProfile {
   const regionalPoiProfile = resolveRegionalPoiProfile(regionalPoiProfileId)
@@ -80,7 +81,7 @@ export function projectCitySimToGeospatialOverlay(
     active: true,
     columns: snapshot.city.columns,
     parcels: snapshot.city.parcels,
-    profile: projectGeographicProfile(snapshot.city.regionalPoiProfileId),
+    profile: projectCitySimGeographicProfile(snapshot.city.regionalPoiProfileId),
     revision: [
       'city-sim',
       snapshot.revision,
@@ -89,5 +90,6 @@ export function projectCitySimToGeospatialOverlay(
     ].join(':'),
     rows: snapshot.city.rows,
     selectedParcelId: snapshot.selectedParcelId,
+    gameplay: snapshot.gameplay ?? createInitialCityGameplay(snapshot.city),
   })
 }

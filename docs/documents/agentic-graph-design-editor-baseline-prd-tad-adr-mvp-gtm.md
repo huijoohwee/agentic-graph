@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.0"
+version: "0.6.4"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -16,17 +16,17 @@ continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
-previous_document_version: "0.5.0"
-prd_revision: "0.6.0"
-tad_revision: "0.6.0"
-adr_revision: "0.6.0"
-mvp_revision: "0.6.0"
-gtm_revision: "0.6.0"
+previous_document_version: "0.6.3"
+prd_revision: "0.6.4"
+tad_revision: "0.6.4"
+adr_revision: "0.6.4"
+mvp_revision: "0.6.4"
+gtm_revision: "0.6.4"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.6.0**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.4**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -586,6 +586,14 @@ its local failure is not a theme result. The successor passed hygiene, Settings 
 parity (604 settings), Canvas check, 18 Design tests and six focused theme/dashboard tests.
 An isolated browser at `127.0.0.1:4199` opened the FloatingPanel Design view while finding
 no MainPanel Design tab and no page errors. This does not prove the user's `5175` session has
-updated or establish full accessibility coverage. The central policy/template successor is
-website PR #269, pending protected integration. Exact Graph successor SHA, provider checks,
-protected integration and production remain pending. No buyer receipt.
+updated or establish full accessibility coverage. Website PR #269 and Graph PR #1245 integrated;
+production status follows in the linked release companion. No buyer receipt.
+
+## Native offline validation and palette browser proof
+
+All five roles join the same continuity ID at **0.6.4**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
+TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke waits for source bootstrap before setting its fixture and selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
+ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
+MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
+PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed offline but expected one old Dark theme; PR #1244 passed offline but an XR source activation displaced the Design smoke fixture. Local offline and six palette/width Design cases pass again with the bootstrap wait; Canvas check and hygiene passed. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 60 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
+Production release status and recovery are tracked in the [joined release companion](./agentic-graph-design-editor-release-recovery-prd-tad-adr-mvp-gtm.md).

@@ -3,6 +3,7 @@ import {
   createWorkersAiModelResolver,
   WORKERS_AI_AGENT_ADAPTER_ID,
 } from "./agent-runtime-model-resolver.mjs";
+import { createZeroCostWorkersAiBinding } from "../../shared/workers-ai-cost-gate.mjs";
 
 type AgentExecutionContext = {
   input: { brief?: unknown; context?: unknown };
@@ -30,16 +31,20 @@ const readTextResult = (result: Record<string, unknown>): string => {
 };
 
 export function createWorkersAiAgentAdapter(env: Env) {
+  const ai = createZeroCostWorkersAiBinding(env.AI, {
+    bindingName: "AI",
+    verifyProviderCostEvidence: Reflect.get(env, "verifyProviderCostEvidence", env),
+  });
   return {
     id: WORKERS_AI_AGENT_ADAPTER_ID,
     async execute(context: AgentExecutionContext): Promise<Record<string, unknown>> {
       const model = String(context.preparedAgent.modelRuntime.model.id || "").trim();
       const provider = context.preparedAgent.modelRuntime.provider;
-      if (!env.AI || !model || provider.id !== WORKERS_AI_AGENT_ADAPTER_ID || provider.adapterId !== WORKERS_AI_AGENT_ADAPTER_ID) {
+      if (!ai || !model || provider.id !== WORKERS_AI_AGENT_ADAPTER_ID || provider.adapterId !== WORKERS_AI_AGENT_ADAPTER_ID) {
         throw new Error("Prepared Workers AI model runtime is unavailable or incompatible.");
       }
       const system = context.preparedAgent.instructions.join("\n");
-      const result = await env.AI.run(model, {
+      const result = await ai.run(model, {
         messages: [
           { role: "system", content: system },
           { role: "user", content: String(context.input.brief || "") },

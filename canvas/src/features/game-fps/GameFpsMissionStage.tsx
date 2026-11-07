@@ -12,6 +12,7 @@ import {
   GAME_FPS_MAX_FRAME_SECONDS,
   GAME_FPS_NPC_IDS,
 } from './gameFpsModel'
+import { isGameFpsPositionValid, readGameFpsGroundHeight } from './gameFpsGeometry'
 import { installGameFpsDesktopInput } from './gameFpsInput'
 import {
   claimThreeViewportInputOwnership,
@@ -88,8 +89,9 @@ function applyGameFpsCameraOptics(camera: PerspectiveCamera): void {
   if (changed) camera.updateProjectionMatrix()
 }
 
-export function GameFpsMissionStage({ coordinateScale = 1 }: {
+export function GameFpsMissionStage({ coordinateScale = 1, geospatialComposite = false }: {
   coordinateScale?: number
+  geospatialComposite?: boolean
 }) {
   const { camera, gl } = useThree()
   const snapshotRef = React.useRef(readGameFpsSnapshot())
@@ -159,79 +161,92 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     const snapshot = readGameFpsSnapshot()
     snapshotRef.current = snapshot
     gl.domElement.dataset.kgGameFpsSpatialProfile = readGameFpsSpatialProfile().id
-    const perspectiveCamera = resolvePerspectiveCamera(camera)
-    if (perspectiveCamera) applyGameFpsCameraOptics(perspectiveCamera)
+    const spatialProfile = readGameFpsSpatialProfile()
+    if (!geospatialComposite) {
+      const perspectiveCamera = resolvePerspectiveCamera(camera)
+      if (perspectiveCamera) applyGameFpsCameraOptics(perspectiveCamera)
 
-    const stageRoot = stageRootRef.current
-    cameraLocalPosition.set(snapshot.player.x, 1.65, snapshot.player.z)
-    cameraLocalRotation.set(snapshot.player.pitch, snapshot.player.yaw, 0, 'YXZ')
-    cameraLocalQuaternion.setFromEuler(cameraLocalRotation)
-    if (stageRoot) {
-      stageRoot.updateWorldMatrix(true, false)
-      stageRoot.localToWorld(cameraLocalPosition)
-      stageRoot.getWorldQuaternion(stageWorldQuaternion)
-      camera.quaternion.copy(stageWorldQuaternion).multiply(cameraLocalQuaternion)
-    } else {
-      camera.quaternion.copy(cameraLocalQuaternion)
-    }
-    camera.position.copy(cameraLocalPosition)
-    camera.updateMatrixWorld()
-    gl.domElement.dataset.kgGameFpsCameraFov = String(perspectiveCamera?.fov ?? '')
-    gl.domElement.dataset.kgGameFpsGroundedCamera = perspectiveCamera?.fov === GAME_FPS_CAMERA_FOV_DEGREES ? '1' : '0'
-
-    const highlight = npcHighlightRef.current
-    if (highlight) applyGameFpsNpcSelectionHighlight(highlight, undefined)
-    for (const npc of snapshot.npcs) {
-      const mesh = npcMeshRefs.current.get(npc.id)
-      if (!mesh) continue
-      const sharedControl = readXrSharedAssetGameplayNpcControl(npc.id)
-      const assignedPose = sharedControl.assignedPresetId
-        ? sampleXrAnimationPose({
-          kind: 'character-motion',
-          presetId: sharedControl.assignedPresetId as XrCharacterMotionPresetId,
-          startTimeSeconds: 0,
-          loop: true,
-        }, snapshot.elapsedSeconds)
-        : null
-      const livePose = sharedControl.handPoseActive
-        ? motionControlPoseToAnimationPose(readMotionControlSnapshot().pose)
-        : null
-      const pose = livePose || assignedPose
-      mesh.position.set(
-        npc.x + (pose?.rootOffsetMeters[0] || 0) * 0.35,
-        0.9 + (pose?.rootOffsetMeters[1] || 0) * 0.28,
-        npc.z + (pose?.rootOffsetMeters[2] || 0) * 0.35,
-      )
-      mesh.rotation.set(
-        (pose?.rootRotationDegrees[0] || 0) * DEG_TO_RAD,
-        (pose?.rootRotationDegrees[1] || 0) * DEG_TO_RAD,
-        (pose?.rootRotationDegrees[2] || 0) * DEG_TO_RAD,
-      )
-      mesh.visible = npc.health > 0
-      const selectedScale = sharedControl.selected ? 1.12 : 1
-      const crouchScale = pose ? Math.max(0.48, 1 - pose.crouch * 0.35) : 1
-      mesh.scale.set(
-        selectedScale,
-        Math.max(0.12, npc.health / 100) * crouchScale,
-        selectedScale,
-      )
-      mesh.userData.kgXrSharedAssetTarget = npc.id
-      mesh.userData.kgXrSharedAssetSelected = sharedControl.selected
-      mesh.userData.kgXrSharedAssetPreset = sharedControl.assignedPresetId
-      mesh.userData.kgXrSharedAssetHandPose = sharedControl.handPoseActive
-      if (highlight?.userData.kgXrHighlightNpcId === npc.id && sharedControl.selected) {
-        applyGameFpsNpcSelectionHighlight(highlight, npc, mesh)
+      const stageRoot = stageRootRef.current
+      const playerGround = readGameFpsGroundHeight(snapshot.player, spatialProfile.map)
+      cameraLocalPosition.set(snapshot.player.x, playerGround + 1.65, snapshot.player.z)
+      cameraLocalRotation.set(snapshot.player.pitch, snapshot.player.yaw, 0, 'YXZ')
+      cameraLocalQuaternion.setFromEuler(cameraLocalRotation)
+      if (stageRoot) {
+        stageRoot.updateWorldMatrix(true, false)
+        stageRoot.localToWorld(cameraLocalPosition)
+        stageRoot.getWorldQuaternion(stageWorldQuaternion)
+        camera.quaternion.copy(stageWorldQuaternion).multiply(cameraLocalQuaternion)
+      } else {
+        camera.quaternion.copy(cameraLocalQuaternion)
       }
-      setMeshColor(
-        mesh,
-        livePose
-          ? SHARED_NPC_CONTROL_COLORS.handPose
-          : sharedControl.assignedPresetId
-            ? SHARED_NPC_CONTROL_COLORS.animated
-            : sharedControl.selected
-              ? SHARED_NPC_CONTROL_COLORS.selected
-              : ACTION_COLORS[npc.action],
-      )
+      camera.position.copy(cameraLocalPosition)
+      camera.updateMatrixWorld()
+      gl.domElement.dataset.kgGameFpsCameraFov = String(perspectiveCamera?.fov ?? '')
+      gl.domElement.dataset.kgGameFpsGroundedCamera = perspectiveCamera?.fov === GAME_FPS_CAMERA_FOV_DEGREES ? '1' : '0'
+
+      const highlight = npcHighlightRef.current
+      if (highlight) applyGameFpsNpcSelectionHighlight(highlight, undefined)
+      for (const npc of snapshot.npcs) {
+        const mesh = npcMeshRefs.current.get(npc.id)
+        if (!mesh) continue
+        const sharedControl = readXrSharedAssetGameplayNpcControl(npc.id)
+        const assignedPose = sharedControl.assignedPresetId
+          ? sampleXrAnimationPose({
+            kind: 'character-motion',
+            presetId: sharedControl.assignedPresetId as XrCharacterMotionPresetId,
+            startTimeSeconds: 0,
+            loop: true,
+          }, snapshot.elapsedSeconds)
+          : null
+        const livePose = sharedControl.handPoseActive
+          ? motionControlPoseToAnimationPose(readMotionControlSnapshot().pose)
+          : null
+        const pose = livePose || assignedPose
+        const presentedPosition = {
+          x: npc.x + (pose?.rootOffsetMeters[0] || 0) * 0.35,
+          z: npc.z + (pose?.rootOffsetMeters[2] || 0) * 0.35,
+        }
+        if (!isGameFpsPositionValid(presentedPosition, 0.45, spatialProfile.map)) {
+          presentedPosition.x = npc.x
+          presentedPosition.z = npc.z
+        }
+        const npcGround = readGameFpsGroundHeight(presentedPosition, spatialProfile.map)
+        mesh.position.set(
+          presentedPosition.x,
+          npcGround + 0.9 + (pose?.rootOffsetMeters[1] || 0) * 0.28,
+          presentedPosition.z,
+        )
+        mesh.rotation.set(
+          (pose?.rootRotationDegrees[0] || 0) * DEG_TO_RAD,
+          (pose?.rootRotationDegrees[1] || 0) * DEG_TO_RAD,
+          (pose?.rootRotationDegrees[2] || 0) * DEG_TO_RAD,
+        )
+        mesh.visible = npc.health > 0
+        const selectedScale = sharedControl.selected ? 1.12 : 1
+        const crouchScale = pose ? Math.max(0.48, 1 - pose.crouch * 0.35) : 1
+        mesh.scale.set(
+          selectedScale,
+          Math.max(0.12, npc.health / 100) * crouchScale,
+          selectedScale,
+        )
+        mesh.userData.kgXrSharedAssetTarget = npc.id
+        mesh.userData.kgXrSharedAssetSelected = sharedControl.selected
+        mesh.userData.kgXrSharedAssetPreset = sharedControl.assignedPresetId
+        mesh.userData.kgXrSharedAssetHandPose = sharedControl.handPoseActive
+        if (highlight?.userData.kgXrHighlightNpcId === npc.id && sharedControl.selected) {
+          applyGameFpsNpcSelectionHighlight(highlight, npc, mesh)
+        }
+        setMeshColor(
+          mesh,
+          livePose
+            ? SHARED_NPC_CONTROL_COLORS.handPose
+            : sharedControl.assignedPresetId
+              ? SHARED_NPC_CONTROL_COLORS.animated
+              : sharedControl.selected
+                ? SHARED_NPC_CONTROL_COLORS.selected
+                : ACTION_COLORS[npc.action],
+        )
+      }
     }
     if (snapshot.runtimeError || snapshot.phase === 'stopped' || !inputClaimedRef.current) {
       firstFramePublishedRef.current = false
@@ -248,27 +263,32 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     }
   })
 
+  const renderSpatialMap = readGameFpsSpatialProfile().map
   return (
     <group ref={stageRootRef} name="agentic_os_game_fps_mission" scale={coordinateScale} userData={{ coordinateScale }}>
-      <GameFpsSharedNpcHighlights highlightRef={npcHighlightRef} />
-      {GAME_FPS_NPC_IDS.map(id => {
-        const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
-        return (
-          <mesh
-            key={id}
-            name={`agentic_os_game_fps_npc_${id}`}
-            ref={mesh => {
-              if (mesh) npcMeshRefs.current.set(id, mesh)
-              else npcMeshRefs.current.delete(id)
-            }}
-            position={[npc.x, 0.9, npc.z]}
-            castShadow
-          >
-            <capsuleGeometry args={[0.45, 0.9, 4, 8]} />
-            <meshStandardMaterial color="#60a5fa" roughness={0.55} />
-          </mesh>
-        )
-      })}
+      {!geospatialComposite ? (
+        <>
+          <GameFpsSharedNpcHighlights highlightRef={npcHighlightRef} />
+          {GAME_FPS_NPC_IDS.map(id => {
+            const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
+            return (
+              <mesh
+                key={id}
+                name={`agentic_os_game_fps_npc_${id}`}
+                ref={mesh => {
+                  if (mesh) npcMeshRefs.current.set(id, mesh)
+                  else npcMeshRefs.current.delete(id)
+                }}
+                position={[npc.x, readGameFpsGroundHeight(npc, renderSpatialMap) + 0.9, npc.z]}
+                castShadow
+              >
+                <capsuleGeometry args={[0.45, 0.9, 4, 8]} />
+                <meshStandardMaterial color="#60a5fa" roughness={0.55} />
+              </mesh>
+            )
+          })}
+        </>
+      ) : null}
     </group>
   )
 }

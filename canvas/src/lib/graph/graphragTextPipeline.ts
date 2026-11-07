@@ -1,7 +1,7 @@
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import { hashText } from '@/features/parsers/hash'
 import { tokenizeForStats } from '@/lib/graph/statsUtils'
-import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 import { nowMs, tokenizePreserveCase, lemmatizeNaive, hfToySubwordsFromText } from '@/lib/graph/graphragTextToyStages'
 import { applyGraphRagTextAnalytics, type GraphRagTextGraphMetrics } from '@/lib/graph/graphragTextAnalytics'
 import type { DensityClusteringConfig } from '@/features/semantic-mode/densityClustering'
@@ -192,7 +192,7 @@ export function runGraphRagTextPipeline(text: string, options?: GraphRagTextPipe
   const preprocessT0 = nowMs()
   const tokens = tokenizePreserveCase(baseText)
   const lemmas = tokens.map(lemmatizeNaive).filter(Boolean)
-  const filteredLemmas = lemmas.filter(l => !NLTK_STOPWORDS_EN_SET.has(l))
+  const filteredLemmas = lemmas.filter(l => !KEYWORD_FUNCTION_WORDS.has(l))
   const preprocessT1 = nowMs()
   const preprocessOutput = {
     tokens: tokens.slice(0, 128),

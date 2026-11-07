@@ -48,7 +48,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   const mainPanelGraphFieldsHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelGraphFieldsHeader.tsx'))
   const mainPanelStoryboardWidgetManagerHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelStoryboardWidgetManagerHeader.tsx'))
   const schemaSummary = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'SchemaSummary.tsx'))
-  const dashboardHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelDashboardHeader.tsx'))
   const helpHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelHelpHeader.tsx'))
   const helpSections = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpSections.tsx'))
   const helpView = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpView.tsx'))
@@ -240,8 +239,8 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected grph-shared to expose and compile the shared KTV React layout and row entries')
   }
   const valueCellUses = sharedKtvRow.match(/KTV_ROW_VALUE_CELL_CLASS_NAME/g)?.length ?? 0
-  if (valueCellUses < 5) {
-    throw new Error('Expected all shared static KTV row layouts to reuse the shared value-cell class')
+  if (valueCellUses != 2) {
+    throw new Error('Expected one shared KTV value cell for every caller signature')
   }
   if (!sharedKtvRow.includes('export function SimpleKeyValueRow')) {
     throw new Error('Expected grph-shared to expose the shared simple KTV row helper')
@@ -262,12 +261,12 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !canvasKeyTypeValueValueCell.includes("from 'grph-shared/react/keyTypeValueRow'")
-    || !sharedKtvRow.includes('${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_CELL_ROW_SCROLL_CLASS_NAME}')
+    || !sharedKtvRow.includes('${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME}')
     || !sharedKtvRow.includes('export function KeyTypeValueStaticRow')
   ) {
     throw new Error('Expected the shared KTV row runtime to own the horizontal value-cell row-scroll utility')
   }
-  if (!sharedKtvRow.includes("const rootClassName = [KTV_VALUE_ROW_SCROLL_CLASS_NAME, className || '']")) {
+  if (!sharedKtvRow.includes("const rootClassName = [KTV_VALUE_ROW_SCROLL_CLASS_NAME, panelFieldDecorationClassName(className)]")) {
     throw new Error('Expected RightAlignedValueCell to remain owned by the shared KTV row runtime')
   }
   if (
@@ -488,7 +487,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Help workflow links', helpWorkflowLinksSection],
     ['MainPanel section header', mainPanelSectionHeader],
     ['MainPanel graph fields header', mainPanelGraphFieldsHeader],
-    ['Collapsible subsection', collapsibleSubsection],
     ...graphFieldSettingSectionTexts.map(([fileName, source]) => [`Graph field ${fileName}`, source] as const),
   ] as const) {
     if (
@@ -588,7 +586,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     !mainPanelSectionHeader.includes('KTV_SECTION_TITLE_CLASS_NAME')
     || mainPanelSectionHeader.includes('uiPanelMicroLabelTextSizeClass')
     || mainPanelSectionHeader.includes('text-xs font-semibold')
-    || !collapsibleSubsection.includes('KTV_HEADER_LABEL_CLASS_NAME')
+    || !collapsibleSubsection.includes("export { default } from './CollapsibleSection'")
     || collapsibleSubsection.includes('text-xs font-semibold')
   ) {
     throw new Error('Expected MainPanel/FloatingPanel section headers to reuse the shared KTV typography hierarchy')
@@ -654,7 +652,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Settings UI renderer', settingsUi],
     ['Settings registry UI', settingsRegistryUi],
     ['UI slice core actions', uiSliceCoreActions],
-    ['Render settings', renderSettingsSection],
     ['Renderer palette settings', rendererPaletteSettings],
     ['AI KG layers', aiKgLayersSection],
     ['GraphRAG workflow', graphRagWorkflowSection],
@@ -747,16 +744,16 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected expand/collapse-all KTV header control to use explicit icon-only expand/collapse glyphs')
   }
   if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ROOT_CLASS_NAME') || !mainPanelSectionHeader.includes('flex min-h-8 min-w-0 max-w-full items-center justify-between gap-1')) {
-    throw new Error('Expected Dashboard/Help headers to share one lean MainPanel section header shell')
+    throw new Error('Expected MainPanel section headers to share one lean shell')
   }
   if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ACTIONS_CLASS_NAME') || !mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_TITLE_CLASS_NAME')) {
     throw new Error('Expected MainPanel section header title and action slots to be centralized')
   }
-  if (!dashboardHeader.includes('MainPanelSectionHeader') || !helpHeader.includes('MainPanelSectionHeader')) {
-    throw new Error('Expected Dashboard and Help headers to reuse the shared MainPanel section header')
+  if (!helpHeader.includes('MainPanelSectionHeader')) {
+    throw new Error('Expected Help header to reuse the shared MainPanel section header')
   }
-  if (dashboardHeader.includes('border-t') || dashboardHeader.includes('mt-4') || helpHeader.includes('border-t') || helpHeader.includes('mt-4')) {
-    throw new Error('Expected Dashboard and Help headers to avoid local top divider/margin chrome')
+  if (helpHeader.includes('border-t') || helpHeader.includes('mt-4')) {
+    throw new Error('Expected Help header to avoid local top divider/margin chrome')
   }
   if (!helpHeader.includes('ExpandCollapseAllButton') || helpHeader.includes("from 'lucide-react'") || helpHeader.includes('ChevronDown')) {
     throw new Error('Expected Help header expand/collapse-all to reuse the shared icon-only button')
@@ -1124,11 +1121,11 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected graph-field local schema rows to import the shared static KTV row/value primitives directly')
   }
   if (
-    !renderSettingsSection.includes("from 'grph-shared/react/keyTypeValueRow'")
-    || !renderSettingsSection.includes('KeyTypeValueStaticRow')
-    || !renderSettingsSection.includes('RightAlignedValueCell')
+    !renderSettingsSection.includes("from '@/lib/ui/responsiveControlRows'")
+    || !renderSettingsSection.includes('ResponsiveControlInput')
+    || !renderSettingsSection.includes('ResponsiveSelectRow')
   ) {
-    throw new Error('Expected render settings compact 2D layout rows to import the shared static KTV row/value primitives directly')
+    throw new Error('Expected render settings to reuse the shared responsive KTV form owners')
   }
   if (
     !rendererPaletteSettings.includes("from 'grph-shared/react/keyTypeValueRow'")
@@ -1399,8 +1396,8 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['ThreeViewLayoutSection.impl.tsx', threeViewLayoutSection],
   ] as const) {
     const usesSharedKtvRowOwner =
-      source.includes('KeyTypeValueRow') || source.includes('KeyTypeValueStaticRow')
-    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('THREE_VIEW_FIELD_GRID_CLASS_NAME')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME')) || source.includes('grid grid-cols-2 gap-3')) {
+      source.includes('KeyTypeValueRow') || source.includes('KeyTypeValueStaticRow') || source.includes('ResponsiveControlRow')
+    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('ThreeViewFieldSection')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('KeyTypeValueSectionStack')) || source.includes('grid grid-cols-2 gap-3')) {
       throw new Error(`Expected FloatingPanel KTV surface ${fileName} to inherit shared KTV rows and responsive grid owners`)
     }
   }
@@ -1421,7 +1418,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected ThreeView background fog and starfield sections to consume the shared specialized panel color/text KTV row owner')
   }
   for (const [fileName, source] of [
-    ['RenderSettingsSection.impl.tsx', renderSettingsSection],
     ['RendererPaletteSettings.tsx', rendererPaletteSettings],
   ] as const) {
     if (!source.includes('RightAlignedValueCell')) {

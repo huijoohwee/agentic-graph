@@ -70,7 +70,7 @@ export function MediaCatalogRichMediaPreview(props: {
                 onClose()
               }}
             >
-              <X className="h-4 w-4" strokeWidth={1.7} aria-hidden />
+              <X className="h-4 w-4" aria-hidden />
             </button>
           </li>
         </menu>
@@ -87,7 +87,7 @@ export function MediaCatalogRichMediaPreview(props: {
                 navigation.navigate(-1)
               }}
             >
-              <ChevronLeft className="h-5 w-5" strokeWidth={1.8} aria-hidden />
+              <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
             <button
               type="button"
@@ -100,7 +100,7 @@ export function MediaCatalogRichMediaPreview(props: {
                 navigation.navigate(1)
               }}
             >
-              <ChevronRight className="h-5 w-5" strokeWidth={1.8} aria-hidden />
+              <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
             <p className="sr-only" aria-live="polite" data-kg-media-catalog-preview-navigation="arrow-keys">
               {`${item.name}, item ${navigation.activeIndex + 1} of ${navigation.count}. Use Previous, Left, or Up for the previous item; use Next, Right, or Down for the next item. Swipe horizontally on touch screens.`}

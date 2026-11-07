@@ -36,7 +36,7 @@ export function GraphEditorRightPanel() {
   const [tab, setTab] = React.useState<TabId>('inspector')
 
   return (
-    <aside className={`flex h-full min-h-0 flex-col rounded-xl border ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border} shadow-sm`} aria-label="Graph editor panel">
+    <aside className={`flex h-full min-h-0 flex-col rounded-xl border ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border} shadow-none`} aria-label="Graph editor panel">
       <header className={`flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2 ${UI_THEME_TOKENS.panel.divider}`} aria-label="Graph editor panel header">
         <section className="flex items-center gap-1">
           <TabButton id="outline" active={tab === 'outline'} onClick={() => setTab('outline')}>Outline</TabButton>

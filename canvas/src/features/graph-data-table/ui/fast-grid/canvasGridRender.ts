@@ -1,3 +1,5 @@
+import { UI_ROW_SELECTION_PAINT } from 'grph-shared/ui/themeTokens'
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { binarySearchFloor, clamp, getVisibleColumnsRange, getVisibleRange } from './fastGridMath'
 import { parseGeodataValueToLatLng } from '@/features/geospatial/geodataValue'
 
@@ -103,7 +105,7 @@ export function readGridTheme(viewportEl: HTMLElement): GridTheme {
   const computedRoot = window.getComputedStyle(document.documentElement)
 
   const fontSize = computedViewport.fontSize || '12px'
-  const fontFamily = computedViewport.fontFamily || 'ui-sans-serif'
+  const fontFamily = computedViewport.fontFamily || UI_FONT_SANS
 
   const divider = computedRoot.getPropertyValue('--kg-divider')?.trim() || 'rgba(0,0,0,0.12)'
   const border = computedRoot.getPropertyValue('--kg-border')?.trim() || 'rgba(0,0,0,0.18)'
@@ -295,7 +297,7 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
   ctx.textBaseline = 'middle'
   const accentRgb = parseCssColorToRgb(accent) || { r: 59, g: 130, b: 246 }
   const textPrimaryRgb = parseCssColorToRgb(textPrimary) || { r: 17, g: 24, b: 39 }
-  const rowSelectedBg = rgba(accentRgb, 0.14)
+  const rowSelectedBg = rgba(parseCssColorToRgb(UI_ROW_SELECTION_PAINT.accent)!, UI_ROW_SELECTION_PAINT.alpha)
   const colSelectedBg = rgba(accentRgb, 0.10)
   const groupRowBg = rgba(textPrimaryRgb, 0.035)
 
@@ -430,7 +432,7 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
     if (sortMeta) {
       ctx.save()
       ctx.fillStyle = textTertiary
-      ctx.font = `600 10px ${fontFamily}`
+      ctx.font = `600 12px ${fontFamily}`
       ctx.fillText(sortMeta.dir === 'desc' ? `↓${sortMeta.index}` : `↑${sortMeta.index}`, x + cellW - 24, headerHeight / 2)
       ctx.restore()
     }
@@ -524,6 +526,11 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
           ctx.restore()
         }
       }
+    }
+
+    if (item.kind === 'row' && selectedSet.has(item.row.id)) {
+      ctx.fillStyle = UI_ROW_SELECTION_PAINT.accent
+      ctx.fillRect(0, y, UI_ROW_SELECTION_PAINT.accentWidthPx, rowHeight)
     }
 
     ctx.strokeStyle = divider

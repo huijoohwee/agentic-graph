@@ -3,6 +3,7 @@ type FakeR2Object = {
   httpMetadata: Record<string, string>
   customMetadata: Record<string, string>
   httpEtag: string
+  storageClass: 'Standard' | 'InfrequentAccess'
 }
 
 const readFakeR2BodyBytes = async (
@@ -55,6 +56,7 @@ const toFakeR2PublicObject = (object: FakeR2Object) => ({
   httpEtag: object.httpEtag,
   size: object.bytes.byteLength,
   customMetadata: { ...object.customMetadata },
+  storageClass: object.storageClass,
   writeHttpMetadata(headers: Headers) {
     const contentType = object.httpMetadata.contentType || object.httpMetadata.content_type || ''
     if (contentType) headers.set('content-type', contentType)
@@ -72,6 +74,7 @@ export class FakeAgenticGraphStorageR2Bucket {
     options?: {
       httpMetadata?: Record<string, string>
       customMetadata?: Record<string, string>
+      storageClass?: 'Standard' | 'InfrequentAccess'
     },
   ) {
     const bytes = await readFakeR2BodyBytes(value)
@@ -81,6 +84,7 @@ export class FakeAgenticGraphStorageR2Bucket {
       httpMetadata: { ...(options?.httpMetadata || {}) },
       customMetadata: { ...(options?.customMetadata || {}) },
       httpEtag,
+      storageClass: options?.storageClass || 'Standard',
     }
     this.objects.set(key, object)
     return toFakeR2PublicObject(object)

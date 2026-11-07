@@ -27,29 +27,39 @@ const fileExists = async filePath => {
   }
 }
 
-const collectLocalModuleClosureCopies = async ({ agenticGraphRoot, mirrorRoot, entrySources }) => {
-  const queue = [...entrySources]
-  const visited = new Set(entrySources)
+const collectLocalModuleClosureCopies = async ({ agenticGraphRoot, mirrorRoot, entrySources, entryTargets = new Map() }) => {
+  const queue = entrySources.map(sourcePath => ({
+    sourcePath,
+    targetPath: entryTargets.get(sourcePath)
+      ?? path.resolve(mirrorRoot, path.relative(agenticGraphRoot, sourcePath)),
+  }))
+  const visited = new Set(queue.map(({ sourcePath, targetPath }) => `${sourcePath}\0${targetPath}`))
   const copies = []
   while (queue.length > 0) {
     const importer = queue.shift()
-    const source = await fs.readFile(importer, 'utf8')
+    const source = await fs.readFile(importer.sourcePath, 'utf8')
     for (const specifier of localModuleSpecifiers(source)) {
-      const sourcePath = path.resolve(path.dirname(importer), specifier)
+      const sourcePath = path.resolve(path.dirname(importer.sourcePath), specifier)
       const relativePath = path.relative(agenticGraphRoot, sourcePath)
       if (relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) {
         throw new Error(`Local module import escapes the agentic-graph source root: ${specifier}`)
       }
       if (!await fileExists(sourcePath)) {
-        throw new Error(`Missing local module import ${specifier} from ${path.relative(agenticGraphRoot, importer)}`)
+        throw new Error(`Missing local module import ${specifier} from ${path.relative(agenticGraphRoot, importer.sourcePath)}`)
       }
-      if (visited.has(sourcePath)) continue
-      visited.add(sourcePath)
-      queue.push(sourcePath)
-      copies.push([sourcePath, path.resolve(mirrorRoot, relativePath)])
+      const targetPath = path.resolve(path.dirname(importer.targetPath), specifier)
+      const targetRelativePath = path.relative(mirrorRoot, targetPath)
+      if (targetRelativePath.startsWith(`..${path.sep}`) || path.isAbsolute(targetRelativePath)) {
+        throw new Error(`Local module mirror target escapes the production mirror root: ${specifier}`)
+      }
+      const identity = `${sourcePath}\0${targetPath}`
+      if (visited.has(identity)) continue
+      visited.add(identity)
+      queue.push({ sourcePath, targetPath })
+      copies.push([sourcePath, targetPath])
     }
   }
-  return copies.sort(([left], [right]) => left.localeCompare(right))
+  return copies.sort(([, left], [, right]) => left.localeCompare(right))
 }
 
 const collectGrphSharedRuntimeCopies = async ({ grphSharedRoot, mirrorRoot, entryRelativePaths }) => {
@@ -98,11 +108,16 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
   const videoFrameFunctionTarget = target('functions', '__video_frame.js')
   const videoFrameSharedProviderSource = source('grph-shared', 'dist', 'rich-media', 'providers.js')
   const videoFrameSharedProviderTarget = target('grph-shared', 'dist', 'rich-media', 'providers.js')
+  const resolveSource = createRequire(source('package.json')).resolve
 
   const productionRuntimeFunctionEntries = [
     { label: 'agentic-os integration helper', source: source('cloudflare', 'pages', 'runtime-integration-hub.mjs'), target: target('functions', 'api', '_integrationHub.js') },
     { label: 'agentic-graph graph API Pages Function', source: source('cloudflare', 'pages', 'runtime-graph.mjs'), target: target('functions', 'api', 'graph.js'), targetIntegrationHubSpecifier: './_integrationHub.js' },
     { label: 'agentic-os chat proxy Pages Function', source: source('cloudflare', 'pages', 'runtime-chat-proxy.mjs'), target: target('functions', '__chat_proxy', '[[path]].js'), targetIntegrationHubSpecifier: '../api/_integrationHub.js' },
+    { label: 'agentic-os source evidence Pages Function', source: source('cloudflare', 'pages', 'agentic-os-source-evidence.mjs'), target: target('functions', 'agentic-os', 'api', 'observability-workspace', '[[path]].js') },
+    { label: 'agentic-os source evidence cost verifier', source: resolveSource('agentic-os/context/json'), target: target('functions', 'agentic-os', 'api', 'shared', 'json-contract.mjs') },
+    { label: 'agentic-os source evidence R2 cost gate helper', source: source('cloudflare', 'shared', 'r2-cost-gate.mjs'), target: target('functions', 'agentic-os', 'api', 'shared', 'r2-cost-gate.mjs'), sourceSpecifierReplacements: [["'agentic-os/context/json'", "'./json-contract.mjs'"]] },
+    { label: 'agentic-os source evidence R2 free quota helper', source: source('cloudflare', 'shared', 'r2-free-quota.mjs'), target: target('functions', 'agentic-os', 'api', 'shared', 'r2-free-quota.mjs'), sourceSpecifierReplacements: [["'agentic-os/context/json'", "'./json-contract.mjs'"]] },
   ]
 
   const agentReadyDocRouteTarget = target('functions', 'agentic-graph', 'doc', '[[path]].js')
@@ -172,7 +187,12 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
     'storageSyncAgentReadyContract.mjs', 'importUrlAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs',
     'agentic-graph-vdeoxpln-registry-data.mjs', 'agentic-graph-application-composition-vdeoxpln.mjs',
   ].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)])
-  const agentReadyRuntimeCopies = [
+  const agentReadyFunctionDependencyCopies = await collectLocalModuleClosureCopies({
+    agenticGraphRoot, mirrorRoot, entrySources: [agentReadyFunctionSource],
+    entryTargets: new Map([[agentReadyFunctionSource, agentReadyFunctionTarget]]),
+  })
+  const agentReadyRuntimeCopyEntries = [
+    ...agentReadyFunctionDependencyCopies,
     [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget],
     [webMcpHtmlInjectionSource, webMcpHtmlInjectionTarget], [semanticKeyContractSource, semanticKeyContractTarget],
     ...namedFeatureCopies,
@@ -181,6 +201,15 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
     ...await collectLocalModuleClosureCopies({ agenticGraphRoot, mirrorRoot, entrySources: [agentReadyToolContractSource] }),
     ...await collectGrphSharedRuntimeCopies({ grphSharedRoot, mirrorRoot, entryRelativePaths: runtimeSharedEntries }),
   ]
+  const copiesByTarget = new Map()
+  for (const entry of agentReadyRuntimeCopyEntries) {
+    const existing = copiesByTarget.get(entry[1])
+    if (existing && existing[0] !== entry[0]) {
+      throw new Error(`Pages mirror runtime copy target has multiple owners: ${path.relative(mirrorRoot, entry[1])}`)
+    }
+    copiesByTarget.set(entry[1], entry)
+  }
+  const agentReadyRuntimeCopies = [...copiesByTarget.values()]
 
   // Published runtime data belongs to the source pin, independently of the mirror's ADLC harness.
   const durableSource = agentReadyFeatureSource('durableRunAgentReadyContract.mjs')
@@ -189,7 +218,6 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
   const catalogImport = "import catalog from 'agentic-os/catalog/invocation.json' with { type: 'json' }"
   const durableBody = await fs.readFile(durableSource, 'utf8')
   if (durableBody.split(catalogImport).length !== 2) throw new Error('Durable catalog import changed')
-  const resolveSource = createRequire(source('package.json')).resolve
   const catalogBytes = await fs.readFile(resolveSource('agentic-os/catalog/invocation.json'), 'utf8')
   JSON.parse(catalogBytes)
   durableEntry.push(durableBody.replace(catalogImport, () => (
