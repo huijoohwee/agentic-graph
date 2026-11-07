@@ -30,7 +30,7 @@ export const KTV_VALUE_ROW_SCROLL_SPACIOUS_CLASS_NAME = KTV_VALUE_ROW_SCROLL_CLA
 export const KTV_VALUE_ROW_STATUS_SHELL_CLASS_NAME = 'min-w-0 max-w-full overflow-hidden'
 
 export const KTV_ROW_TEXT_CELL_CLASS_NAME = 'flex min-w-0 max-w-full overflow-hidden'
-export const KTV_ROW_LABEL_CELL_CLASS_NAME = `${KTV_ROW_TEXT_CELL_CLASS_NAME} text-ellipsis whitespace-nowrap`
+export const KTV_ROW_LABEL_CELL_CLASS_NAME = `${KTV_ROW_TEXT_CELL_CLASS_NAME} px-2 text-ellipsis whitespace-nowrap`
 export const KTV_ROW_VALUE_CELL_CLASS_NAME = `${KTV_ROW_TEXT_CELL_CLASS_NAME} self-stretch px-2 gap-2 justify-start sm:justify-end ${UI_THEME_TOKENS.text.secondary}`
 
 export const KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = 'grid-cols-[var(--agentic-ktv-columns)]'
