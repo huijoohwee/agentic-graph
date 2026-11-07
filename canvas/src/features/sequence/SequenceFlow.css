@@ -4,11 +4,11 @@
 .sequence-svg-host { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 .sequence-svg-host > svg { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .sequence-participant { fill: var(--sequence-card); stroke: var(--kg-border); stroke-width: 1.5; }
-.sequence-participant-type { fill: var(--sequence-muted); font-size: 10px; letter-spacing: 1px; }
-.sequence-participant-name { font-weight: 600; font-size: 14px; }
-.sequence-event-label { font-size: 14px; font-weight: 500; }
+.sequence-participant-type { fill: var(--sequence-muted); font-size: var(--kg-text-xs); letter-spacing: normal; }
+.sequence-participant-name { font-weight: 600; font-size: var(--kg-text-sm); }
+.sequence-event-label { font-size: var(--kg-text-sm); font-weight: 500; }
 .sequence-event-pill { fill: color-mix(in srgb, var(--sequence-ink) 10%, var(--sequence-surface)); }
-.sequence-event-meta { fill: var(--sequence-muted); font-size: 11px; font-weight: 600; letter-spacing: .3px; }
+.sequence-event-meta { fill: var(--sequence-muted); font-size: var(--kg-text-xs); font-weight: 600; letter-spacing: normal; }
 .sequence-connection-badge { fill: var(--sequence-surface); stroke: var(--kg-border); stroke-width: 1; }
 .sequence-svg-host [data-sequence-participant][data-sequence-current='true'] .sequence-participant,
 .sequence-svg-host [data-sequence-event][data-sequence-current='true'] .sequence-connection-badge { fill: var(--kg-accent-soft-bg); stroke: var(--kg-canvas-accent); stroke-width: 2; }
@@ -26,10 +26,10 @@
 .sequence-canvas-chrome { position: relative; z-index: 1; pointer-events: none; }
 .sequence-canvas-header { pointer-events: none; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 8px; }
 .sequence-canvas-status { flex: 1; min-width: 120px; max-width: 100%; display: grid; gap: 4px; }
-.sequence-canvas-eyebrow { color: var(--sequence-muted); font-size: 11px; }
-.sequence-canvas-current { font-size: 13px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sequence-canvas-eyebrow { color: var(--sequence-muted); font-size: var(--kg-text-xs); }
+.sequence-canvas-current { font-size: var(--kg-text-sm); font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .sequence-layout-controls { pointer-events: auto; display: flex; flex-shrink: 0; gap: 2px; padding: 3px; border: 1px solid var(--kg-border); border-radius: 8px; background: var(--sequence-surface); }
-.sequence-layout-controls button { min-height: 44px; padding: 6px 12px; border-radius: 5px; font-size: 12px; }
+.sequence-layout-controls button { min-height: 44px; padding: 6px 12px; border-radius: 5px; font-size: var(--kg-text-xs); }
 .sequence-layout-controls button:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: 1px; }
 .sequence-layout-controls button[aria-pressed='true'] { background: var(--kg-accent-soft-bg); }
 .sequence-inspector { height: 100%; overflow: auto; font-family: var(--kg-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
@@ -48,7 +48,7 @@
 .sequence-transport .timeline-transport-header-tools { overflow-x: auto; }
 .sequence-transport .timeline-video-sequence-ruler-viewport { min-width: var(--sequence-axis-min-width); }
 .sequence-event-mark[data-sequence-state='complete'] > span { opacity: .6; }
-@media (max-width: 640px) { .sequence-canvas-header { padding: 8px; gap: 6px; } .sequence-canvas-eyebrow { font-size: 10px; } .sequence-flow .timeline-player-toolbar button { min-height: 44px; min-width: 44px; } }
+@media (max-width: 640px) { .sequence-canvas-header { padding: 8px; gap: 6px; } .sequence-canvas-eyebrow { font-size: var(--kg-text-xs); } .sequence-flow .timeline-player-toolbar button { min-height: 44px; min-width: 44px; } }
 
 .sequence-svg-host[data-notation-theme]:not([data-notation-theme='dark']) { --sequence-ink: #243047; --sequence-surface: #fff; }
 .sequence-svg-host [data-sequence-participant][data-sequence-current='true'][data-et='life-line'],

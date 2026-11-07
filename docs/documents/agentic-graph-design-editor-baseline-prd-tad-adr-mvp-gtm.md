@@ -23,25 +23,17 @@ adr_revision: "0.6.5"
 mvp_revision: "0.6.5"
 gtm_revision: "0.6.5"
 ---
-
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
-
 Current accepted scope revision: **0.6.5**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
-
 **Document Version**: 0.3.0  
 **Date**: 2026-05-29  
 **Status**: Accepted and implemented Design editor baseline
-
 ## Document Purpose
-
 Design editor baseline is implemented natively in agentic-graph. This document records the product and technical contract for the in-repo Design editor surface that was originally scoped from a reference-editor mental model: a focused canvas, explicit tools, layers, inspector, tokens, DOM context, and reversible layout edits. The reference is directional only; the implementation owns its behavior in agentic-graph source files and does not import external editor code, fixtures, or assets.
-
 The shipped baseline keeps renderer semantics neutral. Design editing operates on Design-owned view state, Design-only history, existing canvas pointer modes, and shared semantic-key helpers. It does not remap old aliases, layer local patches over downstream UI, or mutate graph topology to represent presentational frame edits.
-
 ## Implemented Product Contract
-
 | Capability | Status | Source owner |
 |------------|--------|--------------|
 | FloatingPanel Design editor | Shipped | `canvas/src/features/design/DesignFloatingPanelView.tsx`; `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx` |
@@ -54,23 +46,16 @@ The shipped baseline keeps renderer semantics neutral. Design editing operates o
 | Design-only history | Shipped | `canvas/src/hooks/store/designHistorySlice.ts`; `canvas/src/hooks/store/store-types/graph-state-design-history.ts` |
 | Design launch and Import URL activation | Shipped | `canvas/src/features/design/designEditorLaunchState.ts`; `canvas/src/__tests__/designEditorIntegrationRegression.test.ts` |
 | Layer state and token summaries | Shipped | `canvas/src/features/design/designLayersState.ts`; `canvas/src/features/design/designTokenSummary.ts` |
-
 ## User Outcomes
-
 | User | Need | Implemented behavior |
 |------|------|----------------------|
 | Knowledge curator | Arrange graph-derived frames into a readable canvas | Design mode supports frame selection, movement, resize, layers, and inspector controls without changing canonical graph topology. |
 | Research analyst | Reopen and refine visual layouts | Design state is scoped by graph metadata and committed through Design-owned store actions. |
 | Builder | Extend Design editor behavior without duplicate state paths | FloatingPanel, render shell, controllers, and store history expose source-owned contracts covered by registry tests. |
-
 ## Functional Requirements
-
 ### FR-1: Dedicated Design Surface
-
 The Design editor is reachable through Design renderer activation paths and one FloatingPanel Design view. The duplicate MainPanel Design tab is retired. MainPanel Settings remains the appearance owner; FloatingPanel Design owns overview, Layers, Style, Tokens, DOM tree, DOM inspect, and Video controls.
-
 Acceptance:
-
 - `mainPanelTabs.ts` exposes no Design tab and `MainPanel.tsx` mounts no Design editor.
 - `ToolbarToolMenu.impl.tsx` mounts `DesignFloatingPanelView` for Design.
 - A legacy MainPanel Design intent activates the shared FloatingPanel Design view.

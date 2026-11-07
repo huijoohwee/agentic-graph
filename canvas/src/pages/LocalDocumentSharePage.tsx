@@ -18,7 +18,7 @@ export function LocalDocumentSharePage() {
   const { title, markdown } = share.document
   return <main className="flex min-h-svh flex-col bg-white text-slate-900" aria-labelledby="local-share-title" data-kg-local-document-share="1">
     <header className="border-b border-slate-200 px-4 py-4 sm:px-8">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Read-only document</p>
+      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Read-only document</p>
       <h1 id="local-share-title" className="mt-1 break-words text-xl font-semibold">{title}</h1>
       <p className="mt-2 max-w-prose text-sm leading-5 text-slate-600">
         This self-contained URL includes a copy of the document in its fragment. It was not uploaded. Anyone with this URL can read it; keep sensitive content out of shared links.
