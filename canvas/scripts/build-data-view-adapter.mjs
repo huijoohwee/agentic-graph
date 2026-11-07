@@ -139,7 +139,7 @@ const projectRules = (source, accepts, required) => {
   assert(required.every(selector => selected.has(selector)), `Native CSS owner missing: ${required.filter(selector => !selected.has(selector)).join(', ')}`)
   return rules
 }
-const frameSelectors = ['.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
+const frameSelectors = ['.kg-toolbar-settings-panel-body', '.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
 nativeStyles.push(...projectRules(responsiveCss,
   selector => frameSelectors.some(base => selector === base || selector.startsWith(base + ' ')), frameSelectors))
 const shellSelectors = ['.App-toolbar__btn']

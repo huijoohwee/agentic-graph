@@ -63,3 +63,12 @@ test('legacy renderer fields reuse the KTV adapter and palette and renderer sect
   assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0\.75rem;/)
   assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0\.5rem;/)
 })
+
+
+test('sequence inspector body and spacing consume the same shared roles', () => {
+  const inspectorCss = fs.readFileSync(new URL('../features/sequence/SequenceFlow.css', import.meta.url), 'utf8')
+  assert.match(inspectorCss, /\.sequence-inspector > p \{[^}]*font-size: var\(--agentic-font-size-body\); line-height: var\(--agentic-line-height-body\)/)
+  assert.doesNotMatch(inspectorCss, /\.sequence-inspector[^{}]*\{[^}]*font-size: (?:12|13)px/)
+  const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
+  assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
+})

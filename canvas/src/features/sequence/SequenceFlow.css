@@ -32,17 +32,17 @@
 .sequence-layout-controls button { min-height: 44px; padding: 6px 12px; border-radius: 5px; font-size: 12px; }
 .sequence-layout-controls button:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: 1px; }
 .sequence-layout-controls button[aria-pressed='true'] { background: var(--kg-accent-soft-bg); }
-.sequence-inspector { height: 100%; overflow: auto; padding: 12px; }
+.sequence-inspector { height: 100%; overflow: auto; font-family: var(--kg-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
 .sequence-inspector h2 { font-weight: 600; margin-bottom: 8px; }
-.sequence-inspector > p { color: var(--sequence-muted); font-size: 12px; line-height: 1.6; }
-.sequence-inspector li button strong { font-size: 13px; }
-.sequence-inspector li button span { font-size: 12px; color: var(--sequence-muted); }
+.sequence-inspector > p { color: var(--sequence-muted); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
+.sequence-inspector li button strong { font-size: var(--agentic-font-size-body); }
+.sequence-inspector li button span { font-size: var(--agentic-font-size-body); color: var(--sequence-muted); }
 .sequence-inspector p { margin: 8px 0; }
 .sequence-flow select { background: var(--sequence-surface); color: inherit; max-width: 100%; border: 1px solid var(--kg-border); border-radius: 5px; padding: 5px; }
 .sequence-inspector ol { display: grid; gap: 8px; margin-top: 12px; }
-.sequence-inspector li button { display: grid; text-align: left; width: 100%; padding: 10px; gap: 4px; border: 1px solid var(--kg-border); border-radius: 8px; }
+.sequence-inspector li button { font: inherit; display: grid; text-align: left; width: 100%; padding: 10px; gap: 4px; border: 1px solid var(--kg-border); border-radius: 8px; }
 .sequence-inspector button[aria-pressed='true'] { background: var(--kg-accent-soft-bg); border-color: var(--kg-canvas-accent); }
-.sequence-inspector small { opacity: .7; }
+.sequence-inspector small { opacity: .7; font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
 .sequence-flow:has(> .sequence-transport), .sequence-transport { height: 100%; min-height: 0; }
 .sequence-transport .timeline-transport-ruler--video-sequence { overflow: auto; }
 .sequence-transport .timeline-transport-header-tools { overflow-x: auto; }
