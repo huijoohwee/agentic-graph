@@ -53,8 +53,8 @@ export interface SimpleKeyValueRowProps {
   onClick?: () => void
 }
 
-export function KeyTypeValueContainer({ children }: { children: ReactNode }) {
-  return <section className="agentic-ktv-container">{children}</section>
+export function KeyTypeValueContainer({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <section className={`agentic-ktv-container ${className}`.trim()}>{children}</section>
 }
 
 function buildRootClassName({
@@ -109,7 +109,7 @@ export function KeyTypeValueStaticRow({
 }: KeyTypeValueStaticRowProps) {
   const cells = presentCells ? presentCells({ keyNode, typeNode, valueNode }) : { keyNode, typeNode, valueNode }
   return (
-    <KeyTypeValueContainer>
+    <KeyTypeValueContainer className={className?.split(/\s+/).filter(token => /(?:^|:)(?:col|row)-span-/.test(token)).join(' ')}>
     <dl
       id={id}
       data-panel-field-row="true"
