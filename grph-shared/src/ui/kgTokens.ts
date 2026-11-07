@@ -1,87 +1,8 @@
 import { renderKgTokensCss, type KgTheme, type KgTokenDef } from './kgTokenContract.js'
 export * from './kgTokenContract.js'
 
-// Values retain the existing CSS order. Metadata belongs to this same source owner.
-const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
-  { cssVar: '--kg-app-bg', light: '#f3f4f6', dark: '#020617' },
-  { cssVar: '--kg-surface-bg', light: '#ffffff', dark: '#0b1220' },
-  { cssVar: '--kg-panel-bg', light: '#ffffff', dark: '#020b2a' },
-  { cssVar: '--kg-panel-bg-hover', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
-  { cssVar: '--kg-border', light: '#e5e7eb', dark: '#4b5563' },
-  { cssVar: '--kg-divider', light: '#e5e7eb', dark: '#4b5563' },
-  { cssVar: '--kg-text-primary', light: '#111827', dark: '#f3f4f6' },
-  { cssVar: '--kg-text-secondary', light: '#4b5563', dark: '#9ca3af' },
-  { cssVar: '--kg-text-tertiary', light: '#6b7280', dark: '#6b7280' },
-  { cssVar: '--kg-tooltip-bg', light: '#000000', dark: '#000000' },
-  { cssVar: '--kg-tooltip-text', light: '#ffffff', dark: '#ffffff' },
-  { cssVar: '--kg-code-bg', light: '#f8fafc', dark: 'rgba(2, 6, 23, 0.6)' },
-  { cssVar: '--kg-code-border', light: '#e2e8f0', dark: '#1e293b' },
-  { cssVar: '--kg-code-text', light: '#0f172a', dark: '#e2e8f0' },
-  { cssVar: '--kg-control-height', light: '28px', dark: '28px' },
-  { cssVar: '--kg-status-pill-height', light: '24px', dark: '24px' },
-  { cssVar: '--kg-table-row-height', light: 'var(--agentic-row-height)', dark: 'var(--agentic-row-height)' },
-  { cssVar: '--kg-focus-ring', light: '#3b82f6', dark: '#60a5fa' },
-  { cssVar: '--kg-accent', light: '#3b82f6', dark: '#60a5fa' },
-  { cssVar: '--kg-accent-contrast', light: '#ffffff', dark: '#020617' },
-  { cssVar: '--kg-accent-border', light: '#3b82f6', dark: '#60a5fa' },
-  { cssVar: '--kg-accent-soft-bg', light: 'rgba(59, 130, 246, 0.12)', dark: 'rgba(96, 165, 250, 0.16)' },
-  { cssVar: '--kg-accent-strong-bg', light: '#3b82f6', dark: '#60a5fa' },
-  { cssVar: '--kg-focus-ring-offset', light: '#ffffff', dark: '#020b2a' },
-  { cssVar: '--kg-table-header-bg', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.75)' },
-  { cssVar: '--kg-table-row-hover-bg', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
-  { cssVar: '--kg-table-row-selected-bg', light: 'rgba(59, 130, 246, 0.12)', dark: 'rgba(96, 165, 250, 0.16)' },
-  { cssVar: '--kg-table-row-related-bg', light: 'rgba(59, 130, 246, 0.06)', dark: 'rgba(96, 165, 250, 0.08)' },
-  { cssVar: '--kg-canvas-bg', light: '#f3f4f6', dark: '#020617' },
-  { cssVar: '--kg-canvas-node-stroke', light: '#ffffff', dark: '#0b1220' },
-  { cssVar: '--kg-canvas-edge-stroke', light: '#9ca3af', dark: '#4b5563' },
-  { cssVar: '--kg-canvas-accent', light: '#3b82f6', dark: '#60a5fa' },
-  { cssVar: '--kg-canvas-label-halo', light: '#f3f4f6', dark: '#020617' },
-  { cssVar: '--kg-canvas-label-fill', light: '#111827', dark: '#e5e7eb' },
-  { cssVar: '--kg-canvas-grid-minor', light: '#111827', dark: '#f3f4f6' },
-  { cssVar: '--kg-canvas-grid-major', light: '#111827', dark: '#f3f4f6' },
-  { cssVar: '--kg-media-panel-bg', light: '#ffffff', dark: '#020b2a' },
-  { cssVar: '--kg-media-panel-header-bg', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.75)' },
-  { cssVar: '--kg-statusbar-bg', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
-  { cssVar: '--kg-statusbar-text', light: '#4b5563', dark: '#9ca3af' },
-  { cssVar: '--kg-kanban-group-bg', light: '#f8fafc', dark: 'rgba(11, 18, 32, 0.7)' },
-  { cssVar: '--kg-kanban-card-bg', light: '#ffffff', dark: '#020b2a' },
-  { cssVar: '--kg-kanban-card-bg-hover', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
-  { cssVar: '--kg-kanban-cell-bg', light: '#f8fafc', dark: 'rgba(2, 6, 23, 0.55)' },
-  { cssVar: '--kg-kanban-card-radius', light: '0.5rem', dark: '0.5rem' },
-  { cssVar: '--kg-kanban-card-shadow', light: '0 1px 2px rgba(0,0,0,0.06)', dark: '0 1px 2px rgba(0,0,0,0.35)' },
-  { cssVar: '--kg-kanban-card-shadow-hover', light: '0 10px 24px rgba(0,0,0,0.10)', dark: '0 12px 30px rgba(0,0,0,0.50)' },
-  { cssVar: '--kg-panel-action-bg', light: 'rgba(0,0,0,0.04)', dark: 'rgba(255,255,255,0.06)' },
-  { cssVar: '--kg-panel-action-bg-hover', light: '#fffbeb', dark: 'var(--kg-canvas-accent, #60a5fa)' },
-]
-
-// The neutral palette changes surfaces only; semantic accents and authored media keep their owners.
-const blackOverrides: Partial<Record<KgTokenDef['cssVar'], string>> = {
-  '--kg-app-bg': '#000000',
-  '--kg-surface-bg': '#111111',
-  '--kg-panel-bg': '#0a0a0a',
-  '--kg-panel-bg-hover': 'rgba(23, 23, 23, 0.9)',
-  '--kg-border': '#404040',
-  '--kg-divider': '#404040',
-  '--kg-text-tertiary': '#8a8a8a',
-  '--kg-code-bg': '#0d0d0d',
-  '--kg-code-border': '#343434',
-  '--kg-code-text': '#e5e7eb',
-  '--kg-accent-contrast': '#000000',
-  '--kg-focus-ring-offset': '#0a0a0a',
-  '--kg-table-header-bg': 'rgba(23, 23, 23, 0.85)',
-  '--kg-table-row-hover-bg': 'rgba(23, 23, 23, 0.9)',
-  '--kg-canvas-bg': '#000000',
-  '--kg-canvas-node-stroke': '#111111',
-  '--kg-canvas-edge-stroke': '#525252',
-  '--kg-canvas-label-halo': '#000000',
-  '--kg-media-panel-bg': '#0a0a0a',
-  '--kg-media-panel-header-bg': 'rgba(23, 23, 23, 0.85)',
-  '--kg-statusbar-bg': 'rgba(23, 23, 23, 0.9)',
-  '--kg-kanban-group-bg': 'rgba(23, 23, 23, 0.8)',
-  '--kg-kanban-card-bg': '#0a0a0a',
-  '--kg-kanban-card-bg-hover': 'rgba(23, 23, 23, 0.9)',
-  '--kg-kanban-cell-bg': 'rgba(13, 13, 13, 0.9)',
-}
+import profile from './graph-profile.json' with { type: 'json' }
+import { centralTokenValue } from './fontStacks.js'
 
 const purposes: Record<string, string> = {
   'app-bg': 'Application background',
@@ -135,11 +56,16 @@ const purposes: Record<string, string> = {
   'panel-action-bg-hover': 'Hovered panel action',
 }
 
-export const AG_TOKEN_DEFS: readonly KgTokenDef[] = tokenValues.map(value => {
-  const name = value.cssVar.slice(5)
+// Existing 49-token API is a contract-only projection of the central registry.
+export const AG_TOKEN_DEFS: readonly KgTokenDef[] = Object.entries(purposes).map(([name, purpose]) => {
+  const cssVar = `--kg-${name}` as KgTokenDef['cssVar']
+  const token = profile.tokens.find(value => value.cssVar === cssVar)
+  if (!token) throw new Error(`Missing central token: ${cssVar}`)
   const type = ['control-height', 'status-pill-height', 'table-row-height', 'kanban-card-radius'].includes(name)
     ? 'dimension' : ['kanban-card-shadow', 'kanban-card-shadow-hover'].includes(name) ? 'shadow' : 'color'
-  return { ...value, black: blackOverrides[value.cssVar] ?? value.dark, name, type, purpose: purposes[name],
+  const value = (theme: KgTheme) => name === 'table-row-height' || name === 'panel-action-bg-hover'
+    ? token.values[theme] : centralTokenValue(cssVar, theme)
+  return { cssVar, name, type, purpose, light: value('light'), dark: value('dark'), black: value('black'),
     ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent', black: 'canvas-accent' } } : {}) }
 })
 

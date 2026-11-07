@@ -21,7 +21,7 @@ const sourcePath = file => file.startsWith(basePrefix + '/')
 const startedAt = Date.now()
 const entry = 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx'
 const MAX_BYTES = 500000
-const MAX_INPUTS = 112, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
+const MAX_INPUTS = 128, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
   .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
@@ -56,59 +56,23 @@ assert(browserExports.every(name => Object.values(javascript.metafile.outputs).s
 const forbidden = [...inputs].filter(file => file.startsWith('canvas/src/') && /(?:\/hooks\/|useGraphStore|useSequenceDocument|\/(?:stores?|storage|three|mermaid|rich-media)\/)/.test(file))
 assert.equal(forbidden.length, 0, `Portable views imported application runtime: ${forbidden.join(', ')}`)
 
-// Execute the native generators from this exact checkout; no maintained CSS palette exists here.
-const tokenModule = await esbuild.build({ ...options, platform: 'node', format: 'esm', stdin: {
-  sourcefile: '<native-token-generators>', resolveDir: root, contents: String.raw`
-import { buildKgTokensCssText } from './grph-shared/src/ui/kgTokens.ts';
-import { buildUiTypographyCss } from './grph-shared/src/ui/typography.ts';
-export default [buildUiTypographyCss(), buildKgTokensCssText('light'),
-  buildKgTokensCssText('dark'), buildKgTokensCssText('black')].join('\n');`,
-} })
-collect(tokenModule)
-const { default: generated } = await import('data:text/javascript;base64,' + Buffer.from(tokenModule.outputFiles[0].text).toString('base64'))
-  .catch(error => { throw new Error(`Native token generator failed: ${error.message}`) })
-const borders = await read('canvas/src/styles/shared-borders.css')
+// Exact central projection, shared by the application and portable ShadowRoot view.
+const pin = JSON.parse(await read('grph-shared/src/ui/graph-profile.pin.json'))
+const generated = await read('canvas/src/styles/kgTokens.generated.css')
+assert.equal(pin.profile.owner, 'github.com/huijoohwee/agentic-design-system')
+assert.equal(pin.profile.projectionSha256, `sha256:${sha256(generated)}`, 'Central Graph projection drift')
+assert.equal(pin.profile.sourceSha256, `sha256:${sha256(await read('grph-shared/src/ui/graph-profile.json'))}`, 'Central Graph profile drift')
+await read('grph-shared/src/ui/shared-ui-profile.json')
 const preserveAtRules = (rule, projected) => {
-  for (let parent = rule.parent; parent?.type === 'atrule'; parent = parent.parent) {
-    projected = parent.clone({ nodes: [projected] })
-  }
+  for (let parent = rule.parent; parent?.type === 'atrule'; parent = parent.parent) projected = parent.clone({ nodes: [projected] })
   return projected.toString()
 }
-const borderTokens = []
-postcss.parse(borders).walkRules(rule => {
-  if (!rule.selector.startsWith(':root')) return
-  const scoped = rule.clone()
-  scoped.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
-  borderTokens.push(scoped.toString())
-})
 const tokenRules = postcss.parse(generated)
 tokenRules.walkRules(rule => {
   rule.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
 })
 const indexCss = postcss.parse(await read('canvas/src/index.css'))
 const responsiveCss = postcss.parse(await read('canvas/src/styles/responsive-toolbar.css'))
-const viewportProperties = new Set(['--kg-safe-top', '--kg-safe-bottom', '--kg-safe-left', '--kg-safe-right',
-  '--kg-canvas-viewport-edge-gap', '--panel-bg-rgb', '--panel-opacity', '--kg-touch-target',
-  '--kg-default-glyph-size', '--kg-compact-glyph-size', '--kg-toolbar-compact-pad-y', '--kg-toolbar-compact-pad-x', '--kg-toolbar-compact-padding', '--kg-toolbar-compact-surface-height'])
-const projectRootTokens = (source, properties) => {
-  const projected = [], found = new Set()
-  source.walkRules(rule => {
-    if (!rule.selectors.every(selector => /^:root(?:\[[^\]]+\])*$/.test(selector))) return
-    const scoped = rule.clone({ nodes: [] })
-    rule.walkDecls(declaration => {
-      if (!properties.has(declaration.prop)) return
-      found.add(declaration.prop); scoped.append(declaration.clone())
-    })
-    if (!scoped.nodes.length) return
-    scoped.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
-    projected.push(preserveAtRules(rule, scoped))
-  })
-  assert.equal(found.size, properties.size, `Native root tokens missing: ${[...properties].filter(property => !found.has(property)).join(', ')}`)
-  return projected
-}
-// Match index.css import order: generated tokens, borders, responsive controls, then local root declarations.
-const controlTokens = projectRootTokens(responsiveCss, new Set(['--kg-control-height']))
-const viewportTokens = projectRootTokens(indexCss, viewportProperties)
 const baseTokenMapping = `:host {
   --agentic-base-text: var(--kg-text-primary);
   --agentic-base-surface: var(--kg-panel-bg);
@@ -119,7 +83,7 @@ const baseTokenMapping = `:host {
   --agentic-base-hover: color-mix(in srgb, var(--kg-accent) 7%, var(--kg-panel-bg));
   --agentic-base-focus: var(--kg-accent);
 }`
-const tokens = [tokenRules.toString(), ...borderTokens, ...controlTokens, ...viewportTokens, baseTokenMapping].join('\n')
+const tokens = [tokenRules.toString(), baseTokenMapping].join('\n')
 
 // Token-only sheet is safe for host applications. Layout/reset utilities stay in the ShadowRoot sheet.
 const tokenCss = (await esbuild.transform(tokens, { loader: 'css', minify: true, legalComments: 'inline' })).code

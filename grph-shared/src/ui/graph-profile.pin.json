@@ -1,0 +1,14 @@
+{
+  "schema": "agentic-design-system/consumer-pin/v1",
+  "profile": {
+    "id": "graph",
+    "owner": "github.com/huijoohwee/agentic-design-system",
+    "sourceRevision": "64c2a190b42f64fbb6ad821dac2e901ada86d0b1",
+    "registryRevision": "b68288f2bd9753a4f9becd3d0b43455c3b0b6bf0",
+    "sourcePath": "site/tokens/graph-profile.json",
+    "sourceSha256": "sha256:aae4fd536724e9f81783e3f580f2613f447e2fad25c09dfa60a01c5cc995674c",
+    "originRevision": "be87de5c3dcc66f58d2cd1b4d96e5920dd284a46",
+    "projectionPath": "site/vendor/graph-profile.css",
+    "projectionSha256": "sha256:e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06"
+  }
+}

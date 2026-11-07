@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { buildUiTypographyCss } from 'grph-shared/ui/typography'
+import { createHash } from 'node:crypto'
 
 import { AG_TOKEN_DEFS, extractKgCssVarsFromCssText } from '@/lib/ui/tokens-ssot'
 
@@ -109,13 +110,17 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
     cssVar: `--kg-token-${i}` as `--kg-${string}`, type: 'color' as const, purpose: 'x'.repeat(512),
     light: '#ffffff', dark: '#000000', black: '#0a0a0a' }))
   assert.ok(new TextEncoder().encode(JSON.stringify(buildKgTokenBundle(boundary))).length <= 65536)
-  const generated = [
-    buildUiTypographyCss(),
-    buildKgTokensCssText('light', { selector: ':root' }),
-    buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
-    buildKgTokensCssText('black', { selector: ":root[data-theme='dark'][data-dark-variant='black']" }),
-  ].join('\n')
+  const generated = readUtf8(path.resolve(process.cwd(), 'src/styles/kgTokens.generated.css'))
+  const profile = JSON.parse(readUtf8(path.resolve(process.cwd(), '../grph-shared/src/ui/graph-profile.json')))
+  const pin = JSON.parse(readUtf8(path.resolve(process.cwd(), '../grph-shared/src/ui/graph-profile.pin.json')))
   assert.equal(AG_TOKEN_DEFS.length, 49)
+  assert.equal(pin.profile.projectionSha256, `sha256:${createHash('sha256').update(generated).digest('hex')}`)
+  assert.equal(pin.profile.sourceSha256, `sha256:${createHash('sha256').update(readUtf8(path.resolve(process.cwd(), '../grph-shared/src/ui/graph-profile.json'))).digest('hex')}`)
   assert.ok(generated.includes(":root[data-theme='dark'][data-dark-variant='black']"))
-  assert.equal(generated, readUtf8(path.resolve(process.cwd(), 'src/styles/kgTokens.generated.css')))
+  assert.ok(buildUiTypographyCss().includes('--kg-text-sm: var(--agentic-font-size-body)'))
+  for (const file of ['src/index.css', 'src/styles/shared-borders.css', 'src/styles/responsive-toolbar.css', 'src/styles/design-system-responsive.css']) {
+    const authored = readUtf8(path.resolve(process.cwd(), file))
+    for (const token of profile.tokens) assert.ok(!authored.includes(`${token.cssVar}:`), `Local token override in ${file}: ${token.cssVar}`)
+  }
+
 }

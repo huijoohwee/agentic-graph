@@ -19,7 +19,9 @@ export function testApplicationTypographyMatchesDashboardReference() {
   assert.deepEqual(UI_TEXT_SCALE.base, { size: 16, line: 24 })
   assert.deepEqual(UI_TEXT_SCALE['3xl'], { size: 30, line: 36 })
   const generated = fs.readFileSync(path.resolve('src/styles/kgTokens.generated.css'), 'utf8')
-  assert.ok(generated.startsWith(buildUiTypographyCss()), 'Generated CSS must match the typography source')
+  for (const row of buildUiTypographyCss().split('\n').filter(row => row.trim().startsWith('--kg-'))) {
+    assert.ok(generated.includes(row), 'Central CSS must contain the exact pinned typography roles')
+  }
   assert.ok(generated.includes('--kg-font-sans: var(--agentic-font-sans)'))
   assert.ok(generated.includes('--kg-font-mono: var(--agentic-font-mono)'))
   for (const presentation of [false, true]) for (let depth = 1; depth <= 6; depth++) {
@@ -34,7 +36,7 @@ export function testApplicationTypographyLoadsBeforeBuild() {
   try {
     const shared = path.join(root, 'node_modules/grph-shared')
     fs.mkdirSync(path.join(shared, 'src/ui'), { recursive: true })
-    for (const file of ['package.json', 'src/ui/fontStacks.js']) {
+    for (const file of ['package.json', 'src/ui/fontStacks.js', 'src/ui/shared-ui-profile.json', 'src/ui/graph-profile.json']) {
       fs.copyFileSync(path.resolve('../grph-shared', file), path.join(shared, file))
     }
     const output = execFileSync(process.execPath, ['--input-type=module', '-e',

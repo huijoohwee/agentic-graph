@@ -1,0 +1,152 @@
+{
+  "schema": "agentic-design-system/shared-ui-profile/v1",
+  "id": "shared-ui",
+  "version": "0.6.0",
+  "status": "candidate",
+  "scope": {
+    "repository": "github.com/huijoohwee/agentic-design-system",
+    "surfaces": [
+      "shared-interface"
+    ]
+  },
+  "tokens": [
+    {
+      "key": "icon.size.compact",
+      "cssVar": "--agentic-icon-size-compact",
+      "type": "dimension",
+      "value": "0.75rem"
+    },
+    {
+      "key": "icon.size.default",
+      "cssVar": "--agentic-icon-size-default",
+      "type": "dimension",
+      "value": "1rem"
+    },
+    {
+      "key": "surface.row-height",
+      "cssVar": "--agentic-row-height",
+      "type": "dimension",
+      "value": "38px"
+    },
+    {
+      "key": "surface.row-height-touch",
+      "cssVar": "--agentic-row-height-touch",
+      "type": "dimension",
+      "value": "54px"
+    },
+    {
+      "key": "typography.body.size",
+      "cssVar": "--agentic-font-size-body",
+      "type": "dimension",
+      "value": "0.875rem"
+    },
+    {
+      "key": "typography.body.line-height",
+      "cssVar": "--agentic-line-height-body",
+      "type": "dimension",
+      "value": "1.25rem"
+    },
+    {
+      "key": "typography.family.sans",
+      "cssVar": "--agentic-font-sans",
+      "type": "font-family",
+      "value": "-apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+    },
+    {
+      "key": "typography.family.mono",
+      "cssVar": "--agentic-font-mono",
+      "type": "font-family",
+      "value": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+    },
+    {
+      "key": "layout.ktv.columns",
+      "cssVar": "--agentic-ktv-columns",
+      "type": "grid-template",
+      "value": "minmax(10.5rem,11rem) 2rem minmax(8.75rem,1fr)"
+    },
+    {
+      "key": "layout.ktv.columns-narrow",
+      "cssVar": "--agentic-ktv-columns-narrow",
+      "type": "grid-template",
+      "value": "minmax(0,1fr) 2rem"
+    },
+    {
+      "key": "layout.ktv.stack-breakpoint",
+      "cssVar": "--agentic-ktv-stack-breakpoint",
+      "type": "dimension",
+      "value": "22.25rem"
+    },
+    {
+      "key": "layout.ktv.panel-width",
+      "cssVar": "--agentic-ktv-panel-width",
+      "type": "dimension",
+      "value": "26.25rem"
+    },
+    {
+      "key": "control.height",
+      "cssVar": "--agentic-control-height",
+      "type": "dimension",
+      "value": "28px"
+    },
+    {
+      "key": "control.height-touch",
+      "cssVar": "--agentic-control-height-touch",
+      "type": "dimension",
+      "value": "48px"
+    },
+    {
+      "key": "control.padding-inline",
+      "cssVar": "--agentic-control-padding-inline",
+      "type": "dimension",
+      "value": "0.5rem"
+    },
+    {
+      "key": "control.padding-block",
+      "cssVar": "--agentic-control-padding-block",
+      "type": "dimension",
+      "value": "0.25rem"
+    },
+    {
+      "key": "control.radius",
+      "cssVar": "--agentic-control-radius",
+      "type": "dimension",
+      "value": "0.375rem"
+    },
+    {
+      "key": "control.focus-width",
+      "cssVar": "--agentic-control-focus-width",
+      "type": "dimension",
+      "value": "2px"
+    },
+    {
+      "key": "control.focus-offset",
+      "cssVar": "--agentic-control-focus-offset",
+      "type": "dimension",
+      "value": "2px"
+    },
+    {
+      "key": "menu.min-width",
+      "cssVar": "--agentic-menu-min-width",
+      "type": "dimension",
+      "value": "14rem"
+    },
+    {
+      "key": "menu.edge-gap",
+      "cssVar": "--agentic-menu-edge-gap",
+      "type": "dimension",
+      "value": "0.5rem"
+    },
+    {
+      "key": "menu.padding",
+      "cssVar": "--agentic-menu-padding",
+      "type": "dimension",
+      "value": "0.25rem"
+    },
+    {
+      "key": "menu.gap",
+      "cssVar": "--agentic-menu-gap",
+      "type": "dimension",
+      "value": "0.25rem"
+    }
+  ]
+}

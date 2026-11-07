@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.4"
+version: "0.6.5"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -17,16 +17,16 @@ guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
 previous_document_version: "0.6.3"
-prd_revision: "0.6.4"
-tad_revision: "0.6.4"
-adr_revision: "0.6.4"
-mvp_revision: "0.6.4"
-gtm_revision: "0.6.4"
+prd_revision: "0.6.5"
+tad_revision: "0.6.5"
+adr_revision: "0.6.5"
+mvp_revision: "0.6.5"
+gtm_revision: "0.6.5"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.6.4**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.5**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -591,9 +591,15 @@ production status follows in the linked release companion. No buyer receipt.
 
 ## Native offline validation and palette browser proof
 
-All five roles join the same continuity ID at **0.6.4**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
+All five roles join the same continuity ID at **0.6.5**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
 TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke waits for source bootstrap before setting its fixture and selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
 ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
 MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
 PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed offline but expected one old Dark theme; PR #1244 passed offline but an XR source activation displaced the Design smoke fixture. Local offline and six palette/width Design cases pass again with the bootstrap wait; Canvas check and hygiene passed. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 60 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
 Production release status and recovery are tracked in the [joined release companion](./agentic-graph-design-editor-release-recovery-prd-tad-adr-mvp-gtm.md).
+
+## Central design value owner
+
+Registered Graph root/theme/typography/reduced-motion values now originate in Agentic Design System Graph profile v0.2.0 (137 roles) and shared UI v0.6.0. Pinned JSON/CSS are immutable projections; existing Graph token, typography and font APIs are contract-only readers. Local registered declarations are removed; component-specific layout presets retain their scope. The responsive control alias uses the same 28px desktop/48px touch owner. The portable adapter verifies profile/projection hashes and includes the exact central CSS in its input manifest.
+
+The retained PR #1240 continuation contains all PR #1239 history plus current main and the previously recorded member source. Merge commits preserve ancestry; no history is rewritten. Validation covers headless/source font loading, typography, token contracts, generated projection equality, no local registered overrides, type checking and bounded offline artifacts. Bare canonical npm run dev desktop/mobile verification is required before closeout. Rollback restores exact producer/consumer pins and assets together, without altering user storage. No Production effect or whole-repository token parity claim.
