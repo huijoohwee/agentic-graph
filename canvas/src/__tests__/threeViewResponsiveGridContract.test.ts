@@ -5,7 +5,6 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 
 export function testThreeViewFieldGridsUseSharedResponsiveOwner() {
   const ownerText = readUtf8('src/features/panels/views/threeViewResponsiveClasses.ts')
-  const fieldGridLiteral = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
   const consumers = [
     'ThreeViewBackgroundFogSection.tsx',
     'ThreeViewCameraSection.tsx',
@@ -15,8 +14,8 @@ export function testThreeViewFieldGridsUseSharedResponsiveOwner() {
     'ThreeViewStarfieldSection.tsx',
   ]
 
-  if (!ownerText.includes(`THREE_VIEW_FIELD_GRID_CLASS_NAME = '${fieldGridLiteral}'`)) {
-    throw new Error('expected ThreeView field grids to define one mobile-first shared owner')
+  if (!ownerText.includes('THREE_VIEW_FIELD_GRID_CLASS_NAME = KTV_SECTION_STACK_CLASS_NAME') || !ownerText.includes("from 'grph-shared/ui/keyTypeValueRows'")) {
+    throw new Error('expected ThreeView fields to reuse the full-width shared KTV stack')
   }
   for (const fileName of consumers) {
     const text = readUtf8(`src/features/panels/views/${fileName}`)

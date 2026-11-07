@@ -1,1 +1,3 @@
-export const THREE_VIEW_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
+import { KTV_SECTION_STACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+
+export const THREE_VIEW_FIELD_GRID_CLASS_NAME = KTV_SECTION_STACK_CLASS_NAME

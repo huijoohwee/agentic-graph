@@ -29,14 +29,16 @@ export function PanelKeyTypeRangeValueRow({
   disabled,
 }: PanelKeyTypeRangeValueRowProps) {
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const labelId = React.useId()
   return (
     <KeyTypeValueStaticRow
       {...staticRowProps}
       layout="keyValue"
-      keyNode={keyNode}
+      keyNode={<span id={labelId}>{keyNode}</span>}
       valueNode={(
         <>
           <PanelRangeInput
+            aria-labelledby={labelId}
             min={min}
             max={max}
             step={step}

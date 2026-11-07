@@ -1,9 +1,6 @@
 import React from 'react'
 import { SimpleKeyValueRow as SharedSimpleKeyValueRow } from 'grph-shared/react/keyTypeValueRow'
-import {
-  resolveCanvasKeyTypeValueDensityClassName,
-  useCanvasKeyTypeValueRuntime,
-} from '@/features/panels/ui/canvasKeyTypeValueRuntime'
+import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 
 export interface SimpleKeyValueRowProps {
   label: React.ReactNode
@@ -20,19 +17,8 @@ export function SimpleKeyValueRow({
   density = 'default',
   className,
 }: SimpleKeyValueRowProps) {
-  const runtime = useCanvasKeyTypeValueRuntime()
-  const densityClassName = resolveCanvasKeyTypeValueDensityClassName(runtime, density)
-
-  return (
-    <SharedSimpleKeyValueRow
-      label={label}
-      textSizeClassName={runtime.uiPanelKeyValueTextSizeClass}
-      fontClassName={runtime.uiPanelTextFontClass}
-      densityClassName={densityClassName}
-      align={align}
-      className={className}
-    >
-      {children}
-    </SharedSimpleKeyValueRow>
-  )
+  const row = useCanvasKeyTypeValueStaticRowProps(density)
+  return <SharedSimpleKeyValueRow {...row} label={label} align={align} className={className}>
+    {children}
+  </SharedSimpleKeyValueRow>
 }

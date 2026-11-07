@@ -24,20 +24,23 @@ export function PanelKeyTypeColorTextValueRow({
   density = 'compact',
 }: PanelKeyTypeColorTextValueRowProps) {
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const labelId = React.useId()
   return (
     <KeyTypeValueStaticRow
       {...staticRowProps}
       layout="keyValue"
-      keyNode={keyNode}
+      keyNode={<span id={labelId}>{keyNode}</span>}
       valueNode={(
         <section className="flex items-center gap-2">
           <PanelColorPicker
+            aria-labelledby={labelId}
 
             className={colorInputClassName}
             value={value || placeholder || '#000000'}
             onValueChange={nextColor => onChange(nextColor)}
           />
           <PanelTextInput
+            aria-labelledby={labelId}
             className={textInputClassName}
             value={value}
             onChange={event => onChange(event.target.value)}
