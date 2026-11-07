@@ -181,15 +181,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
             id={dropdownIdRef.current}
             aria-label={title}
             className={menuWidthClass}
-            onKeyDown={e => {
-              const rows = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button[data-kg-toolbar-option]'))
-              if (!rows.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
-              e.preventDefault()
-              const current = rows.indexOf(document.activeElement as HTMLButtonElement)
-              const next = e.key === 'Home' ? 0 : e.key === 'End' ? rows.length - 1
-                : (current + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length
-              rows[next]?.focus()
-            }}
+            onDismiss={restoreFocus => { closeMenuNow(); if (restoreFocus) buttonRef.current?.focus({ preventScroll: true }) }}
           >
             {enabledOptions.map((option, index) => {
               const hasChildren = Boolean(option.children && option.children.length > 0)

@@ -1,11 +1,11 @@
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
-import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
+import { MENU_CLASS_NAME, menuOptionClassName } from '@agentic-base/views-react/controls'
 
 export type UiMenuButtonVariant = 'default' | 'selected'
 
 export function uiMenuContainerClassName(extra?: string): string {
-  return cn('rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-10', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border, extra)
+  return cn(MENU_CLASS_NAME, 'z-10', extra)
 }
 
 export function uiMenuDividerClassName(extra?: string): string {
@@ -13,8 +13,7 @@ export function uiMenuDividerClassName(extra?: string): string {
 }
 
 export function uiMenuItemButtonClassName(variant: UiMenuButtonVariant, extra?: string): string {
-  const base = 'w-full text-left px-2 py-1.5 rounded text-xs'
-  return cn(base, uiSelectableRowClassName(variant === 'selected'), extra)
+  return cn(menuOptionClassName(variant === 'selected'), extra)
 }
 
 export function uiMenuPillButtonClassName(selected: boolean, extra?: string): string {
