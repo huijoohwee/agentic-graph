@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import React, { act } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initJsdomHarness } from '../tests/lib/jsdomHarness'
-import { FloatingPanelShell } from '../components/ui/FloatingPanel'
+import { FloatingPanelShell } from '@agentic-base/views-react/panels'
 import { SequenceInspectorView } from '../features/sequence/SequenceInspectorView'
 import {
   mountSequenceGuide, SEQUENCE_GUIDE_BROWSER_LIMITS,
@@ -48,7 +48,7 @@ test('native shell and inspector keep their markup and optional controller slots
   assert.match(markup, /agentic-base-floating-panel-inner/)
   assert.match(markup, /agentic-base-floating-panel-header/)
   assert.match(markup, /agentic-base-floating-panel-draggable/)
-  assert.match(markup, /sequence-flow sequence-inspector font-sans text-sm/)
+  assert.match(markup, /sequence-flow sequence-inspector kg-toolbar-settings-panel-body font-sans text-sm/)
   assert.match(markup, /<strong>7\. Request<\/strong>/)
   assert.match(markup, /aria-pressed="true"/)
   assert.match(markup, /Branch selector/)

@@ -1,13 +1,12 @@
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
+import { CanvasKeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  UI_RESPONSIVE_CONTROL_ROW_CLASSNAME,
   UI_RESPONSIVE_CONTROL_INPUT_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_BUTTON_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_END_CLASSNAME,
-  UI_RESPONSIVE_SPLIT_CONTROL_HALF_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
@@ -55,9 +54,6 @@ export type ResponsiveToggleRowProps = {
 
 export type ResponsiveControlInputProps = React.InputHTMLAttributes<HTMLInputElement>
 
-const responsiveControlWidthClassName = (compact?: boolean): string =>
-  compact === true ? 'w-full' : UI_RESPONSIVE_SPLIT_CONTROL_HALF_CLASSNAME
-
 export function ResponsiveControlRow({
   label,
   children,
@@ -67,27 +63,23 @@ export function ResponsiveControlRow({
   rowClassName,
   valueClassName,
 }: ResponsiveControlRowProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
   const labelId = React.useId()
-  const widthClassName = responsiveControlWidthClassName(compact)
-  const alignClassName = align === 'start' ? 'items-start' : 'items-center'
-
   return (
-    <section className={`flex ${UI_RESPONSIVE_CONTROL_ROW_CLASSNAME} ${compact ? 'flex-col' : `flex-row ${alignClassName}`} ${rowClassName || ''}`}>
-      <label id={labelId}
-        className={`${widthClassName} ${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-normal ${UI_THEME_TOKENS.text.secondary} ${labelClassName || ''}`}
-      >
-        {label}
-      </label>
-      <section className={`${widthClassName} min-w-0 ${valueClassName || ''}`}>
-        {React.Children.map(children, child => {
-          if (!React.isValidElement<Record<string, unknown>>(child) || child.props['aria-label'] || child.props['aria-labelledby']) return child
-          const isField = child.type === PanelSelect || child.type === ResponsiveControlInput || child.type === 'input' || child.type === 'select'
-          return isField ? React.cloneElement(child, { 'aria-labelledby': labelId }) : child
-        })}
-      </section>
-    </section>
+    <CanvasKeyTypeValueStaticRow
+      align={align}
+      density={compact ? 'compact' : 'default'}
+      className={rowClassName}
+      keyNode={<label id={labelId} className={labelClassName}>{label}</label>}
+      valueNode={
+        <section className={`w-full min-w-0 ${valueClassName || ''}`}>
+          {React.Children.map(children, child => {
+            if (!React.isValidElement<Record<string, unknown>>(child) || child.props['aria-label'] || child.props['aria-labelledby']) return child
+            const isField = child.type === PanelSelect || child.type === ResponsiveControlInput || child.type === 'input' || child.type === 'select'
+            return isField ? React.cloneElement(child, { 'aria-labelledby': labelId }) : child
+          })}
+        </section>
+      }
+    />
   )
 }
 

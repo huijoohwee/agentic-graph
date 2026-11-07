@@ -2049,8 +2049,8 @@
     border-radius: var(--kg-menu-option-row-radius, 0.25rem);
     padding-inline: var(--kg-menu-option-row-padding-inline, 0.5rem);
     padding-block: var(--kg-menu-option-row-padding-block, 0.25rem);
-    font-size: var(--kg-menu-option-row-font-size, var(--kg-text-sm));
-    line-height: var(--kg-menu-option-row-line-height, 1.25rem);
+    font-size: var(--agentic-font-size-body);
+    line-height: var(--agentic-line-height-body);
   }
 
   .kg-menu-icon-action {

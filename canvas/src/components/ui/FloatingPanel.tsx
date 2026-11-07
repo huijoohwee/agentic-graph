@@ -1,4 +1,5 @@
 import React from 'react'
+import { readFloatingPanelThemeStyle } from '../../lib/ui/floatingPanelTheme'
 import LucideX from 'lucide-react/dist/esm/icons/x.js'
 import IconButton from '@/components/IconButton'
 import {
@@ -55,19 +56,7 @@ export type FloatingPanelShellProps = BaseFloatingPanelShellProps
 
 /** Graph supplies placement and theme tokens; Base owns the panel chrome and layout. */
 export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell(props, ref) {
-  const rootStyle = {
-    ...props.rootStyle,
-    '--base-accent': 'var(--kg-accent)',
-    '--base-text-primary': 'var(--kg-text-primary)',
-    '--base-text-secondary': 'var(--kg-text-secondary)',
-    '--base-border': 'var(--kg-border)',
-    '--base-panel': 'var(--kg-panel-bg)',
-    '--base-shadow-overlay': 'var(--kg-shadow-overlay)',
-    '--base-toolbar-compact-padding': props.minimized
-      ? '0 var(--kg-toolbar-compact-pad-x)'
-      : 'var(--kg-toolbar-compact-padding)',
-    '--base-control-height': 'var(--kg-toolbar-compact-surface-height)',
-  } as React.CSSProperties
+  const rootStyle = readFloatingPanelThemeStyle(props.rootStyle, props.minimized)
   return <BaseFloatingPanelShell {...props} ref={ref} rootStyle={rootStyle} />
 })
 

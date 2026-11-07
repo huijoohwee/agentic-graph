@@ -37,3 +37,40 @@ test('Graph toolbar, table and virtualized row metrics share the Base and Design
   assert.match(host, /readHeaderPaddingClassName: baseTableHost.helpers.readHeaderPaddingClassName/)
   assert.match(host, /readTablePaddingClassName: baseTableHost.helpers.readTablePaddingClassName/)
 })
+
+
+test('headless typography metadata and KTV layout are projections of the pinned profile', async () => {
+  const fonts = await import('../../../grph-shared/src/ui/fontStacks.js')
+  assert.equal(fonts.UI_BODY_FONT_SIZE, pin.metrics.bodyFontSize)
+  assert.equal(fonts.UI_BODY_LINE_HEIGHT, pin.metrics.bodyLineHeight)
+  for (const [name, value] of [['sans', fonts.UI_FONT_SANS], ['mono', fonts.UI_FONT_MONO]]) {
+    assert.ok(profileCss.toString().includes(`--agentic-font-${name}: ${value};`))
+  }
+  assert.match(toolbarCss, /font-size: var\(--agentic-font-size-body\)/)
+  const rows = fs.readFileSync(new URL('../../../grph-shared/src/ui/keyTypeValueRows.ts', import.meta.url), 'utf8')
+  assert.ok(rows.includes('grid-cols-[var(--agentic-ktv-columns)]'))
+  assert.ok(!rows.includes('minmax('), 'Column geometry must have one central owner')
+})
+
+
+test('legacy renderer fields reuse the KTV adapter and palette and renderer sections reuse the selected inset', () => {
+  const rows = fs.readFileSync(new URL('../lib/ui/responsiveControlRows.tsx', import.meta.url), 'utf8')
+  assert.ok(rows.includes('<CanvasKeyTypeValueStaticRow'))
+  assert.ok(!rows.includes('responsiveControlWidthClassName'))
+  assert.ok(rows.includes("'aria-labelledby': labelId"), 'Original accessible control names must survive the adapter')
+  const palette = fs.readFileSync(new URL('../features/toolbar/ui/RendererPaletteSettings.tsx', import.meta.url), 'utf8')
+  assert.ok(palette.includes('className={uiToolbarSettingsPanelBodyClassName}'))
+  assert.ok(palette.includes('CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow'))
+  assert.ok(!palette.includes('densityClassName='), 'Palette and legacy controls must use the same row runtime')
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0\.75rem;/)
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0\.5rem;/)
+})
+
+
+test('sequence inspector body and spacing consume the same shared roles', () => {
+  const inspectorCss = fs.readFileSync(new URL('../features/sequence/SequenceFlow.css', import.meta.url), 'utf8')
+  assert.match(inspectorCss, /\.sequence-inspector > p \{[^}]*font-size: var\(--agentic-font-size-body\); line-height: var\(--agentic-line-height-body\)/)
+  assert.doesNotMatch(inspectorCss, /\.sequence-inspector[^{}]*\{[^}]*font-size: (?:12|13)px/)
+  const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
+  assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
+})

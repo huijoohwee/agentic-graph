@@ -1,4 +1,5 @@
 import React from 'react'
+import { uiToolbarSettingsPanelBodyClassName } from '../toolbar/ui/toolbarStyles'
 
 export type SequenceInspectorItem = {
   id: string
@@ -29,7 +30,7 @@ export function SequenceInspectorView({
   title, summary, status, items, selectedId, onSelect, disabled = false,
   ariaLabel = 'Sequence inspector', textClassName = '', headingRef, beforeItems, selectedAction, footer,
 }: SequenceInspectorViewProps) {
-  return <section className={`sequence-flow sequence-inspector ${textClassName}`} aria-label={ariaLabel} aria-busy={disabled || undefined}>
+  return <section className={`sequence-flow sequence-inspector ${uiToolbarSettingsPanelBodyClassName} ${textClassName}`} aria-label={ariaLabel} aria-busy={disabled || undefined}>
     <h2 ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2><p>{summary}</p>
     {beforeItems}
     <ol>{items.map((item, index) => <li key={item.id}>

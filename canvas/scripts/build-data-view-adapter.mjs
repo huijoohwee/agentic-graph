@@ -13,9 +13,10 @@ const root = fileURLToPath(new URL('../../', import.meta.url))
 const startedAt = Date.now()
 const entry = 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx'
 const MAX_BYTES = 500000
-const MAX_INPUTS = 100, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
+const MAX_INPUTS = 108, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
+  .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
 const browserExports = ['mountDataView', 'mountSequenceGuide']
 const args = process.argv.slice(2)
 assert(args.length === 2 && args[0] === '--out-dir' && path.isAbsolute(args[1]), 'Expected --out-dir <absolute external directory>')
@@ -23,7 +24,7 @@ const output = path.resolve(args[1])
 const outputRelative = path.relative(root, output)
 assert(outputRelative.startsWith('..' + path.sep) || path.isAbsolute(outputRelative), 'Build output must be outside the source checkout')
 
-const inputs = new Set(['canvas/scripts/build-data-view-adapter.mjs', 'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json'])
+const inputs = new Set([entry, 'canvas/scripts/build-data-view-adapter.mjs', 'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json'])
 const read = async file => { inputs.add(relative(file)); return fs.readFile(path.resolve(root, file), 'utf8') }
 const options = { absWorkingDir: root, bundle: true, write: false, metafile: true,
   preserveSymlinks: true, alias: { '@': path.join(root, 'canvas/src'), 'grph-shared': path.join(root, 'grph-shared/src') },
@@ -80,7 +81,7 @@ const indexCss = postcss.parse(await read('canvas/src/index.css'))
 const responsiveCss = postcss.parse(await read('canvas/src/styles/responsive-toolbar.css'))
 const viewportProperties = new Set(['--kg-safe-top', '--kg-safe-bottom', '--kg-safe-left', '--kg-safe-right',
   '--kg-canvas-viewport-edge-gap', '--panel-bg-rgb', '--panel-opacity', '--kg-touch-target',
-  '--kg-toolbar-compact-pad-y', '--kg-toolbar-compact-pad-x', '--kg-toolbar-compact-padding', '--kg-toolbar-compact-surface-height'])
+  '--kg-default-glyph-size', '--kg-compact-glyph-size', '--kg-toolbar-compact-pad-y', '--kg-toolbar-compact-pad-x', '--kg-toolbar-compact-padding', '--kg-toolbar-compact-surface-height'])
 const projectRootTokens = (source, properties) => {
   const projected = [], found = new Set()
   source.walkRules(rule => {
@@ -120,7 +121,12 @@ for (const file of ['shared-borders.css', 'application-typography.css']) {
   nativeStyles.push(shadowScope(await read('canvas/src/styles/' + file)).replace(/\bbody\s*\{/g, ':host {'))
 }
 nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css')))
-nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')))
+// Base's standalone panel import is already included by its exact browser CSS.
+const baseProfile = await read('node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.css')
+assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'), 'Base and Graph must use one shared UI projection')
+const panelCss = await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')
+assert(panelCss.startsWith('@import "../browser/shared-ui-profile.css";'), 'Unknown Base panel stylesheet import')
+nativeStyles.push(shadowScope(panelCss.replace('@import "../browser/shared-ui-profile.css";', '')))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()
@@ -133,7 +139,7 @@ const projectRules = (source, accepts, required) => {
   assert(required.every(selector => selected.has(selector)), `Native CSS owner missing: ${required.filter(selector => !selected.has(selector)).join(', ')}`)
   return rules
 }
-const frameSelectors = ['.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
+const frameSelectors = ['.kg-toolbar-settings-panel-body', '.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
 nativeStyles.push(...projectRules(responsiveCss,
   selector => frameSelectors.some(base => selector === base || selector.startsWith(base + ' ')), frameSelectors))
 const shellSelectors = ['.App-toolbar__btn']
@@ -156,7 +162,7 @@ const css = (await esbuild.transform(compiler.build(candidates), { loader: 'css'
 assert(!/@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(css), 'Adapter CSS must be self-contained and offline')
 const declaredTokens = new Set([...css.matchAll(/(--(?:kg|sequence|panel)-[a-z0-9-]+):/g)].map(match => match[1]))
 const requiredTokens = new Set([...css.matchAll(/var\((--(?:kg|sequence|panel)-[a-z0-9-]+)\)/g)].map(match => match[1]))
-assert([...requiredTokens].every(token => declaredTokens.has(token)), 'Adapter CSS has unresolved native token references')
+assert([...requiredTokens].every(token => declaredTokens.has(token)), `Adapter CSS has unresolved native token references: ${[...requiredTokens].filter(token => !declaredTokens.has(token)).join(', ')}`)
 
 // Include complete installed license notices in the artifacts instead of references to absent files.
 const schedulerInput = [...inputs].find(file => /node_modules\/scheduler\/index\.js$/.test(file))

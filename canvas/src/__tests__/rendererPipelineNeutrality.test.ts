@@ -539,10 +539,10 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!toolbarRendererViewText.includes('isD3Like2dRenderer(canvas2dRenderer)')) {
     throw new Error('expected renderer settings panel to reuse the shared D3-like helper')
   }
-  if (!rendererGraphTopologySummaryText.includes("RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-2'")) {
-    throw new Error('expected renderer topology stats to use a mobile-first responsive grid owner')
+  if (!rendererGraphTopologySummaryText.includes("RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'min-w-0'")) {
+    throw new Error('expected renderer topology stats to retain its stack while shared KTV rows own column alignment')
   }
-  if (rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
+  if (!rendererGraphTopologySummaryText.includes('<SimpleKeyValueRow label="Nodes">') || rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
     throw new Error('expected renderer topology stats to avoid fixed mobile two-column grid literals')
   }
   if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type, options\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
