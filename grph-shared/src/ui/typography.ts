@@ -2,8 +2,7 @@
  * CSS, DOM controls, canvas labels and generated viewers share this owner.
  * Imported document styles and world-space text retain their source dimensions.
  */
-import { centralTokenPixels } from './fontStacks.js'
-import profile from './graph-profile.json' with { type: 'json' }
+import { centralTokenPixels, centralTokenCss } from './fontStacks.js'
 export { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.js'
 
 export const UI_TEXT_SCALE = Object.fromEntries(
@@ -29,9 +28,9 @@ export function normalizeUiTextClasses(value: string): string {
 
 /** Emitted with the existing token CSS build; never maintain a second CSS copy. */
 export function buildUiTypographyCss(): string {
-  const rows = profile.tokens.filter(token => token.cssVar.startsWith('--kg-text-')
-    && /^(?:text-(?:xs|sm|base|lg|xl|[2-5]xl)(?:-line)?)$/.test(token.key)
-    || ['--kg-font-sans', '--kg-font-mono'].includes(token.cssVar))
-    .map(token => `  ${token.cssVar}: ${token.values.light};`)
+  const variables = ['--kg-font-sans', '--kg-font-mono', ...Object.keys(UI_TEXT_SCALE).flatMap(name => [
+    `--kg-text-${name}`, `--kg-text-${name}-line`,
+  ])]
+  const rows = variables.map(variable => `  ${variable}: ${centralTokenCss(variable)};`)
   return ['/* Generated from the pinned Design System typography profile. */', ':root {', ...rows, '}', ''].join('\n')
 }

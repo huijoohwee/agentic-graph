@@ -9,6 +9,8 @@
     "sourceSha256": "sha256:aae4fd536724e9f81783e3f580f2613f447e2fad25c09dfa60a01c5cc995674c",
     "originRevision": "be87de5c3dcc66f58d2cd1b4d96e5920dd284a46",
     "projectionPath": "site/vendor/graph-profile.css",
-    "projectionSha256": "sha256:e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06"
+    "projectionSha256": "sha256:e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06",
+    "runtimePath": "grph-shared/src/ui/design-runtime-profile.json",
+    "runtimeSha256": "sha256:a497178f444aa05efa3c70f3953ab3d67f2753f2a5cbc8869e0150e96a97ac0a"
   }
 }

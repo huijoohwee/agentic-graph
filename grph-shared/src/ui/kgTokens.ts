@@ -1,8 +1,7 @@
 import { renderKgTokensCss, type KgTheme, type KgTokenDef } from './kgTokenContract.js'
 export * from './kgTokenContract.js'
 
-import profile from './graph-profile.json' with { type: 'json' }
-import { centralTokenValue } from './fontStacks.js'
+import { centralTokenValue, centralTokenCss } from './fontStacks.js'
 
 const purposes: Record<string, string> = {
   'app-bg': 'Application background',
@@ -59,12 +58,10 @@ const purposes: Record<string, string> = {
 // Existing 49-token API is a contract-only projection of the central registry.
 export const AG_TOKEN_DEFS: readonly KgTokenDef[] = Object.entries(purposes).map(([name, purpose]) => {
   const cssVar = `--kg-${name}` as KgTokenDef['cssVar']
-  const token = profile.tokens.find(value => value.cssVar === cssVar)
-  if (!token) throw new Error(`Missing central token: ${cssVar}`)
   const type = ['control-height', 'status-pill-height', 'table-row-height', 'kanban-card-radius'].includes(name)
     ? 'dimension' : ['kanban-card-shadow', 'kanban-card-shadow-hover'].includes(name) ? 'shadow' : 'color'
   const value = (theme: KgTheme) => name === 'table-row-height' || name === 'panel-action-bg-hover'
-    ? token.values[theme] : centralTokenValue(cssVar, theme)
+    ? centralTokenCss(cssVar, theme) : centralTokenValue(cssVar, theme)
   return { cssVar, name, type, purpose, light: value('light'), dark: value('dark'), black: value('black'),
     ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent', black: 'canvas-accent' } } : {}) }
 })

@@ -36,7 +36,7 @@ export function testApplicationTypographyLoadsBeforeBuild() {
   try {
     const shared = path.join(root, 'node_modules/grph-shared')
     fs.mkdirSync(path.join(shared, 'src/ui'), { recursive: true })
-    for (const file of ['package.json', 'src/ui/fontStacks.js', 'src/ui/shared-ui-profile.json', 'src/ui/graph-profile.json']) {
+    for (const file of ['package.json', 'src/ui/fontStacks.js', 'src/ui/shared-ui-profile.json', 'src/ui/graph-profile.json', 'src/ui/design-runtime-profile.json']) {
       fs.copyFileSync(path.resolve('../grph-shared', file), path.join(shared, file))
     }
     const output = execFileSync(process.execPath, ['--input-type=module', '-e',

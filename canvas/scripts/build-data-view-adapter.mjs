@@ -9,6 +9,7 @@ import * as esbuild from 'esbuild'
 import { compile } from '@tailwindcss/node'
 import { Scanner } from '@tailwindcss/oxide'
 import postcss from 'postcss'
+import { deriveDesignRuntimeProfile } from '../../grph-shared/src/ui/fontStacks.js'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const basePrefix = 'node_modules/@agentic-base/views-react'
@@ -62,7 +63,14 @@ const generated = await read('canvas/src/styles/kgTokens.generated.css')
 assert.equal(pin.profile.owner, 'github.com/huijoohwee/agentic-design-system')
 assert.equal(pin.profile.projectionSha256, `sha256:${sha256(generated)}`, 'Central Graph projection drift')
 assert.equal(pin.profile.sourceSha256, `sha256:${sha256(await read('grph-shared/src/ui/graph-profile.json'))}`, 'Central Graph profile drift')
-await read('grph-shared/src/ui/shared-ui-profile.json')
+const runtimeProjection = await read('grph-shared/src/ui/design-runtime-profile.json')
+const sharedUiPin = JSON.parse(await read('canvas/src/styles/shared-ui-profile.pin.json'))
+assert.equal(sharedUiPin.profile.owner, pin.profile.owner, 'One central profile owner is required')
+const sharedSource = await read('grph-shared/src/ui/shared-ui-profile.json')
+assert.equal(sharedUiPin.profile.sourceSha256, `sha256:${sha256(sharedSource)}`, 'Shared typography source pin drift')
+const sourceProfiles = await Promise.all(['graph', 'shared-ui'].map(async id => JSON.parse(await read(`grph-shared/src/ui/${id}-profile.json`))))
+assert.equal(runtimeProjection, JSON.stringify(deriveDesignRuntimeProfile(sourceProfiles)) + '\n', 'Runtime data must derive exactly from the central profiles')
+assert.equal(pin.profile.runtimeSha256, `sha256:${sha256(runtimeProjection)}`, 'Runtime projection pin drift')
 const preserveAtRules = (rule, projected) => {
   for (let parent = rule.parent; parent?.type === 'atrule'; parent = parent.parent) projected = parent.clone({ nodes: [projected] })
   return projected.toString()
