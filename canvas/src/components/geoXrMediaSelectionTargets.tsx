@@ -275,7 +275,7 @@ export function GeoXrMediaSelectionTargets({
           <span
             aria-hidden="true"
             className={[
-              'pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-slate-950/85 px-2 py-0.5 text-[10px] font-medium leading-4 text-white shadow-overlay backdrop-blur-sm transition-opacity',
+              'pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-slate-950/85 px-2 py-0.5 text-xs font-medium leading-4 text-white shadow-overlay backdrop-blur-sm transition-opacity',
               target.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
             ].join(' ')}
           >

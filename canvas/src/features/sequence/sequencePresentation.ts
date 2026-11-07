@@ -1,3 +1,4 @@
+import { UI_TEXT_SCALE } from 'grph-shared/ui/typography'
 import type { SequenceModel, SequenceTimedEvent } from './sequenceModel'
 import { defaultSchema, type GraphSchema } from '@/lib/graph/schema'
 import type { GraphNode } from '@/lib/graph/types'
@@ -55,5 +56,5 @@ export function sequenceParticipantSvg(person: SequenceModel['participants'][num
     const position = getPortHandlePosition({ node, datum, schema, cfg })
     return `<circle data-kg-port-handle="${datum.side}" cx="${position.x}" cy="${position.y}" r="${cfg.size}" fill="${sequenceSvgEscape(cfg.fill)}" stroke="${sequenceSvgEscape(cfg.stroke)}" stroke-width="${cfg.strokeWidth}" role="img" aria-label="${sequenceSvgEscape(`${person.label}: ${datum.side} connection port. Select or move participant.`)}" pointer-events="all"/>`
   }).join('')
-  return `${body}${ports}<text x="${point.x}" y="${point.y - 12}" font-size="10" class="sequence-participant-type">${person.actor ? 'ACTOR' : 'PARTICIPANT'}</text><text x="${point.x}" y="${point.y + 14}" font-size="14" class="sequence-participant-name">${sequenceSvgEscape(name)}</text>`
+  return `${body}${ports}<text x="${point.x}" y="${point.y - 12}" font-size="${UI_TEXT_SCALE.xs.size}" class="sequence-participant-type">${person.actor ? 'ACTOR' : 'PARTICIPANT'}</text><text x="${point.x}" y="${point.y + 14}" font-size="${UI_TEXT_SCALE.sm.size}" class="sequence-participant-name">${sequenceSvgEscape(name)}</text>`
 }

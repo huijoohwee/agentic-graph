@@ -44,6 +44,7 @@ function validLiteral(type: KgTokenType, value: string): boolean {
   // The finite shared-layout alias is owned and projected by Design System.
   if (type === 'dimension') return value === 'var(--agentic-row-height)'
     || dimension.test(value) && Number.isFinite(parseFloat(value))
+  if (value === 'none') return true
   const shadow = /^(?:inset )?((?:-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em)? ){2,4})(.+)$/.exec(value)
   const lengths = shadow?.[1].trim().split(' ') ?? []
   return !!shadow && lengths.every(v => v === '0' || dimension.test(v) && Number.isFinite(parseFloat(v)))

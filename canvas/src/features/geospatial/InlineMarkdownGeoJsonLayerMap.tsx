@@ -248,7 +248,7 @@ export function InlineMarkdownGeoJsonLayerMap(args: {
         ) : null}
       </section>
       {String(attribution || '').trim() ? (
-        <section className="absolute bottom-2 left-2 z-20 max-w-[85%] pointer-events-none rounded-md border border-white/20 bg-slate-950/90 px-2 py-1 text-[10px] text-white/90" aria-label={`Data attribution: ${attribution}`}>
+        <section className="absolute bottom-2 left-2 z-20 max-w-[85%] pointer-events-none rounded-md border border-white/20 bg-slate-950/90 px-2 py-1 text-xs text-white/90" aria-label={`Data attribution: ${attribution}`}>
           {attribution}
         </section>
       ) : null}

@@ -6,6 +6,7 @@ const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(canvasRoot, '..')
 const viteCli = resolve(repositoryRoot, 'node_modules/vite/bin/vite.js')
 
+
 for (const phase of ['app', 'finalize']) {
   const result = spawnSync(process.execPath, [viteCli, 'build', '--configLoader', 'runner'], {
     cwd: canvasRoot,
@@ -13,5 +14,7 @@ for (const phase of ['app', 'finalize']) {
     stdio: 'inherit',
   })
   if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  if (result.status !== 0) {
+    throw new Error(`Vite ${phase} failed: status=${result.status}, signal=${result.signal ?? 'none'}`)
+  }
 }

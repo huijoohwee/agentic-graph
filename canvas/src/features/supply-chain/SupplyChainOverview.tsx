@@ -37,7 +37,7 @@ const FACILITY_COLORS: Record<SupplyChainFacilityKind, string> = {
   'rail-terminal': '#7c3aed', 'cross-dock': '#d97706', 'regional-hub': '#2563eb', fulfillment: '#0891b2',
   'delivery-station': '#16a34a', destination: '#15803d', returns: '#ca8a04',
 }
-const smallButtonClass = 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50'
+const smallButtonClass = 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50'
 
 type Selection = SupplyChainSelection
 
@@ -49,7 +49,7 @@ function formatClock(seconds: number) {
 function MiniMetric({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
   return <div className="flex min-w-[135px] items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
     <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-50 text-blue-700">{icon}</span>
-    <div className="min-w-0"><p className="text-[10px] font-medium text-slate-500">{label}</p><p className="truncate text-sm font-bold tracking-tight text-slate-900">{value}<span className="ml-1 text-[9px] font-medium text-slate-400">{note}</span></p></div>
+    <div className="min-w-0"><p className="text-xs font-medium text-slate-500">{label}</p><p className="truncate text-sm font-bold tracking-normal text-slate-900">{value}<span className="ml-1 text-xs font-medium text-slate-400">{note}</span></p></div>
   </div>
 }
 
@@ -65,18 +65,18 @@ function SupplyChainMap({
   return <section className="pointer-events-none absolute inset-0 overflow-hidden" aria-label="Supply chain map controls" data-supply-chain-map-controls="true">
     <div className="pointer-events-none absolute left-1/2 top-[116px] z-10 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
       <Activity size={14} className="text-blue-600" />
-      <span className="whitespace-nowrap text-[10px] font-semibold text-slate-700">Connected logistics network</span>
+      <span className="whitespace-nowrap text-xs font-semibold text-slate-700">Connected logistics network</span>
       <span className="h-3 w-px bg-slate-200" />
-      <span className="whitespace-nowrap text-[9px] font-medium text-slate-500">12 facilities · road, rail, air and sea · forward and return flows</span>
+      <span className="whitespace-nowrap text-xs font-medium text-slate-500">12 facilities · road, rail, air and sea · forward and return flows</span>
     </div>
     <div className="pointer-events-auto absolute right-3 top-[116px] z-10 flex max-w-[calc(100%-24px)] flex-wrap items-center justify-end gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm" aria-label="Network display controls">
-      <button type="button" onClick={openXrMediaLibrary} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`} aria-label="Open shared Media 3D for XR assets" title="Open Media → 3D for XR → Terrain / Environment Kits and Subjects & Props"><Boxes size={12}/><span className="hidden sm:inline">3D assets</span><span className="sm:hidden">Assets</span></button>
+      <button type="button" onClick={openXrMediaLibrary} className={`${smallButtonClass} !min-h-8 !px-2 !text-xs`} aria-label="Open shared Media 3D for XR assets" title="Open Media → 3D for XR → Terrain / Environment Kits and Subjects & Props"><Boxes size={12}/><span className="hidden sm:inline">3D assets</span><span className="sm:hidden">Assets</span></button>
       <label className="sr-only" htmlFor="supply-chain-entity-filter">Filter network entities</label>
-      <SemanticSelect id="supply-chain-entity-filter" value={entityFilter} onValueChange={value => onEntityFilter(value as 'all' | 'infrastructure' | 'resources')} aria-label="Filter network entities" className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+      <SemanticSelect id="supply-chain-entity-filter" value={entityFilter} onValueChange={value => onEntityFilter(value as 'all' | 'infrastructure' | 'resources')} aria-label="Filter network entities" className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
         <option value="all">All entities</option><option value="infrastructure">Infrastructure</option><option value="resources">Resources</option>
       </SemanticSelect>
-      <button type="button" onClick={onToggleLabels} aria-pressed={showLabels} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px] ${showLabels ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><span>Labels {showLabels ? 'on' : 'off'}</span></button>
-      <button type="button" onClick={onReset} aria-label="Reset overview" className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`}><RotateCcw size={12}/><span>Reset</span></button>
+      <button type="button" onClick={onToggleLabels} aria-pressed={showLabels} className={`${smallButtonClass} !min-h-8 !px-2 !text-xs ${showLabels ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><span>Labels {showLabels ? 'on' : 'off'}</span></button>
+      <button type="button" onClick={onReset} aria-label="Reset overview" className={`${smallButtonClass} !min-h-8 !px-2 !text-xs`}><RotateCcw size={12}/><span>Reset</span></button>
     </div>
   </section>
 }
@@ -117,7 +117,7 @@ function OfflineSupplyChainMap({
         return <g key={facility.id} role="button" tabIndex={0} aria-label={`Select ${facility.name}`} aria-pressed={selectedFacilityId === facility.id}
           onClick={() => onSelectFacility(facility)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectFacility(facility) } }} className="cursor-pointer outline-none">
           <circle cx={x} cy={y} r={selectedFacilityId === facility.id ? 10 : 7} fill={selectedFacilityId === facility.id ? '#1d4ed8' : '#fff'} stroke="#1e3a5f" strokeWidth="3" />
-          {showLabels && <text x={x + 12} y={y - 9} className="fill-slate-700 text-[13px] font-semibold">{facility.code}</text>}
+          {showLabels && <text x={x + 12} y={y - 9} className="fill-slate-700 text-sm font-semibold">{facility.code}</text>}
         </g>
       })}
       {entityFilter !== 'infrastructure' && SCENARIO.resources.map(resource => {
@@ -132,11 +132,11 @@ function OfflineSupplyChainMap({
         return <g key={resource.id} role="button" tabIndex={0} aria-label={`Select ${resource.name} and ${consignment.reference}`}
           onClick={() => onSelectConsignment(consignment)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectConsignment(consignment) } }} className="cursor-pointer outline-none">
           <circle cx={x} cy={y} r="6" fill="#f59e0b" stroke="#7c2d12" strokeWidth="2" />
-          {showLabels && <text x={x + 10} y={y + 16} className="fill-slate-700 text-[11px] font-semibold">{resource.code}</text>}
+          {showLabels && <text x={x + 10} y={y + 16} className="fill-slate-700 text-xs font-semibold">{resource.code}</text>}
         </g>
       })}
     </svg>
-    <p className="pointer-events-none absolute bottom-[208px] left-1/2 z-10 -translate-x-1/2 rounded-lg border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-medium text-slate-600 shadow-sm">Offline network schematic · synthetic positions · no external map tiles</p>
+    <p className="pointer-events-none absolute bottom-[208px] left-1/2 z-10 -translate-x-1/2 rounded-lg border border-white/80 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm">Offline network schematic · synthetic positions · no external map tiles</p>
   </section>
 }
 
@@ -151,13 +151,13 @@ function StageOverview({ onSelect, selectedFacilityId }: { onSelect: (facility: 
     { title: 'Delivery & returns', ids: ['facility.delivery', 'facility.destination', 'facility.returns'], icon: <Truck size={14}/>, accent: 'text-emerald-700' },
   ]
   return <section className="space-y-2" aria-label="Network stages">
-    <div className="flex items-center justify-between"><h2 className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500">Network stages</h2><span className="text-[10px] text-slate-400">12 sites</span></div>
+    <div className="flex items-center justify-between"><h2 className="text-xs font-bold uppercase tracking-normal text-slate-500">Network stages</h2><span className="text-xs text-slate-400">12 sites</span></div>
     <div className="space-y-1">{groups.map(group => {
       const isExpanded = expanded[group.title] === true
       const groupId = `supply-chain-stage-${group.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
       return <section key={group.title} className="overflow-hidden rounded-lg border border-slate-100 bg-white">
-        <button type="button" className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50" aria-expanded={isExpanded} aria-controls={groupId} onClick={() => setExpanded(current => ({ ...current, [group.title]: !isExpanded }))}><span className={group.accent}>{group.icon}</span>{group.title}{isExpanded ? <ChevronDown size={13} className="ml-auto text-slate-400"/> : <ChevronRight size={13} className="ml-auto text-slate-400"/>}</button>
-        {isExpanded && <div id={groupId} className="flex flex-wrap gap-1 px-2.5 pb-2">{group.ids.map(id => { const facility = scenarioFacility(SCENARIO, id)!; const selected = selectedFacilityId === facility.id; return <button key={id} type="button" aria-pressed={selected} className={`rounded-md px-1.5 py-1 text-[9px] transition ${selected ? 'bg-blue-100 font-semibold text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-700'}`} onClick={() => onSelect(facility)}>{facility.code}</button> })}</div>}
+        <button type="button" className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50" aria-expanded={isExpanded} aria-controls={groupId} onClick={() => setExpanded(current => ({ ...current, [group.title]: !isExpanded }))}><span className={group.accent}>{group.icon}</span>{group.title}{isExpanded ? <ChevronDown size={13} className="ml-auto text-slate-400"/> : <ChevronRight size={13} className="ml-auto text-slate-400"/>}</button>
+        {isExpanded && <div id={groupId} className="flex flex-wrap gap-1 px-2.5 pb-2">{group.ids.map(id => { const facility = scenarioFacility(SCENARIO, id)!; const selected = selectedFacilityId === facility.id; return <button key={id} type="button" aria-pressed={selected} className={`rounded-md px-1.5 py-1 text-xs transition ${selected ? 'bg-blue-100 font-semibold text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-700'}`} onClick={() => onSelect(facility)}>{facility.code}</button> })}</div>}
       </section>
     })}</div>
   </section>
@@ -165,7 +165,7 @@ function StageOverview({ onSelect, selectedFacilityId }: { onSelect: (facility: 
 
 function ResourceRoster({ selectedConsignmentId, timeSeconds, onSelect }: { selectedConsignmentId: string; timeSeconds: number; onSelect: (consignment: SupplyChainConsignment) => void }) {
   return <section className="mt-2 space-y-1 border-t border-slate-100 pt-2" aria-label="Sample resource roster">
-    <div className="flex items-center justify-between"><h2 className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500">Resources</h2><span className="text-[9px] text-slate-400">local scenario</span></div>
+    <div className="flex items-center justify-between"><h2 className="text-xs font-bold uppercase tracking-normal text-slate-500">Resources</h2><span className="text-xs text-slate-400">local scenario</span></div>
     {SCENARIO.resources.map(resource => {
       const consignment = scenarioConsignment(SCENARIO, resource.consignmentId)!
       const projection = projectSupplyChainScenario(SCENARIO, timeSeconds, consignment.id)
@@ -177,8 +177,8 @@ function ResourceRoster({ selectedConsignmentId, timeSeconds, onSelect }: { sele
       const icon = resource.kind === 'road-vehicle' ? <Truck size={13}/> : resource.kind === 'rail-unit' ? <TrainFront size={13}/> : resource.kind === 'sea-container' ? <Ship size={13}/> : <Plane size={13}/>
       return <button key={resource.id} type="button" onClick={() => onSelect(consignment)} aria-pressed={selectedConsignmentId === consignment.id} className={`flex w-full items-center gap-2 rounded-lg border px-2 py-0.5 text-left transition ${selectedConsignmentId === consignment.id ? 'border-blue-200 bg-blue-50' : 'border-transparent bg-slate-50 hover:border-slate-200 hover:bg-white'}`}>
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-white text-slate-600 shadow-sm">{icon}</span>
-        <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-bold text-slate-800">{resource.code} · {resource.name}</span><span className="block truncate text-[9px] text-slate-400">{consignment.reference} · {legLabel}</span></span>
-        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${exceptional && assigned ? 'bg-rose-50 text-rose-700' : assigned ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{exceptional && assigned ? 'Review' : assigned ? 'Moving' : leg ? 'Ready' : 'Done'}</span>
+        <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{resource.code} · {resource.name}</span><span className="block truncate text-xs text-slate-400">{consignment.reference} · {legLabel}</span></span>
+        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold ${exceptional && assigned ? 'bg-rose-50 text-rose-700' : assigned ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{exceptional && assigned ? 'Review' : assigned ? 'Moving' : leg ? 'Ready' : 'Done'}</span>
       </button>
     })}
   </section>
@@ -204,26 +204,26 @@ function EntityInspector({
     {facility ? <>
       <header className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white shadow-sm" style={{ backgroundColor: FACILITY_COLORS[facility.kind] }}><MapPin size={18}/></span>
-        <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.14em] text-blue-600">{facility.code} · {facility.region}</p><h2 className="mt-0.5 text-sm font-bold leading-tight text-slate-900">{facility.name}</h2><p className="mt-1 text-[10px] leading-4 text-slate-500">{facility.summary}</p></div>
+        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-normal text-blue-600">{facility.code} · {facility.region}</p><h2 className="mt-0.5 text-sm font-bold leading-tight text-slate-900">{facility.name}</h2><p className="mt-1 text-xs leading-4 text-slate-500">{facility.summary}</p></div>
       </header>
-      <div className="grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] text-slate-400">Scenario capacity</p><p className="mt-1 text-[10px] font-semibold text-slate-700">{facility.capacity}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] text-slate-400">Latest event</p><p className="mt-1 truncate text-[10px] font-semibold text-slate-700">{activeEventTitle}</p></div></div>
-      <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-2.5"><p className="text-[9px] font-bold uppercase tracking-wider text-blue-700">Consignment at this site</p><button type="button" onClick={() => onSelectConsignment(consignment)} className="mt-1 flex w-full items-center text-left text-[11px] font-bold text-slate-800 hover:text-blue-700">{consignment.reference}<ChevronRight size={14} className="ml-auto"/></button><p className="mt-1 text-[10px] text-slate-500">{formatClock(timeSeconds)} scenario time · {facilityCode} focus</p></div>
+      <div className="grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-2"><p className="text-xs text-slate-400">Scenario capacity</p><p className="mt-1 text-xs font-semibold text-slate-700">{facility.capacity}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-xs text-slate-400">Latest event</p><p className="mt-1 truncate text-xs font-semibold text-slate-700">{activeEventTitle}</p></div></div>
+      <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-2.5"><p className="text-xs font-bold uppercase tracking-normal text-blue-700">Consignment at this site</p><button type="button" onClick={() => onSelectConsignment(consignment)} className="mt-1 flex w-full items-center text-left text-xs font-bold text-slate-800 hover:text-blue-700">{consignment.reference}<ChevronRight size={14} className="ml-auto"/></button><p className="mt-1 text-xs text-slate-500">{formatClock(timeSeconds)} scenario time · {facilityCode} focus</p></div>
     </> : <>
       <header className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-sm"><Package size={18}/></span>
-        <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.14em] text-blue-600">Selected consignment</p><h2 className="mt-0.5 text-base font-bold text-slate-900">{focusConsignment.reference}</h2><p className="mt-1 text-[10px] text-slate-500">{focusConsignment.service} · synthetic data</p></div>
+        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-normal text-blue-600">Selected consignment</p><h2 className="mt-0.5 text-base font-bold text-slate-900">{focusConsignment.reference}</h2><p className="mt-1 text-xs text-slate-500">{focusConsignment.service} · synthetic data</p></div>
       </header>
-      <div className="grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] text-slate-400">Contents</p><p className="mt-1 truncate text-[10px] font-semibold text-slate-700">{focusConsignment.contents}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] text-slate-400">Quantity</p><p className="mt-1 text-[10px] font-semibold text-slate-700">{focusConsignment.quantity} {focusConsignment.unit}</p></div></div>
-      <div className="rounded-lg border border-slate-100 p-2.5"><div className="flex items-center justify-between"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Current journey</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${exception ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{activeEventTitle}</span></div>
-        <div className="mt-3 space-y-0">{focusConsignment.legIds.map((legId, index) => { const leg = scenarioLeg(SCENARIO, legId)!; const from = scenarioFacility(SCENARIO, leg.from)!; const to = scenarioFacility(SCENARIO, leg.to)!; const active = timeSeconds < focusConsignment.etaSeconds && (index === Math.min(focusConsignment.legIds.length - 1, Math.max(0, Math.floor(timeSeconds / (focusConsignment.etaSeconds / focusConsignment.legIds.length))))); return <div key={leg.id} className="flex gap-2.5"><div className="flex w-3 flex-col items-center"><span className={`mt-1 h-2 w-2 rounded-full ${active ? 'bg-blue-600 ring-4 ring-blue-50' : 'bg-slate-300'}`} /><span className="min-h-[24px] w-px bg-slate-200" /></div><div className="min-w-0 flex-1 pb-2"><p className="truncate text-[10px] font-semibold text-slate-700">{from.name} <ArrowRightGlyph mode={leg.mode}/> {to.name}</p><p className="mt-0.5 text-[9px] text-slate-400">{MODE_LABELS[leg.mode]} · {leg.label}</p></div></div> })}</div>
+      <div className="grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-2"><p className="text-xs text-slate-400">Contents</p><p className="mt-1 truncate text-xs font-semibold text-slate-700">{focusConsignment.contents}</p></div><div className="rounded-lg bg-slate-50 p-2"><p className="text-xs text-slate-400">Quantity</p><p className="mt-1 text-xs font-semibold text-slate-700">{focusConsignment.quantity} {focusConsignment.unit}</p></div></div>
+      <div className="rounded-lg border border-slate-100 p-2.5"><div className="flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-normal text-slate-500">Current journey</p><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${exception ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{activeEventTitle}</span></div>
+        <div className="mt-3 space-y-0">{focusConsignment.legIds.map((legId, index) => { const leg = scenarioLeg(SCENARIO, legId)!; const from = scenarioFacility(SCENARIO, leg.from)!; const to = scenarioFacility(SCENARIO, leg.to)!; const active = timeSeconds < focusConsignment.etaSeconds && (index === Math.min(focusConsignment.legIds.length - 1, Math.max(0, Math.floor(timeSeconds / (focusConsignment.etaSeconds / focusConsignment.legIds.length))))); return <div key={leg.id} className="flex gap-2.5"><div className="flex w-3 flex-col items-center"><span className={`mt-1 h-2 w-2 rounded-full ${active ? 'bg-blue-600 ring-4 ring-blue-50' : 'bg-slate-300'}`} /><span className="min-h-[24px] w-px bg-slate-200" /></div><div className="min-w-0 flex-1 pb-2"><p className="truncate text-xs font-semibold text-slate-700">{from.name} <ArrowRightGlyph mode={leg.mode}/> {to.name}</p><p className="mt-0.5 text-xs text-slate-400">{MODE_LABELS[leg.mode]} · {leg.label}</p></div></div> })}</div>
       </div>
-      {focusConsignment.returnConsignmentId && <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-[10px] text-amber-800"><RotateCcw size={13}/><span>Linked return <strong>{focusConsignment.returnConsignmentId}</strong></span></div>}
+      {focusConsignment.returnConsignmentId && <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs text-amber-800"><RotateCcw size={13}/><span>Linked return <strong>{focusConsignment.returnConsignmentId}</strong></span></div>}
     </>}
     <section className="space-y-1.5 border-t border-slate-100 pt-3" aria-label="Sample consignments">
-      <div className="mb-1 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Sample consignments</h3><span className="text-[9px] text-slate-400">Choose a journey</span></div>
+      <div className="mb-1 flex items-center justify-between"><h3 className="text-xs font-bold uppercase tracking-normal text-slate-500">Sample consignments</h3><span className="text-xs text-slate-400">Choose a journey</span></div>
       {SCENARIO.consignments.map(item => <button key={item.id} type="button" onClick={() => onSelectConsignment(item)} aria-pressed={focusConsignment.id === item.id} className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition ${focusConsignment.id === item.id ? 'border-blue-200 bg-blue-50' : 'border-transparent bg-slate-50 hover:border-slate-200 hover:bg-white'}`}>
         <span className="grid h-7 w-7 place-items-center rounded-md bg-white text-slate-500 shadow-sm">{item.service.includes('air') ? <Plane size={13}/> : item.service.includes('Ocean') ? <Ship size={13}/> : <TrainFront size={13}/>}</span>
-        <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold text-slate-800">{item.reference}</span><span className="block truncate text-[9px] text-slate-400">{item.service} · {item.quantity} {item.unit}</span></span>
+        <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-slate-800">{item.reference}</span><span className="block truncate text-xs text-slate-400">{item.service} · {item.quantity} {item.unit}</span></span>
         <ChevronRight size={13} className="text-slate-400"/>
       </button>)}
     </section>
@@ -322,20 +322,20 @@ export function SupplyChainOverview() {
   return <main className="sc-overview pointer-events-none absolute inset-0 z-[45] h-full min-h-0 w-full overflow-hidden text-slate-800" aria-label="Supply chain operations overview" data-supply-chain-overview="true" data-scenario-id={SCENARIO.id} data-scenario-revision={SCENARIO.revision}>
     <header className="pointer-events-auto absolute left-3 right-3 top-2 z-20 flex min-h-[46px] items-center gap-3 rounded-xl border border-slate-200/90 bg-white/95 px-3 shadow-[0_1px_4px_rgba(15,23,42,.08)] backdrop-blur" data-kg-workspace-visible-viewport-occluder="top">
       <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-white"><ArrowLeftRight size={16}/></span>
-      <div className="min-w-0"><div className="flex items-center gap-2"><strong className="text-[13px] tracking-tight text-slate-900">Network operations</strong><ChevronRight size={13} className="text-slate-300"/><span className="truncate text-[11px] text-slate-500">End-to-end supply chain</span><span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-amber-800"><span className="h-1.5 w-1.5 rounded-full bg-amber-500"/>Simulated</span></div><p className="hidden text-[9px] text-slate-400 sm:block">Synthetic local source · seed {SCENARIO.seed} · revision {SCENARIO.revision}</p></div>
+      <div className="min-w-0"><div className="flex items-center gap-2"><strong className="text-sm tracking-normal text-slate-900">Network operations</strong><ChevronRight size={13} className="text-slate-300"/><span className="truncate text-xs text-slate-500">End-to-end supply chain</span><span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-bold uppercase tracking-normal text-amber-800"><span className="h-1.5 w-1.5 rounded-full bg-amber-500"/>Simulated</span></div><p className="hidden text-xs text-slate-400 sm:block">Synthetic local source · seed {SCENARIO.seed} · revision {SCENARIO.revision}</p></div>
     </header>
     <section className="pointer-events-auto absolute left-1/2 top-[58px] z-20 flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95 p-1.5 shadow-sm backdrop-blur" aria-label="Scenario summary" data-kg-workspace-visible-viewport-occluder="top">
       <MiniMetric icon={<Boxes size={16}/>} label="Active sample consignments" value={String(projection.activeConsignmentCount).padStart(2, '0')} note={`${SCENARIO.consignments.length} total`} />
       <MiniMetric icon={<Building2 size={16}/>} label="Connected facilities" value={String(SCENARIO.facilities.length).padStart(2, '0')} note="modeled" />
       <MiniMetric icon={<Truck size={16}/>} label="Transport modes" value={String(new Set(SCENARIO.legs.filter(leg => leg.mode !== 'reverse').map(leg => leg.mode)).size).padStart(2, '0')} note="road · rail · air · sea" />
       <MiniMetric icon={<RotateCcw size={15}/>} label="Linked return flows" value={String(SCENARIO.consignments.filter(consignment => consignment.returnConsignmentId).length).padStart(2, '0')} note="in scenario" />
-      <label className="ml-1 flex shrink-0 items-center gap-2 text-[10px] font-medium text-slate-500">Journey
-        <SemanticSelect value={selectedConsignmentId} onValueChange={value => { const consignment = scenarioConsignment(SCENARIO, value); if (consignment) chooseConsignment(consignment) }} aria-label="Select supply chain journey" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+      <label className="ml-1 flex shrink-0 items-center gap-2 text-xs font-medium text-slate-500">Journey
+        <SemanticSelect value={selectedConsignmentId} onValueChange={value => { const consignment = scenarioConsignment(SCENARIO, value); if (consignment) chooseConsignment(consignment) }} aria-label="Select supply chain journey" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
           {SCENARIO.consignments.map(consignment => <option key={consignment.id} value={consignment.id}>{consignment.reference} · {consignment.service}</option>)}
         </SemanticSelect>
       </label>
-      <label className="ml-1 flex shrink-0 items-center gap-2 text-[10px] font-medium text-slate-500">Routes
-        <SemanticSelect value={modeFilter} onValueChange={value => setModeFilter(value as SupplyChainMode | 'all')} aria-label="Filter routes by transport mode" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+      <label className="ml-1 flex shrink-0 items-center gap-2 text-xs font-medium text-slate-500">Routes
+        <SemanticSelect value={modeFilter} onValueChange={value => setModeFilter(value as SupplyChainMode | 'all')} aria-label="Filter routes by transport mode" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
           <option value="all">All modes</option><option value="road">Road</option><option value="rail">Rail</option><option value="air">Air</option><option value="sea">Sea</option><option value="reverse">Returns</option>
         </SemanticSelect>
       </label>
@@ -351,26 +351,26 @@ export function SupplyChainOverview() {
       {offline && <OfflineSupplyChainMap entityFilter={entityFilter} modeFilter={modeFilter} selectedFacilityId={activeFacilityId}
         showLabels={showLabels} timeSeconds={timeSeconds} onSelectFacility={chooseFacility} onSelectConsignment={chooseConsignment} />}
       <aside className="pointer-events-auto absolute bottom-[202px] left-3 top-[158px] z-20 hidden w-[244px] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-3 shadow-[0_8px_28px_rgba(15,23,42,.10)] backdrop-blur xl:block" aria-label="Geospatial panel">
-        <header className="mb-3 flex items-start justify-between"><div><p className="text-[9px] font-bold uppercase tracking-[.14em] text-blue-600">Global movement</p><h2 className="mt-0.5 text-[13px] font-bold text-slate-900">Connected network</h2></div><span className="rounded-md bg-blue-50 px-1.5 py-1 text-[9px] font-bold text-blue-700">12 sites</span></header>
-        <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5"><span className="grid h-7 w-7 place-items-center rounded-md bg-white text-blue-600 shadow-sm"><Activity size={14}/></span><div className="min-w-0"><p className="text-[10px] font-semibold text-slate-700">Scenario clock</p><p className="text-[9px] text-slate-400">{formatClock(timeSeconds)} elapsed · {transport.playing ? 'playing' : 'paused'}</p></div><span className="ml-auto rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700">LOCAL</span></div>
-        <label className="relative mb-2 block"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/><PanelTextInput value={search} onChange={event => setSearch(event.target.value)} placeholder="Find a site or consignment" aria-label="Search network entities" className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-[10px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"/></label>
+        <header className="mb-3 flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-normal text-blue-600">Global movement</p><h2 className="mt-0.5 text-sm font-bold text-slate-900">Connected network</h2></div><span className="rounded-md bg-blue-50 px-1.5 py-1 text-xs font-bold text-blue-700">12 sites</span></header>
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5"><span className="grid h-7 w-7 place-items-center rounded-md bg-white text-blue-600 shadow-sm"><Activity size={14}/></span><div className="min-w-0"><p className="text-xs font-semibold text-slate-700">Scenario clock</p><p className="text-xs text-slate-400">{formatClock(timeSeconds)} elapsed · {transport.playing ? 'playing' : 'paused'}</p></div><span className="ml-auto rounded-full bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700">LOCAL</span></div>
+        <label className="relative mb-2 block"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/><PanelTextInput value={search} onChange={event => setSearch(event.target.value)} placeholder="Find a site or consignment" aria-label="Search network entities" className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs outline-none placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"/></label>
         <StageOverview selectedFacilityId={activeFacilityId} onSelect={chooseFacility}/>
         <ResourceRoster selectedConsignmentId={selectedConsignmentId} timeSeconds={timeSeconds} onSelect={chooseConsignment}/>
-        <p className="mt-3 border-t border-slate-100 pt-2 text-[9px] leading-4 text-slate-400">Illustrative topology. Synthetic local source · seed {SCENARIO.seed} · revision {SCENARIO.revision}.</p>
+        <p className="mt-3 border-t border-slate-100 pt-2 text-xs leading-4 text-slate-400">Illustrative topology. Synthetic local source · seed {SCENARIO.seed} · revision {SCENARIO.revision}.</p>
       </aside>
       <aside className="pointer-events-auto absolute bottom-[202px] right-3 top-[158px] z-20 hidden w-[278px] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-3 shadow-[0_8px_28px_rgba(15,23,42,.10)] backdrop-blur xl:block" aria-label="Geospatial panel">
-        <div className="mb-3 flex items-center justify-between"><h2 className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500">Operations detail</h2><button type="button" aria-label="Help with synthetic scenario" title="All values are generated locally for this scenario." className="text-slate-400 hover:text-slate-700"><CircleHelp size={14}/></button></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-bold uppercase tracking-normal text-slate-500">Operations detail</h2><button type="button" aria-label="Help with synthetic scenario" title="All values are generated locally for this scenario." className="text-slate-400 hover:text-slate-700"><CircleHelp size={14}/></button></div>
         <EntityInspector selection={selection} selectedConsignmentId={selectedConsignmentId} timeSeconds={timeSeconds} activeEvent={projection.latestEvent} onSelectConsignment={chooseConsignment}/>
       </aside>
       {search && <section className="pointer-events-auto absolute left-1/2 top-24 z-30 max-h-[45%] w-[min(360px,calc(100%-24px))] -translate-x-1/2 overflow-auto rounded-xl border border-slate-200 bg-white p-2.5 shadow-xl" aria-label="Search results and selected site">
-        <header className="mb-1.5 flex items-center justify-between"><p className="text-[10px] font-bold text-slate-600">Search results · {filteredFacilities.length + filteredConsignments.length}</p><button type="button" aria-label="Clear search" onClick={() => setSearch('')} className="rounded p-1 text-slate-400 hover:bg-slate-100"><ChevronDown size={13}/></button></header>
-        {search && <div className="space-y-1">{filteredFacilities.slice(0, 8).map(facility => <button key={facility.id} type="button" onClick={() => { chooseFacility(facility); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><MapPin size={13} style={{ color: FACILITY_COLORS[facility.kind] }}/><span className="min-w-0 flex-1 truncate text-[10px] font-medium">{facility.name}</span><span className="text-[9px] text-slate-400">{facility.code}</span></button>)}{filteredConsignments.map(consignment => <button key={consignment.id} type="button" onClick={() => { chooseConsignment(consignment); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><Package size={13} className="text-blue-600"/><span className="min-w-0 flex-1 truncate text-[10px] font-medium">{consignment.reference} · {consignment.contents}</span><ChevronRight size={12} className="text-slate-400"/></button>)}</div>}
+        <header className="mb-1.5 flex items-center justify-between"><p className="text-xs font-bold text-slate-600">Search results · {filteredFacilities.length + filteredConsignments.length}</p><button type="button" aria-label="Clear search" onClick={() => setSearch('')} className="rounded p-1 text-slate-400 hover:bg-slate-100"><ChevronDown size={13}/></button></header>
+        {search && <div className="space-y-1">{filteredFacilities.slice(0, 8).map(facility => <button key={facility.id} type="button" onClick={() => { chooseFacility(facility); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><MapPin size={13} style={{ color: FACILITY_COLORS[facility.kind] }}/><span className="min-w-0 flex-1 truncate text-xs font-medium">{facility.name}</span><span className="text-xs text-slate-400">{facility.code}</span></button>)}{filteredConsignments.map(consignment => <button key={consignment.id} type="button" onClick={() => { chooseConsignment(consignment); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><Package size={13} className="text-blue-600"/><span className="min-w-0 flex-1 truncate text-xs font-medium">{consignment.reference} · {consignment.contents}</span><ChevronRight size={12} className="text-slate-400"/></button>)}</div>}
       </section>}
       <div className="pointer-events-auto absolute bottom-[202px] left-3 z-10 flex items-center gap-1.5 rounded-lg border border-white/90 bg-white/90 p-1.5 shadow-sm backdrop-blur" aria-label="Map display controls">
         <button type="button" onClick={() => setShowEvents(!showEvents)} aria-pressed={showEvents} className={`${smallButtonClass} ${showEvents ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><Activity size={12}/><span>Movement events</span></button>
         <button type="button" onClick={() => setSelection({ kind: 'consignment', id: SCENARIO.consignments[0].id })} className={smallButtonClass}><RouteIconGlyph/><span>Focus journey</span></button>
       </div>
-      <div className="pointer-events-auto absolute bottom-[202px] right-3 z-10 hidden items-center gap-1 rounded-lg border border-white/90 bg-white/90 px-2 py-1.5 text-[9px] text-slate-500 shadow-sm backdrop-blur sm:flex"><Clock3 size={12}/><span>{formatClock(timeSeconds)}</span><span className="mx-1 h-3 w-px bg-slate-200"/>{projection.activeConsignmentCount} active sample movements</div>
+      <div className="pointer-events-auto absolute bottom-[202px] right-3 z-10 hidden items-center gap-1 rounded-lg border border-white/90 bg-white/90 px-2 py-1.5 text-xs text-slate-500 shadow-sm backdrop-blur sm:flex"><Clock3 size={12}/><span>{formatClock(timeSeconds)}</span><span className="mx-1 h-3 w-px bg-slate-200"/>{projection.activeConsignmentCount} active sample movements</div>
     </section>
   </main>
 }
