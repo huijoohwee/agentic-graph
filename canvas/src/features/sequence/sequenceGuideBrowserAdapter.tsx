@@ -1,4 +1,7 @@
 import React from 'react'
+import { X } from 'lucide-react'
+import { UI_ICON_DEFAULTS } from 'grph-shared/ui/themeTokens'
+import { UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME } from '../../lib/ui/responsiveElementClasses'
 import { readFloatingPanelThemeStyle } from '../../lib/ui/floatingPanelTheme'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
@@ -105,7 +108,7 @@ export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBr
       rootClassName="fixed inset-0 pointer-events-none" rootStyle={readFloatingPanelThemeStyle({ zIndex: 1000 })}
       panelStyle={{ position: 'absolute', top: FLOATING_PANEL_CANVAS_TOP_INSET_CSS, right: FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
         width: resolveFloatingPanelWidthCss(FLOATING_PANEL_DEFAULT_WIDTH_RATIO), height: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS }}
-      header={<><span aria-hidden="true" /><FloatingPanelCloseButton label={state.closeLabel!} onClose={close} /></>}>
+      header={<><span aria-hidden="true" /><FloatingPanelCloseButton label={state.closeLabel!} onClose={close} icon={<X className={UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} strokeWidth={UI_ICON_DEFAULTS.strokeWidth} aria-hidden="true" />} /></>}>
       <section className="mt-1 flex-1 min-h-0 overflow-hidden" aria-label="Guide steps">
         <SequenceInspectorView title={state.title} summary={state.summary} status={state.status}
           items={state.items} selectedId={state.selectedId} onSelect={select} disabled={state.busy}
