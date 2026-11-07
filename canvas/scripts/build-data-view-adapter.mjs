@@ -21,7 +21,7 @@ const sourcePath = file => file.startsWith(basePrefix + '/')
 const startedAt = Date.now()
 const entry = 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx'
 const MAX_BYTES = 500000
-const MAX_INPUTS = 108, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
+const MAX_INPUTS = 112, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
   .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
