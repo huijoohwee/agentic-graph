@@ -25,7 +25,7 @@ export const testTailwindScansSharedKtvClassOwners = () => {
   }
   if (
     !sharedKtvRows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(2.75rem,0.42fr)_minmax(0,1.2fr)]')
+    || !sharedKtvRows.includes('grid-cols-[var(--agentic-ktv-columns)]')
     || sharedKtvRows.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
   ) {
     throw new Error(

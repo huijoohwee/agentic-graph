@@ -1,5 +1,5 @@
 @layer base {
-  body { font-size: var(--kg-text-sm); }
+  body { font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
   h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
   .lucide,
   [data-kg-ui-icon] {
@@ -11,7 +11,7 @@
 
 :root {
   font-family: var(--kg-font-sans);
-  line-height: 1.5;
+  line-height: var(--agentic-line-height-body);
   font-weight: 400;
   letter-spacing: normal;
   font-synthesis: none;

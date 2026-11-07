@@ -1,9 +1,18 @@
-/* Generated from agentic-design-system@26af2c05edec17808f84571478bf38fbff2c7bfb; profile sha256 d2691e47750d52376fd68c5efdbaf38393808c39da8ad065815609bdd03eb8ee. Do not edit. */
+/* Generated from agentic-design-system@250cb58c92abd8b8d024e881e329869fb69e8a9a; profile sha256 9d9e775371a2da55ac7f5e484677e82453e61d503d9494696a6068eb2afcc32e. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
   --agentic-row-height: 38px;
   --agentic-row-height-touch: 54px;
+  --agentic-font-size-body: 14px;
+  --agentic-line-height-body: 20px;
+  --agentic-font-sans: -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  --agentic-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --agentic-ktv-columns: minmax(0,1fr) minmax(3rem,4.75rem) minmax(0,1.45fr);
+  --agentic-ktv-columns-narrow: minmax(0,0.95fr) minmax(2.75rem,0.42fr) minmax(0,1.2fr);
+}
+@media (max-width: 639px) {
+  :root, :host { --agentic-ktv-columns: var(--agentic-ktv-columns-narrow); }
 }
 @media (pointer: coarse), (max-width: 768px) {
   :root, :host { --agentic-row-height: var(--agentic-row-height-touch); }

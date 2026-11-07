@@ -37,3 +37,17 @@ test('Graph toolbar, table and virtualized row metrics share the Base and Design
   assert.match(host, /readHeaderPaddingClassName: baseTableHost.helpers.readHeaderPaddingClassName/)
   assert.match(host, /readTablePaddingClassName: baseTableHost.helpers.readTablePaddingClassName/)
 })
+
+
+test('headless typography metadata and KTV layout are projections of the pinned profile', async () => {
+  const fonts = await import('../../../grph-shared/src/ui/fontStacks.js')
+  assert.equal(fonts.UI_BODY_FONT_SIZE, pin.metrics.bodyFontSize)
+  assert.equal(fonts.UI_BODY_LINE_HEIGHT, pin.metrics.bodyLineHeight)
+  for (const [name, value] of [['sans', fonts.UI_FONT_SANS], ['mono', fonts.UI_FONT_MONO]]) {
+    assert.ok(profileCss.toString().includes(`--agentic-font-${name}: ${value};`))
+  }
+  assert.match(toolbarCss, /font-size: var\(--agentic-font-size-body\)/)
+  const rows = fs.readFileSync(new URL('../../../grph-shared/src/ui/keyTypeValueRows.ts', import.meta.url), 'utf8')
+  assert.ok(rows.includes('grid-cols-[var(--agentic-ktv-columns)]'))
+  assert.ok(!rows.includes('minmax('), 'Column geometry must have one central owner')
+})

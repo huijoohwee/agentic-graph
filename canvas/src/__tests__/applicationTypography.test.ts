@@ -20,8 +20,8 @@ export function testApplicationTypographyMatchesDashboardReference() {
   assert.deepEqual(UI_TEXT_SCALE['3xl'], { size: 30, line: 36 })
   const generated = fs.readFileSync(path.resolve('src/styles/kgTokens.generated.css'), 'utf8')
   assert.ok(generated.startsWith(buildUiTypographyCss()), 'Generated CSS must match the typography source')
-  assert.ok(generated.includes(`--kg-font-sans: ${UI_FONT_SANS}`))
-  assert.ok(generated.includes(`--kg-font-mono: ${UI_FONT_MONO}`))
+  assert.ok(generated.includes('--kg-font-sans: var(--agentic-font-sans)'))
+  assert.ok(generated.includes('--kg-font-mono: var(--agentic-font-mono)'))
   for (const presentation of [false, true]) for (let depth = 1; depth <= 6; depth++) {
     const args = { depth, presentation }
     assert.equal(getMarkdownHeadingFontSizePx(args), tailwindTextSizeClassToPx(getMarkdownHeadingTextSizeClass(args)),
@@ -100,7 +100,7 @@ const sources = (root: string): string[] => fs.readdirSync(root, { withFileTypes
 export function testApplicationTypographyForbidsLegacyVariants() {
   const violations: string[] = []
   for (const root of ['src', '../grph-shared/src', '../gympgrph/src']) for (const file of sources(path.resolve(root))) {
-    if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.js') || file.endsWith('/kgTokens.generated.css')) continue
+    if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.js') || file.endsWith('/kgTokens.generated.css') || file.endsWith('/styles/shared-ui-profile.css')) continue
     const content = fs.readFileSync(file, 'utf8')
     if (/text-\[\d+(?:\.\d+)?(?:px|rem)\]/.test(content)) violations.push(`${file}: use the shared text scale`)
     if (/tracking-(?:wide|wider|widest|tight|tighter)\b|tracking-\[[^\]]+\]/.test(content)) violations.push(`${file}: use normal letter spacing`)

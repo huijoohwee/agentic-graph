@@ -1,4 +1,5 @@
 import React from 'react'
+import { SimpleKeyValueRow } from '@/features/panels/ui/canvasSimpleKeyValueRow'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
@@ -19,7 +20,7 @@ const formatCount = (value: unknown): string => {
   if (!Number.isFinite(n)) return '0'
   return Math.floor(n).toLocaleString()
 }
-export const RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-2'
+export const RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME = 'min-w-0'
 
 const readNumber = (record: Record<string, unknown>, key: string): number => {
   const value = record[key]
@@ -247,34 +248,15 @@ export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = 
     <section className={`min-w-0 rounded ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.panel.headerBg} px-2 py-2`} aria-label="Graph topology">
       <section className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>Graph topology</section>
       <section className={RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME}>
-        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
-          <span className={UI_THEME_TOKENS.text.tertiary}>Nodes</span>
-          <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.nodeCount)}</span>
-        </section>
-        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
-          <span className={UI_THEME_TOKENS.text.tertiary}>Edges</span>
-          <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.edgeCount)}</span>
-        </section>
-        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
-          <span className={UI_THEME_TOKENS.text.tertiary}>Connected</span>
-          <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.connectedNodeCount)}</span>
-        </section>
-        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
-          <span className={UI_THEME_TOKENS.text.tertiary}>Structural</span>
-          <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.structuralEdgeCount)}</span>
-        </section>
+        <SimpleKeyValueRow label="Nodes">{formatCount(summary.nodeCount)}</SimpleKeyValueRow>
+        <SimpleKeyValueRow label="Edges">{formatCount(summary.edgeCount)}</SimpleKeyValueRow>
+        <SimpleKeyValueRow label="Connected">{formatCount(summary.connectedNodeCount)}</SimpleKeyValueRow>
+        <SimpleKeyValueRow label="Structural">{formatCount(summary.structuralEdgeCount)}</SimpleKeyValueRow>
         {(prunedNodes > 0 || prunedEdges > 0) ? (
-          <section className={`sm:col-span-2 flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.text.secondary}`}>
-            <span>Pruned</span>
-            <span>{formatCount(prunedNodes)} nodes / {formatCount(prunedEdges)} edges</span>
-          </section>
+          <SimpleKeyValueRow label="Pruned">{formatCount(prunedNodes)} nodes / {formatCount(prunedEdges)} edges</SimpleKeyValueRow>
         ) : null}
-      </section>
-      <section title={`Types: ${compactCounts(summary.topNodeTypes)}`} className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
-        Types: {compactCounts(summary.topNodeTypes)}
-      </section>
-      <section title={`Labels: ${compactCounts(summary.topEdgeLabels)}`} className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
-        Labels: {compactCounts(summary.topEdgeLabels)}
+        <SimpleKeyValueRow label="Types"><span className="truncate" title={compactCounts(summary.topNodeTypes)}>{compactCounts(summary.topNodeTypes)}</span></SimpleKeyValueRow>
+        <SimpleKeyValueRow label="Labels"><span className="truncate" title={compactCounts(summary.topEdgeLabels)}>{compactCounts(summary.topEdgeLabels)}</span></SimpleKeyValueRow>
       </section>
       {rendererHighlights.length > 0 ? (
         <section className="mt-2">

@@ -2,12 +2,12 @@
  * CSS, DOM controls, canvas labels and generated viewers share this owner.
  * Imported document styles and world-space text retain their source dimensions.
  */
-import { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.js'
+import { UI_BODY_FONT_SIZE, UI_BODY_LINE_HEIGHT } from './fontStacks.js'
 export { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.js'
 
 export const UI_TEXT_SCALE = {
   xs: { size: 12, line: 16 },
-  sm: { size: 14, line: 20 },
+  sm: { size: UI_BODY_FONT_SIZE, line: UI_BODY_LINE_HEIGHT },
   base: { size: 16, line: 24 },
   lg: { size: 18, line: 28 },
   xl: { size: 20, line: 28 },
@@ -35,14 +35,14 @@ export function normalizeUiTextClasses(value: string): string {
 /** Emitted with the existing token CSS build; never maintain a second CSS copy. */
 export function buildUiTypographyCss(): string {
   const scale = Object.entries(UI_TEXT_SCALE).flatMap(([name, value]) => [
-    `  --kg-text-${name}: ${value.size / 16}rem;`,
-    `  --kg-text-${name}-line: ${value.line / 16}rem;`,
+    `  --kg-text-${name}: ${name === 'sm' ? 'var(--agentic-font-size-body)' : `${value.size / 16}rem`};`,
+    `  --kg-text-${name}-line: ${name === 'sm' ? 'var(--agentic-line-height-body)' : `${value.line / 16}rem`};`,
   ])
   return [
     '/* Generated application typography: grph-shared/src/ui/typography.ts */',
     ':root {',
-    `  --kg-font-sans: ${UI_FONT_SANS};`,
-    `  --kg-font-mono: ${UI_FONT_MONO};`,
+    '  --kg-font-sans: var(--agentic-font-sans);',
+    '  --kg-font-mono: var(--agentic-font-mono);',
     ...scale,
     '}',
     '',
