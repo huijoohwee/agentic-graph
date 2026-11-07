@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { JSDOM } from 'jsdom'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { SemanticSelect } from '@/lib/ui/SemanticSelect'
-import { enhanceSelects } from '@agentic-base/views-react/controls'
+import { bindOutsideDismiss, enhanceSelects } from '@agentic-base/views-react/controls'
 import { readSemanticSelectOptions } from '@/lib/ui/semanticSelectOptions'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -60,10 +60,13 @@ export async function testSemanticSelectKeyboardAndPortal() {
     items()[0].dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
     document.removeEventListener('pointerdown', inspect)
     assert.equal(observed, true, 'menu targets remain observable to page inspection tools')
-    const cancel = (event: Event) => event.preventDefault()
-    document.body.addEventListener('pointerdown', cancel)
     await act(async () => document.body.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true })))
-    document.body.removeEventListener('pointerdown', cancel)
+    assert.ok(document.querySelector('menu[role="menu"]'), 'pointerdown must not dismiss before annotation tooling can intercept the toolbar-compatible mouse gesture')
+    const cancel = (event: Event) => event.preventDefault()
+    document.body.addEventListener('mousedown', cancel)
+    await act(async () => document.body.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, cancelable: true })))
+    await act(tick)
+    document.body.removeEventListener('mousedown', cancel)
     assert.ok(document.querySelector('menu[role="menu"]'), 'a cancelled inspection gesture leaves the target menu open')
     document.addEventListener('click', cancel, true)
     await act(async () => items()[2].click())
@@ -91,6 +94,11 @@ export async function testSemanticSelectFormsAndDisabled() {
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host)
   try {
+    let dismissed = 0
+    const stop = bindOutsideDismiss(() => false, () => { dismissed++ })
+    document.body.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true }))
+    stop(); await tick()
+    assert.equal(dismissed, 0, 'disposing a popup cancels pending outside callbacks')
     const nativeHost = document.createElement('section'); document.body.append(nativeHost)
     const nativeHandle = enhanceSelects(nativeHost)
     try {
@@ -118,7 +126,8 @@ export async function testSemanticSelectFormsAndDisabled() {
     await act(async () => form.reset())
     assert.equal(new dom.window.FormData(form).get('layout'), 'a')
     await act(async () => trigger.click()); await act(async () => { await new Promise(resolve => setTimeout(resolve, 130)) })
-    await act(async () => document.body.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true })))
+    await act(async () => document.body.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true })))
+    await act(tick)
     assert.equal(document.querySelector('menu[role="menu"]') === null, true)
     await act(async () => root.render(<SemanticSelect disabled aria-label="Disabled"><option>Only</option></SemanticSelect>))
     assert.equal(host.querySelector<HTMLButtonElement>('button')!.disabled, true)
