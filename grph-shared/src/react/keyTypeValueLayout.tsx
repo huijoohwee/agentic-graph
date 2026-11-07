@@ -1,3 +1,4 @@
+import { KeyTypeValueContainer } from './keyTypeValueRow.js'
 import type { HTMLAttributes, ReactNode } from 'react'
 import {
   KTV_DEFAULT_HEADER_LABELS,
@@ -42,6 +43,7 @@ export function KeyTypeValueHeader({
 
   return (
     <header className={rootClassName}>
+      <KeyTypeValueContainer>
       <section className={`${KTV_FIELD_GRID_CLASS_NAME} min-h-8 items-center py-0`}>
         <section className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${KTV_HEADER_LABEL_CLASS_NAME}`}>
           {keyLabel}
@@ -56,6 +58,7 @@ export function KeyTypeValueHeader({
           </section>
         </section>
       </section>
+      </KeyTypeValueContainer>
     </header>
   )
 }

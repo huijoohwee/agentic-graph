@@ -31,11 +31,11 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   }
   if (
     !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_RATIO = 0.3') ||
-    !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_PX = 360') ||
+    !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_PX = sharedUiPin.metrics.ktvPanelWidth') ||
     !geometryText.includes("FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS = '21.6rem'") ||
     !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX = FLOATING_PANEL_DEFAULT_WIDTH_PX')
   ) {
-    throw new Error('expected FloatingPanel default width to reuse the 360px Rich Media width without changing custom sizing')
+    throw new Error('expected FloatingPanel default width to consume the Design System width without changing custom sizing')
   }
   if (
     !geometryText.includes("FLOATING_PANEL_CANVAS_TOP_INSET_CSS = 'calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap))'") ||

@@ -40,7 +40,7 @@ export function shouldFlushKeyTypeValueSectionTop(index: number): boolean {
 }
 
 // Shared by labeled forms, inspectors, headers, and all panel surfaces.
-export const KTV_FIELD_GRID_CLASS_NAME = `grid w-full min-w-0 max-w-full ${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME} gap-x-2 gap-y-0`
+export const KTV_FIELD_GRID_CLASS_NAME = `agentic-ktv-row grid w-full min-w-0 max-w-full ${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME} gap-x-2 gap-y-0`
 export const KTV_FIELD_CONTROL_GROUP_CLASS_NAME = 'flex w-full min-w-0 items-center gap-1'
 
 // Presentation belongs to the shared owner. Callers may add color, borders,
