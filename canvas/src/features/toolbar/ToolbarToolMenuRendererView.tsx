@@ -15,6 +15,7 @@ import { FlowchartRendererSettings } from '@/features/toolbar/ui/FlowchartRender
 import { RadarGalaxyRendererSettings } from '@/features/toolbar/ui/RadarGalaxyRendererSettings'
 import { EdgeTypesRendererSettings } from '@/features/toolbar/ui/EdgeTypesRendererSettings'
 import { RendererGraphTopologySummary } from '@/features/toolbar/ui/RendererGraphTopologySummary'
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGlobalEdgeType, type GlobalEdgeType, withGlobalEdgeType } from '@/lib/graph/edgeTypes'
 import { readLayoutMode2d, type LayoutMode2d } from '@/lib/graph/layoutMode'
@@ -186,11 +187,15 @@ export function ToolbarToolMenuRendererView(props: {
   return (
     <section className="flex flex-col gap-2">
       <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} />
-      <React.Suspense fallback={null}>
-        <WorkspaceTableModeControlLazy />
-      </React.Suspense>
+      <section className={uiToolbarSettingsPanelBodyClassName}>
+        <React.Suspense fallback={null}>
+          <WorkspaceTableModeControlLazy />
+        </React.Suspense>
+      </section>
       <RendererPaletteSettings />
-      <RendererHoverSettings />
+      <section className={uiToolbarSettingsPanelBodyClassName}>
+        <RendererHoverSettings />
+      </section>
       <RenderSettingsSection
         inspection={!!inspectionGraph}
         layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}

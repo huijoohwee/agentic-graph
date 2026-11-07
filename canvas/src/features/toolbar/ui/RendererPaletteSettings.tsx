@@ -47,6 +47,7 @@ export function RendererPaletteSettings() {
           </span>
         </Tooltip>
       </section>
+      <section>
       {nodeTypes.map((type) => (
         <KeyTypeValueStaticRow
           key={`node-${type}`}
@@ -134,6 +135,7 @@ export function RendererPaletteSettings() {
           }
         />
       ))}
+      </section>
     </section>
   );
 }
