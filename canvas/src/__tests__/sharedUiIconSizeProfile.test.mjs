@@ -51,3 +51,13 @@ test('headless typography metadata and KTV layout are projections of the pinned 
   assert.ok(rows.includes('grid-cols-[var(--agentic-ktv-columns)]'))
   assert.ok(!rows.includes('minmax('), 'Column geometry must have one central owner')
 })
+
+
+test('legacy renderer fields reuse the KTV adapter and section bodies add no competing inset', () => {
+  const rows = fs.readFileSync(new URL('../lib/ui/responsiveControlRows.tsx', import.meta.url), 'utf8')
+  assert.ok(rows.includes('<CanvasKeyTypeValueStaticRow'))
+  assert.ok(!rows.includes('responsiveControlWidthClassName'))
+  assert.ok(rows.includes("'aria-labelledby': labelId"), 'Original accessible control names must survive the adapter')
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0;/)
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0;/)
+})
