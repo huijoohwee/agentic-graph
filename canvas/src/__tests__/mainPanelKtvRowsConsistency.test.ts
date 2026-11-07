@@ -652,7 +652,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Settings UI renderer', settingsUi],
     ['Settings registry UI', settingsRegistryUi],
     ['UI slice core actions', uiSliceCoreActions],
-    ['Render settings', renderSettingsSection],
     ['Renderer palette settings', rendererPaletteSettings],
     ['AI KG layers', aiKgLayersSection],
     ['GraphRAG workflow', graphRagWorkflowSection],
@@ -1122,11 +1121,11 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected graph-field local schema rows to import the shared static KTV row/value primitives directly')
   }
   if (
-    !renderSettingsSection.includes("from 'grph-shared/react/keyTypeValueRow'")
-    || !renderSettingsSection.includes('KeyTypeValueStaticRow')
-    || !renderSettingsSection.includes('RightAlignedValueCell')
+    !renderSettingsSection.includes("from '@/lib/ui/responsiveControlRows'")
+    || !renderSettingsSection.includes('ResponsiveControlInput')
+    || !renderSettingsSection.includes('ResponsiveSelectRow')
   ) {
-    throw new Error('Expected render settings compact 2D layout rows to import the shared static KTV row/value primitives directly')
+    throw new Error('Expected render settings to reuse the shared responsive KTV form owners')
   }
   if (
     !rendererPaletteSettings.includes("from 'grph-shared/react/keyTypeValueRow'")
@@ -1397,8 +1396,8 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['ThreeViewLayoutSection.impl.tsx', threeViewLayoutSection],
   ] as const) {
     const usesSharedKtvRowOwner =
-      source.includes('KeyTypeValueRow') || source.includes('KeyTypeValueStaticRow')
-    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('THREE_VIEW_FIELD_GRID_CLASS_NAME')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME')) || source.includes('grid grid-cols-2 gap-3')) {
+      source.includes('KeyTypeValueRow') || source.includes('KeyTypeValueStaticRow') || source.includes('ResponsiveControlRow')
+    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('THREE_VIEW_FIELD_GRID_CLASS_NAME')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('KeyTypeValueSectionStack')) || source.includes('grid grid-cols-2 gap-3')) {
       throw new Error(`Expected FloatingPanel KTV surface ${fileName} to inherit shared KTV rows and responsive grid owners`)
     }
   }
@@ -1419,7 +1418,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected ThreeView background fog and starfield sections to consume the shared specialized panel color/text KTV row owner')
   }
   for (const [fileName, source] of [
-    ['RenderSettingsSection.impl.tsx', renderSettingsSection],
     ['RendererPaletteSettings.tsx', rendererPaletteSettings],
   ] as const) {
     if (!source.includes('RightAlignedValueCell')) {
