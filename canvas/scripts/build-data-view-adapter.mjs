@@ -16,6 +16,7 @@ const MAX_BYTES = 500000
 const MAX_INPUTS = 108, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 8000000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
+  .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
 const browserExports = ['mountDataView', 'mountSequenceGuide']
 const args = process.argv.slice(2)
 assert(args.length === 2 && args[0] === '--out-dir' && path.isAbsolute(args[1]), 'Expected --out-dir <absolute external directory>')
@@ -23,7 +24,7 @@ const output = path.resolve(args[1])
 const outputRelative = path.relative(root, output)
 assert(outputRelative.startsWith('..' + path.sep) || path.isAbsolute(outputRelative), 'Build output must be outside the source checkout')
 
-const inputs = new Set(['canvas/scripts/build-data-view-adapter.mjs', 'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json'])
+const inputs = new Set([entry, 'canvas/scripts/build-data-view-adapter.mjs', 'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json'])
 const read = async file => { inputs.add(relative(file)); return fs.readFile(path.resolve(root, file), 'utf8') }
 const options = { absWorkingDir: root, bundle: true, write: false, metafile: true,
   preserveSymlinks: true, alias: { '@': path.join(root, 'canvas/src'), 'grph-shared': path.join(root, 'grph-shared/src') },
