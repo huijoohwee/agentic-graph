@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { JSDOM } from 'jsdom'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { SemanticSelect } from '@/lib/ui/SemanticSelect'
+import { enhanceSelects } from '@agentic-base/views-react/controls'
 import { readSemanticSelectOptions } from '@/lib/ui/semanticSelectOptions'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -73,6 +74,14 @@ export async function testSemanticSelectFormsAndDisabled() {
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host)
   try {
+    const nativeHost = document.createElement('section'); document.body.append(nativeHost)
+    const nativeHandle = enhanceSelects(nativeHost)
+    try {
+      const field = document.createElement('select'); field.innerHTML = '<option value="a">Table</option>'; nativeHost.append(field)
+      field.focus(); await tick()
+      assert.equal(document.activeElement, nativeHost.querySelector('.agentic-select-trigger'), 'asynchronous enhancement preserves focus held by a newly rendered select')
+      field.focus(); assert.equal(document.activeElement, nativeHost.querySelector('.agentic-select-trigger'), 'later native focus calls reach the same visible control')
+    } finally { nativeHandle.destroy(); nativeHost.remove() }
     await act(async () => root.render(<form><SemanticSelect name="layout" defaultValue="a" aria-label="Layout">
       <optgroup label="Enabled"><option value="a">Table</option><option value="b">Kanban</option></optgroup>
       <optgroup label="Disabled" disabled><option value="c">Later</option></optgroup>
