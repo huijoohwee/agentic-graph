@@ -33,7 +33,7 @@ presenting the current value as a factory default. No new service or paid depend
 
 MainPanel and its body inherit the shared typography, density, KTV field rows,
 RAO help, named IconButton controls and Help registry. Tables, file trees and media
-retain their native semantics. Tab bodies remain lazy; source owners retain effects.
+retain their native semantics. Tab bodies remain lazy; source owners retain effects. The Design System shared-ui profile owns the field tracks, stacking breakpoint and default field-panel width. The existing headless KTV row and header provide the same inline-size container, so a constrained panel uses the profile fallback on any viewport. Existing FloatingPanel geometry preserves custom width ratios and safe-area clamping. Complete key names remain in the existing hover/focus help; value metadata, handlers and state stay source-owned. Base and Commerce retain exact offline projection pins. Validation is scoped to field layout, help, geometry, native checks and live desktop/narrow Dev; rollback restores the prior pin and source commit, with no data migration or Production claim.
 
 MainPanel, FloatingPanel and BottomPanel share one bounded, transient panel order.
 Pointer-down capture and focus capture promote the selected panel without cancelling
@@ -597,7 +597,3 @@ MVP/evidence: cap 8 files / 30 KB; diagnosis extended beyond the initial 20 minu
 ## ADLC browser closeout (2026-09-29)
 
 PRD/TAD/ADR: Design acceptance waits for source activation and dismisses overlapping mobile panels through native Close buttons before opening Design. Dashboard hides its shared front toolbar while configuration is open so controls remain hit-testable. Acceptance waits for save/close before reselecting; selection must still reveal actions only. Reuse existing owners and exact semantic diagram and setting names; retain pointer, keyboard, touch, theme and overflow checks. MVP/GTM: diagnosis and validation exceeded the initial 20 minutes; bound the follow-up implementation to 10 minutes, eleven files / 30 KB total, free/offline, no new module or dependency. Local and protected CI receipts remain separate; END ADLC requires protected integration and authorized runtime delivery. Five slow checks use separate native groups with unchanged five-minute command limits and exact-once coverage; the standard group retains its 15-minute cap. Design acceptance passes at 360/1280 px across light/black/dark. Rollback: revert this closeout successor.
-
-## Container-aware shared field sizing
-
-The Design System shared-ui profile owns the field tracks, stacking breakpoint and default field-panel width. The existing headless KTV row and header provide the same inline-size container, so a constrained panel uses the profile fallback on any viewport. Existing FloatingPanel geometry preserves custom width ratios and safe-area clamping. Complete key names remain in the existing hover/focus help; value metadata, handlers and state stay source-owned. Base and Commerce retain exact offline projection pins. Validation is scoped to field layout, help, geometry, native checks and live desktop/narrow Dev; rollback restores the prior pin and source commit, with no data migration or Production claim.
