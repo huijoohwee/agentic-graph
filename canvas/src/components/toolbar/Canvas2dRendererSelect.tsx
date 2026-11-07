@@ -279,7 +279,7 @@ export function Canvas2dRendererSelect({
           || option.id.startsWith('document:')
           || (option.id.startsWith('control:') && option.rowLabel !== 'Display')
         return <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           {showFieldLabel || !option.valueLabel ? <span className="min-w-0 flex-1 truncate text-left">
             {option.rowLabel || option.title}
           </span> : null}

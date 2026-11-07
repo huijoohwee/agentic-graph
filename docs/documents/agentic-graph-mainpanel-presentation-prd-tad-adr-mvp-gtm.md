@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.18.5"
+version: "1.18.6"
 status: "Accepted and implemented"
 date: "2026-10-05"
 authors: ["airvio"]
@@ -339,7 +339,7 @@ Menus retain selected/disabled choices, groups, controlled and uncontrolled valu
 form reset, arrow/Home/End navigation, typeahead, Escape, Tab and focus return.
 The portal escapes clipped value cells and clamps to the viewport. Field tooltips
 dismiss on dropdown open and ignore focus from React portal descendants, preventing
-help from covering a menu option. Overlay attachment uses a stable ref callback; its geometry class stays a contract adapter over Base. Dynamic native enhancement preserves pre-existing focus. Shared SVG indicators stay centered; menu events remain observable and cancelled inspection gestures preserve their targets.
+help from covering a menu option. Overlay attachment uses a stable ref callback; its geometry class stays a contract adapter over Base. Dynamic native enhancement preserves pre-existing focus. Shared SVG indicators stay centered; menu events remain observable and cancelled inspection gestures preserve their targets. Existing toolbar option icons are named SVG images, consistent with Editor Workspace and field indicators; none use hidden decoration or a generic wrapper.
 
 MVP/evidence: Four registered `ui.panels.dropdown.*` checks cover keyboard/portal/
 tooltip behavior, disabled choices and form reset, option parsing, and a recursive

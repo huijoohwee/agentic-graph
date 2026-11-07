@@ -152,7 +152,7 @@ export function DocumentModeSelect({ iconSizeClass, iconStrokeWidth, ensureBasel
       )}
       renderOptionContent={option => (
         <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.title}</span>
         </>
       )}

@@ -35,7 +35,7 @@ type ZoomOption = {
   key: ZoomOptionKey
   label: string
   tooltip: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  Icon: React.ComponentType<Pick<React.SVGProps<SVGSVGElement>, 'className' | 'strokeWidth' | 'role' | 'aria-label'>>
   children?: readonly ZoomOption[]
   dividerBefore?: boolean
   isActive?: boolean
@@ -272,7 +272,7 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth }: ZoomModeSelec
       )}
       renderOptionContent={option => (
         <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.title}</span>
           {isOptionActive(option.id) ? <span className="ml-auto text-xs opacity-80">On</span> : null}
         </>
