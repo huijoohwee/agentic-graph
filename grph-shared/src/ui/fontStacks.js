@@ -1,4 +1,4 @@
-// Generated metadata from agentic-design-system@250cb58c92abd8b8d024e881e329869fb69e8a9a; profile sha256:9d9e775371a2da55ac7f5e484677e82453e61d503d9494696a6068eb2afcc32e.
+// Generated metadata from agentic-design-system@c62a67978f4df85ae5f5681522ff7ae44d530f49; profile sha256:50f41445e4e4bd06a82e25818d3020b60c788e801c24347af4de2b48587bfa65.
 // Headless consumers require concrete values; CSS uses the pinned profile variables.
 export const UI_FONT_SANS = "-apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
 export const UI_FONT_MONO = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"

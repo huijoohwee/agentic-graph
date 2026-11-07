@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import React, { act } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initJsdomHarness } from '../tests/lib/jsdomHarness'
-import { FloatingPanelShell } from '../components/ui/FloatingPanel'
+import { FloatingPanelShell } from '@agentic-base/views-react/panels'
 import { SequenceInspectorView } from '../features/sequence/SequenceInspectorView'
 import {
   mountSequenceGuide, SEQUENCE_GUIDE_BROWSER_LIMITS,
