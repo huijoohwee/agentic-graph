@@ -1,9 +1,9 @@
-import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { runMarkdownPipelineWithStatus } from '@/features/panels/hooks/markdownPipelineActions'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import Tooltip from '@/features/panels/ui/Tooltip'
-import { KeyTypeValueStaticRow, RightAlignedValueCell } from 'grph-shared/react/keyTypeValueRow'
+import { KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
+import { ResponsiveControlInput, ResponsiveControlRow, ResponsiveSelectRow } from '@/lib/ui/responsiveControlRows'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphBehavior, GraphSchema } from '@/lib/graph/schema'
 import { DEFAULT_BBOX_COLLIDE_PADDING, DEFAULT_GROUP_BBOX_COLLIDE_PADDING } from '@/lib/graph/layoutDefaults'
@@ -15,10 +15,8 @@ import ThreeViewTuningSection from '@/features/panels/views/ThreeViewTuningSecti
 import { LayoutModeRendererSettings } from '@/features/toolbar/ui/LayoutModeRendererSettings'
 import MediaNodesSection from '@/features/panels/views/MediaNodesSection'
 import { isVoxelModeApplicable } from '@/lib/canvas/canvas3dMode'
-import { uiToolbarButtonMutedClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
+import { uiToolbarButtonMutedClassName, uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { UI_RESPONSIVE_BADGE_CHIP_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-export const RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
 type GraphSelectMode = NonNullable<GraphBehavior['selectMode']>
 type GraphCreateMode = NonNullable<GraphBehavior['createMode']>
 interface ThreeGroupsCollapsed {
@@ -95,24 +93,10 @@ export default function RenderSettingsSection({
   const uiPanelMicroLabelTextSizeClass = useGraphStore(
     s => s.uiPanelMicroLabelTextSizeClass || 'text-xs',
   )
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s =>
-      s.uiPanelKeyValueInputClass
-      || PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
-  )
   const uiPanelMonospaceTextClass = useGraphStore(
     s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
   )
-  const uiPanelRowDensityCompactClass = useGraphStore(
-    s => s.uiPanelRowDensityCompactClass || 'py-0.5',
-  )
   const neutralToolbarButtonClassName = `App-toolbar__btn ${uiToolbarButtonMutedClassName}`
-  const compactStaticRowProps = {
-    textSizeClassName: uiPanelKeyValueTextSizeClass,
-    fontClassName: uiPanelTextFontClass,
-    densityClassName: uiPanelRowDensityCompactClass,
-    activeClassName: UI_THEME_TOKENS.table.rowHoverHighlight,
-  } as const
 
   const voxelApplicable = isVoxelModeApplicable({
     canvas2dRenderer,
@@ -387,293 +371,172 @@ export default function RenderSettingsSection({
         onToggle={onTogglePresets}
       >
         <LayoutModeRendererSettings embedded {...layoutSettings} inspection={inspection} />
-        <section className="mt-2 space-y-2">
-          <section className={RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME}>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                Render Mode
-              </section>
-              <PanelSelect
-                className={uiPanelKeyValueInputClass}
-                disabled={inspection}
-                value={canvasRenderMode}
-                onValueChange={selectedValueInput => {
-                  if (!ensureBaselineUnlocked()) return
-                  setCanvasRenderMode(selectedValueInput === '3d' ? '3d' : '2d')
-                }}
-              >
-                <option value="2d">2d</option>
-                <option value="3d">3d</option>
-              </PanelSelect>
-            </section>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                Viewport Controls
-              </section>
-              <PanelSelect
-                className={uiPanelKeyValueInputClass}
-                disabled={inspection}
-                value={viewportControlsPreset || 'map'}
-                onValueChange={selectedValueInput => {
-                  const raw = selectedValueInput
-                  setViewportControlsPreset(raw === 'design' ? 'design' : 'map')
-                }}
-              >
-                <option value="map">map</option>
-                <option value="design">design</option>
-              </PanelSelect>
-            </section>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                3D Mode
-              </section>
-              <PanelSelect
-                className={uiPanelKeyValueInputClass}
-                value={canvas3dMode}
-                disabled={inspection || canvasRenderMode !== '3d'}
-                onValueChange={selectedValueInput => {
-                  if (!ensureBaselineUnlocked()) return
-                  const raw = selectedValueInput
-                  const next = raw === 'voxel' ? 'voxel' : raw === 'xr' ? 'xr' : '3d'
-                  if (next === 'voxel' && !voxelApplicable) return
-                  setCanvas3dMode(next)
-                }}
-              >
-                <option value="3d">3d</option>
-                <option value="xr">xr</option>
-                <option value="voxel" disabled={!voxelApplicable}>voxel</option>
-              </PanelSelect>
-            </section>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                Selection Mode
-              </section>
-              <PanelSelect
-                className={uiPanelKeyValueInputClass}
-                disabled={inspection}
-                value={(schema.behavior?.selectMode ?? 'single') as GraphSelectMode}
-                onValueChange={selectedValueInput => {
-                  if (!ensureBaselineUnlocked()) return
-                  const raw = selectedValueInput
-                  const next: GraphSelectMode =
-                    raw === 'multi' || raw === 'lasso' ? (raw as GraphSelectMode) : 'single'
-                  setSelectMode(next)
-                }}
-              >
-                <option value="single">single</option>
-                <option value="multi">multi</option>
-                <option value="lasso">lasso</option>
-              </PanelSelect>
-            </section>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                Create Mode
-              </section>
-              <PanelSelect
-                className={uiPanelKeyValueInputClass}
-                disabled={inspection}
-                value={(schema.behavior?.createMode ?? 'shift-drag') as GraphCreateMode}
-                onValueChange={selectedValueInput => {
-                  if (!ensureBaselineUnlocked()) return
-                  const raw = selectedValueInput
-                  const next: GraphCreateMode =
-                    raw === 'click-source-target' || raw === 'panel-only'
-                      ? (raw as GraphCreateMode)
-                      : 'shift-drag'
-                  setCreateMode(next)
-                }}
-              >
-                <option value="shift-drag">shift-drag</option>
-                <option value="click-source-target">click-source-target</option>
-                <option value="panel-only">panel-only</option>
-              </PanelSelect>
-            </section>
+        <section className={uiToolbarSettingsPanelBodyClassName}>
+          <KeyTypeValueSectionStack>
+            <ResponsiveSelectRow
+              label="Render Mode"
+              options={['2d', '3d']}
+              disabled={inspection}
+              value={canvasRenderMode}
+              onChange={selectedValueInput => {
+                if (!ensureBaselineUnlocked()) return
+                setCanvasRenderMode(selectedValueInput === '3d' ? '3d' : '2d')
+              }}
+            />
+            <ResponsiveSelectRow
+              label="Viewport Controls"
+              options={['map', 'design']}
+              disabled={inspection}
+              value={viewportControlsPreset || 'map'}
+              onChange={raw => setViewportControlsPreset(raw === 'design' ? 'design' : 'map')}
+            />
+            <ResponsiveSelectRow
+              label="3D Mode"
+              value={canvas3dMode}
+              disabled={inspection || canvasRenderMode !== '3d'}
+              onChange={raw => {
+                if (!ensureBaselineUnlocked()) return
+                const next = raw === 'voxel' ? 'voxel' : raw === 'xr' ? 'xr' : '3d'
+                if (next === 'voxel' && !voxelApplicable) return
+                setCanvas3dMode(next)
+              }}
+            >
+              <option value="3d">3d</option>
+              <option value="xr">xr</option>
+              <option value="voxel" disabled={!voxelApplicable}>voxel</option>
+            </ResponsiveSelectRow>
+            <ResponsiveSelectRow
+              label="Selection Mode"
+              options={['single', 'multi', 'lasso']}
+              disabled={inspection}
+              value={(schema.behavior?.selectMode ?? 'single') as GraphSelectMode}
+              onChange={raw => {
+                if (!ensureBaselineUnlocked()) return
+                const next: GraphSelectMode =
+                  raw === 'multi' || raw === 'lasso' ? (raw as GraphSelectMode) : 'single'
+                setSelectMode(next)
+              }}
+            />
+            <ResponsiveSelectRow
+              label="Create Mode"
+              options={['shift-drag', 'click-source-target', 'panel-only']}
+              disabled={inspection}
+              value={(schema.behavior?.createMode ?? 'shift-drag') as GraphCreateMode}
+              onChange={raw => {
+                if (!ensureBaselineUnlocked()) return
+                const next: GraphCreateMode =
+                  raw === 'click-source-target' || raw === 'panel-only'
+                    ? (raw as GraphCreateMode)
+                    : 'shift-drag'
+                setCreateMode(next)
+              }}
+            />
 
-          </section>
-          <section className="pt-1">
+          </KeyTypeValueSectionStack>
+          <section>
             <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold ${UI_THEME_TOKENS.text.primary}`}>
               Spacing and labels
             </section>
-            <section className="mt-1 grid grid-cols-1 gap-1">
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.fitPadding</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={1}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={schema.layout?.fitPadding ?? 80}
-                      onChange={e => setFitPadding(parseFloat(e.target.value || '80'))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.forces.bboxCollidePadding</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={1}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={
-                        typeof schema.layout?.forces?.bboxCollidePadding === 'number'
-                          ? schema.layout.forces.bboxCollidePadding
-                          : DEFAULT_BBOX_COLLIDE_PADDING
-                      }
-                      onChange={e => setBboxCollidePadding(parseFloat(e.target.value || String(DEFAULT_BBOX_COLLIDE_PADDING)))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.forces.groupBboxCollidePadding</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={1}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={
-                        typeof schema.layout?.forces?.groupBboxCollidePadding === 'number'
-                          ? schema.layout.forces.groupBboxCollidePadding
-                          : DEFAULT_GROUP_BBOX_COLLIDE_PADDING
-                      }
-                      onChange={e => setGroupBboxCollidePadding(parseFloat(e.target.value || String(DEFAULT_GROUP_BBOX_COLLIDE_PADDING)))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.rectNodes.maxZoomMinimapWidthRatio</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={0.5}
-                      min={1}
-                      max={50}
-                      className={uiPanelKeyValueInputClass}
-                      value={
-                        typeof schema.layout?.rectNodes?.maxZoomMinimapWidthRatio === 'number'
-                          ? schema.layout.rectNodes.maxZoomMinimapWidthRatio
-                          : typeof schema.layout?.rectNodes?.maxZoomMinimapHeightRatio === 'number'
-                              ? schema.layout.rectNodes.maxZoomMinimapHeightRatio * 2
-                              : ''
-                      }
-                      placeholder="5"
-                      onChange={e => {
-                        const rawText = String(e.target.value || '')
-                        if (!rawText.trim()) {
-                          setRectNodeMaxZoomMinimapWidthRatio(null)
-                          return
-                        }
-                        const raw = parseFloat(rawText)
-                        if (!Number.isFinite(raw)) return
-                        setRectNodeMaxZoomMinimapWidthRatio(raw)
-                      }}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.rectNodes.maxZoomMinimapHeightRatio</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={0.5}
-                      min={0.5}
-                      max={25}
-                      className={uiPanelKeyValueInputClass}
-                      value={
-                        typeof schema.layout?.rectNodes?.maxZoomMinimapWidthRatio === 'number'
-                          ? schema.layout.rectNodes.maxZoomMinimapWidthRatio / 2
-                          : typeof schema.layout?.rectNodes?.maxZoomMinimapHeightRatio === 'number'
-                              ? schema.layout.rectNodes.maxZoomMinimapHeightRatio
-                              : ''
-                      }
-                      placeholder="2.5"
-                      onChange={e => {
-                        const rawText = String(e.target.value || '')
-                        if (!rawText.trim()) {
-                          setRectNodeMaxZoomMinimapHeightRatio(null)
-                          return
-                        }
-                        const raw = parseFloat(rawText)
-                        if (!Number.isFinite(raw)) return
-                        setRectNodeMaxZoomMinimapHeightRatio(raw)
-                      }}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.performance.lod.hideLabelsBelowScale</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={0.05}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={schema.performance?.lod?.hideLabelsBelowScale ?? 0}
-                      onChange={e => setHideLabelsBelowScale(parseFloat(e.target.value || '0'))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.performance.labelRelax.maxNodesForRelax</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={100}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={schema.performance?.labelRelax?.maxNodesForRelax ?? 3600}
-                      onChange={e => setLabelRelaxMaxNodesForRelax(parseFloat(e.target.value || '3600'))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.performance.labelRelax.maxNodeLabels</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <input
-                      type="number"
-                      step={20}
-                      min={0}
-                      className={uiPanelKeyValueInputClass}
-                      value={schema.performance?.labelRelax?.maxNodeLabels ?? 420}
-                      onChange={e => setLabelRelaxMaxNodeLabels(parseFloat(e.target.value || '420'))}
-                    />
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
-            </section>
+            <KeyTypeValueSectionStack>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.layout.fitPadding</span>}>
+                <ResponsiveControlInput
+                  type="number" step={1} min={0}
+                  value={schema.layout?.fitPadding ?? 80}
+                  onChange={e => setFitPadding(parseFloat(e.target.value || '80'))}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.layout.forces.bboxCollidePadding</span>}>
+                <ResponsiveControlInput
+                  type="number" step={1} min={0}
+                  value={
+                    typeof schema.layout?.forces?.bboxCollidePadding === 'number'
+                      ? schema.layout.forces.bboxCollidePadding
+                      : DEFAULT_BBOX_COLLIDE_PADDING
+                  }
+                  onChange={e => setBboxCollidePadding(parseFloat(e.target.value || String(DEFAULT_BBOX_COLLIDE_PADDING)))}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.layout.forces.groupBboxCollidePadding</span>}>
+                <ResponsiveControlInput
+                  type="number" step={1} min={0}
+                  value={
+                    typeof schema.layout?.forces?.groupBboxCollidePadding === 'number'
+                      ? schema.layout.forces.groupBboxCollidePadding
+                      : DEFAULT_GROUP_BBOX_COLLIDE_PADDING
+                  }
+                  onChange={e => setGroupBboxCollidePadding(parseFloat(e.target.value || String(DEFAULT_GROUP_BBOX_COLLIDE_PADDING)))}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.layout.rectNodes.maxZoomMinimapWidthRatio</span>}>
+                <ResponsiveControlInput
+                  type="number" step={0.5} min={1}
+                  max={50}
+                  value={
+                    typeof schema.layout?.rectNodes?.maxZoomMinimapWidthRatio === 'number'
+                      ? schema.layout.rectNodes.maxZoomMinimapWidthRatio
+                      : typeof schema.layout?.rectNodes?.maxZoomMinimapHeightRatio === 'number'
+                          ? schema.layout.rectNodes.maxZoomMinimapHeightRatio * 2
+                          : ''
+                  }
+                  placeholder="5"
+                  onChange={e => {
+                    const rawText = String(e.target.value || '')
+                    if (!rawText.trim()) {
+                      setRectNodeMaxZoomMinimapWidthRatio(null)
+                      return
+                    }
+                    const raw = parseFloat(rawText)
+                    if (!Number.isFinite(raw)) return
+                    setRectNodeMaxZoomMinimapWidthRatio(raw)
+                  }}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.layout.rectNodes.maxZoomMinimapHeightRatio</span>}>
+                <ResponsiveControlInput
+                  type="number" step={0.5} min={0.5}
+                  max={25}
+                  value={
+                    typeof schema.layout?.rectNodes?.maxZoomMinimapWidthRatio === 'number'
+                      ? schema.layout.rectNodes.maxZoomMinimapWidthRatio / 2
+                      : typeof schema.layout?.rectNodes?.maxZoomMinimapHeightRatio === 'number'
+                          ? schema.layout.rectNodes.maxZoomMinimapHeightRatio
+                          : ''
+                  }
+                  placeholder="2.5"
+                  onChange={e => {
+                    const rawText = String(e.target.value || '')
+                    if (!rawText.trim()) {
+                      setRectNodeMaxZoomMinimapHeightRatio(null)
+                      return
+                    }
+                    const raw = parseFloat(rawText)
+                    if (!Number.isFinite(raw)) return
+                    setRectNodeMaxZoomMinimapHeightRatio(raw)
+                  }}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.performance.lod.hideLabelsBelowScale</span>}>
+                <ResponsiveControlInput
+                  type="number" step={0.05} min={0}
+                  value={schema.performance?.lod?.hideLabelsBelowScale ?? 0}
+                  onChange={e => setHideLabelsBelowScale(parseFloat(e.target.value || '0'))}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.performance.labelRelax.maxNodesForRelax</span>}>
+                <ResponsiveControlInput
+                  type="number" step={100} min={0}
+                  value={schema.performance?.labelRelax?.maxNodesForRelax ?? 3600}
+                  onChange={e => setLabelRelaxMaxNodesForRelax(parseFloat(e.target.value || '3600'))}
+                />
+              </ResponsiveControlRow>
+              <ResponsiveControlRow label={<span className={uiPanelMonospaceTextClass}>graph.performance.labelRelax.maxNodeLabels</span>}>
+                <ResponsiveControlInput
+                  type="number" step={20} min={0}
+                  value={schema.performance?.labelRelax?.maxNodeLabels ?? 420}
+                  onChange={e => setLabelRelaxMaxNodeLabels(parseFloat(e.target.value || '420'))}
+                />
+              </ResponsiveControlRow>
+            </KeyTypeValueSectionStack>
           </section>
         </section>
         <RenderPresetSection
