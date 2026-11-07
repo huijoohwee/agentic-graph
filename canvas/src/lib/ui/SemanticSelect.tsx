@@ -2,6 +2,7 @@ import React from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { AnchorOverlay } from '@/lib/ui/overlay'
 import { DropdownMenuSurface, dropdownMenuOptionClassName } from '@/lib/ui/dropdownMenu'
+import { normalizeSingleLineControlClassName } from '@/lib/ui/theme-tokens'
 import { readSemanticSelectOptions } from '@/lib/ui/semanticSelectOptions'
 import { emitToolbarDropdownOpen, subscribeToolbarDropdownOpen } from '@/components/toolbar/dropdownOpenEvents'
 
@@ -83,7 +84,7 @@ export const SemanticSelect = React.forwardRef<HTMLButtonElement, SemanticSelect
       if (typeof forwardedRef === 'function') forwardedRef(element)
       else if (forwardedRef) forwardedRef.current = element
     }} type="button" form={form} disabled={disabled} value={selectedValue}
-      className={`${className || ''} inline-flex items-center gap-1`}
+      className={`${normalizeSingleLineControlClassName(className)} inline-flex items-center gap-1`}
       style={style} aria-label={label} aria-haspopup="menu" aria-expanded={open}
       aria-controls={open ? menuId : undefined} aria-invalid={invalid || undefined}
       aria-describedby={invalid ? errorId : props['aria-describedby']}

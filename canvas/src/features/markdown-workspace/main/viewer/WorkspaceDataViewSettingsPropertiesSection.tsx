@@ -1,3 +1,4 @@
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import { DataViewAction } from './WorkspaceDataViewSettingsActions'
 import React from 'react'
 import { ChevronDown, ChevronRight, Copy, Eye, EyeOff, Link2, Search, Trash2 } from 'lucide-react'
@@ -291,11 +292,11 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                   </menu>
                   <GripDotsIcon className={['w-4 h-4 shrink-0', UI_THEME_TOKENS.text.tertiary].join(' ')} />
 
-                  <select aria-label={`Property type: ${c.name}`} value={type}
+                  <SemanticSelect aria-label={`Property type: ${c.name}`} value={type}
                     className={['w-20 min-w-0 shrink-0 rounded border p-1 text-xs', UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_FOCUS_RING].join(' ')}
-                    onChange={event => setColumnType({ column: c, nextType: event.target.value as MarkdownDataViewColumnType })}>
+                    onValueChange={value => setColumnType({ column: c, nextType: value as MarkdownDataViewColumnType })}>
                     {MARKDOWN_DATA_VIEW_COLUMN_TYPE_OPTIONS.map(option => <option key={option.key} value={option.key} disabled={!isColumnTypeEditable(option.key)}>{option.label}</option>)}
-                  </select>
+                  </SemanticSelect>
 
                   {editingColumnId === c.id ? (
                     <WorkspaceDataViewComfortableTextInput

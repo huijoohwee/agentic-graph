@@ -297,7 +297,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               </header>
             ) : null}
 
-            <main className="flex-1 flex overflow-hidden" aria-label="Canvas Workspace">
+            <main className="agentic-input-controls flex-1 flex overflow-hidden" aria-label="Canvas Workspace">
               <section className="flex-1 flex flex-col overflow-hidden" aria-label="Workspace stage">
                 <section className="relative flex-1 min-h-0 overflow-hidden" aria-label="Workspace overlay stage">
                   <section

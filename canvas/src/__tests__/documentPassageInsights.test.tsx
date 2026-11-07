@@ -11,6 +11,17 @@ import { indexDocumentSignals } from '@/lib/websites/signalTokens'
 import { deriveDocumentPassageGraph, type PassageGraphResult } from '@/lib/parsers/documentPassageGraph'
 import type { PassageAnalyzer } from '@/lib/parsers/documentPassageGraphWorker'
 
+async function choosePassage(host: Element, index: number) {
+  const trigger = host.querySelector<HTMLButtonElement>('[data-kg-select]')!
+  await act(async () => { trigger.click(); await new Promise(resolve => setTimeout(resolve, 35)) })
+  const menu = document.querySelector('menu[aria-label="Passage"]')!
+  const option = menu.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')[index]!
+  const value = option.value
+  await act(async () => option.click())
+  assert.equal(trigger.getAttribute('data-value'), value)
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false')
+}
+
 test('passage inspection is lazy, follows source lines and rejects stale navigation', async () => {
   const env = initJsdomHarness(), host = document.createElement('div')
   document.body.append(host)
@@ -24,8 +35,7 @@ test('passage inspection is lazy, follows source lines and rejects stale navigat
     assert.equal(calls, 0)
     await act(async () => { host.querySelector('details')!.open = true; Simulate.toggle(host.querySelector('details')!) })
     assert.equal(calls, 1)
-    const select = host.querySelector('select')!
-    await act(async () => { select.value = select.options[1]!.value; Simulate.change(select) })
+    await choosePassage(host, 1)
     assert.match(host.textContent!, /Lexical group/)
     const result = deriveDocumentPassageGraph({ documentId: source.key, text })
     const relationship = Array.from(host.querySelectorAll('li')).find(item => item.textContent?.includes('similar_to'))!
@@ -131,8 +141,7 @@ test('native document inspector exposes passage analysis lazily and uses its sou
     assert.equal(started, 1); assert.equal(terminated, 1)
     const panel = host.querySelector('[aria-label="Passage insights"]')!
     assert.match(panel.textContent!, /Passage analysis complete/)
-    const select = panel.querySelector('select')!
-    await act(async () => { select.value = select.options[1]!.value; Simulate.change(select) })
+    await choosePassage(panel, 1)
     const jump = Array.from(panel.querySelectorAll('button')).find(button => button.textContent?.startsWith('Jump to passage'))!
     await act(async () => jump.click())
     assert.deepEqual(visited, [3])

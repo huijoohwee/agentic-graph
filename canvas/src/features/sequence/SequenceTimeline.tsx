@@ -1,3 +1,4 @@
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut, Maximize, LocateFixed } from 'lucide-react'
 import { TimelineTransportChrome, TimelineTransportMiniActionBar } from '@/components/timeline/TimelineTransportControls'
@@ -12,7 +13,7 @@ export function SequenceBranches() {
   const groups = [...new Set(model.branches.map(branch => branch.groupId))]
   return <>{groups.map((groupId, index) => {
     const branches = model.branches.filter(branch => branch.groupId === groupId)
-    return <label key={groupId}>Outcome {index + 1} <select aria-label={`Sequence outcome ${index + 1}`} value={choices[groupId] || branches[0]!.id} onChange={event => chooseBranch(groupId, event.target.value)}>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.label}</option>)}</select></label>
+    return <label key={groupId}>Outcome {index + 1} <SemanticSelect aria-label={`Sequence outcome ${index + 1}`} value={choices[groupId] || branches[0]!.id} onValueChange={value => chooseBranch(groupId, value)}>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.label}</option>)}</SemanticSelect></label>
   })}</>
 }
 

@@ -1,3 +1,4 @@
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { CheckCircle2, CircleX, CloudOff, FileSearch, FileCheck2, LoaderCircle } from 'lucide-react'
 import { ImportUrlPrompt } from '@/features/toolbar/ImportUrlPrompt'
@@ -493,10 +494,10 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
             const sources = websiteFolderSources(cloudEntries, sourcesByPath, entry.path)
             const chosen = sources.find(source => source.path === sourcePicker.path)
             return <section aria-label={`Website sources in ${entry.name}`} className="grid max-w-sm gap-2 p-2 text-xs">
-              <label>Choose a website source<select aria-label={`Website source in ${entry.name}`} className="w-full min-w-0" value={sourcePicker.path}
-                onChange={event => setSourcePicker({ folder: entry.path, path: event.target.value })}>
+              <label>Choose a website source<SemanticSelect aria-label={`Website source in ${entry.name}`} className="w-full min-w-0" value={sourcePicker.path}
+                onValueChange={value => setSourcePicker({ folder: entry.path, path: value })}>
                 {sources.map(source => <option key={source.path} value={source.path}>{source.url}</option>)}
-              </select></label>
+              </SemanticSelect></label>
               <button type="button" disabled={!chosen || !!importSession?.busy || !!importSession?.importing} onClick={() => chosen && startFolderSource(chosen)}>Find pages to import</button>
             </section>
           }

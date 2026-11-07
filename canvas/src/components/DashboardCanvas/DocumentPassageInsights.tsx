@@ -1,3 +1,5 @@
+import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { analyzePassagesInWorker, type PassageAnalyzer } from '@/lib/parsers/documentPassageGraphWorker'
 import type { PassageGraphResult } from '@/lib/parsers/documentPassageGraph'
@@ -44,7 +46,7 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
     {open ? <section aria-label="Passage insights" className="grid min-w-0 gap-2 pt-2 text-xs">
       <p>Inspect authored passages and lexical overlap. Groups describe shared words, not facts or causality. Analysis stays on this device; media and linked pages are not fetched.</p>
       <label className="grid gap-1">Passage language tag
-        <input aria-label="Passage language tag" className="min-w-0 rounded border bg-transparent p-1" maxLength={64} value={locale} onChange={event => setLocale(event.target.value || 'und')} />
+        <PanelTextInput aria-label="Passage language tag" className="min-w-0 rounded border bg-transparent p-1" maxLength={64} value={locale} onChange={event => setLocale(event.target.value || 'und')} />
       </label>
       <label className="flex gap-2"><input type="checkbox" checked={excludeLinkOnly} onChange={event => setExcludeLinkOnly(event.target.checked)} />Exclude link-only blocks from lexical analysis</label>
       <div className="flex flex-wrap gap-2">
@@ -70,9 +72,9 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
         <p>Limits: 60,000 characters, 200 passages and 12,000 analyzed words. Similarity keeps at most 4 mutual neighbors per passage.</p>
         {current.partial ? <p role="note">Some source or analysis is omitted: {current.reasons.join(', ')}. The original document is unchanged.</p> : null}
         <label className="grid gap-1">Passage
-          <select aria-label="Passage" className="w-full min-w-0 rounded border bg-transparent p-1" value={selected} onChange={event => setSelected(event.target.value)}>
+          <SemanticSelect aria-label="Passage" className="w-full min-w-0 rounded border bg-transparent p-1" value={selected} onValueChange={value => setSelected(value)}>
             {current.passages.map(p => <option key={p.id} value={p.id}>Line {p.line} · {p.kind} · {p.text.replace(/\s+/g, ' ').slice(0, 60)}</option>)}
-          </select>
+          </SemanticSelect>
         </label>
         {passage ? <>
           <p className="break-words whitespace-pre-wrap">{passage.text.slice(0, 1200)}{passage.text.length > 1200 ? '…' : ''}</p>

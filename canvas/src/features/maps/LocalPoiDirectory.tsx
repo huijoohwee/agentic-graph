@@ -1,3 +1,5 @@
+import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -257,15 +259,15 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
           <div className="grid grid-cols-1 gap-2">
             <label className="grid gap-1" htmlFor="local-poi-source">
               <span>Data source</span>
-              <input id="local-poi-source" value={source} onChange={event => setSource(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
+              <PanelTextInput id="local-poi-source" value={source} onChange={event => setSource(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
             </label>
             <label className="grid gap-1" htmlFor="local-poi-license">
               <span>License</span>
-              <input id="local-poi-license" value={license} onChange={event => setLicense(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
+              <PanelTextInput id="local-poi-license" value={license} onChange={event => setLicense(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
             </label>
             <label className="grid gap-1" htmlFor="local-poi-attribution">
               <span>Required attribution</span>
-              <input id="local-poi-attribution" value={attribution} onChange={event => setAttribution(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
+              <PanelTextInput id="local-poi-attribution" value={attribution} onChange={event => setAttribution(event.target.value)} disabled={loading} className="rounded border border-white/20 bg-black/20 px-2 py-1" />
             </label>
           </div>
 
@@ -316,7 +318,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label className="grid gap-1" htmlFor="local-poi-search">
               <span>Search places and regions</span>
-              <input
+              <PanelTextInput
                 id="local-poi-search"
                 type="search"
                 value={query}
@@ -327,10 +329,10 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
             </label>
             <label className="grid gap-1" htmlFor="local-poi-category">
               <span>Category</span>
-              <select id="local-poi-category" value={category} onChange={event => setCategory(event.target.value)} className="rounded border border-white/20 bg-black/20 px-2 py-1">
+              <SemanticSelect id="local-poi-category" value={category} onValueChange={value => setCategory(value)} className="rounded border border-white/20 bg-black/20 px-2 py-1">
                 <option value="all">All categories</option>
                 {categories.map(value => <option key={value} value={value}>{value}</option>)}
-              </select>
+              </SemanticSelect>
             </label>
           </div>
 

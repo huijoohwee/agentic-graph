@@ -1,3 +1,4 @@
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { readVoiceStudioBrowserCapabilities, speakBrowserText, stopBrowserSpeech } from '@/features/voice-studio/voiceStudioBrowserRuntime'
 import { requestVoiceStudioLaunch } from '@/features/voice-studio/voiceStudioInvocation'
@@ -56,9 +57,9 @@ export default function PreviewVoicePanel({ documentText, selectionText }: { doc
     </nav>
     <label className="grid gap-1">Preview text<textarea className="min-h-32 w-full rounded border bg-transparent p-2" maxLength={PREVIEW_NARRATION_LIMIT} value={text} onChange={event => { stop(); setText(event.target.value) }} /></label>
     <p className="text-xs">{text.length}/{PREVIEW_NARRATION_LIMIT} characters{excerpt.truncated ? ' · Document excerpt is shortened.' : '.'} Edits stay in this preview.</p>
-    <label className="grid gap-1">Local preview voice<select className="w-full rounded border bg-transparent p-2" value={selectedVoice?.voiceURI || ''} disabled={!voices.length} onChange={event => { stop(); setVoiceId(event.target.value) }}>
+    <label className="grid gap-1">Local preview voice<SemanticSelect className="w-full rounded border bg-transparent p-2" value={selectedVoice?.voiceURI || ''} disabled={!voices.length} onValueChange={value => { stop(); setVoiceId(value) }}>
       {!voices.length ? <option value="">No installed local voice available</option> : voices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}</option>)}
-    </select></label>
+    </SemanticSelect></label>
     {!capable || !voices.length ? <p role="status">Local voice playback is unavailable in this browser. You can still prepare the preview text.</p> : null}
     <nav className="flex flex-wrap gap-2" aria-label="Voice preview controls">
       <button type="button" className="rounded border px-2 py-1" disabled={!capable || !voices.length || !text.trim() || speaking} onClick={play}>Play preview</button>
