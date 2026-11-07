@@ -1,3 +1,9 @@
-import { KTV_SECTION_STACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+import React from 'react'
+import { KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 
-export const THREE_VIEW_FIELD_GRID_CLASS_NAME = KTV_SECTION_STACK_CLASS_NAME
+// Compose existing owners: the body owns insets; the inner stack owns row rhythm.
+export function ThreeViewFieldSection({ children }: { children: React.ReactNode }) {
+  return React.createElement('section', { className: uiToolbarSettingsPanelBodyClassName },
+    React.createElement(KeyTypeValueSectionStack, null, children))
+}

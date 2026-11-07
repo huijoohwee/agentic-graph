@@ -1397,7 +1397,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ] as const) {
     const usesSharedKtvRowOwner =
       source.includes('KeyTypeValueRow') || source.includes('KeyTypeValueStaticRow') || source.includes('ResponsiveControlRow')
-    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('THREE_VIEW_FIELD_GRID_CLASS_NAME')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('KeyTypeValueSectionStack')) || source.includes('grid grid-cols-2 gap-3')) {
+    if (!usesSharedKtvRowOwner || (fileName === 'ThreeViewLayoutSection.impl.tsx' && !source.includes('ThreeViewFieldSection')) || (fileName === 'RenderSettingsSection.impl.tsx' && !source.includes('KeyTypeValueSectionStack')) || source.includes('grid grid-cols-2 gap-3')) {
       throw new Error(`Expected FloatingPanel KTV surface ${fileName} to inherit shared KTV rows and responsive grid owners`)
     }
   }
