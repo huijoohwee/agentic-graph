@@ -52,6 +52,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder));
   border-radius: var(--agentic-control-radius); box-shadow: var(--kg-shadow-overlay, 0 8px 24px rgb(0 0 0 / .12));
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
+  max-block-size: calc(100dvh - var(--agentic-menu-edge-gap) - var(--agentic-menu-edge-gap));
   overflow: auto; overscroll-behavior: contain;
 }
 .agentic-menu > li { list-style: none; min-inline-size: 0; }

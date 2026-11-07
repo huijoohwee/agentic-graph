@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { JSDOM } from 'jsdom'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { SemanticSelect } from '@/lib/ui/SemanticSelect'
+import { enhanceSelects } from '@agentic-base/views-react/controls'
 import { readSemanticSelectOptions } from '@/lib/ui/semanticSelectOptions'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -43,6 +44,7 @@ export async function testSemanticSelectKeyboardAndPortal() {
   try {
     await act(async () => root.render(<Fixture />))
     assert.ok(choose().classList.contains('agentic-form-control'), 'direct dropdowns reuse the central control utility')
+    assert.equal(choose().querySelector('[aria-label="Show choices"]')?.tagName.toLowerCase(), 'svg', 'chevrons retain geometry instead of a font-dependent baseline')
     choose().focus()
     await key('ArrowDown')
     assert.equal(choose().getAttribute('aria-expanded'), 'true')
@@ -52,6 +54,22 @@ export async function testSemanticSelectKeyboardAndPortal() {
     assert.equal(menu.querySelectorAll('div, [aria-hidden="true"]').length, 0)
     assert.equal(items()[1].disabled, true)
     assert.equal(document.activeElement === items()[0], true)
+    let observed = false
+    const inspect = () => { observed = true }
+    document.addEventListener('pointerdown', inspect)
+    items()[0].dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
+    document.removeEventListener('pointerdown', inspect)
+    assert.equal(observed, true, 'menu targets remain observable to page inspection tools')
+    const cancel = (event: Event) => event.preventDefault()
+    document.body.addEventListener('pointerdown', cancel)
+    await act(async () => document.body.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true })))
+    document.body.removeEventListener('pointerdown', cancel)
+    assert.ok(document.querySelector('menu[role="menu"]'), 'a cancelled inspection gesture leaves the target menu open')
+    document.addEventListener('click', cancel, true)
+    await act(async () => items()[2].click())
+    document.removeEventListener('click', cancel, true)
+    assert.deepEqual(changes, [], 'a cancelled inspection click must not select an option')
+    assert.ok(document.querySelector('menu[role="menu"]'))
     await key('ArrowDown'); assert.equal(document.activeElement === items()[2], true)
     await key('Home'); assert.equal(document.activeElement === items()[0], true)
     await key('k'); assert.equal(document.activeElement === items()[2], true)
@@ -73,6 +91,21 @@ export async function testSemanticSelectFormsAndDisabled() {
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host)
   try {
+    const nativeHost = document.createElement('section'); document.body.append(nativeHost)
+    const nativeHandle = enhanceSelects(nativeHost)
+    try {
+      const field = document.createElement('select'); field.innerHTML = '<option value="a">Table</option><option value="b">Kanban</option>'; nativeHost.append(field)
+      field.focus(); await tick()
+      assert.equal(document.activeElement, nativeHost.querySelector('.agentic-select-trigger'), 'asynchronous enhancement preserves focus held by a newly rendered select')
+      field.focus(); assert.equal(document.activeElement, nativeHost.querySelector('.agentic-select-trigger'), 'later native focus calls reach the same visible control')
+      assert.equal(nativeHost.querySelector('.agentic-menu-mark')?.namespaceURI, 'http://www.w3.org/2000/svg')
+      nativeHost.querySelector<HTMLButtonElement>('.agentic-select-trigger')!.click()
+      const cancel = (event: Event) => event.preventDefault()
+      document.addEventListener('click', cancel, true)
+      document.querySelector<HTMLButtonElement>('menu [value="b"]')!.click()
+      document.removeEventListener('click', cancel, true)
+      assert.equal(field.value, 'a', 'native and React adapters share cancelled-inspection semantics')
+    } finally { nativeHandle.destroy(); nativeHost.remove() }
     await act(async () => root.render(<form><SemanticSelect name="layout" defaultValue="a" aria-label="Layout">
       <optgroup label="Enabled"><option value="a">Table</option><option value="b">Kanban</option></optgroup>
       <optgroup label="Disabled" disabled><option value="c">Later</option></optgroup>
