@@ -1,4 +1,4 @@
-import { renderMainPanelRowHelp, type MainPanelFieldHelp } from './mainPanelRowHelp'
+import { type MainPanelFieldHelp } from './mainPanelRowHelp'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { renderKeyTypeValueMarkdownSigilBridgeNode } from '@/features/panels/ui/canvasKeyTypeValueMarkdownBridge'
@@ -38,7 +38,7 @@ export function CanvasKeyTypeValueStaticRow({
   isActive,
   useMarkdownSigilBridge = true,
 }: CanvasKeyTypeValueStaticRowProps) {
-  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density, undefined, help)
   const activeClassName = isActive
     ? UI_THEME_TOKENS.table.rowSelected
     : UI_THEME_TOKENS.table.rowHoverHighlight
@@ -47,9 +47,9 @@ export function CanvasKeyTypeValueStaticRow({
     <SharedKeyTypeValueStaticRow
       id={id}
       data-kg-anchor={dataKgAnchor}
-      keyNode={renderMainPanelRowHelp(renderKeyTypeValueMarkdownSigilBridgeNode(keyNode, useMarkdownSigilBridge), help, 'key')}
+      keyNode={renderKeyTypeValueMarkdownSigilBridgeNode(keyNode, useMarkdownSigilBridge)}
       typeNode={renderKeyTypeValueMarkdownSigilBridgeNode(typeNode, useMarkdownSigilBridge)}
-      valueNode={renderMainPanelRowHelp(renderKeyTypeValueMarkdownSigilBridgeNode(valueNode, useMarkdownSigilBridge), help, 'value')}
+      valueNode={renderKeyTypeValueMarkdownSigilBridgeNode(valueNode, useMarkdownSigilBridge)}
       align={align}
       layout={layout}
       {...staticRowProps}

@@ -23,14 +23,16 @@ export function PanelKeyTypeCheckboxValueRow({
   labelNode,
 }: PanelKeyTypeCheckboxValueRowProps) {
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
+  const labelId = React.useId()
   return (
     <KeyTypeValueStaticRow
       {...staticRowProps}
       layout="keyValue"
-      keyNode={keyNode}
+      keyNode={<span id={labelId}>{keyNode}</span>}
       valueNode={(
         <>
           <PanelCheckbox
+            aria-labelledby={labelId}
             checked={checked}
             disabled={disabled}
             onChange={event => onChange(event.target.checked)}

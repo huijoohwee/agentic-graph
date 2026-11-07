@@ -1,3 +1,9 @@
+import Tooltip from '@/features/panels/ui/Tooltip'
+import { PanelKeyTypeRangeValueRow } from '@/features/panels/ui/PanelKeyTypeRangeValueRow'
+import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
+import { ResponsiveControlRow, ResponsiveControlInput } from '@/lib/ui/responsiveControlRows'
+import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { prepareMainPanelRowHelp } from '@/features/panels/ui/mainPanelRowHelp'
 import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
@@ -79,6 +85,7 @@ export async function testMainPanelPendingLoadCanCloseWithoutLateReopen() {
 }
 
 export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndHelp() {
+  await testMainPanelRawAndLegacyRowsShareHelp()
   const { restore } = initJsdomHarness()
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), previous = useGraphStore.getState()
@@ -145,5 +152,64 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
     useGraphStore.setState({ uiPanelTextFontClass: previous.uiPanelTextFontClass, uiPanelKeyValueTextSizeClass: previous.uiPanelKeyValueTextSizeClass, uiPanelRowDensityDefaultClass: previous.uiPanelRowDensityDefaultClass })
     workspaceTablePreferencesStore.setWorkspaceCellSelectPanelPlacement(previousPlacement)
     host.remove(); restore()
+  }
+}
+
+async function testMainPanelRawAndLegacyRowsShareHelp() {
+  const { restore } = initJsdomHarness()
+  const host = document.createElement('section'); document.body.append(host)
+  const root = createRoot(host)
+  let changes = 0
+  const legacy = 'Default: 2; Min: 1; Max: 8; Interval: 1; Adjust the displayed reach.'
+  function RawRow() {
+    return <KeyTypeValueStaticRow {...useCanvasKeyTypeValueStaticRowProps()}
+      keyNode={<Tooltip content="Operator → select palette → update the graph"><span>Palette</span></Tooltip>}
+      valueNode={<Tooltip content="Default: blue; Updates the graph colour"><input aria-label="Palette value" defaultValue="red" onChange={() => changes++} /></Tooltip>} />
+  }
+  try {
+    await act(async () => root.render(<>
+      <RawRow />
+      <KeyTypeValueStaticRow textSizeClassName="text-sm" fontClassName="font-sans" densityClassName="py-1"
+        keyNode="Headless" valueNode="Plain" />
+      <PanelKeyTypeRangeValueRow keyNode="Reach" min={1} max={8} step={1} value={5}
+        onChange={() => changes++} valueNode={<Tooltip content={legacy}><span>5</span></Tooltip>} />
+      <ResponsiveControlRow label="Optional count"><ResponsiveControlInput type="number" min={0} max={10} step={2} value={6} onChange={() => changes++} disabled /></ResponsiveControlRow>
+    </>))
+    const rows = Array.from(host.querySelectorAll('dl'))
+    assert.equal(rows.length, 4)
+    const headless = rows.splice(1, 1)[0]
+    assert.equal(headless.querySelectorAll('[data-kg-tooltip-anchor]').length, 0, 'headless consumers without a presenter retain plain cells')
+    assert.equal(headless.querySelector('dt')?.textContent, 'Headless')
+    for (const row of rows) {
+      assert.equal(row.querySelectorAll('[data-kg-tooltip-anchor]').length, 2, 'one key and one value help owner')
+      assert(row.querySelector('dt [aria-description]')?.getAttribute('aria-description')?.includes('→'), 'same key help grammar')
+    }
+    assert.equal(rows[0].querySelector('dt [aria-description]')?.getAttribute('aria-description'), 'Operator → select palette → update the graph')
+    assert.equal(rows[0].querySelector<HTMLInputElement>('input')?.value, 'red', 'current value is not mistaken for the default')
+    const range = rows[1].querySelector<HTMLInputElement>('input')!
+    assert.equal(range.value, '5'); assert.equal(range.min, '1'); assert.equal(range.max, '8'); assert.equal(range.step, '1')
+    assert.equal(document.getElementById(range.getAttribute('aria-labelledby')!)?.textContent, 'Reach', 'range retains its accessible field name')
+    assert.equal(rows[1].querySelector('dd:last-child [aria-description]')?.getAttribute('aria-description'), legacy, 'existing default, bounds and impact are retained exactly')
+    const disabled = rows[2].querySelector<HTMLInputElement>('input')!
+    assert.equal(disabled.value, '6'); assert.equal(disabled.disabled, true)
+    assert(rows[2].querySelector('dd:last-child [aria-description]')?.getAttribute('aria-description')?.includes('Default: Not declared; Min: 0; Max: 10; Interval: 2'), 'missing defaults remain unknown; declared bounds are reused')
+    const key = rows[0].querySelector<HTMLElement>('dt [tabindex="0"]')!
+    await act(async () => key.focus())
+    assert.equal(document.querySelectorAll('[role="tooltip"]').length, 1)
+    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'Operator → select palette → update the graph')
+    await act(async () => { key.blur(); key.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true })) })
+    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'Operator → select palette → update the graph', 'hover and keyboard share content')
+    assert.equal(changes, 0, 'inspection never edits a field')
+    const palette = rows[0].querySelector<HTMLInputElement>('input')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(palette, 'green')
+      palette.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    assert.equal(changes, 1, 'the original change handler remains connected exactly once')
+    const rich = <Tooltip content={<strong>Rich help</strong>} open><span>Detail</span></Tooltip>
+    const richCells = { keyNode: 'Rich', valueNode: rich }
+    assert.equal(prepareMainPanelRowHelp(richCells), richCells, 'rich/controlled help does not gain a competing wrapper')
+  } finally {
+    await act(async () => root.unmount()); host.remove(); restore()
   }
 }

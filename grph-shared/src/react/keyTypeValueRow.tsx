@@ -16,7 +16,10 @@ export type KeyTypeValueStaticRowLayout =
   | 'keyIconValue'
   | 'keyIconSliderInput'
 
+export type KeyTypeValueCells = { keyNode: ReactNode; typeNode?: ReactNode; valueNode: ReactNode }
+
 export interface KeyTypeValueStaticRowProps {
+  presentCells?: (cells: KeyTypeValueCells) => KeyTypeValueCells
   keyNode: ReactNode
   typeNode?: ReactNode
   valueNode: ReactNode
@@ -38,6 +41,7 @@ export interface RightAlignedValueCellProps {
 }
 
 export interface SimpleKeyValueRowProps {
+  presentCells?: KeyTypeValueStaticRowProps['presentCells']
   label: ReactNode
   children: ReactNode
   align?: 'center' | 'start'
@@ -97,7 +101,9 @@ export function KeyTypeValueStaticRow({
   className,
   id,
   dataKgAnchor,
+  presentCells,
 }: KeyTypeValueStaticRowProps) {
+  const cells = presentCells ? presentCells({ keyNode, typeNode, valueNode }) : { keyNode, typeNode, valueNode }
   return (
     <dl
       id={id}
@@ -115,13 +121,13 @@ export function KeyTypeValueStaticRow({
       onClick={onClick}
     >
       <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-        {keyNode}
+        {cells.keyNode}
       </dt>
       <dd className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center justify-start sm:justify-end ${UI_THEME_TOKENS.text.secondary}`}>
-        {layout === 'keyIconSliderInput' ? null : typeNode}
+        {layout === 'keyIconSliderInput' ? null : cells.typeNode}
       </dd>
       <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME} items-center`}>
-        {layout === 'keyIconSliderInput' ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{typeNode}{valueNode}</section> : valueNode}
+        {layout === 'keyIconSliderInput' ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{cells.typeNode}{cells.valueNode}</section> : cells.valueNode}
       </dd>
     </dl>
   )
@@ -144,9 +150,11 @@ export function SimpleKeyValueRow({
   densityClassName,
   activeClassName,
   onClick,
+  presentCells,
 }: SimpleKeyValueRowProps) {
   return (
     <KeyTypeValueStaticRow
+      presentCells={presentCells}
       keyNode={label}
       valueNode={children}
       align={align}
