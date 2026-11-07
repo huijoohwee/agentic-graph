@@ -5,7 +5,7 @@ import { PanelKeyTypeRangeValueRow } from '@/features/panels/ui/PanelKeyTypeRang
 import Tooltip from '@/features/panels/ui/Tooltip'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { FOG_NEAR_TOOLTIP, FOG_FAR_TOOLTIP } from '@/features/panels/views/ThreeViewTuningTooltips'
-import { THREE_VIEW_FIELD_GRID_CLASS_NAME } from '@/features/panels/views/threeViewResponsiveClasses'
+import { ThreeViewFieldSection } from '@/features/panels/views/threeViewResponsiveClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 interface ThreeViewBackgroundFogSectionProps {
@@ -33,7 +33,7 @@ export default function ThreeViewBackgroundFogSection({
       headerClassName="px-0"
       stickyOffsetClassName="top-6"
     >
-      <section className={THREE_VIEW_FIELD_GRID_CLASS_NAME}>
+      <ThreeViewFieldSection>
         <PanelKeyTypeColorTextValueRow
           density="compact"
           keyNode={<span className={keyLabelClassName}>Background Color</span>}
@@ -88,7 +88,7 @@ export default function ThreeViewBackgroundFogSection({
             </Tooltip>
           )}
         />
-      </section>
+      </ThreeViewFieldSection>
     </CollapsibleSection>
   )
 }

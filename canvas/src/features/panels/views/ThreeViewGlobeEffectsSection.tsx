@@ -15,7 +15,7 @@ import {
   GLOBE_ORBIT_RING_COUNT_TOOLTIP,
   GLOBE_PARTICLE_COUNT_TOOLTIP,
 } from '@/features/panels/views/ThreeViewTuningTooltips'
-import { THREE_VIEW_FIELD_GRID_CLASS_NAME } from '@/features/panels/views/threeViewResponsiveClasses'
+import { ThreeViewFieldSection } from '@/features/panels/views/threeViewResponsiveClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_SMALL_SELECTION_CONTROL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 
@@ -44,7 +44,7 @@ export default function ThreeViewGlobeEffectsSection({
       headerClassName="px-0"
       stickyOffsetClassName="top-6"
     >
-      <section className={THREE_VIEW_FIELD_GRID_CLASS_NAME}>
+      <ThreeViewFieldSection>
         <PanelKeyTypeCheckboxValueRow
           density="compact"
           keyNode={<span className={keyLabelClassName}>Enable Effects</span>}
@@ -247,7 +247,7 @@ export default function ThreeViewGlobeEffectsSection({
           onChange={next => setThreeConfig({ globeArcTravelerCount: next })}
           valueNode={<span className={valueTextClassName}>{String(schema.three?.globeArcTravelerCount ?? 1)}</span>}
         />
-      </section>
+      </ThreeViewFieldSection>
     </CollapsibleSection>
   )
 }
