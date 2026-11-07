@@ -42,10 +42,12 @@ export async function testSemanticSelectKeyboardAndPortal() {
   }
   try {
     await act(async () => root.render(<Fixture />))
+    assert.ok(choose().classList.contains('agentic-form-control'), 'direct dropdowns reuse the central control utility')
     choose().focus()
     await key('ArrowDown')
     assert.equal(choose().getAttribute('aria-expanded'), 'true')
     const menu = document.querySelector('menu[role="menu"]')!
+    assert.ok(items().every(item => item.classList.contains('agentic-form-control')), 'menu options reuse trigger/textbox geometry')
     assert.ok(menu); assert.equal(document.querySelector('[role=tooltip]') === null, true, 'field help must not cover menu choices'); assert.equal(host.contains(menu), false, 'menu escapes clipping ancestors through the shared portal')
     assert.equal(menu.querySelectorAll('div, [aria-hidden="true"]').length, 0)
     assert.equal(items()[1].disabled, true)

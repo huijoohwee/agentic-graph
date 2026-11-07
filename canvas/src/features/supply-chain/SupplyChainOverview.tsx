@@ -1,3 +1,5 @@
+import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { Activity, ArrowDownRight, ArrowLeftRight, Boxes, Building2, ChevronDown, ChevronRight, CircleHelp, Clock3, Factory, LocateFixed, MapPin, Package, Plane, RotateCcw, Search, Ship, TrainFront, Truck, Warehouse, ZoomIn, ZoomOut } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -70,9 +72,9 @@ function SupplyChainMap({
     <div className="pointer-events-auto absolute right-3 top-[116px] z-10 flex max-w-[calc(100%-24px)] flex-wrap items-center justify-end gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm" aria-label="Network display controls">
       <button type="button" onClick={openXrMediaLibrary} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`} aria-label="Open shared Media 3D for XR assets" title="Open Media → 3D for XR → Terrain / Environment Kits and Subjects & Props"><Boxes size={12}/><span className="hidden sm:inline">3D assets</span><span className="sm:hidden">Assets</span></button>
       <label className="sr-only" htmlFor="supply-chain-entity-filter">Filter network entities</label>
-      <select id="supply-chain-entity-filter" value={entityFilter} onChange={event => onEntityFilter(event.target.value as 'all' | 'infrastructure' | 'resources')} aria-label="Filter network entities" className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+      <SemanticSelect id="supply-chain-entity-filter" value={entityFilter} onValueChange={value => onEntityFilter(value as 'all' | 'infrastructure' | 'resources')} aria-label="Filter network entities" className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
         <option value="all">All entities</option><option value="infrastructure">Infrastructure</option><option value="resources">Resources</option>
-      </select>
+      </SemanticSelect>
       <button type="button" onClick={onToggleLabels} aria-pressed={showLabels} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px] ${showLabels ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><span>Labels {showLabels ? 'on' : 'off'}</span></button>
       <button type="button" onClick={onReset} aria-label="Reset overview" className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`}><RotateCcw size={12}/><span>Reset</span></button>
     </div>
@@ -328,14 +330,14 @@ export function SupplyChainOverview() {
       <MiniMetric icon={<Truck size={16}/>} label="Transport modes" value={String(new Set(SCENARIO.legs.filter(leg => leg.mode !== 'reverse').map(leg => leg.mode)).size).padStart(2, '0')} note="road · rail · air · sea" />
       <MiniMetric icon={<RotateCcw size={15}/>} label="Linked return flows" value={String(SCENARIO.consignments.filter(consignment => consignment.returnConsignmentId).length).padStart(2, '0')} note="in scenario" />
       <label className="ml-1 flex shrink-0 items-center gap-2 text-[10px] font-medium text-slate-500">Journey
-        <select value={selectedConsignmentId} onChange={event => { const consignment = scenarioConsignment(SCENARIO, event.target.value); if (consignment) chooseConsignment(consignment) }} aria-label="Select supply chain journey" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+        <SemanticSelect value={selectedConsignmentId} onValueChange={value => { const consignment = scenarioConsignment(SCENARIO, value); if (consignment) chooseConsignment(consignment) }} aria-label="Select supply chain journey" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
           {SCENARIO.consignments.map(consignment => <option key={consignment.id} value={consignment.id}>{consignment.reference} · {consignment.service}</option>)}
-        </select>
+        </SemanticSelect>
       </label>
       <label className="ml-1 flex shrink-0 items-center gap-2 text-[10px] font-medium text-slate-500">Routes
-        <select value={modeFilter} onChange={event => setModeFilter(event.target.value as SupplyChainMode | 'all')} aria-label="Filter routes by transport mode" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+        <SemanticSelect value={modeFilter} onValueChange={value => setModeFilter(value as SupplyChainMode | 'all')} aria-label="Filter routes by transport mode" className="h-8 max-w-[145px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
           <option value="all">All modes</option><option value="road">Road</option><option value="rail">Rail</option><option value="air">Air</option><option value="sea">Sea</option><option value="reverse">Returns</option>
-        </select>
+        </SemanticSelect>
       </label>
     </section>
     <section className="pointer-events-none absolute inset-0 min-h-0 overflow-hidden">
@@ -351,7 +353,7 @@ export function SupplyChainOverview() {
       <aside className="pointer-events-auto absolute bottom-[202px] left-3 top-[158px] z-20 hidden w-[244px] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-3 shadow-[0_8px_28px_rgba(15,23,42,.10)] backdrop-blur xl:block" aria-label="Geospatial panel">
         <header className="mb-3 flex items-start justify-between"><div><p className="text-[9px] font-bold uppercase tracking-[.14em] text-blue-600">Global movement</p><h2 className="mt-0.5 text-[13px] font-bold text-slate-900">Connected network</h2></div><span className="rounded-md bg-blue-50 px-1.5 py-1 text-[9px] font-bold text-blue-700">12 sites</span></header>
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5"><span className="grid h-7 w-7 place-items-center rounded-md bg-white text-blue-600 shadow-sm"><Activity size={14}/></span><div className="min-w-0"><p className="text-[10px] font-semibold text-slate-700">Scenario clock</p><p className="text-[9px] text-slate-400">{formatClock(timeSeconds)} elapsed · {transport.playing ? 'playing' : 'paused'}</p></div><span className="ml-auto rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700">LOCAL</span></div>
-        <label className="relative mb-2 block"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Find a site or consignment" aria-label="Search network entities" className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-[10px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"/></label>
+        <label className="relative mb-2 block"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/><PanelTextInput value={search} onChange={event => setSearch(event.target.value)} placeholder="Find a site or consignment" aria-label="Search network entities" className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-[10px] outline-none placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"/></label>
         <StageOverview selectedFacilityId={activeFacilityId} onSelect={chooseFacility}/>
         <ResourceRoster selectedConsignmentId={selectedConsignmentId} timeSeconds={timeSeconds} onSelect={chooseConsignment}/>
         <p className="mt-3 border-t border-slate-100 pt-2 text-[9px] leading-4 text-slate-400">Illustrative topology. Synthetic local source · seed {SCENARIO.seed} · revision {SCENARIO.revision}.</p>

@@ -1,3 +1,5 @@
+import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -149,15 +151,15 @@ export default function EvidencePanel() {
     <div className="flex flex-wrap gap-1" role="group" aria-label="Evidence views">{kinds.map(value => <button key={value} type="button" className={button} aria-pressed={kind === value} onClick={() => selectKind(value)}>{labels[value]}</button>)}</div>
     <p role="status" aria-live="polite" className="break-words" data-kg-evidence-status="1">{stale ? 'The displayed result belongs to an earlier source revision. Reimport under the current authored configuration before querying or exporting.' : status}</p>
     <div className={card}>
-      <label className="grid gap-1">Authored example<select className="min-h-[44px] min-w-0 w-full" value={chosen?.id || ''} disabled={!capture || busy} onChange={event => { setExampleId(event.target.value); setAtUtc(examples.find(item => item.id === event.target.value)?.atUtc || '') }}>{examples.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      <label className="grid gap-1">Authored example<SemanticSelect className="min-h-[44px] min-w-0 w-full" value={chosen?.id || ''} disabled={!capture || busy} onValueChange={value => { setExampleId(value); setAtUtc(examples.find(item => item.id === value)?.atUtc || '') }}>{examples.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</SemanticSelect></label>
       <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={!chosen || busy} onClick={() => void loadExample()}>Load labelled example</button><button type="button" className={button} disabled={!accepted && !busy} onClick={clear}>Remove record</button></div>
       <label className="grid gap-1">{kind === 'arrival' ? 'Import chronological batch files' : 'Import local JSON or matching evidence pack'}<input type="file" className="min-h-[44px] min-w-0 w-full" accept="application/json,.json" multiple={kind === 'arrival'} disabled={!capture || busy} onChange={importFiles} /></label>
       <p>Local JSON only · maximum combined input 2,000,000 bytes. Notice originals have a stricter 12,000-byte admission limit.</p>
     </div>
     {visible && <>
       <form className={card} onSubmit={event => void query(event)}>
-        {visible.record && <label className="grid gap-1">Entity<select value={entityId} onChange={event => setEntityId(event.target.value)} className="min-h-[44px] min-w-0 w-full" disabled={busy || stale}>{visible.record.entities.map((entity: any) => <option key={entity.id} value={entity.id}>{entity.label}</option>)}</select></label>}
-        {['record', 'volume', 'notice'].includes(kind) && <label className="grid gap-1">Explicit UTC time<input className="min-h-[44px] min-w-0 w-full" value={atUtc} required onChange={event => setAtUtc(event.target.value)} disabled={busy || stale} placeholder="YYYY-MM-DDTHH:mm:ss.sssZ" /></label>}
+        {visible.record && <label className="grid gap-1">Entity<SemanticSelect value={entityId} onValueChange={value => setEntityId(value)} className="min-h-[44px] min-w-0 w-full" disabled={busy || stale}>{visible.record.entities.map((entity: any) => <option key={entity.id} value={entity.id}>{entity.label}</option>)}</SemanticSelect></label>}
+        {['record', 'volume', 'notice'].includes(kind) && <label className="grid gap-1">Explicit UTC time<PanelTextInput className="min-h-[44px] min-w-0 w-full" value={atUtc} required onChange={event => setAtUtc(event.target.value)} disabled={busy || stale} placeholder="YYYY-MM-DDTHH:mm:ss.sssZ" /></label>}
         {moments.length > 0 && <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={busy || stale || !previousTime} onClick={() => void query(undefined, previousTime)}>Previous moment</button><button type="button" className={button} disabled={busy || stale || !nextTime} onClick={() => void query(undefined, nextTime)}>Next moment</button></div>}
         <button className={button} type="submit" disabled={busy || stale}>Run read-only query</button>
         <code className="break-all">{findEvidenceOperation(operations[kind])?.invocation}</code>

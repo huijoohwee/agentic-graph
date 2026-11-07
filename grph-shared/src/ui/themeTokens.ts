@@ -54,7 +54,7 @@ export function resolveThemeColors(): ThemeColors {
 const NEUTRAL_BORDER_COLOR_CLASS_NAME = 'border-[color:var(--kg-border)]'
 const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-width,1px)]'
 
-const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
+const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--agentic-control-height)]'
 
 /** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
 export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
@@ -81,7 +81,7 @@ export const UI_THEME_TOKENS = {
   },
   control: {
     height: CONTROL_HEIGHT_CLASS_NAME,
-    singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
+    singleLine: 'agentic-form-control min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap',
   },
   button: {
     iconControl: `kg-icon-control min-w-[var(--kg-control-height)]! min-h-[var(--kg-default-glyph-size,1rem)] rounded border-0 outline-none transition-colors shadow-none ${ICON_FOCUS_CLASS_NAME}`,

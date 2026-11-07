@@ -1,3 +1,4 @@
+import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { defaultSchema } from '@/lib/graph/schema'
@@ -7,7 +8,7 @@ import type { MissionDashboardSnapshot } from '@/features/agent-ready/agentMissi
 import { readWorkspaceObservation } from '@/features/agent-ready/workspaceObservation'
 import type { AgentMissionProvenanceContext } from '@/features/agent-ready/agentMissionProvenance'
 import type { MissionCodebaseIndex } from '@/features/agent-ready/useAgentMissionCodebaseIndex'
-import { PanelSelect } from '@/lib/ui/panelFormControls'
+import { PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
 import { AGENT_GRAPH_PROJECTION_DIRECTORY } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { buildAgentGraphWorkspaceIndex } from '@/features/agent-graph/agentGraphWorkspaceIndexBuilder'
 
@@ -249,9 +250,9 @@ export default function ObservabilityWorkspace() {
         <h2 className="font-semibold">Exact-hash source context</h2>
         <p className="text-sm">Map, search, and read the selected repository through a bounded immutable evidence artifact. Reads verify stored bytes against the returned SHA-256.</p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1 text-sm">Repository-relative scope<input className={`${button} min-w-56`} value={sourceScope} onChange={event => setSourceScope(event.target.value)} placeholder="src or a selected path" /></label>
+          <label className="grid gap-1 text-sm">Repository-relative scope<PanelTextInput className={`${button} min-w-56`} value={sourceScope} onChange={event => setSourceScope(event.target.value)} placeholder="src or a selected path" /></label>
           <button type="button" className={button} disabled={!sourceScope.trim() || sourceBusy} onClick={() => void runSourceContext({ operation: 'map', path: sourceScope.trim(), limit: 20 })}>Map scope</button>
-          <label className="grid gap-1 text-sm">Literal search<input className={`${button} min-w-56`} value={sourceQuery} onChange={event => setSourceQuery(event.target.value)} placeholder="search selected source" /></label>
+          <label className="grid gap-1 text-sm">Literal search<PanelTextInput className={`${button} min-w-56`} value={sourceQuery} onChange={event => setSourceQuery(event.target.value)} placeholder="search selected source" /></label>
           <button type="button" className={button} disabled={!sourceScope.trim() || !sourceQuery.trim() || sourceBusy} onClick={() => void runSourceContext({ operation: 'search', path: sourceScope.trim(), query: sourceQuery.trim(), limit: 20 })}>Search scope</button>
         </div>
         {sourceBusy && <p role="status" className="text-sm">Reading selected source…</p>}
@@ -271,8 +272,8 @@ export default function ObservabilityWorkspace() {
         <h2 className="font-semibold">Target UI observation record</h2>
         <p className="text-sm">Record what was actually visible and the inspection action. This operator-entered record is kept distinct from retained agent traces and source facts.</p>
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={addManualObservation}>
-          <label className="grid gap-1 text-sm">Target route<input name="route" required maxLength={512} className={button} placeholder="/settings or app route" /></label>
-          <label className="grid gap-1 text-sm">Inspection method<select name="method" className={button} defaultValue="browser"><option value="browser">Browser</option><option value="accessibility">Accessibility tree</option><option value="operator-note">Operator note</option></select></label>
+          <label className="grid gap-1 text-sm">Target route<PanelTextInput name="route" required maxLength={512} className={button} placeholder="/settings or app route" /></label>
+          <label className="grid gap-1 text-sm">Inspection method<SemanticSelect name="method" className={button} defaultValue="browser"><option value="browser">Browser</option><option value="accessibility">Accessibility tree</option><option value="operator-note">Operator note</option></SemanticSelect></label>
           <label className="grid gap-1 text-sm sm:col-span-2">Visible state<textarea name="visibleState" required maxLength={2000} className="min-h-20 rounded border bg-transparent p-2" placeholder="Describe the visible state; avoid secrets and personal data." /></label>
           <label className="grid gap-1 text-sm sm:col-span-2">Inspection action and outcome<textarea name="action" required maxLength={1000} className="min-h-16 rounded border bg-transparent p-2" placeholder="For example: inspected the displayed page without activating controls." /></label>
           <div className="sm:col-span-2"><button type="submit" className={button}>Record observation</button></div>
