@@ -4,12 +4,20 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
 import * as esbuild from 'esbuild'
 import { compile } from '@tailwindcss/node'
 import { Scanner } from '@tailwindcss/oxide'
 import postcss from 'postcss'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
+const basePrefix = 'node_modules/@agentic-base/views-react'
+const baseCssExport = createRequire(path.join(root, 'canvas/package.json')).resolve('@agentic-base/views-react/browser.css')
+const basePackageRoot = path.resolve(path.dirname(baseCssExport), '../../..')
+const installedBase = path.relative(root, basePackageRoot)
+assert(installedBase && !installedBase.startsWith('..') && !path.isAbsolute(installedBase), 'Base dependency must be installed inside this checkout')
+const sourcePath = file => file.startsWith(basePrefix + '/')
+  ? path.join(basePackageRoot, file.slice(basePrefix.length + 1)) : path.resolve(root, file)
 const startedAt = Date.now()
 const entry = 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx'
 const MAX_BYTES = 500000
@@ -25,7 +33,7 @@ const outputRelative = path.relative(root, output)
 assert(outputRelative.startsWith('..' + path.sep) || path.isAbsolute(outputRelative), 'Build output must be outside the source checkout')
 
 const inputs = new Set([entry, 'canvas/scripts/build-data-view-adapter.mjs', 'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json'])
-const read = async file => { inputs.add(relative(file)); return fs.readFile(path.resolve(root, file), 'utf8') }
+const read = async file => { inputs.add(relative(file)); return fs.readFile(sourcePath(file), 'utf8') }
 const options = { absWorkingDir: root, bundle: true, write: false, metafile: true,
   preserveSymlinks: true, alias: { '@': path.join(root, 'canvas/src'), 'grph-shared': path.join(root, 'grph-shared/src') },
   loader: { '.css': 'empty' },
@@ -189,7 +197,7 @@ for (const name of ['esbuild', 'tailwindcss', '@tailwindcss/node', '@tailwindcss
 }
 const records = await Promise.all([...inputs].sort().map(async file => {
   assert(!file.startsWith('../') && !path.isAbsolute(file), `Input path escapes checkout: ${file}`)
-  const source = path.join(root, file), before = await fs.stat(source)
+  const source = sourcePath(file), before = await fs.stat(source)
   const bytes = await fs.readFile(source), after = await fs.stat(source)
   assert(bytes.length > 0 && bytes.length <= MAX_INPUT_BYTES, `Native input exceeds its byte bound: ${file}`)
   assert(before.mtimeMs <= startedAt && before.mtimeMs === after.mtimeMs && before.size === after.size, `Input changed during build; retry: ${file}`)
