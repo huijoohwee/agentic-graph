@@ -103,6 +103,17 @@ async function verify() {
       assert.ok(dimensions.scroll <= dimensions.client + 1, 'Design review must not overflow horizontally')
       const viewport = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: innerWidth }))
       assert.ok(viewport.scroll <= viewport.width + 1, 'Design review must not cause page-level horizontal overflow')
+      const toolbarGeometry = await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).evaluate(el => {
+        const bounds = el.getBoundingClientRect(), style = getComputedStyle(el)
+        return { height: bounds.height, rowHeight: parseFloat(style.getPropertyValue('--agentic-row-height')),
+          controlsFit: [...el.querySelectorAll('button')].filter(button => button.getClientRects().length).every(button => {
+            const control = button.getBoundingClientRect()
+            return control.top >= bounds.top && control.bottom <= bounds.bottom
+          }) }
+      })
+      assert.ok(toolbarGeometry.rowHeight > 0, 'Shared toolbar row height must resolve')
+      assert.ok(Math.abs(toolbarGeometry.height - toolbarGeometry.rowHeight) < 1, 'Compact toolbar must match shared row height')
+      assert.equal(toolbarGeometry.controlsFit, true, 'Toolbar controls must fit within shared row height')
       const format = review.getByRole('button', { name: 'Export format' })
       await selectMenuOption(format, 'context-json')
       const button = review.getByRole('button', { name: 'Export locally' })
@@ -117,7 +128,7 @@ async function verify() {
       assert.deepEqual(JSON.parse(await readFile(await download.path(), 'utf8')), projection)
       await download.delete()
       console.log(`Design browser: ${width}px ${theme} export passed`)
-      receipts.push({ width, theme, context: projection.semanticKey, overflow: false, keyboardExport: true })
+      receipts.push({ width, theme, context: projection.semanticKey, overflow: false, keyboardExport: true, toolbarGeometry })
     }
     assert.deepEqual(await geometry(), initialGeometry, 'Readback and export must preserve geometry and history')
     const beforeRevision = (await inspect()).design.semanticKey
