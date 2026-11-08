@@ -110,12 +110,12 @@ async function verify() {
       assert.ok(rows.every(row => row.minimum === row.controlRole && !row.overflow), 'KTV value minimum must reuse the shared control role and fit')
     }
     assert.equal(await fieldControls[1].evaluate(el => el.closest('dl').querySelector('.agentic-ktv-type svg').getAttribute('aria-label')), 'Boolean')
-    const globeHeader = floatingPanel.getByRole('button', { name: /^Globe effects/ })
-    const effects = floatingPanel.getByRole('checkbox', { name: 'Enable Effects', exact: true })
-    const effectsValue = await effects.isChecked()
-    await globeHeader.press('Enter'); await effects.waitFor({ state: 'hidden' })
-    await globeHeader.press('Space'); await effects.waitFor({ state: 'visible' })
-    assert.equal(await effects.isChecked(), effectsValue, 'Shared header keyboard collapse must retain field values')
+    const linksHeader = floatingPanel.getByRole('button', { name: /^Edges and particles/ })
+    const arrowLength = floatingPanel.getByRole('slider', { name: 'Arrow Length', exact: true })
+    const arrowLengthValue = await arrowLength.inputValue()
+    await linksHeader.press('Enter'); await arrowLength.waitFor({ state: 'hidden' })
+    await linksHeader.press('Space'); await arrowLength.waitFor({ state: 'visible' })
+    assert.equal(await arrowLength.inputValue(), arrowLengthValue, 'Shared header keyboard collapse must retain field values')
     assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true)
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')

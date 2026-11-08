@@ -109,6 +109,9 @@ assert.match(iconLibraryPin.revision, /^[a-f0-9]{40}$/)
 assert.equal(iconLibraryPin.sha256, sha256(iconLibraryBytes), 'Central icon library drift')
 const baseProfile = await read('node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.css')
 assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'), 'Base and Graph must use one shared UI projection')
+for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '.agentic-panel-section-body']) {
+  assert(baseProfile.includes(`${role} {`), `Central panel layout owner missing: ${role}`)
+}
 const panelCss = await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')
 assert(panelCss.startsWith('@import "../browser/shared-ui-profile.css";'), 'Unknown Base panel stylesheet import')
 nativeStyles.push(shadowScope(panelCss.replace('@import "../browser/shared-ui-profile.css";', '')))
@@ -124,7 +127,7 @@ const projectRules = (source, accepts, required) => {
   assert(required.every(selector => selected.has(selector)), `Native CSS owner missing: ${required.filter(selector => !selected.has(selector)).join(', ')}`)
   return rules
 }
-const frameSelectors = ['.kg-toolbar-settings-panel-body', '.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
+const frameSelectors = ['.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
 nativeStyles.push(...projectRules(responsiveCss,
   selector => frameSelectors.some(base => selector === base || selector.startsWith(base + ' ')), frameSelectors))
 const shellSelectors = ['.App-toolbar__btn']
