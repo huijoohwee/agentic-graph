@@ -31,7 +31,7 @@
 .agentic-ktv-row > :is(dt, dd) { display: flex; align-items: center; min-inline-size: 0; max-inline-size: 100%; margin: 0; padding-inline: var(--agentic-control-padding-inline); overflow: hidden; }
 .agentic-ktv-key { white-space: nowrap; text-overflow: ellipsis; }
 .agentic-ktv-type { justify-content: center; }
-.agentic-ktv-value { justify-content: end; align-self: stretch; gap: var(--agentic-control-padding-block); }
+.agentic-ktv-value { min-block-size: var(--agentic-control-height); justify-content: end; align-self: stretch; gap: var(--agentic-control-padding-block); }
 .agentic-ktv-value > * { min-inline-size: 0; max-inline-size: 100%; }
 .agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); stroke-width: var(--agentic-icon-stroke-width); }
 .agentic-icon-compact { inline-size: var(--agentic-icon-size-compact); block-size: var(--agentic-icon-size-compact); }
