@@ -15,7 +15,7 @@ import { PanelInlineLabeledRangeRow } from '@/features/panels/ui/PanelInlineLabe
 import { PanelLabeledRangeCard } from '@/features/panels/ui/PanelLabeledRangeCard'
 import { PanelField, PanelReadOnlyField, PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
 import { TimelineTransportControls } from '@/components/timeline/TimelineTransportControls'
-import { KTV_FIELD_GRID_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
+import { panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 
 export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
   const { restore } = initJsdomHarness()
@@ -60,8 +60,7 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
     const rows = Array.from(host.querySelectorAll<HTMLElement>('[data-panel-field-row]'))
     assert.equal(rows.length, 10)
     for (const row of rows) {
-      assert(KTV_FIELD_GRID_CLASS_NAME.split(' ').every(token => row.classList.contains(token)), row.className)
-      assert(row.classList.contains('font-serif') && row.classList.contains('text-[15px]') && row.classList.contains('py-2'))
+      assert(row.classList.contains('agentic-ktv-row'), row.className)
       assert.equal(row.children.length, 3, 'every field preserves key/type/value columns')
       assert(!row.classList.contains('grid-cols-2') && !row.classList.contains('gap-8') && !row.classList.contains('py-9'))
     }
@@ -79,7 +78,7 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
     assert(Array.from(host.querySelectorAll('output')).every(output => output.textContent === '5'), 'shared range handlers update each control')
     await act(async () => useGraphStore.setState({ uiPanelTextFontClass: 'font-sans', uiPanelKeyValueTextSizeClass: 'text-xs', uiPanelMonospaceTextClass: 'font-mono text-sm', uiPanelMicroLabelTextSizeClass: 'text-sm' }))
     assert([...host.querySelectorAll('small, [data-role-code], [data-role-help-code]')].every(el => el.classList.contains('text-sm')), 'mounted supporting roles follow their shared preferences')
-    assert(rows.every(row => row.classList.contains('text-xs') && row.classList.contains('font-sans')), 'preferences update mounted fields')
+    assert(rows.every(row => row.classList.contains('agentic-ktv-row')), 'legacy appearance preferences cannot replace the central row owner')
     assert(host.querySelector('[data-kg-timeline-transport]')?.classList.contains('text-xs'), 'BottomPanel transport uses the same font owner')
   } finally {
     await act(async () => root.unmount())

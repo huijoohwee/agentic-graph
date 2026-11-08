@@ -63,7 +63,7 @@ export const uiToolbarAreaWrapActionRowClassName = 'kg-toolbar-area-action-row k
 
 export const uiToolbarAreaLabelClassName = 'kg-toolbar-area-label flex items-center text-xs cursor-pointer select-none'
 
-export const uiToolbarSettingsPanelBodyClassName = 'kg-toolbar-settings-panel-body'
+export const uiToolbarSettingsPanelBodyClassName = 'agentic-panel-section-body'
 
 export const uiToolbarSettingsPanelSubsectionClassName = 'kg-toolbar-settings-panel-subsection'
 

@@ -119,13 +119,13 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
     !responsiveCss.includes('.kg-toolbar-area-stack') ||
     !responsiveCss.includes('.kg-toolbar-area-action-row') ||
     !responsiveCss.includes('--kg-toolbar-area-action-row-gap') ||
-    !responsiveCss.includes('.kg-toolbar-settings-panel-body') ||
+    !toolbarStyles.includes("uiToolbarSettingsPanelBodyClassName = 'agentic-panel-section-body'") ||
     !responsiveCss.includes('.kg-toolbar-settings-panel-subsection') ||
     !responsiveCss.includes('.kg-toolbar-settings-panel-footer') ||
     !responsiveCss.includes('.kg-toolbar-settings-panel-action-group') ||
     !responsiveCss.includes('.kg-toolbar-settings-panel-text-action') ||
-    !responsiveCss.includes('--kg-toolbar-settings-panel-body-padding-inline') ||
-    !responsiveCss.includes('--kg-toolbar-settings-panel-body-gap') ||
+    responsiveCss.includes('--kg-toolbar-settings-panel-body-padding-inline') ||
+    !readUtf8(path.resolve(root, 'src/styles/shared-ui-profile.css')).includes('.agentic-panel-section-body') ||
     !responsiveCss.includes('--kg-toolbar-settings-panel-subsection-padding-block-start') ||
     !responsiveCss.includes('--kg-toolbar-settings-panel-subsection-gap') ||
     !responsiveCss.includes('--kg-toolbar-settings-panel-footer-gap') ||
