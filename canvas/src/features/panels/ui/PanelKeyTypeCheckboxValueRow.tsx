@@ -1,3 +1,4 @@
+import { MainPanelTypeIcon } from './mainPanelHelpIconLibrary'
 import React from 'react'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { PanelCheckbox } from '@/lib/ui/panelFormControls'
@@ -28,6 +29,7 @@ export function PanelKeyTypeCheckboxValueRow({
     <KeyTypeValueStaticRow
       {...staticRowProps}
       layout="keyValue"
+      typeNode={<MainPanelTypeIcon iconKey="setting.boolean" />}
       keyNode={<span id={labelId}>{keyNode}</span>}
       valueNode={(
         <>

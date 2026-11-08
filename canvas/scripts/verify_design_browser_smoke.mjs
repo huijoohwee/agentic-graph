@@ -73,6 +73,31 @@ async function verify() {
     await closePanelRegion(page.getByRole('complementary', { name: 'Main panel', exact: true }), page)
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      useGraphStore.getState().setFloatingPanelView('renderer')
+      useGraphStore.getState().setFloatingPanelOpen(true)
+    })
+    await floatingPanel.getByRole('button', { name: 'Expand all', exact: true }).click()
+    const fieldControls = [floatingPanel.getByRole('slider', { name: 'Voxel Idle Rotate Speed', exact: true }),
+      floatingPanel.getByRole('checkbox', { name: 'Voxel Animation', exact: true }),
+      floatingPanel.getByRole('button', { name: 'Node Sizing', exact: true })]
+    for (const width of [360, 1280]) {
+      await page.setViewportSize({ width, height: 800 })
+      const rows = await Promise.all(fieldControls.map(control => control.evaluate(el => {
+        const row = el.closest('dl'), value = row.querySelector('.agentic-ktv-value')
+        return { height: row.getBoundingClientRect().height,
+          cells: [...row.children].map(cell => ({ x: cell.getBoundingClientRect().x, width: cell.getBoundingClientRect().width })),
+          minimum: getComputedStyle(value).minBlockSize,
+          controlRole: getComputedStyle(value).getPropertyValue('--agentic-control-height').trim(),
+          overflow: row.scrollWidth > row.clientWidth + 1 }
+      })))
+      assert.ok(rows.every(row => Math.abs(row.height - rows[2].height) < 1), 'Range, checkbox and select must share KTV row height')
+      assert.ok(rows.every(row => JSON.stringify(row.cells) === JSON.stringify(rows[2].cells)), 'KTV columns must align across control kinds')
+      assert.ok(rows.every(row => row.minimum === row.controlRole && !row.overflow), 'KTV value minimum must reuse the shared control role and fit')
+    }
+    assert.equal(await fieldControls[1].evaluate(el => el.closest('dl').querySelector('.agentic-ktv-type svg').getAttribute('aria-label')), 'Boolean')
+    assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true)
+    await page.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
       useGraphStore.setState({ workspaceViewMode: 'canvas', canvasRenderMode: '2d', canvas2dRenderer: 'd3',
         markdownDocumentName: 'design-review.md', markdownDocumentText: '---\ndesign:\n  intent: Clear local review\n---\n# Design review',
         graphData: { type: 'Graph', metadata: { kind: 'markdown', source: 'markdown:design-review.md' },
