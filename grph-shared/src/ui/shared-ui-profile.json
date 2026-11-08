@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/shared-ui-profile/v1",
   "id": "shared-ui",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-design-system",
@@ -21,6 +21,12 @@
       "cssVar": "--agentic-icon-size-default",
       "type": "dimension",
       "value": "1rem"
+    },
+    {
+      "key": "icon.stroke-width",
+      "cssVar": "--agentic-icon-stroke-width",
+      "type": "number",
+      "value": "1.5"
     },
     {
       "key": "surface.row-height",

@@ -10,8 +10,8 @@ import {
 export type UiIconScale = 'compact' | 'default'
 
 export function getIconSizeClass(scale: UiIconScale | undefined): string {
-  if (scale === 'compact') return UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME
-  return UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME
+  if (scale === 'compact') return `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} agentic-icon agentic-icon-compact`
+  return `${UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} agentic-icon`
 }
 
 export type UiPillVariant = 'legend' | 'badge'

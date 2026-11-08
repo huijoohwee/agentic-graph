@@ -1,7 +1,8 @@
-/* Generated from agentic-design-system@66c35a12465d9d9b53f83b39474ad514bee23946; profile sha256 4830e6c273f8ab2f562c92caf919a169c09126ea0125b65fe852f7050f928c39. Do not edit. */
+/* Generated from agentic-design-system@51bf1fcaa6b5610f174dd428363482114d888364; profile sha256 6f73913636991d71c1e29d51ee3b7ea71011047c9a7a9e6b1ee7c517b0c8893b. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
+  --agentic-icon-stroke-width: 1.5;
   --agentic-row-height: 38px;
   --agentic-row-height-touch: 54px;
   --agentic-font-size-body: 0.875rem;
@@ -32,7 +33,13 @@
 .agentic-ktv-type { justify-content: center; }
 .agentic-ktv-value { justify-content: end; align-self: stretch; gap: var(--agentic-control-padding-block); }
 .agentic-ktv-value > * { min-inline-size: 0; max-inline-size: 100%; }
-.agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); }
+.agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); stroke-width: var(--agentic-icon-stroke-width); }
+.agentic-icon-compact { inline-size: var(--agentic-icon-size-compact); block-size: var(--agentic-icon-size-compact); }
+.agentic-icon-color { color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText)); }
+.agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, Canvas)); }
+.agentic-icon-padding { padding: var(--agentic-control-padding-block); }
+.agentic-icon-pill, .agentic-icon-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; min-block-size: var(--agentic-control-height); padding: 0 var(--agentic-control-padding-inline); border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder)); border-radius: var(--agentic-control-radius); white-space: nowrap; }
+.agentic-icon-text, .agentic-icon-pill, .agentic-icon-badge { font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
 @container agentic-ktv (width < 22.25rem) {
   .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
   .agentic-ktv-row > :last-child { grid-column: 1 / -1; }

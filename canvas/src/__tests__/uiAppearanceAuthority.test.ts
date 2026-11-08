@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
-import { readFloatFromStorage, writeFloatToStorage } from '@/lib/persistence'
-import { UI_ICON_DEFAULTS, UI_THEME_TOKENS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
+import { UI_ICON_DEFAULTS, UI_ICON_APPEARANCE, assertCentralIconAppearance, UI_THEME_TOKENS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
 
 /** Traverse actual UI sources; SVG data strokes are distinct from component glyphs. */
 export function testUiAppearanceSharedAuthority() {
@@ -31,22 +30,17 @@ export function testUiAppearanceSharedAuthority() {
     visit(source)
   }
   assert.deepEqual(violations, [], 'UI glyphs must inherit global stroke; do not reintroduce literal overrides')
-  assert.equal(UI_ICON_DEFAULTS.strokeWidth, 1.5)
-  for (const value of [NaN, Infinity, -Infinity]) assert.equal(normalizeUiIconStrokeWidth(value), 1.5)
-  assert.equal(normalizeUiIconStrokeWidth(0), 0.5)
-  assert.equal(normalizeUiIconStrokeWidth(8), 4)
-  assert.equal(normalizeUiIconStrokeWidth(2.25), 2.25, 'Preserve explicit valid preferences')
-  const entries = new Map<string, string>()
-  const storage = { getItem: (key: string) => entries.get(key) ?? null, setItem: (key: string, value: string) => entries.set(key, value) } as unknown as Storage
-  for (const width of [1.5, 2.25, 4]) {
-    assert.equal(writeFloatToStorage(storage, 'icon-stroke-test', normalizeUiIconStrokeWidth(width)), width)
-    assert.equal(readFloatFromStorage(storage, 'icon-stroke-test', UI_ICON_DEFAULTS.strokeWidth), width)
+  assert.ok(Number.isFinite(UI_ICON_DEFAULTS.strokeWidth) && UI_ICON_DEFAULTS.strokeWidth > 0)
+  for (const value of [NaN, Infinity, -Infinity, 0, 8, 2.25]) {
+    assert.equal(normalizeUiIconStrokeWidth(value), UI_ICON_DEFAULTS.strokeWidth, 'Legacy values cannot replace the shared owner')
   }
-  assert.match(read('hooks/store/uiSliceInitialState.ts'), /normalizeUiIconStrokeWidth\(lsFloat\(LS_KEYS.iconStrokeWidth, UI_ICON_DEFAULTS.strokeWidth\)\)/)
-  assert.match(read('hooks/store/uiSliceCoreActions.ts'), /lsSetFloat\(LS_KEYS.iconStrokeWidth, normalizeUiIconStrokeWidth\(width\)\)/)
-  assert.match(read('features/settings/registry-ui.ui.ts'), /docKey: 'uiIconStrokeWidth',\s+default: \(\) => UI_ICON_DEFAULTS.strokeWidth/)
-  assert.match(read('features/canvas/CanvasRootRuntime.tsx'), /setProperty\('--kg-icon-stroke-width', String\(iconStrokeWidth\)\)/)
-  assert.match(read('styles/application-typography.css'), /\.lucide,\s+\[data-kg-ui-icon\] \{\s+stroke-width: var\(--kg-icon-stroke-width, 1.5\)/)
+  for (const [key, value] of Object.entries(UI_ICON_APPEARANCE)) {
+    const ownedKey = key as keyof typeof UI_ICON_APPEARANCE
+    assert.equal(assertCentralIconAppearance(ownedKey, value), value)
+    assert.throws(() => assertCentralIconAppearance(ownedKey, 'p-20'), /read-only/)
+  }
+  assert.doesNotMatch(read('features/canvas/CanvasRootRuntime.tsx'), /kg-icon-stroke-width/)
+  assert.match(read('styles/application-typography.css'), /stroke-width: var\(--agentic-icon-stroke-width\)/)
   assert.match(read('features/graph-fields/ui/graphFieldIcons.tsx'), /data-kg-ui-icon="true"/)
   assert.doesNotMatch(read('features/graph-fields/ui/graphFieldIcons.tsx'), /strokeWidth = \d/)
 
@@ -64,17 +58,20 @@ export function testUiAppearanceSharedAuthority() {
   assert.match(panel, /FloatingPanelShell as BaseFloatingPanelShell/)
   assert.match(panel, /<IconButton[\s\S]*?title={label}[\s\S]*?ariaLabel={label}[\s\S]*?onClick={onClose}[\s\S]*?className="App-toolbar__btn"[\s\S]*?showTooltip/)
   assert.doesNotMatch(panel, /FloatingPanelCloseButton as BaseFloatingPanelCloseButton|agentic-base-floating-panel-close/)
-  assert.match(panel, /'--base-toolbar-compact-padding': props\.minimized\s*\?\s*'0 var\(--kg-toolbar-compact-pad-x\)'/)
+  assert.match(read('lib/ui/floatingPanelTheme.ts'), /'--base-toolbar-compact-padding': minimized\s*\?\s*'0 var\(--kg-toolbar-compact-pad-x\)'/)
   assert.match(panel, /strokeWidth = UI_ICON_DEFAULTS.strokeWidth/)
   assert.doesNotMatch(panel, /data-kg-floating-panel-root|ModalContainer/)
   assert.match(read('features/markdown/ui/codeblock/CodeAnnotationRows.tsx'), /aria-pressed=\{mode === 'render'\}/)
   assert.match(UI_THEME_TOKENS.border.outline, /--kg-surface-border-width,1px/)
-  assert.match(read('styles/shared-borders.css'), /--kg-surface-border-width: 1px/)
+  assert.match(read('styles/shared-borders.css'), /var\(--kg-surface-border-width\)/)
+  assert.doesNotMatch(read('styles/shared-borders.css'), /--kg-surface-border-width\s*:/)
   assert.match(read('lib/ui/surfaceClasses.ts'), /UI_THEME_TOKENS.shadow.flat/)
-  for (const file of ['components/ui/TypeMenu.tsx', 'components/ui/ToastHost.tsx', 'components/ui/ColumnHeaderMenu.tsx', 'components/ui/CollapsibleToolbar.tsx', 'lib/ui/menuClasses.ts', 'features/markdown-workspace/main/viewer/floatingMenuStyles.ts', 'lib/ui/PanelColorPicker.tsx']) {
+  for (const file of ['components/ui/TypeMenu.tsx', 'components/ui/ToastHost.tsx', 'components/ui/ColumnHeaderMenu.tsx', 'components/ui/CollapsibleToolbar.tsx', 'features/markdown-workspace/main/viewer/floatingMenuStyles.ts', 'lib/ui/PanelColorPicker.tsx']) {
     assert.match(read(file), /--kg-shadow-overlay/)
     assert.doesNotMatch(read(file), /shadow-(?:sm|md|lg|xl)/)
   }
+  assert.match(read('lib/ui/menuClasses.ts'), /import \{ MENU_CLASS_NAME, menuOptionClassName \} from '@agentic-base\/views-react\/controls'/)
+  assert.match(read('styles/shared-ui-profile.css'), /box-shadow: var\(--kg-shadow-overlay,/)
   assert.doesNotMatch(read('features/markdown/ui/MarkdownCodeBlock.tsx'), /documentCodeFrameClassName[^\n]*shadow-sm/)
   assert.doesNotMatch(read('features/markdown/ui/MarkdownTableBlock.tsx'), /documentTableFrameClassName[^\n]*shadow-sm/)
   assert.match(read('lib/ui/dataViewToolbarButton.tsx'), /UI_FOCUS_RING/, 'Flat controls retain keyboard focus')

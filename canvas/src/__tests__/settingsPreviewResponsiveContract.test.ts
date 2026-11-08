@@ -1,20 +1,17 @@
-import fs from 'node:fs'
-import path from 'node:path'
-
-const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
+import assert from 'node:assert/strict'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { UI_ICON_APPEARANCE } from '@/lib/ui/theme-tokens'
+import { renderSettingInput } from '@/features/settings/ui'
 
 export function testSettingsPreviewRowsUseSharedResponsiveOwner() {
-  const settingsUiText = readUtf8('src/features/settings/ui.tsx')
-  const localRowLiteral = 'flex w-full min-w-0 items-center gap-2'
-
-  if (!settingsUiText.includes(`SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME = '${localRowLiteral}'`)) {
-    throw new Error('expected Settings preview inline rows to define one shared responsive row owner')
-  }
-  const ownerReferences = settingsUiText.match(/SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME/g) || []
-  if (ownerReferences.length < 8) {
-    throw new Error('expected all Settings preview inline rows to consume the shared row owner')
-  }
-  if (settingsUiText.split(localRowLiteral).length !== 2) {
-    throw new Error('expected Settings preview inline rows to keep the local row literal only in the shared owner')
+  for (const [key, value] of Object.entries(UI_ICON_APPEARANCE)) {
+    for (const writable of [false, true]) {
+      const html = renderToStaticMarkup(renderSettingInput(key, typeof value, writable,
+        { ...UI_ICON_APPEARANCE, [key]: 'p-20' }, () => {}, { current: new Set() }))
+      assert.match(html, /<output[^>]*data-shared-icon-role=/)
+      assert.match(html, /<svg[^>]*role="img"[^>]*aria-label="Shared design role"/)
+      assert.ok(html.includes(String(value)), `${key} shows its central role`)
+      assert.doesNotMatch(html, /<input|<button|<select|aria-hidden|p-20/)
+    }
   }
 }

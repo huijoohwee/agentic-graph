@@ -1,19 +1,17 @@
-import { normalizeSingleLineControlClassName, normalizeUiIconStrokeWidth } from 'grph-shared/ui/themeTokens'
+import { normalizeSingleLineControlClassName, assertCentralIconAppearance } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
 import type { GraphState } from '@/hooks/store/types'
 import { LS_KEYS } from '@/lib/config.ls.keys'
-import { lsSetBool, lsSetFloat, lsSetInt, lsSetJson, lsSetNum } from '@/lib/persistence'
+import { lsSetBool, lsSetInt, lsSetJson, lsSetNum } from '@/lib/persistence'
 import { clampFillRatio } from 'grph-shared/zoom/presets'
 import { DEFAULT_DRAG_ALPHA_TARGET, DEFAULT_FIT_TO_SCREEN_FILL_RATIO } from '@/lib/graph/layoutDefaults'
 import { buildWorkspaceGraphMutationTransitionState } from '@/features/workspace-table/workspaceTableSsot'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
-  UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { normalizeBadgeChipBaseClassName } from '@/lib/ui/icons'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
 type SetGraph = StoreApi<GraphState>['setState']
@@ -187,71 +185,16 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiIconScale: lsSetJson(LS_KEYS.iconScale, scale === 'compact' ? 'compact' : 'default'),
       }),
-    setUiIconFormat: (format: 'default' | 'minimal' | '1') =>
-      set({
-        uiIconFormat: lsSetJson(LS_KEYS.iconFormat, format === 'minimal' || format === 'default' || format === '1' ? format : '1'),
-      }),
-    setUiIconStrokeWidth: (width: number) =>
-      set({
-        uiIconStrokeWidth: lsSetFloat(LS_KEYS.iconStrokeWidth, normalizeUiIconStrokeWidth(width)),
-      }),
-    setUiIconColorClass: (className: string) =>
-      set({
-        uiIconColorClass: lsSetJson(
-          LS_KEYS.iconColorClass,
-          String(className || '').trim() || UI_THEME_TOKENS.text.secondary,
-        ),
-      }),
-    setUiIconHoverBgClass: (className: string) =>
-      set({
-        uiIconHoverBgClass: lsSetJson(
-          LS_KEYS.iconHoverBgClass,
-          String(className || '').trim() || 'hover:bg-[var(--kg-panel-action-bg-hover)]',
-        ),
-      }),
-    setUiIconButtonPaddingClass: (className: string) =>
-      set({
-        uiIconButtonPaddingClass: lsSetJson(
-          LS_KEYS.iconButtonPadding,
-          String(className || '').trim() || 'p-2',
-        ),
-      }),
-    setUiIconPillClass: (className: string) =>
-      set({
-        uiIconPillClass: lsSetJson(
-          LS_KEYS.iconPillClass,
-          String(className || '').trim() ||
-            `inline-flex items-center justify-center rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.neutralSubtle} px-1.5 py-0.5`,
-        ),
-      }),
-    setUiIconBadgeChipClass: (className: string) =>
-      set({
-        uiIconBadgeChipClass: lsSetJson(
-          LS_KEYS.iconBadgeChipClass,
-          normalizeBadgeChipBaseClassName(String(className || '')) || UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
-        ),
-      }),
-    setUiIconBadgeChipTextSizeClass: (className: string) =>
-      set({
-        uiIconBadgeChipTextSizeClass: lsSetJson(
-          LS_KEYS.iconBadgeChipTextSizeClass,
-          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
-        ),
-      }),
-    setUiIconPillLegendTextSizeClass: (className: string) =>
-      set({
-        uiIconPillLegendTextSizeClass: lsSetJson(
-          LS_KEYS.iconPillLegendTextSizeClass,
-          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
-        ),
-      }),
-    setUiIconPillBadgeTextSizeClass: (className: string) =>
-      set({
-        uiIconPillBadgeTextSizeClass: lsSetJson(
-          LS_KEYS.iconPillBadgeTextSizeClass,
-          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
-        ),
-      }),
+    setUiIconFormat: (format: 'default' | 'minimal' | '1') => set({ uiIconFormat: assertCentralIconAppearance('uiIconFormat', format) }),
+    setUiIconStrokeWidth: (width: number) => set({ uiIconStrokeWidth: assertCentralIconAppearance('uiIconStrokeWidth', width) }),
+    setUiIconColorClass: (className: string) => set({ uiIconColorClass: assertCentralIconAppearance('uiIconColorClass', className) }),
+    setUiIconHoverBgClass: (className: string) => set({ uiIconHoverBgClass: assertCentralIconAppearance('uiIconHoverBgClass', className) }),
+    setUiIconButtonPaddingClass: (className: string) => set({ uiIconButtonPaddingClass: assertCentralIconAppearance('uiIconButtonPaddingClass', className) }),
+    setUiIconPillClass: (className: string) => set({ uiIconPillClass: assertCentralIconAppearance('uiIconPillClass', className) }),
+    setUiIconBadgeChipClass: (className: string) => set({ uiIconBadgeChipClass: assertCentralIconAppearance('uiIconBadgeChipClass', className) }),
+    setUiIconBadgeChipTextSizeClass: (className: string) => set({ uiIconBadgeChipTextSizeClass: assertCentralIconAppearance('uiIconBadgeChipTextSizeClass', className) }),
+    setUiIconPillLegendTextSizeClass: (className: string) => set({ uiIconPillLegendTextSizeClass: assertCentralIconAppearance('uiIconPillLegendTextSizeClass', className) }),
+    setUiIconPillBadgeTextSizeClass: (className: string) => set({ uiIconPillBadgeTextSizeClass: assertCentralIconAppearance('uiIconPillBadgeTextSizeClass', className) }),
     setUiIconAnimationEnabled: (v: boolean) =>
       set({
         uiIconAnimationEnabled: lsSetBool(LS_KEYS.iconAnimationEnabled, !!v),
