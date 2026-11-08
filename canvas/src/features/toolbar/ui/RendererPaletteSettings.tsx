@@ -31,8 +31,17 @@ export function RendererPaletteSettings() {
   );
   const { palette, handleUpdatePaletteColor } = useRendererPalette();
 
-  const nodeTypes = ['idea', 'hypothesis', 'execution', 'pivot', 'alert'] as const;
-  const edgeTypes = ['critical', 'neutral'] as const;
+  const nodeTypes = [
+    { key: 'idea', label: 'Idea nodes' },
+    { key: 'hypothesis', label: 'Hypothesis nodes' },
+    { key: 'execution', label: 'Execution nodes' },
+    { key: 'pivot', label: 'Pivot nodes' },
+    { key: 'alert', label: 'Alert nodes' },
+  ] as const;
+  const edgeTypes = [
+    { key: 'critical', label: 'Critical edges' },
+    { key: 'neutral', label: 'Neutral edges' },
+  ] as const;
 
   return (
     <section className={uiToolbarSettingsPanelBodyClassName}>
@@ -49,19 +58,19 @@ export function RendererPaletteSettings() {
         </Tooltip>
       </section>
       <section>
-      {nodeTypes.map((type) => (
+      {nodeTypes.map(({ key: type, label }) => (
         <KeyTypeValueStaticRow
           key={`node-${type}`}
           layout="keyIconValue"
           keyNode={
             <Tooltip
-              content={RENDERER_PALETTE_ENTRY_KEY_TOOLTIP}
+              content={`${label} · renderer:palette.nodes.${type}. ${RENDERER_PALETTE_ENTRY_KEY_TOOLTIP}`}
               maxWidthPx={260}
               contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
               className="break-words"
             >
               <span className={`${UI_THEME_TOKENS.text.primary} break-words`}>
-                {`renderer:palette.nodes.${type}`}
+                {label}
               </span>
             </Tooltip>
           }
@@ -81,6 +90,7 @@ export function RendererPaletteSettings() {
                     onValueChange={nextColor => handleUpdatePaletteColor('node', type, nextColor)}
                   />
                   <PlainTextInputEditor
+                    ariaLabel={`${label} colour value`}
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}
                     value={String(palette.nodes[type] || '')}
                     onChange={(next) => handleUpdatePaletteColor('node', type, next)}
@@ -93,19 +103,19 @@ export function RendererPaletteSettings() {
         />
       ))}
 
-      {edgeTypes.map((type) => (
+      {edgeTypes.map(({ key: type, label }) => (
         <KeyTypeValueStaticRow
           key={`edge-${type}`}
           layout="keyIconValue"
           keyNode={
             <Tooltip
-              content={RENDERER_PALETTE_ENTRY_KEY_TOOLTIP}
+              content={`${label} · renderer:palette.edges.${type}. ${RENDERER_PALETTE_ENTRY_KEY_TOOLTIP}`}
               maxWidthPx={260}
               contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
               className="break-words"
             >
               <span className={`${UI_THEME_TOKENS.text.primary} break-words`}>
-                {`renderer:palette.edges.${type}`}
+                {label}
               </span>
             </Tooltip>
           }
@@ -125,6 +135,7 @@ export function RendererPaletteSettings() {
                     onValueChange={nextColor => handleUpdatePaletteColor('edge', type, nextColor)}
                   />
                   <PlainTextInputEditor
+                    ariaLabel={`${label} colour value`}
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}
                     value={String(palette.edges[type] || '')}
                     onChange={(next) => handleUpdatePaletteColor('edge', type, next)}

@@ -12,6 +12,7 @@ import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
+  UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
@@ -248,6 +249,7 @@ export function ToolbarToolMenu({
     floatingPanelView === 'renderer' ? floatingPanelView : null
   const floatingPanelBodyClassName = cn(
     'mt-1',
+    UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
     FLOATING_PANEL_FULL_HEIGHT_VIEWS.has(floatingPanelView)
       ? 'flex-1 min-h-0 overflow-hidden'
       : UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
