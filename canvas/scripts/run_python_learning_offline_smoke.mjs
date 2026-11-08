@@ -89,7 +89,7 @@ try {
     // Cloud status belongs to the native file actions, not the navigation row.
     await row.click({ button: 'right' })
     const actions = page.getByRole('toolbar', { name: `Actions for ${file.name}`, exact: true })
-    await actions.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    await expect(actions.getByRole('button', { name: /^Online sync is off\./ })).toHaveAttribute('data-source-file-cloud-status', 'disabled')
     await page.keyboard.press('Escape')
     await expect(actions).toBeHidden()
   }
