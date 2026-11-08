@@ -1,4 +1,5 @@
 import React from 'react';
+import { getIconButtonProps } from '@agentic-base/views-react/toolbar-icons';
 import type { LucideIcon } from 'lucide-react';
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass';
 import { cn } from '@/lib/utils';
@@ -85,7 +86,6 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       <button
         ref={ref}
         {...buttonProps}
-        type="button"
         disabled={isDisabled}
         onPointerDown={e => {
           pointerActivationHandledRef.current = false
@@ -145,19 +145,21 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           }
           onClick?.(e)
         }}
-        data-icon-only={icon ? '' : undefined}
-        className={icon ? 'agentic-toolbar-item select-none' : cn(
-          'kg-icon-button group relative select-none rounded justify-center',
-          UI_THEME_TOKENS.button.iconControl,
-          UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
-          paddingClass,
-          isDisabled
-            ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none`
-            : enabledClasses,
-          className,
-        )}
+        {...(icon ? getIconButtonProps(ariaLabel ?? title) : {
+          type: 'button' as const,
+          'aria-label': ariaLabel ?? title,
+          className: cn(
+            'kg-icon-button group relative select-none rounded justify-center',
+            UI_THEME_TOKENS.button.iconControl,
+            UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
+            paddingClass,
+            isDisabled
+              ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none`
+              : enabledClasses,
+            className,
+          ),
+        })}
         title={showTooltip || suppressTitleAttribute ? undefined : title}
-        aria-label={ariaLabel ?? title}
       >
         {icon ? <ButtonGlyph icon={icon} /> : inner}
       </button>

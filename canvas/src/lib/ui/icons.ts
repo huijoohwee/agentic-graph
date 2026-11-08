@@ -7,9 +7,7 @@ import {
 
 export type UiIconScale = 'compact' | 'default'
 
-export function getIconSizeClass(scale: UiIconScale | undefined): string {
-  return scale === 'compact' ? 'agentic-icon agentic-icon-compact' : 'agentic-icon'
-}
+export { getIconSizeClass } from '@agentic-base/views-react/toolbar-icons'
 
 export type UiPillVariant = 'legend' | 'badge'
 
