@@ -1,4 +1,5 @@
-import { Check, CircleCheck, CircleX, Download, FileDown, FileInput, Link, LogIn, Play, RotateCcw, Save, Unplug, X } from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
+const { Check, CircleCheck, CircleX, Download, FileDown, FileInput, Link, LogIn, Play, RotateCcw, Save, Unplug, X } = DESIGN_ICONS
 
 // Actions are registered in the Help icon library, alongside type and tab icons.
 export const MAIN_PANEL_ACTION_ICON_META_BY_KEY = {

@@ -1,20 +1,6 @@
 import type React from 'react'
-import {
-  ArrowRightLeft,
-  Braces,
-  CalendarClock,
-  CreditCard,
-  Eraser,
-  GitBranch,
-  Hash,
-  Link2,
-  ListChecks,
-  SlidersHorizontal,
-  SquareCheckBig,
-  Table,
-  Type as TextTypeIcon,
-  Users,
-} from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
+const { ArrowRightLeft, Braces, CalendarClock, CreditCard, Eraser, GitBranch, Hash, Link2, ListChecks, SlidersHorizontal, SquareCheckBig, Table, Type: TextTypeIcon, Users } = DESIGN_ICONS
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 
 type MainPanelFieldIconComponent = React.ComponentType<{

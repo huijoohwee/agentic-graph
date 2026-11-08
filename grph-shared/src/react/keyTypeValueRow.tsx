@@ -1,10 +1,8 @@
+import { KeyTypeValueRow as BaseKeyTypeValueRow, DesignIcon } from '@agentic-base/views-react/controls'
 import type { ReactNode } from 'react'
 import {
-  KTV_FIELD_GRID_CLASS_NAME,
   KTV_FIELD_CONTROL_GROUP_CLASS_NAME,
   panelFieldDecorationClassName,
-  KTV_ROW_LABEL_CELL_CLASS_NAME,
-  KTV_ROW_VALUE_CELL_CLASS_NAME,
   KTV_VALUE_ROW_SCROLL_CLASS_NAME,
 } from '../ui/keyTypeValueRows.js'
 import { UI_THEME_TOKENS } from '../ui/themeTokens.js'
@@ -57,40 +55,6 @@ export function KeyTypeValueContainer({ children, className = '' }: { children: 
   return <section className={`agentic-ktv-container ${className}`.trim()}>{children}</section>
 }
 
-function buildRootClassName({
-  align,
-  textSizeClassName,
-  fontClassName,
-  densityClassName,
-  activeClassName,
-  onClick,
-  className,
-}: {
-  align: 'center' | 'start'
-  textSizeClassName: string
-  fontClassName: string
-  densityClassName: string
-  activeClassName?: string
-  onClick?: () => void
-  className?: string
-}) {
-  const alignClassName = align === 'start' ? 'items-start' : 'items-center'
-  const cursorClassName = onClick ? 'cursor-pointer' : ''
-  return [
-    KTV_FIELD_GRID_CLASS_NAME,
-    'rounded',
-    activeClassName || '',
-    textSizeClassName,
-    fontClassName,
-    densityClassName,
-    alignClassName,
-    cursorClassName,
-    panelFieldDecorationClassName(className),
-  ]
-    .filter(Boolean)
-    .join(' ')
-}
-
 export function KeyTypeValueStaticRow({
   keyNode,
   typeNode,
@@ -108,35 +72,13 @@ export function KeyTypeValueStaticRow({
   presentCells,
 }: KeyTypeValueStaticRowProps) {
   const cells = presentCells ? presentCells({ keyNode, typeNode, valueNode }) : { keyNode, typeNode, valueNode }
-  return (
-    <KeyTypeValueContainer className={className?.split(/\s+/).filter(token => /(?:^|:)(?:col|row)-span-/.test(token)).join(' ')}>
-    <dl
-      id={id}
-      data-panel-field-row="true"
-      data-kg-anchor={dataKgAnchor}
-      className={buildRootClassName({
-        align,
-        textSizeClassName,
-        fontClassName,
-        densityClassName,
-        activeClassName,
-        onClick,
-        className,
-      })}
-      onClick={onClick}
-    >
-      <dt className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${UI_THEME_TOKENS.text.primary}`}>
-        {cells.keyNode}
-      </dt>
-      <dd className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center justify-start sm:justify-end ${UI_THEME_TOKENS.text.secondary}`}>
-        {layout === 'keyIconSliderInput' ? null : cells.typeNode}
-      </dd>
-      <dd className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME} items-center`}>
-        {layout === 'keyIconSliderInput' ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{cells.typeNode}{cells.valueNode}</section> : cells.valueNode}
-      </dd>
-    </dl>
-    </KeyTypeValueContainer>
-  )
+  const sliderLayout = layout === 'keyIconSliderInput'
+  return <BaseKeyTypeValueRow id={id} dataKgAnchor={dataKgAnchor} align={align} onClick={onClick}
+    keyNode={cells.keyNode}
+    typeNode={sliderLayout ? <DesignIcon name="Hash" label="Number" /> : cells.typeNode}
+    valueNode={sliderLayout ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{cells.typeNode}{cells.valueNode}</section> : cells.valueNode}
+    className={[activeClassName, onClick ? 'cursor-pointer' : '', panelFieldDecorationClassName(className)].filter(Boolean).join(' ')}
+    keyClassName={UI_THEME_TOKENS.text.primary} typeClassName={UI_THEME_TOKENS.text.secondary} valueClassName={UI_THEME_TOKENS.text.secondary} />
 }
 
 export function RightAlignedValueCell({ children, className }: RightAlignedValueCellProps) {

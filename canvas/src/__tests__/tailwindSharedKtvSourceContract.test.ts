@@ -33,7 +33,7 @@ export const testTailwindScansSharedKtvClassOwners = () => {
     )
   }
   if (
-    !sharedKtvRow.includes('KTV_FIELD_GRID_CLASS_NAME')
+    !sharedKtvRow.includes('<BaseKeyTypeValueRow')
     || sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
     || !sharedKtvLayout.includes('${KTV_FIELD_GRID_CLASS_NAME}')
   ) {
