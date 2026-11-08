@@ -7,8 +7,6 @@ import { useToolMenuState } from '@/features/toolbar/useToolMenuState'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { FLOATING_PANEL_OPEN_EVENT, type PropsPanelOpenEventDetail, type FloatingPanelOpenEventDetail } from '@/features/canvas/utils'
 import { LS_KEYS } from '@/lib/config'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import { lsBool } from '@/lib/persistence'
 import type { ToolMenuAction, ToolMenuArea } from '@/features/toolbar/toolMenu'
 import { createNewMarkdownSourceFileAndOpenViewer } from '@/features/source-files/createNewMarkdownSourceFile'
@@ -185,14 +183,13 @@ export function ToolbarMenuLauncher({
 
   const geospatialOverlayEnabled = readGeospatialOverlayEnabledPreference()
   void geospatialOverlayEnabled
-  const iconSizeClass = useToolbarIconClass()
 
   return (
     <>
       <MotionControlXrLifecycleGuard />
       <IconButton
         ref={toolMenuButtonRef}
-        className={`App-toolbar__btn ${launchOpen ? UI_THEME_TOKENS.button.selectedIcon : UI_THEME_TOKENS.icon.color}`}
+        icon={Rocket}
         aria-expanded={launchOpen}
         title="Launch"
         tooltipContent="Launch"
@@ -201,9 +198,7 @@ export function ToolbarMenuLauncher({
           closeToolMenu()
           setLaunchOpen(v => !v)
         }}
-      >
-        <Rocket className={iconSizeClass} />
-      </IconButton>
+      />
 
       <React.Suspense fallback={null}>
         <LaunchDropdownLazy

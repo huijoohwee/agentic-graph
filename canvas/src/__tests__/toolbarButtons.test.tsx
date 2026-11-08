@@ -82,10 +82,18 @@ export async function testIconButtonStopsPropagation() {
     const btn = dom.window.document.querySelector('button[aria-label="Launch"]') as HTMLButtonElement | null
     if (!btn) throw new Error('expected Launch IconButton')
 
-    btn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+    // A pointerup may activate a moving control without a follow-up click.
+    // The next keyboard click (detail 0) must still activate it.
+    const activations = [
+      ['pointerdown', 0], ['pointerup', 0], ['click', 0],
+      ['pointerdown', 0], ['pointerup', 0], ['click', 1],
+    ] as const
+    for (const [type, detail] of activations) {
+      btn.dispatchEvent(new dom.window.MouseEvent(type, { bubbles: true, cancelable: true, button: 0, detail }))
+    }
     await tick()
 
-    if (buttonClicks !== 1) throw new Error(`expected button click handler once, got ${buttonClicks}`)
+    if (buttonClicks !== 3) throw new Error(`expected two pointer activations and one keyboard activation, got ${buttonClicks}`)
     if (parentClicks !== 0) throw new Error(`expected parent click handler to remain 0, got ${parentClicks}`)
 
     root.unmount()

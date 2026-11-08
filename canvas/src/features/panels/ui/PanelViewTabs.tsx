@@ -21,7 +21,7 @@ export function PanelViewTabs({ activeKey, children, className = '', ...props }:
   return <nav {...props} ref={navRef} className={`${uiToolbarRowScrollClassName} min-w-0 flex-1 flex-nowrap gap-1 [&>span]:shrink-0 overflow-x-auto overflow-y-hidden overscroll-x-contain ${fontClass} ${className}`} data-kg-panel-view-tabs="true">{children}</nav>
 }
 
-export function PanelViewTab({ title, children, ...props }: Omit<React.ComponentProps<typeof IconButton>, 'className' | 'style' | 'showTooltip'>) {
+export function PanelViewTab({ title, children, ...props }: Omit<React.ComponentProps<typeof IconButton>, 'className' | 'style' | 'showTooltip' | 'icon'>) {
   const selected = props['aria-selected'] === true || props['aria-pressed'] === true
   const icon = React.isValidElement<React.SVGProps<SVGSVGElement>>(children)
     ? React.cloneElement(children, { role: 'img', 'aria-label': title, 'aria-hidden': undefined })

@@ -81,7 +81,8 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
       !storybuildingIconSvg?.getAttribute('class')?.includes('kg-skill-command-icon-glyph') ||
-      !storybuildingIconSvg?.getAttribute('class')?.includes('kg-default-glyph')
+      !storybuildingIconSvg?.classList.contains('agentic-icon') ||
+      storybuildingIconSvg.classList.contains('agentic-icon-compact')
     ) {
       throw new Error('Expected Storybuilding to expose a CSS-selectable toolbar-fidelity subject icon')
     }

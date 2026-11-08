@@ -3,15 +3,12 @@ import {
   UI_RESPONSIVE_BADGE_CHIP_CLASSNAME,
   UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
   UI_RESPONSIVE_CHIP_CLASSNAME,
-  UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
-  UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
 export type UiIconScale = 'compact' | 'default'
 
 export function getIconSizeClass(scale: UiIconScale | undefined): string {
-  if (scale === 'compact') return `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} agentic-icon agentic-icon-compact`
-  return `${UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} agentic-icon`
+  return scale === 'compact' ? 'agentic-icon agentic-icon-compact' : 'agentic-icon'
 }
 
 export type UiPillVariant = 'legend' | 'badge'
