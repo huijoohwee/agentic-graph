@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { fs, path, readUtf8 } from './sourceFixture'
 
 export const testPanelHeaderUsesAriaTablist = () => {
@@ -58,12 +59,13 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const floatingPanel = floatingPanelController + readUtf8(path.resolve(root, 'src/components/ui/FloatingPanel.tsx'))
   const basePanelSourceRoot = path.resolve(root, '..', 'node_modules', '@agentic-base', 'views-react', 'packages', 'views-react', 'src', 'panels')
   const baseFloatingPanelShell = readUtf8(path.resolve(basePanelSourceRoot, 'FloatingPanelShell.tsx'))
+  const panelPin = JSON.parse(readUtf8(path.resolve(basePanelSourceRoot, 'floatingPanelShell.pin.json')))
   const baseFloatingPanelStyles = readUtf8(path.resolve(basePanelSourceRoot, 'floatingPanelShell.css'))
   const responsiveCss = readUtf8(responsiveCssPath)
   const responsiveElementClasses = readUtf8(responsiveElementClassesPath)
   const iconHelpers = readUtf8(iconHelpersPath)
-  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || !baseFloatingPanelStyles.includes('max-width: calc(100vw - 1rem)') || !baseFloatingPanelStyles.includes('max-height: calc(100dvh - 1rem)')) {
-    throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the canonical Base shell')
+  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.path !== 'site/floating-panel.css' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
+    throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the Design System shell through Base')
   }
   if (
     !tabHeader.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
@@ -75,8 +77,8 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   ) {
     throw new Error('Expected Graph panel headers to use their shared responsive row-height owner')
   }
-  if (!baseFloatingPanelShell.includes('agentic-base-floating-panel-header') || !baseFloatingPanelStyles.includes('min-height: var(--base-control-height, 2.25rem)') || !baseFloatingPanelStyles.includes('justify-content: space-between')) {
-    throw new Error('Expected FloatingPanel header row sizing and alignment to be owned by the canonical Base shell')
+  if (!baseFloatingPanelShell.includes('agentic-base-floating-panel-header') || !baseFloatingPanelStyles.includes('.agentic-base-floating-panel-header')) {
+    throw new Error('Expected FloatingPanel header row sizing and alignment to be owned by the Design System shell through Base')
   }
 
   const iconButton = readUtf8(iconButtonPath)
