@@ -102,10 +102,14 @@ async function verify() {
         return { height: row.getBoundingClientRect().height,
           cells: [...row.children].map(cell => ({ x: cell.getBoundingClientRect().x, width: cell.getBoundingClientRect().width })),
           minimum: getComputedStyle(value).minBlockSize,
+          singleLineHeight: parseFloat(getComputedStyle(value).getPropertyValue('--agentic-control-height'))
+            + parseFloat(getComputedStyle(row).paddingTop) + parseFloat(getComputedStyle(row).paddingBottom),
           controlRole: getComputedStyle(value).getPropertyValue('--agentic-control-height').trim(),
           overflow: row.scrollWidth > row.clientWidth + 1 }
       })))
       assert.ok(rows.every(row => Math.abs(row.height - rows[2].height) < 1), 'Range, checkbox and select must share KTV row height')
+      if (width === 1280) assert.ok(rows.every(row => Math.abs(row.height - row.singleLineHeight) < 1),
+        'Nested section insets must retain desktop single-line KTV geometry')
       assert.ok(rows.every(row => JSON.stringify(row.cells) === JSON.stringify(rows[2].cells)), 'KTV columns must align across control kinds')
       assert.ok(rows.every(row => row.minimum === row.controlRole && !row.overflow), 'KTV value minimum must reuse the shared control role and fit')
     }
