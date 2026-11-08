@@ -207,43 +207,43 @@ export const FALLBACK_DETAILS: Record<string, { area?: string; responsibility?: 
   },
   uiIconFormat: {
     area: 'UI Density: Icons',
-    responsibility: 'Global icon format (default vs minimal styling)',
+    responsibility: 'Shared icon presentation contract (read-only)',
   },
   uiIconStrokeWidth: {
     area: 'UI Density: Icons',
-    responsibility: 'Global Lucide icon stroke width',
+    responsibility: 'Shared icon stroke width (read-only)',
   },
   uiIconColorClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Base Tailwind class for icon color',
+    responsibility: 'Shared icon color role (read-only)',
   },
   uiIconHoverBgClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Base Tailwind class for icon hover background',
+    responsibility: 'Shared icon hover role (read-only)',
   },
   uiIconButtonPaddingClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Base Tailwind class for icon button padding',
+    responsibility: 'Shared icon control padding (read-only)',
   },
   uiIconPillClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Base Tailwind class for icon legend pills (scope, origin, visibility, field types)',
+    responsibility: 'Shared icon legend pill role (read-only)',
   },
   uiIconPillLegendTextSizeClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Tailwind class for legend pill text size',
+    responsibility: 'Shared body typography for legend pills (read-only)',
   },
   uiIconPillBadgeTextSizeClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Tailwind class for badge and inline pill text size',
+    responsibility: 'Shared body typography for inline pills (read-only)',
   },
   uiIconBadgeChipClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Base Tailwind class for small schema/property badge chips',
+    responsibility: 'Shared schema/property badge chip role (read-only)',
   },
   uiIconBadgeChipTextSizeClass: {
     area: 'UI Density: Icons',
-    responsibility: 'Tailwind class for badge chip text size',
+    responsibility: 'Shared body typography for badge chips (read-only)',
   },
   uiPanelKeyValueTextSizeClass: {
     area: 'UI Density: Panels',
