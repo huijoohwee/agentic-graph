@@ -76,3 +76,13 @@ test('sequence inspector body and spacing consume the same shared roles', () => 
   const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
   assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
 })
+
+test('Graph styles cannot redeclare the shared selected control palette or selectors', () => {
+  const src = new URL('../', import.meta.url)
+  const shared = 'styles/shared-ui-profile.css'
+  for (const file of fs.readdirSync(src, { recursive: true })) {
+    if (!file.endsWith('.css') || file === shared) continue
+    const css = fs.readFileSync(new URL(file, src), 'utf8')
+    assert.doesNotMatch(css, /--agentic-control-selected-[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group)\b/, file)
+  }
+})

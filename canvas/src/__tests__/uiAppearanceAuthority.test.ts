@@ -52,8 +52,7 @@ export function testUiAppearanceSharedAuthority() {
     assert.match(read(file), /UI_THEME_TOKENS.button.iconControl/)
     assert.doesNotMatch(read(file), /shadow-(?:sm|md|lg|xl)/)
   }
-  assert.match(UI_THEME_TOKENS.button.selectedIcon, /bg-blue-50/)
-  assert.match(UI_THEME_TOKENS.button.selectedIcon, /dark:bg-blue-900\/20/)
+  assert.equal(UI_THEME_TOKENS.button.selectedIcon, 'agentic-control-selected')
   const panel = read('components/ui/FloatingPanel.tsx')
   assert.match(panel, /FloatingPanelShell as BaseFloatingPanelShell/)
   assert.match(panel, /<IconButton[\s\S]*?title={label}[\s\S]*?ariaLabel={label}[\s\S]*?onClick={onClose}[\s\S]*?className="App-toolbar__btn"[\s\S]*?showTooltip/)

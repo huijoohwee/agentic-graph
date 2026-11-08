@@ -1,3 +1,4 @@
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { ThreeRendererControls } from '@/lib/three/ThreeRendererControls'
 import React from 'react'
@@ -97,7 +98,7 @@ function ToggleButton({
   return (
     <button
       type="button"
-      className={cn('App-toolbar__btn', active ? UI_THEME_TOKENS.status.info : '')}
+      className={cn('App-toolbar__btn', active ? UI_THEME_TOKENS.button.selectedIcon : '')}
       aria-pressed={active}
       title={title}
       onClick={onClick}
@@ -216,6 +217,7 @@ function SemanticSpaceMediaSource() {
 }
 
 function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
+  const iconClass = useToolbarIconClass()
   const snapshot = readImmersiveMediaSnapshot()
   if (surface === 'media') {
     const cropped = snapshot.crop.horizontalSpanDegrees < 360
@@ -227,13 +229,13 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
         <SemanticSpaceMediaSource />
         <section className="flex flex-wrap gap-1" aria-label="Media presentation controls">
           <ToggleButton active={cropped} title="Toggle cropped panorama" onClick={() => configureImmersiveMedia({ cropped: !cropped })}>
-            <Crop className="h-3.5 w-3.5" aria-hidden="true" /> Crop
+            <Crop className={iconClass} aria-hidden="true" /> Crop
           </ToggleButton>
           <ToggleButton active={places?.visible !== false} title="Toggle place markers" onClick={() => toggleImmersiveMediaLayer('places')}>
-            <MapPinned className="h-3.5 w-3.5" aria-hidden="true" /> Places
+            <MapPinned className={iconClass} aria-hidden="true" /> Places
           </ToggleButton>
           <ToggleButton active={media?.visible !== false} title="Toggle media markers" onClick={() => toggleImmersiveMediaLayer('media')}>
-            <Layers3 className="h-3.5 w-3.5" aria-hidden="true" /> Media
+            <Layers3 className={iconClass} aria-hidden="true" /> Media
           </ToggleButton>
         </section>
       </>

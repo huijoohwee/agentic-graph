@@ -1,3 +1,4 @@
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import React from 'react'
 import { Search, X } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -209,6 +210,7 @@ export function FloatingPanelCatalogSearchControl({
   state: FloatingPanelCatalogSearchState
   toggleDataAttributes?: DataAttributes
 }) {
+  const iconClass = useToolbarIconClass()
   return (
     <section
       className="relative inline-flex h-6 w-6 shrink-0 items-center justify-end"
@@ -248,14 +250,14 @@ export function FloatingPanelCatalogSearchControl({
               {...clearDataAttributes}
               onClick={state.clearSearchQuery}
             >
-              <X className="h-3.5 w-3.5" aria-hidden />
+              <X className={iconClass} aria-hidden />
             </button>
           ) : null}
         </section>
       ) : null}
       <button
         type="button"
-        className={cn('inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border p-0', UI_THEME_TOKENS.panel.border, state.searchOpen ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.input.bg)}
+        className={cn('inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border p-0', UI_THEME_TOKENS.panel.border, state.searchOpen ? UI_THEME_TOKENS.button.selectedIcon : UI_THEME_TOKENS.input.bg)}
         title={buttonLabel}
         aria-label={buttonLabel}
         aria-expanded={state.searchOpen}
@@ -263,7 +265,7 @@ export function FloatingPanelCatalogSearchControl({
         {...toggleDataAttributes}
         onClick={state.handleSearchToggle}
       >
-        <Search className="h-3.5 w-3.5" aria-hidden />
+        <Search className={iconClass} aria-hidden />
       </button>
     </section>
   )

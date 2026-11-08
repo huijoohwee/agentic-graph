@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@51bf1fcaa6b5610f174dd428363482114d888364; profile sha256 6f73913636991d71c1e29d51ee3b7ea71011047c9a7a9e6b1ee7c517b0c8893b. Do not edit. */
+/* Generated from agentic-design-system@431b9b60f3f8a85362ea5c99f6dbf502265a210a; profile sha256 615b8ab121d819f0c88ff994bfee1fb118718a1d29290656248c579a68550c90. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -24,6 +24,8 @@
   --agentic-menu-edge-gap: 0.5rem;
   --agentic-menu-padding: 0.25rem;
   --agentic-menu-gap: 0.25rem;
+  --agentic-control-selected-foreground: light-dark(oklch(48.8% 0.243 264.376), oklch(70.7% 0.165 254.624));
+  --agentic-control-selected-background: light-dark(oklch(97% 0.014 254.604), oklch(37.9% 0.146 265.522 / 0.3));
 }
 .agentic-toggle-group {
   box-sizing: border-box; display: inline-flex; align-items: stretch;
@@ -39,11 +41,11 @@
   background: transparent; color: inherit; font: inherit; white-space: nowrap; cursor: pointer;
 }
 .agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, currentColor 6%, transparent))); }
-.agentic-toggle-group > button[aria-pressed="true"] { background: color-mix(in srgb, currentColor 15%, transparent); }
+:is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: var(--agentic-control-selected-foreground); background-color: var(--agentic-control-selected-background); }
 .agentic-toggle-group > button:focus-visible { outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: calc(-1 * var(--agentic-control-focus-width)); }
 .agentic-toggle-group > button:disabled { opacity: .5; cursor: not-allowed; }
 @media (forced-colors: active) {
-  .agentic-toggle-group > button[aria-pressed="true"] { color: HighlightText; background: Highlight; forced-color-adjust: none; }
+  :is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: HighlightText; background: Highlight; forced-color-adjust: none; }
 }
 .agentic-checkbox-group {
   display: inline-flex; align-items: center; gap: var(--agentic-control-padding-block);

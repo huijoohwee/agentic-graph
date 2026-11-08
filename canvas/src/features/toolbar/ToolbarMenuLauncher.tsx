@@ -8,7 +8,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { FLOATING_PANEL_OPEN_EVENT, type PropsPanelOpenEventDetail, type FloatingPanelOpenEventDetail } from '@/features/canvas/utils'
 import { LS_KEYS } from '@/lib/config'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { getIconSizeClass } from '@/lib/ui'
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import { lsBool } from '@/lib/persistence'
 import type { ToolMenuAction, ToolMenuArea } from '@/features/toolbar/toolMenu'
 import { createNewMarkdownSourceFileAndOpenViewer } from '@/features/source-files/createNewMarkdownSourceFile'
@@ -183,17 +183,17 @@ export function ToolbarMenuLauncher({
     }
   }, [_onOpenMainPanel, closeToolMenu, setIsToolMenuOpen, setToolMenuDragPos])
 
-  const uiIconScale = useGraphStore(s => s.uiIconScale)
   const geospatialOverlayEnabled = readGeospatialOverlayEnabledPreference()
   void geospatialOverlayEnabled
-  const iconSizeClass = getIconSizeClass(uiIconScale)
+  const iconSizeClass = useToolbarIconClass()
 
   return (
     <>
       <MotionControlXrLifecycleGuard />
       <IconButton
         ref={toolMenuButtonRef}
-        className={`App-toolbar__btn ${UI_THEME_TOKENS.icon.color}`}
+        className={`App-toolbar__btn ${launchOpen ? UI_THEME_TOKENS.button.selectedIcon : UI_THEME_TOKENS.icon.color}`}
+        aria-expanded={launchOpen}
         title="Launch"
         tooltipContent="Launch"
         showTooltip

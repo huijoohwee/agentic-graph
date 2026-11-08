@@ -1,3 +1,5 @@
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
+import { ToggleButtonGroup, ToggleButton } from '@agentic-base/views-react/controls'
 import React from 'react'
 import { Grid2X2, List, Plus, Rows3 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -134,6 +136,7 @@ export function MediaCatalogPanelView({
   onSelectUploadedMedia,
   onUploadMediaFiles,
 }: MediaCatalogPanelViewProps) {
+  const iconClass = useToolbarIconClass()
   const search = useFloatingPanelCatalogSearch()
   const xrSurfaceActive = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const xrSimulationWorkbenchOpenRevision = React.useSyncExternalStore(
@@ -234,10 +237,10 @@ export function MediaCatalogPanelView({
               data-kg-media-new-button="1"
               onClick={onNewMedia}
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
+              <Plus className={iconClass} aria-hidden />
             </button> : null}
             <MediaCatalogModeControls mode={catalogMode} onChange={setMediaCatalogMode} />
-            {catalogMode === 'media' ? <section className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} role="group" aria-label="Media layout" data-kg-media-layout-selector="1">
+            {catalogMode === 'media' ? <ToggleButtonGroup aria-label="Media layout" data-kg-media-layout-selector="1">
               {([
                 { layout: 'list' as const, label: 'List layout', Icon: List },
                 { layout: 'card' as const, label: 'Card layout', Icon: Rows3 },
@@ -245,25 +248,19 @@ export function MediaCatalogPanelView({
               ]).map(option => {
                 const Icon = option.Icon
                 return (
-                  <button
+                  <ToggleButton
                     key={option.layout}
-                    type="button"
-                    className={cn(
-                      'inline-flex h-full w-6 items-center justify-center border-0 px-0',
-                      catalogLayout === option.layout ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.button.hoverBg,
-                      UI_THEME_TOKENS.text.secondary,
-                    )}
                     title={option.label}
                     aria-label={option.label}
-                    aria-pressed={catalogLayout === option.layout}
+                    pressed={catalogLayout === option.layout}
                     data-kg-media-layout-toggle={option.layout}
                     onClick={() => onLayoutChange(option.layout)}
                   >
-                    <Icon className="h-3.5 w-3.5" aria-hidden />
-                  </button>
+                    <Icon className={iconClass} aria-hidden />
+                  </ToggleButton>
                 )
               })}
-            </section> : null}
+            </ToggleButtonGroup> : null}
           </>
         )}
         searchControl={catalogMode === 'voice-studio' ? null : (
