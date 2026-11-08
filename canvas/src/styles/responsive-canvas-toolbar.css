@@ -2,6 +2,15 @@
   min-inline-size: 0;
 }
 
+/* Compact chrome consumes the shared row height without additive block padding. */
+.App-toolbar--compact {
+  block-size: var(--kg-toolbar-compact-surface-height);
+  min-block-size: var(--kg-toolbar-compact-surface-height);
+  padding-block: 0;
+  padding-inline: var(--kg-toolbar-compact-pad-x);
+  gap: var(--kg-workspace-toolbar-gap);
+}
+
 .kg-canvas-toolbar-dock,
 .kg-workspace-overlay-canvas-toolbar {
   max-width: 100%;
