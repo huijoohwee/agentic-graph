@@ -33,7 +33,11 @@ test('production catalog proof exercises the shared semantic menu and rejects in
   const browser = await chromium.launch({ channel: 'chrome', headless: true })
   try {
     const page = await browser.newPage()
-    await page.setContent('<!doctype html><html><body><main></main></body></html>')
+    // The shared select uses Web Crypto for its trigger/menu identity, as on Production HTTPS.
+    const url = 'https://catalog.test/'
+    await page.route(url, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><body><main></main></body></html>' }))
+    await page.goto(url)
+    assert.ok(await page.evaluate(() => window.isSecureContext))
     await page.addScriptTag({ content: bundle.outputFiles[0].text })
     await t.test('actual portal menu passes although its trigger has no native options', async () => {
       assert.equal(await page.locator('option').count(), 0, 'reproduce the retired native-select assumption')
@@ -47,14 +51,14 @@ test('production catalog proof exercises the shared semantic menu and rejects in
         await page.evaluate(kind => {
           const observer = new MutationObserver(() => {
             const menu = document.querySelector('menu[role="menu"]')
-            const option = menu?.querySelector('[role="menuitemradio"]')
+            const option = [...(menu?.querySelectorAll('[role="menuitemradio"]') ?? [])].at(-1)
             if (!option) return
             observer.disconnect()
             if (kind === 'missing') option.remove()
             if (kind === 'duplicate') option.parentElement.append(option.cloneNode(true))
             if (kind === 'label') option.setAttribute('aria-label', 'incorrect fixture label')
             if (kind === 'disabled') option.disabled = true
-            if (kind === 'checked') option.setAttribute('aria-checked', 'false')
+            if (kind === 'checked') option.setAttribute('aria-checked', 'true')
             if (kind === 'hidden') option.style.display = 'none'
           })
           observer.observe(document.body, { childList: true, subtree: true })
