@@ -366,7 +366,7 @@ export function FlowchartRendererSettings() {
     <CollapsibleSection title="Flowchart" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
       <section
         className={uiToolbarSettingsPanelBodyClassName}
-        style={safeAreaAware ? { paddingBottom: 'max(var(--kg-toolbar-settings-panel-body-padding-block), env(safe-area-inset-bottom))' } : undefined}
+        style={safeAreaAware ? { paddingBottom: 'max(var(--agentic-control-padding-inline), env(safe-area-inset-bottom))' } : undefined}
       >
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Maps the selected flowchart source into the existing 2D Flowchart scene without file-specific assumptions.

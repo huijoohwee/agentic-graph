@@ -43,7 +43,8 @@ export function testSharedPanelBordersForbidLegacyVariants() {
   const toolbar = read('components/Toolbar.tsx')
   assert.equal(UI_THEME_TOKENS.panel.divider, UI_THEME_TOKENS.input.border)
   assert.equal(UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.border.color)
-  assert.match(borders, /--kg-surface-border-width: 1px/)
+  assert.match(read('styles/kgTokens.generated.css'), /--kg-surface-border-width: 1px/)
+  assert.doesNotMatch(borders, /--kg-surface-border-width\s*:/)
   assert.match(borders, /\[data-kg-workspace-left-pane\]:has\(\+ \.kg-resize-separator\) \.kg-markdown-workspace-shell\s*\{\s*border-right-width: 0/)
   assert.match(borders, /background-image: linear-gradient\(var\(--kg-border\), var\(--kg-border\)\)/)
   assert.match(borders, /\.kg-workspace-section-header\s*\{\s*border-bottom: var\(--kg-surface-border\)/)
@@ -63,7 +64,8 @@ export function testSharedPanelBordersForbidLegacyVariants() {
   assert.doesNotMatch(separator, /aria-hidden|<div|bg-\[color:var\(--kg-(?:border|divider)\)\]/)
   assert.match(separator, /tabIndex=\{0\}/)
   assert.match(read('lib/ui/panelFormControls.tsx'), /UI_THEME_TOKENS.border.outline/)
-  assert.match(read('lib/ui/dropdownMenu.tsx'), /UI_THEME_TOKENS.border.outline/)
+  assert.match(read('lib/ui/dropdownMenu.tsx'), /from '@agentic-base\/views-react\/controls'/)
+  assert.doesNotMatch(read('lib/ui/dropdownMenu.tsx'), /UI_THEME_TOKENS.border.outline/)
   assert.match(read('features/panels/ui/MainPanelContainer.tsx'), /UI_THEME_TOKENS.border.outline/)
 }
 

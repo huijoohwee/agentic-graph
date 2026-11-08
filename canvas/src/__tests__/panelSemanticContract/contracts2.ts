@@ -43,17 +43,15 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
 
   const collapsibleSection = readUtf8(collapsibleSectionPath)
   const mainPanelSettingsPanelShell = readUtf8(mainPanelSettingsPanelShellPath)
-  if (!collapsibleSection.includes('flex min-w-0 max-w-full items-center justify-between gap-1')) {
-    throw new Error('Expected CollapsibleSection headers to stay within mobile panel bounds')
+  const centralSectionCss = readUtf8(path.resolve(root, 'src/styles/shared-ui-profile.css'))
+  if (!collapsibleSection.includes('<SettingsSectionHeader') || !collapsibleSection.includes("from '@agentic-base/views-react/settings'")) {
+    throw new Error('Expected collapsible headers to reuse the Base renderer')
   }
-  if (!collapsibleSection.includes('min-w-0 flex-1 overflow-hidden')) {
-    throw new Error('Expected CollapsibleSection title area to release width to the action button')
+  if (!centralSectionCss.includes('.agentic-panel-section-title') || !centralSectionCss.includes('.agentic-panel-section-actions')) {
+    throw new Error('Expected central header title/action layout for responsive bounds')
   }
-  if (!collapsibleSection.includes('UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME') || collapsibleSection.includes('max-w-[45%]')) {
-    throw new Error('Expected CollapsibleSection action lanes to use the shared responsive panel header owner')
-  }
-  if (!mainPanelSettingsPanelShell.includes('UI_RESPONSIVE_PANEL_HEADER_SECONDARY_CLASSNAME') || mainPanelSettingsPanelShell.includes('max-w-[55%]')) {
-    throw new Error('Expected MainPanelSettingsPanelShell secondary lanes to use the shared responsive panel header owner')
+  if (!mainPanelSettingsPanelShell.includes('<SettingsPanelShell') || mainPanelSettingsPanelShell.includes('max-w-[55%]')) {
+    throw new Error('Expected MainPanel settings frame to reuse the Base shell')
   }
 
   const settingsSections = readUtf8(settingsSectionsPath)

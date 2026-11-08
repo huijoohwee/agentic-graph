@@ -1,18 +1,13 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { SettingsSectionHeader } from '@agentic-base/views-react/settings'
 import clsx from 'clsx'
 import IconButton from '@/components/IconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_COPY } from '@/lib/config'
 import { getIconSizeClass } from '@/lib/ui/icons'
-import {
-  UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME,
-  UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
-} from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { cn } from '@/lib/utils'
-import { KTV_SECTION_CONTENT_CLASS_NAME, KTV_SECTION_SPACING_CLASS_NAME, KTV_SECTION_TITLE_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { KTV_SECTION_CONTENT_CLASS_NAME, KTV_SECTION_SPACING_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 
 interface CollapsibleSectionProps {
   title: React.ReactNode
@@ -44,15 +39,8 @@ export default function CollapsibleSection({
   stickyOffsetClassName = 'top-0',
   flushTop = false,
 }: CollapsibleSectionProps) {
-  const typography = usePanelTypography()
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
-  const uiSectionHeaderRowHeightClass = useGraphStore(
-    s => s.uiSectionHeaderRowHeightClass || UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
-  )
-  const uiSectionHeaderRowPaddingClass = useGraphStore(
-    s => s.uiSectionHeaderRowPaddingClass || 'py-1',
-  )
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const uncontrolled = typeof collapsed !== 'boolean'
   const [innerCollapsed, setInnerCollapsed] = useState<boolean>(defaultCollapsed)
@@ -94,19 +82,26 @@ export default function CollapsibleSection({
   return (
     <section
       className={clsx(
+        'agentic-panel-section',
         KTV_SECTION_SPACING_CLASS_NAME,
         flushTop ? 'border-t-0' : `border-t ${UI_THEME_TOKENS.panel.border}`,
         className,
       )}
     >
-      <section
+      <SettingsSectionHeader
+        title={title}
+        actions={<>
+          {actions}
+          <IconButton className="App-toolbar__btn" title={isCollapsed ? UI_COPY.expandSectionTitle : UI_COPY.collapseSectionTitle}
+            onClick={e => { e.stopPropagation(); setCollapsed(!isCollapsed) }} showTooltip>
+            {chevronIcon}
+          </IconButton>
+        </>}
         className={clsx(
-          'flex min-w-0 max-w-full items-center justify-between gap-1 cursor-pointer select-none',
-          uiSectionHeaderRowHeightClass,
-          uiSectionHeaderRowPaddingClass,
+          'cursor-pointer select-none',
           stickyHeader && 'sticky bg-[var(--panel-bg)] z-10 backdrop-blur-[4px]',
           stickyHeader && stickyOffsetClassName,
-          headerClassName,
+          panelFieldDecorationClassName(headerClassName),
         )}
         role="button"
         tabIndex={0}
@@ -114,23 +109,7 @@ export default function CollapsibleSection({
         aria-controls={contentId}
         onClick={() => setCollapsed(!isCollapsed)}
         onKeyDown={handleKeyDown}
-      >
-        <section className={cn('min-w-0 flex-1 overflow-hidden', KTV_SECTION_TITLE_CLASS_NAME, typography.keyLabelClass)}>{title}</section>
-        <section className={clsx(UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME, 'flex shrink-0 flex-wrap items-center justify-end gap-1')}>
-          {actions}
-          <IconButton
-            className="App-toolbar__btn flex items-center justify-center"
-            title={isCollapsed ? UI_COPY.expandSectionTitle : UI_COPY.collapseSectionTitle}
-            onClick={(e) => {
-              e.stopPropagation()
-              setCollapsed(!isCollapsed)
-            }}
-            showTooltip
-          >
-            {chevronIcon}
-          </IconButton>
-        </section>
-      </section>
+      />
       <section id={contentId} className={clsx(isCollapsed ? 'hidden' : KTV_SECTION_CONTENT_CLASS_NAME)}>
         {hasExpanded || !isCollapsed ? children : null}
       </section>

@@ -114,7 +114,7 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
     const shell = host.querySelector('aside')!
     assert(shell.className.includes('font-serif') && shell.className.includes('text-[15px]'))
     const row = host.querySelector('dl')!
-    assert(row.className.includes('py-2'), 'shared row honors configured density')
+    assert(row.classList.contains('agentic-ktv-row'), 'shared row keeps the central geometry owner')
     const descriptions = Array.from(host.querySelectorAll('[aria-description]')).map(node => node.getAttribute('aria-description'))
     assert(descriptions.includes(buildMainPanelFieldHelp(help).key))
     assert(descriptions.includes('Default: 2; Min: 1; Max: 8; Interval: 1; More hops expands reach; fewer narrows scope.'))
@@ -134,13 +134,13 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
       <WorkspaceTableModeControl />
     </CollapsibleSection>))
     const select = host.querySelector<HTMLButtonElement>('button[data-kg-select][aria-label="Select panel position"]')!
-    assert(select.className.includes('font-serif') && select.className.includes('text-[15px]'), 'workspace controls use configured panel typography')
+    assert(select.classList.contains('agentic-form-control'), 'workspace controls reuse the central form role')
     const nextPlacement = previousPlacement === 'top' ? 'bottom' : 'top'
     await act(async () => {
       selectMenuValue(select, nextPlacement)
     })
     assert.equal(workspaceTablePreferencesStore.getSnapshot().workspaceCellSelectPanelPlacement, nextPlacement, 'shared layout keeps the canonical preference handler')
-    const header = host.querySelector<HTMLElement>('section[role="button"]')!
+    const header = host.querySelector<HTMLElement>('header[role="button"]')!
     await act(async () => header.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
     assert.equal(header.getAttribute('aria-expanded'), 'false')
     await act(async () => header.dispatchEvent(new window.KeyboardEvent('keydown', { key: ' ', bubbles: true })))
@@ -181,7 +181,9 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
     assert.equal(headless.querySelectorAll('[data-kg-tooltip-anchor]').length, 0, 'headless consumers without a presenter retain plain cells')
     assert.equal(headless.querySelector('dt')?.textContent, 'Headless')
     for (const row of rows) {
-      assert.equal(row.querySelectorAll('[data-kg-tooltip-anchor]').length, 2, 'one key and one value help owner')
+      assert.equal(row.querySelectorAll('dt [data-kg-tooltip-anchor]').length, 1, 'one key help owner')
+      assert.equal(row.querySelectorAll('dd:last-child [data-kg-tooltip-anchor]').length, 1, 'one value help owner')
+      assert(row.querySelectorAll('dd:nth-child(2) [data-kg-tooltip-anchor]').length <= 1, 'Type icon has at most one independent help owner')
       assert(row.querySelector('dt [aria-description]')?.getAttribute('aria-description')?.includes('→'), 'same key help grammar')
     }
     assert.equal(rows[0].querySelector('dt [aria-description]')?.getAttribute('aria-description'), 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph')

@@ -15,6 +15,15 @@ const repositoryRoot = resolve(canvasRoot, '..')
 const git = (...args) => execFileSync('git', ['-C', repositoryRoot, ...args], { encoding: 'utf8' }).trim()
 const output = join(repositoryRoot, 'data/outputs/design-browser-smoke')
 
+function sectionKeyAlignment(control) {
+  return control.evaluate(el => {
+    const row = el.closest('.agentic-ktv-row'), section = row.closest('.agentic-panel-section')
+    const title = section.querySelector(':scope > .agentic-panel-section-header > .agentic-panel-section-title')
+    const left = node => { const range = document.createRange(); range.selectNodeContents(node); return range.getBoundingClientRect().left }
+    return { delta: left(title) - left(row.querySelector('dt')), overflow: section.scrollWidth > section.clientWidth + 1 }
+  })
+}
+
 async function verify() {
   const browser = await chromium.launch({ headless: true,
     executablePath: findLocalChromiumExecutable('', chromium.executablePath()) || undefined })
@@ -50,6 +59,8 @@ async function verify() {
     await floatingPanel.waitFor({ state: 'visible' })
     assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true, 'Expected seed floating panel must close through its rendered control')
     const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
+    assert.equal(await timeline.locator('.agentic-base-floating-panel-header').count(), 1, 'BottomPanel must reuse the Base panel header shell')
+    assert.equal(await timeline.getByRole('navigation', { name: 'Bottom panel views', exact: true }).count(), 1)
     await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     await timeline.waitFor({ state: 'detached' })
     console.log('Design browser: canvas ready')
@@ -69,6 +80,8 @@ async function verify() {
       await page.setViewportSize({ width, height: 800 })
       assert.equal(await settings.evaluate(el => el.scrollWidth <= el.clientWidth + 1), true,
         'Shared icon settings must fit the responsive panel')
+      const alignment = await sectionKeyAlignment(sharedRoles.first())
+      assert.ok(Math.abs(alignment.delta) < 1 && !alignment.overflow, 'MainPanel section title must align with KTV Key text')
     }
     await closePanelRegion(page.getByRole('complementary', { name: 'Main panel', exact: true }), page)
     await page.evaluate(async () => {
@@ -82,6 +95,8 @@ async function verify() {
       floatingPanel.getByRole('button', { name: 'Node Sizing', exact: true })]
     for (const width of [360, 1280]) {
       await page.setViewportSize({ width, height: 800 })
+      const alignment = await sectionKeyAlignment(floatingPanel.getByRole('checkbox', { name: 'Enable Effects', exact: true }))
+      assert.ok(Math.abs(alignment.delta) < 1 && !alignment.overflow, 'FloatingPanel section title must align with KTV Key text')
       const rows = await Promise.all(fieldControls.map(control => control.evaluate(el => {
         const row = el.closest('dl'), value = row.querySelector('.agentic-ktv-value')
         return { height: row.getBoundingClientRect().height,
@@ -95,6 +110,12 @@ async function verify() {
       assert.ok(rows.every(row => row.minimum === row.controlRole && !row.overflow), 'KTV value minimum must reuse the shared control role and fit')
     }
     assert.equal(await fieldControls[1].evaluate(el => el.closest('dl').querySelector('.agentic-ktv-type svg').getAttribute('aria-label')), 'Boolean')
+    const linksHeader = floatingPanel.getByRole('button', { name: /^Edges and particles/ })
+    const arrowLength = floatingPanel.getByRole('slider', { name: 'Arrow Length', exact: true })
+    const arrowLengthValue = await arrowLength.inputValue()
+    await linksHeader.press('Enter'); await arrowLength.waitFor({ state: 'hidden' })
+    await linksHeader.press('Space'); await arrowLength.waitFor({ state: 'visible' })
+    assert.equal(await arrowLength.inputValue(), arrowLengthValue, 'Shared header keyboard collapse must retain field values')
     assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true)
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
