@@ -8,6 +8,7 @@ import { getLocalStorage } from '@/lib/persistence'
 import { FALLBACK_DETAILS } from './SettingsFallbackDetails'
 import { renderSettingInput } from '@/features/settings/ui'
 import { UI_ANCHORS } from '@/lib/config'
+import { UI_ICON_APPEARANCE } from '@/lib/ui/theme-tokens'
 import {
   CHAT_AGNES_MODEL_OPTIONS,
   CHAT_GEMINI_ENDPOINT_OPTIONS,
@@ -1110,10 +1111,9 @@ export function useSettingsView({
     )
     const allEntries = [
       ...concreteEntries.filter(entry => {
-        if (!entry.writable) return false
+        if (!entry.writable && !Object.hasOwn(UI_ICON_APPEARANCE, entry.meta.key)) return false
         if (hiddenConcreteIntegrationKeys && hiddenConcreteIntegrationKeys.has(entry.meta.key)) return false
-        if (hiddenConcreteMapsKeys.has(entry.meta.key)) return false
-        if (hiddenConcreteMcpKeys.has(entry.meta.key)) return false
+        if (hiddenConcreteMapsKeys.has(entry.meta.key) || hiddenConcreteMcpKeys.has(entry.meta.key)) return false
         return true
       }),
       ...virtualEntries,

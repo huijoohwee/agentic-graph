@@ -1,5 +1,5 @@
 import { selectMenuOption } from './lib/select-menu-option.mjs'
-import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -53,6 +53,24 @@ async function verify() {
     await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     await timeline.waitFor({ state: 'detached' })
     console.log('Design browser: canvas ready')
+    // Central roles remain inspectable after their local setters are removed.
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    const settings = page.getByRole('tabpanel', { name: 'Settings', exact: true })
+    await page.getByRole('textbox', { name: 'Search settings…', exact: true }).fill('icon')
+    const expectedRoles = await page.evaluate(async () => Object.keys(
+      (await import('/src/lib/ui/theme-tokens.ts')).UI_ICON_APPEARANCE))
+    const sharedRoles = settings.locator('output[data-shared-icon-role]')
+    await sharedRoles.first().waitFor()
+    assert.deepEqual((await sharedRoles.evaluateAll(nodes => nodes.map(node => node.dataset.sharedIconRole))).sort(),
+      expectedRoles.sort(), 'Every central icon role must survive the actual settings visibility filter')
+    assert.equal(await sharedRoles.locator('input, select, button').count(), 0, 'Central roles must remain read-only')
+    assert.equal(await sharedRoles.locator('svg[role="img"][aria-label="Shared design role"]').count(), expectedRoles.length)
+    for (const width of [360, 1280]) {
+      await page.setViewportSize({ width, height: 800 })
+      assert.equal(await settings.evaluate(el => el.scrollWidth <= el.clientWidth + 1), true,
+        'Shared icon settings must fit the responsive panel')
+    }
+    await closePanelRegion(page.getByRole('complementary', { name: 'Main panel', exact: true }), page)
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
       useGraphStore.setState({ workspaceViewMode: 'canvas', canvasRenderMode: '2d', canvas2dRenderer: 'd3',
