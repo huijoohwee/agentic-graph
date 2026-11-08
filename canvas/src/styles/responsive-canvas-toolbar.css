@@ -54,7 +54,7 @@
 }
 
 .kg-canvas-page-surface .kg-dashboard-content {
-  padding-block-start: calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap) + var(--kg-toolbar-compact-surface-height, 38px) + 0.5rem);
+  --agentic-dashboard-top-inset: calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap) + var(--kg-toolbar-compact-surface-height, 38px) + 0.5rem);
 }
 
 /* Embedded tables already sit below their card controls. */
@@ -126,8 +126,6 @@
     padding-block-end: 0;
   }
 
-  .kg-canvas-page-surface .kg-workspace-data-view-root,
-  .kg-canvas-page-surface .kg-dashboard-content {
-    padding-block-start: 0;
-  }
+  .kg-canvas-page-surface .kg-workspace-data-view-root { padding-block-start: 0; }
+  .kg-canvas-page-surface .kg-dashboard-content { --agentic-dashboard-top-inset: 0px; }
 }

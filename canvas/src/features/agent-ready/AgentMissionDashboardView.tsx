@@ -1,4 +1,5 @@
 import React from 'react'
+import { DashboardCardGrid } from '@agentic-base/views-react/dashboard'
 import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -129,28 +130,29 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
       <h3 className="text-base font-semibold">Codebase → Agent Mission</h3>
       {source && <a className="text-xs underline" href={source} target="_blank" rel="noreferrer">Workflow source revision</a>}
     </header>
-    <ol className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-3" aria-label="Index to observability">
-      <li className="min-w-0 rounded border border-sky-500/40 p-3">
-        <p className="text-xs text-sky-500">01 · INDEX</p><h4 className="font-semibold">{data ? model.sources : 'No linked'} sources</h4>
-        <p className="py-1 text-xs">{data ? `${model.nodes} nodes · ${model.edges} relationships` : error || 'Load a retained codebase graph index.'}</p>
-        {inventory && <p className="pb-2 text-xs">{inventory} · counts describe the loaded projection</p>}
-        {data && <p className="pb-2 text-xs">{model.complete ? 'Complete admitted-source index' : 'Partial index'} · {model.parsed} parsed · {model.reused} reused</p>}
-        <button className={button} title="Index manifest" disabled={!data} onClick={() => onOpenFile(`${files.root}/codebase-index.manifest.json`)}>Index manifest</button>
-      </li>
-      <li className="min-w-0 rounded border border-violet-500/40 p-3">
-        <p className="text-xs text-violet-500">02 · TRAVERSE & CONTEXTUALIZE</p><h4 className="font-semibold">Source knowledge graph</h4>
-        <p className="py-1 text-xs">{data ? `${model.loadedNodes} of ${model.nodes} nodes · ${model.loadedEdges} of ${model.edges} links${model.truncated ? ' · Connected-first projection' : ' · Complete projection'}` : 'No graph projection available'}</p>
-        <p className="pb-2 text-xs">Start with highly connected nodes, then load exact-snapshot neighbors on demand.</p>
-        <button className={button} title={exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'} disabled={!data} aria-expanded={exploring} onClick={onExplore}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
-      </li>
-      <li className="min-w-0 rounded border border-emerald-500/40 p-3">
-        <p className="text-xs text-emerald-500">03 · OBSERVE & EVALUATE</p><h4 className="font-semibold">{trace.status} · {model.evaluation}</h4>
-        <p className="py-1 text-xs">{trace.spans.length}/{trace.total} retained spans · {numberLabel(model.worktrees)} worktrees{trace.partial ? ' · Partial trace' : ''}</p>
-        <p className="pb-2 text-xs">Evaluation score: {model.evaluationScore}</p>
-        <div className="flex flex-wrap gap-2"><button className={button} onClick={() => onOpenFile(files.manifestPath)}>Mission manifest</button>
-          {!embedded && onOpenView && <button className={button} onClick={() => onOpenView('evidence')}>Evaluation evidence</button>}</div>
-      </li>
-    </ol>
+    <DashboardCardGrid ariaLabel="Index to observability" headingLevel={4} cards={[
+      {
+        id: 'index', accent: 'primary', eyebrow: '01 · INDEX',
+        title: `${data ? model.sources : 'No linked'} sources`,
+        description: data ? `${model.nodes} nodes · ${model.edges} relationships` : error || 'Load a retained codebase graph index.',
+        content: data && <>{inventory && <p>{inventory} · counts describe the loaded projection</p>}
+          <p>{model.complete ? 'Complete admitted-source index' : 'Partial index'} · {model.parsed} parsed · {model.reused} reused</p></>,
+        actions: <button className={button} title="Index manifest" disabled={!data} onClick={() => onOpenFile(`${files.root}/codebase-index.manifest.json`)}>Index manifest</button>,
+      },
+      {
+        id: 'traverse', accent: 'secondary', eyebrow: '02 · TRAVERSE & CONTEXTUALIZE', title: 'Source knowledge graph',
+        description: data ? `${model.loadedNodes} of ${model.nodes} nodes · ${model.loadedEdges} of ${model.edges} links${model.truncated ? ' · Connected-first projection' : ' · Complete projection'}` : 'No graph projection available',
+        content: 'Start with highly connected nodes, then load exact-snapshot neighbors on demand.',
+        actions: <button className={button} title={exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'} disabled={!data} aria-expanded={exploring} onClick={onExplore}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>,
+      },
+      {
+        id: 'observe', accent: 'success', eyebrow: '03 · OBSERVE & EVALUATE', title: `${trace.status} · ${model.evaluation}`,
+        description: `${trace.spans.length}/${trace.total} retained spans · ${numberLabel(model.worktrees)} worktrees${trace.partial ? ' · Partial trace' : ''}`,
+        content: `Evaluation score: ${model.evaluationScore}`,
+        actions: <><button className={button} onClick={() => onOpenFile(files.manifestPath)}>Mission manifest</button>
+          {!embedded && onOpenView && <button className={button} onClick={() => onOpenView('evidence')}>Evaluation evidence</button>}</>,
+      },
+    ]} />
   </>
 }
 

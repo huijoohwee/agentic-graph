@@ -11,6 +11,6 @@
     "projectionPath": "site/vendor/graph-profile.css",
     "projectionSha256": "sha256:e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06",
     "runtimePath": "grph-shared/src/ui/design-runtime-profile.json",
-    "runtimeSha256": "sha256:783d7371ec1e455c5acb19951d6a690dfa273d79137c5c8c109b5183794b9898"
+    "runtimeSha256": "sha256:ab66294720629814979356346c41c8f04db3ce8981832723c221c2bb8ec7276a"
   }
 }

@@ -6,7 +6,7 @@ import { isInteractiveEventTarget } from '@/features/markdown/ui/kanban/kanbanMe
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { useDashboardWidgets, updateDashboardWidgets } from './dashboardWidgetConfiguration'
 import { dashboardWidgetRows, moveDashboardWidget, dashboardDropPosition, dashboardColumnStyle } from './dashboardWidgetLayout'
-import './dashboardWidgetBoard.css'
+import { DashboardWidgetBoard as BaseWidgetBoard } from '@agentic-base/views-react/dashboard'
 
 type DragOwner = ReturnType<typeof useKanbanDragAndDrop>
 type CardBinding = { id: string; cardId: string; board: string; owner: DragOwner }
@@ -40,27 +40,20 @@ export default function DashboardWidgetBoard({ id, items, columns = 1 }: {
     onCommitMove: move => { void updateDashboardWidgets({}, { [id]: nextRows(move) }).catch(() => undefined) },
     buildOutcomeMessage: outcome => outcome.kind === 'committed' ? 'Widget moved.' : outcome.kind === 'no-op' ? 'Widget position unchanged.' : 'Widget move cancelled.',
   })
-  return <section ref={element} className="kg-dashboard-widget-board min-w-0" data-dashboard-board={id}
-    data-dashboard-snap-grid={grid.enabled ? '1' : '0'} {...drag.createLaneDropProps(id)}>
-    <section className="kg-dashboard-widget-rows" style={{ columnGap: dashboardColumnStyle(dims.width, 1, grid).gap }}>
-    {rows.flatMap((row, rowIndex) => {
-      const layout = dashboardColumnStyle(dims.width, row.length, grid)
-      return [...row.map(widgetId => {
-          const item = items.find(item => item.id === widgetId)!
-          return <section key={widgetId} className="kg-dashboard-widget-cell min-w-0" data-dashboard-layout-row={rowIndex} data-dashboard-columns={row.length}
-            style={{ '--kg-dashboard-column-width': layout.width, marginBottom: layout.gap } as React.CSSProperties} onKeyDown={event => {
-            if (!event.altKey || !event.shiftKey || isInteractiveEventTarget(event.target) || !event.key.startsWith('Arrow')) return
-            const flat = rows.flat(), index = flat.indexOf(widgetId), backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-            const target = flat[index + (backward ? -1 : 1)]
-            if (!target) return
-            event.preventDefault(); event.stopPropagation()
-            drag.commitMove({ rowId: widgetId, sourceGroupKey: id, targetGroupKey: id, targetRowId: target,
-              position: event.key === 'ArrowLeft' ? 'left' : event.key === 'ArrowRight' ? 'right' : backward ? 'before' : 'after' })
-          }}>
-            <CardDragContext.Provider value={{ id: widgetId, cardId: item.cardId, board: id, owner: drag }}>{item.content}</CardDragContext.Provider>
-          </section>
-        }), <span key={`break:${row.at(-1)}`} className="kg-dashboard-widget-row-break" aria-hidden="true" />]
-    })}</section>
-    <p role="status" className="sr-only" key={drag.dragOutcomeSequence}>{config.error || drag.dragOutcomeMessage}</p>
-  </section>
+  return <BaseWidgetBoard ref={element} id={id} rows={rows}
+    items={items.map(item => ({ id: item.id, content: <CardDragContext.Provider value={{ id: item.id, cardId: item.cardId, board: id, owner: drag }}>{item.content}</CardDragContext.Provider> }))}
+    laneDropProps={{ ...drag.createLaneDropProps(id), 'data-dashboard-board': id, 'data-dashboard-snap-grid': grid.enabled ? '1' : '0' }}
+    cellAttributes={(row, columns) => ({ 'data-dashboard-layout-row': String(row), 'data-dashboard-columns': String(columns) })}
+    columnStyle={columns => dashboardColumnStyle(dims.width, columns, grid)}
+    statusMessage={config.error || drag.dragOutcomeMessage} statusKey={String(drag.dragOutcomeSequence)}
+    onItemKeyDown={(widgetId, event) => {
+      if (!event.altKey || !event.shiftKey || isInteractiveEventTarget(event.target) || !event.key.startsWith('Arrow')) return
+      const flat = rows.flat(), index = flat.indexOf(widgetId), backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+      const target = flat[index + (backward ? -1 : 1)]
+      if (!target) return
+      event.preventDefault(); event.stopPropagation()
+      drag.commitMove({ rowId: widgetId, sourceGroupKey: id, targetGroupKey: id, targetRowId: target,
+        position: event.key === 'ArrowLeft' ? 'left' : event.key === 'ArrowRight' ? 'right' : backward ? 'before' : 'after' })
+    }}
+  />
 }

@@ -3,12 +3,12 @@
   "profile": {
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
-    "sourceRevision": "431b9b60f3f8a85362ea5c99f6dbf502265a210a",
-    "registryRevision": "4f76b3c15b52c25a61f27039f6b437f67d91430a",
+    "sourceRevision": "0b976988bad9243b164398ed201337d228c26f53",
+    "registryRevision": "082f63a724c119cca3fc55707790af4af4c07eb8",
     "sourcePath": "site/tokens/shared-ui-profile.json",
-    "sourceSha256": "sha256:615b8ab121d819f0c88ff994bfee1fb118718a1d29290656248c579a68550c90",
+    "sourceSha256": "sha256:535938ec2d0ee316adab606bb888348a491d5d860a2b9ca4ffd7d88c4310f822",
     "projectionPath": "site/vendor/shared-ui-profile.css",
-    "projectionSha256": "sha256:542c22c1abd0fa12657beaf4f86a256ea9de40bb08feb46d8088b841b18ef025"
+    "projectionSha256": "sha256:cf1632ed0ad14ca1890a20f52ddd67586c732d62e161a9a65c2cf9f14519cb46"
   },
   "metrics": {
     "rowHeight": 38,
@@ -17,6 +17,7 @@
     "bodyLineHeight": 20,
     "ktvPanelWidth": 420,
     "controlHeight": 28,
-    "controlHeightTouch": 48
+    "controlHeightTouch": 48,
+    "dashboardCardGap": 12
   }
 }

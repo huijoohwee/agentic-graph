@@ -77,13 +77,13 @@ test('sequence inspector body and spacing consume the same shared roles', () => 
   assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
 })
 
-test('Graph styles cannot redeclare the shared selected control palette or selectors', () => {
+test('Graph styles cannot redeclare the shared control or dashboard styles', () => {
   const src = new URL('../', import.meta.url)
   const shared = 'styles/shared-ui-profile.css'
   for (const file of fs.readdirSync(src, { recursive: true })) {
     if (!file.endsWith('.css') || file === shared) continue
     const css = fs.readFileSync(new URL(file, src), 'utf8')
-    assert.doesNotMatch(css, /--agentic-control-selected-[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group)\b/, file)
+    assert.doesNotMatch(css, /--agentic-(?:control-selected-|dashboard-(?!top-inset\b))[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group|dashboard-[\w-]+)\b/, file)
   }
 })
 
@@ -100,4 +100,17 @@ test('Preview and the Media library share the layout picker and the panel toggle
     assert.match(consumer, /<ToggleButtonGroup\b/, file)
     assert.doesNotMatch(consumer, /function ToggleButton\b|className="agentic-toggle-group"/, file)
   }
+})
+
+test('Mission dashboard composition uses the Base shell, card grid, board and layout helpers', () => {
+  const source = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+  for (const [file, name] of [
+    ['components/DashboardCanvas/index.tsx', 'DashboardCanvasLayout'],
+    ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCardGrid'],
+    ['components/DashboardCanvas/DashboardWidgetBoard.tsx', 'BaseWidgetBoard'],
+  ]) {
+    assert.match(source(file), /from '@agentic-base\/views-react\/dashboard'/, file)
+    assert.ok(source(file).includes('<' + name), file)
+  }
+  assert.match(source('components/DashboardCanvas/dashboardWidgetLayout.ts'), /export \{ dashboardWidgetRows, dashboardColumnStyle \} from '@agentic-base\/views-react\/dashboard'/)
 })
