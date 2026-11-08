@@ -366,7 +366,7 @@
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31",
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#5ea9d0fb68d80a903d7f80ad8c35dc91f3f130ea"
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#6f49b31093785d2e1d045ceebec964817aa33bb5"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
