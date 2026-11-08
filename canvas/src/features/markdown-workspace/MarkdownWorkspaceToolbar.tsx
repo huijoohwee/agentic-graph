@@ -59,7 +59,7 @@ export type MarkdownWorkspaceToolbarProps = {
   viewerMode?: MarkdownWorkspaceDerivedViewerMode
   setViewerMode?: (next: MarkdownWorkspaceDerivedViewerMode) => void
   splitPaneVisibility?: MarkdownWorkspacePaneVisibility
-  setSplitPaneVisibility?: (next: MarkdownWorkspacePaneVisibility) => void
+  setSplitPaneVisibility?: React.Dispatch<React.SetStateAction<MarkdownWorkspacePaneVisibility>>
   paneAvailability?: MarkdownWorkspacePaneAvailability
   onSaveAs?: () => void
   onExportWorkspaceFile?: () => void
@@ -160,19 +160,14 @@ export function MarkdownWorkspaceToolbar({
     return current
   }, [contentFormat, effectivePaneAvailability.json, effectivePaneAvailability.markdown])
   const toggleSplitPane = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
-    if (!setSplitPaneVisibility) return
-    const current = effectiveSplitPanes
-    if (key === 'python' && current.block && current.python) return
-    const enabledCount = visiblePaneCount(current)
-    if (current[key] && enabledCount <= 1) return
-    const next = { ...current, [key]: !current[key] }
-    if (key === 'block' && next.block) next.python = true
-    setSplitPaneVisibility(
-      key === 'viewer' && next.viewer
-        ? resolveViewerEditPaneVisibility(next)
-        : next,
-    )
-  }, [effectiveSplitPanes, resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
+    setSplitPaneVisibility?.(current => {
+      if (key === 'python' && current.block && current.python) return current
+      if (current[key] && visiblePaneCount(current) <= 1) return current
+      const next = { ...current, [key]: !current[key] }
+      if (key === 'block' && next.block) next.python = true
+      return key === 'viewer' && next.viewer ? resolveViewerEditPaneVisibility(next) : next
+    })
+  }, [resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
   const handleSplitPaneToggle = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
@@ -188,16 +183,12 @@ export function MarkdownWorkspaceToolbar({
       handleSplitPaneToggle(key)
       return
     }
-    const current = effectiveSplitPanes
-    const isVisible = Boolean(current[key])
     const hasFormatSwitch = !!contentFormat && !!onContentFormatChange
     if (hasFormatSwitch && contentFormat !== key) {
       if (layoutMode !== 'split') {
         setLayoutMode('split')
       }
-      if (!isVisible) {
-        setSplitPaneVisibility({ ...current, [key]: true })
-      }
+      setSplitPaneVisibility(current => current[key] ? current : { ...current, [key]: true })
       void onContentFormatChange(key)
       return
     }
@@ -205,7 +196,6 @@ export function MarkdownWorkspaceToolbar({
   }, [
     contentFormat,
     effectivePaneAvailability,
-    effectiveSplitPanes,
     handleSplitPaneToggle,
     layoutMode,
     onContentFormatChange,
@@ -220,7 +210,7 @@ export function MarkdownWorkspaceToolbar({
     const current = effectiveSplitPanes
     if (htmlPaneChecked) {
       if (visiblePaneCount(current) <= 1) return
-      setSplitPaneVisibility({ ...current, html: false })
+      setSplitPaneVisibility(latest => visiblePaneCount(latest) <= 1 ? latest : { ...latest, html: false })
       if (webpageControls?.view === 'html') {
         onWebpageChangeView('markdown')
       }
@@ -229,11 +219,11 @@ export function MarkdownWorkspaceToolbar({
     if (layoutMode !== 'split') {
       setLayoutMode('split')
     }
-    setSplitPaneVisibility({
-      ...current,
-      viewer: current.viewer || effectivePaneAvailability.viewer,
+    setSplitPaneVisibility(latest => ({
+      ...latest,
+      viewer: latest.viewer || effectivePaneAvailability.viewer,
       html: true,
-    })
+    }))
     onWebpageChangeView('html')
   }, [effectivePaneAvailability.viewer, effectiveSplitPanes, htmlPaneAvailable, htmlPaneChecked, layoutMode, onWebpageChangeView, setLayoutMode, setSplitPaneVisibility, visiblePaneCount, webpageControls?.view])
 
