@@ -83,7 +83,7 @@ test('Graph styles cannot redeclare the shared control or dashboard styles', () 
   for (const file of fs.readdirSync(src, { recursive: true })) {
     if (!file.endsWith('.css') || file === shared) continue
     const css = fs.readFileSync(new URL(file, src), 'utf8')
-    assert.doesNotMatch(css, /--agentic-(?:control-selected-|dashboard-(?!top-inset\b))[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group|dashboard-[\w-]+)\b/, file)
+    assert.doesNotMatch(css, /--agentic-(?:control-selected-|base-dashboard-|dashboard-(?!top-inset\b))[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group|dashboard-[\w-]+)\b/, file)
   }
 })
 

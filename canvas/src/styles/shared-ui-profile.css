@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@0b976988bad9243b164398ed201337d228c26f53; profile sha256 535938ec2d0ee316adab606bb888348a491d5d860a2b9ca4ffd7d88c4310f822. Do not edit. */
+/* Generated from agentic-design-system@f73934c884a6ae8d1c7d0521408014dde20a6c2d; profile sha256 535938ec2d0ee316adab606bb888348a491d5d860a2b9ca4ffd7d88c4310f822. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -143,6 +143,14 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 .agentic-select-trigger { border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder)); background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas)); color: inherit; display: inline-flex; align-items: center; gap: var(--agentic-control-padding-inline); inline-size: 100%; text-align: start; }
 .agentic-menu-popup { position: fixed; z-index: 2147483000; }
 
+:where(.agentic-dashboard-layout, .agentic-dashboard-board) {
+  --agentic-base-dashboard-panel-bg: var(--kg-panel-bg, var(--agentic-base-surface, Canvas));
+  --agentic-base-dashboard-metric-bg: var(--agentic-base-dashboard-panel-bg);
+  --agentic-base-dashboard-border: var(--kg-border, var(--agentic-base-border, ButtonBorder));
+  --agentic-base-dashboard-text-primary: var(--kg-text-primary, var(--agentic-base-text-primary, CanvasText));
+  --agentic-base-dashboard-text-secondary: var(--kg-text-secondary, var(--agentic-base-text-secondary, CanvasText));
+  --agentic-base-dashboard-text-tertiary: var(--kg-text-tertiary, var(--agentic-base-text-tertiary, GrayText));
+}
 .agentic-dashboard-layout {
   box-sizing: border-box; display: grid; align-content: start; grid-template-columns: minmax(0, 1fr);
   container: agentic-dashboard / inline-size; gap: var(--agentic-dashboard-section-gap);
