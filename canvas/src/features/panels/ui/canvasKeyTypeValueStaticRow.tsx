@@ -46,7 +46,7 @@ export function CanvasKeyTypeValueStaticRow({
   return (
     <SharedKeyTypeValueStaticRow
       id={id}
-      data-kg-anchor={dataKgAnchor}
+      dataKgAnchor={dataKgAnchor}
       keyNode={renderKeyTypeValueMarkdownSigilBridgeNode(keyNode, useMarkdownSigilBridge)}
       typeNode={renderKeyTypeValueMarkdownSigilBridgeNode(typeNode, useMarkdownSigilBridge)}
       valueNode={renderKeyTypeValueMarkdownSigilBridgeNode(valueNode, useMarkdownSigilBridge)}

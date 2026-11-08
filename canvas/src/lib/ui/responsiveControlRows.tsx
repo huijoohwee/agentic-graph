@@ -1,3 +1,4 @@
+import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { CanvasKeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
@@ -15,6 +16,7 @@ type ControlRowAlign = 'center' | 'start'
 export type ResponsiveControlRowProps = {
   label: React.ReactNode
   children: React.ReactNode
+  typeNode?: React.ReactNode
   compact?: boolean
   align?: ControlRowAlign
   labelClassName?: string
@@ -57,6 +59,7 @@ export type ResponsiveControlInputProps = React.InputHTMLAttributes<HTMLInputEle
 export function ResponsiveControlRow({
   label,
   children,
+  typeNode,
   compact,
   align = 'center',
   labelClassName,
@@ -67,6 +70,7 @@ export function ResponsiveControlRow({
   return (
     <CanvasKeyTypeValueStaticRow
       align={align}
+      typeNode={typeNode}
       density={compact ? 'compact' : 'default'}
       className={rowClassName}
       keyNode={<label id={labelId} className={labelClassName}>{label}</label>}
@@ -109,7 +113,7 @@ export function ResponsiveNumberRow({
   onChange,
 }: ResponsiveNumberRowProps) {
   return (
-    <ResponsiveControlRow label={label} compact={compact}>
+    <ResponsiveControlRow label={label} compact={compact} typeNode={<MainPanelTypeIcon iconKey="setting.number" />}>
       <ResponsiveControlInput
         type="number"
         min={min}
@@ -142,7 +146,7 @@ export function ResponsiveSelectRow({
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
 
   return (
-    <ResponsiveControlRow label={label} compact={compact}>
+    <ResponsiveControlRow label={label} compact={compact} typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
       <PanelSelect
         className={`${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.primary} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass}`}
         value={value}
@@ -174,6 +178,7 @@ export function ResponsiveToggleRow({
     <ResponsiveControlRow
       label={label}
       compact={compact}
+      typeNode={<MainPanelTypeIcon iconKey="setting.boolean" />}
       valueClassName={toggleGroupClassName}
     >
       <button

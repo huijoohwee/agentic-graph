@@ -102,6 +102,11 @@ for (const file of ['shared-borders.css', 'application-typography.css']) {
 }
 nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css')))
 // Base's standalone panel import is already included by its exact browser CSS.
+const iconLibraryBytes = await read(`${basePrefix}/packages/views-react/src/controls/icons.json`)
+const iconLibraryPin = JSON.parse(await read(`${basePrefix}/packages/views-react/src/controls/icons.pin.json`))
+assert.equal(iconLibraryPin.owner, 'github.com/huijoohwee/agentic-design-system')
+assert.match(iconLibraryPin.revision, /^[a-f0-9]{40}$/)
+assert.equal(iconLibraryPin.sha256, sha256(iconLibraryBytes), 'Central icon library drift')
 const baseProfile = await read('node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.css')
 assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'), 'Base and Graph must use one shared UI projection')
 const panelCss = await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')

@@ -1,3 +1,4 @@
+import { MainPanelTypeIcon } from './mainPanelHelpIconLibrary'
 import React from 'react'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { PanelRangeInput } from '@/lib/ui/panelFormControls'
@@ -33,7 +34,8 @@ export function PanelKeyTypeRangeValueRow({
   return (
     <KeyTypeValueStaticRow
       {...staticRowProps}
-      layout="keyValue"
+      layout="keyTypeValue"
+      typeNode={<MainPanelTypeIcon iconKey="setting.number" />}
       keyNode={<span id={labelId}>{keyNode}</span>}
       valueNode={(
         <>

@@ -1,14 +1,5 @@
-import {
-  Bot,
-  Brain,
-  Film,
-  Hash,
-  HeartPulse,
-  Link2,
-  Search,
-  SquareTerminal,
-  Users,
-} from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
+const { Bot, Brain, Film, Hash, HeartPulse, Link2, Search, SquareTerminal, Users } = DESIGN_ICONS
 import type { MainPanelTypeIconComponent } from './mainPanelHelpIconLibrary'
 
 export const MAIN_PANEL_INVOCATION_SUBJECT_ICON_KEYS = [

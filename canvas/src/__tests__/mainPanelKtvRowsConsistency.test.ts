@@ -238,8 +238,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected grph-shared to expose and compile the shared KTV React layout and row entries')
   }
-  const valueCellUses = sharedKtvRow.match(/KTV_ROW_VALUE_CELL_CLASS_NAME/g)?.length ?? 0
-  if (valueCellUses != 2) {
+  if (!sharedKtvRow.includes('<BaseKeyTypeValueRow') || sharedKtvRow.includes('<dl')) {
     throw new Error('Expected one shared KTV value cell for every caller signature')
   }
   if (!sharedKtvRow.includes('export function SimpleKeyValueRow')) {
@@ -261,7 +260,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   if (
     !canvasKeyTypeValueValueCell.includes("from 'grph-shared/react/keyTypeValueRow'")
-    || !sharedKtvRow.includes('${KTV_ROW_VALUE_CELL_CLASS_NAME} ${KTV_VALUE_ROW_SCROLL_CLASS_NAME}')
+    || !sharedKtvRow.includes('valueClassName={UI_THEME_TOKENS.text.secondary}')
     || !sharedKtvRow.includes('export function KeyTypeValueStaticRow')
   ) {
     throw new Error('Expected the shared KTV row runtime to own the horizontal value-cell row-scroll utility')

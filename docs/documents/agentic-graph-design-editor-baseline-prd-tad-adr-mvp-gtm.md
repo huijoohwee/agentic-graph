@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.5"
+version: "0.6.6"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -16,15 +16,15 @@ continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
-previous_document_version: "0.6.4"
-prd_revision: "0.6.5"
-tad_revision: "0.6.5"
-adr_revision: "0.6.5"
-mvp_revision: "0.6.5"
-gtm_revision: "0.6.5"
+previous_document_version: "0.6.5"
+prd_revision: "0.6.6"
+tad_revision: "0.6.6"
+adr_revision: "0.6.6"
+mvp_revision: "0.6.6"
+gtm_revision: "0.6.6"
 ---
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
-Current accepted scope revision: **0.6.5**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.6**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 **Document Version**: 0.3.0  
@@ -576,7 +576,7 @@ production status follows in the linked release companion. No buyer receipt.
 
 ## Native offline validation and palette browser proof
 
-All five roles join the same continuity ID at **0.6.5**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
+All five roles join the same continuity ID at **0.6.6**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
 TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke waits for source bootstrap before setting its fixture and selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
 ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
 MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
@@ -590,3 +590,7 @@ Registered Graph root/theme/typography/reduced-motion values now originate in Ag
 The retained PR #1240 continuation contains all PR #1239 history plus current main and the previously recorded member source. Merge commits preserve ancestry; no history is rewritten. Validation covers headless/source font loading, typography, token contracts, generated projection equality, no local registered overrides, type checking and bounded offline artifacts. Bare canonical npm run dev desktop/mobile verification is required before closeout. Rollback restores exact producer/consumer pins and assets together, without altering user storage. No Production effect or whole-repository token parity claim.
 
 The runtime imports one generated compact data projection, checked byte-for-byte against the full pinned central Graph/shared UI profiles. Metadata and repeated invariant mode values stay out of runtime chunks. No second editable value source or raised chunk limit is introduced. Full app/PWA build and chunk hygiene are both required. Build child failures retain phase/status/signal diagnostics; the original minifier and Node policy remain intact.
+
+### Shared KTV/icon adoption — 0.6.6
+
+Base controls now own the semantic KTV row and central SVG renderer. Graph row APIs, Help icon metadata and product aliases are adapters; the 61 shared glyphs and layout/typography originate in pinned Design System assets. Palette, mode, numeric, toggle and range rows show the same named Type icon slot without moving controls or changing values. Legacy slider layouts adapt into the same Value cell. Rollback restores producer pins/assets together; prior checkout/ref recovery remains preserved, and no Production activation is selected.

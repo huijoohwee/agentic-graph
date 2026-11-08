@@ -1,10 +1,6 @@
 import React from 'react'
-import {
-  Accessibility, ArrowRightLeft, BarChart3, Braces, CalendarClock, Camera, ChartGantt, Clapperboard, Copy, CreditCard, Cuboid, Eraser, GitBranch, Globe2, Hand, Hash,
-  HelpCircle, History as HistoryIcon, ImageIcon, LayoutGrid, Link2, ListChecks, LocateFixed, Map as MapIcon, MessageCircle, MonitorPlay,
-  Network, Palette, Plane, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type as TextTypeIcon, UserX, Users,
-  Workflow,
-} from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
+const { Accessibility, ArrowRightLeft, BarChart3, Braces, CalendarClock, Camera, ChartGantt, Clapperboard, Copy, CreditCard, Cuboid, Eraser, GitBranch, Globe2, Hand, Hash, HelpCircle, History: HistoryIcon, ImageIcon, LayoutGrid, Link2, ListChecks, LocateFixed, Map: MapIcon, MessageCircle, MonitorPlay, Network, Palette, Plane, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type: TextTypeIcon, UserX, Users, Workflow } = DESIGN_ICONS
 import { MAIN_PANEL_ACTION_ICON_KEYS, MAIN_PANEL_ACTION_ICON_META_BY_KEY } from './mainPanelHelpActionIconLibrary'
 import type { MainPanelTabKey } from '@/features/panels/mainPanelTabs'
 import {

@@ -7,6 +7,7 @@ const styles = new URL('../styles/', import.meta.url)
 const pin = JSON.parse(fs.readFileSync(new URL('shared-ui-profile.pin.json', styles), 'utf8'))
 const profileCss = fs.readFileSync(new URL('shared-ui-profile.css', styles))
 const toolbarCss = fs.readFileSync(new URL('responsive-toolbar.css', styles), 'utf8')
+const centralGraphCss = fs.readFileSync(new URL('kgTokens.generated.css', styles), 'utf8')
 const applicationCss = fs.readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 const sha256 = value => `sha256:${createHash('sha256').update(value).digest('hex')}`
 
@@ -16,8 +17,8 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.equal(sha256(profileCss), pin.profile.projectionSha256)
   assert.ok(profileCss.toString('utf8').includes(`agentic-design-system@${pin.profile.sourceRevision}`))
   assert.match(applicationCss, /@import '\.\/styles\/shared-ui-profile\.css';/)
-  assert.match(applicationCss, /--kg-compact-glyph-size:\s*var\(--agentic-icon-size-compact\);/)
-  assert.match(applicationCss, /--kg-default-glyph-size:\s*var\(--agentic-icon-size-default\);/)
+  assert.match(centralGraphCss, /--kg-compact-glyph-size:\s*var\(--agentic-icon-size-compact\);/)
+  assert.match(centralGraphCss, /--kg-default-glyph-size:\s*var\(--agentic-icon-size-default\);/)
   assert.match(toolbarCss, /\.kg-compact-glyph\s*\{[^}]*width:\s*var\(--kg-compact-glyph-size\);/s)
   assert.match(toolbarCss, /\.kg-default-glyph\s*\{[^}]*width:\s*var\(--kg-default-glyph-size\);/s)
   assert.doesNotMatch(toolbarCss, /@import '\.\/shared-ui-profile\.css';/)
@@ -25,8 +26,8 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
 })
 
 test('Graph toolbar, table and virtualized row metrics share the Base and Design System owner', () => {
-  assert.match(applicationCss, /--kg-toolbar-compact-surface-height: var\(--agentic-row-height\);/)
-  assert.match(applicationCss, /--kg-table-row-height: var\(--agentic-row-height\);/)
+  assert.match(centralGraphCss, /--kg-toolbar-compact-surface-height: var\(--agentic-row-height\);/)
+  assert.match(centralGraphCss, /--kg-table-row-height: var\(--agentic-row-height\);/)
   for (const [key, cssName] of [['rowHeight', 'row-height'], ['rowHeightTouch', 'row-height-touch']]) {
     assert.ok(profileCss.toString().includes(`--agentic-${cssName}: ${pin.metrics[key]}px;`))
   }

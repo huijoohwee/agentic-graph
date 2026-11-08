@@ -1,3 +1,4 @@
+import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
@@ -64,7 +65,7 @@ export function RendererPaletteSettings() {
               </span>
             </Tooltip>
           }
-          typeNode={null}
+          typeNode={<MainPanelTypeIcon iconKey="ktv.type.color" />}
           valueNode={
             <RightAlignedValueCell>
               <Tooltip
@@ -108,7 +109,7 @@ export function RendererPaletteSettings() {
               </span>
             </Tooltip>
           }
-          typeNode={null}
+          typeNode={<MainPanelTypeIcon iconKey="ktv.type.color" />}
           valueNode={
             <RightAlignedValueCell>
               <Tooltip

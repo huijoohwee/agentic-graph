@@ -25,6 +25,14 @@
   --agentic-menu-gap: 0.25rem;
 }
 .agentic-ktv-container { min-inline-size: 0; inline-size: 100%; container: agentic-ktv / inline-size; }
+.agentic-ktv-row { display: grid; grid-template-columns: var(--agentic-ktv-columns); gap: 0 var(--agentic-control-padding-inline); min-inline-size: 0; max-inline-size: 100%; inline-size: 100%; align-items: center; padding-block: var(--agentic-control-padding-block); font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
+.agentic-ktv-row[data-align="start"] { align-items: start; }
+.agentic-ktv-row > :is(dt, dd) { display: flex; align-items: center; min-inline-size: 0; max-inline-size: 100%; margin: 0; padding-inline: var(--agentic-control-padding-inline); overflow: hidden; }
+.agentic-ktv-key { white-space: nowrap; text-overflow: ellipsis; }
+.agentic-ktv-type { justify-content: center; }
+.agentic-ktv-value { justify-content: end; align-self: stretch; gap: var(--agentic-control-padding-block); }
+.agentic-ktv-value > * { min-inline-size: 0; max-inline-size: 100%; }
+.agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); }
 @container agentic-ktv (width < 22.25rem) {
   .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
   .agentic-ktv-row > :last-child { grid-column: 1 / -1; }
