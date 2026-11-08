@@ -293,8 +293,8 @@ export function assertPhase5(fixture: SourceFixture) {
     throw new Error('expected Explorer header to keep file mutations in the file context menu and consolidate URL refresh into Refresh')
   }
 
-  if (/\.kg-workspace-pane-toggle(?!s-item)|\.agentic-checkbox-group/.test(responsiveToolbarCssText)) {
-    throw new Error('Workspace pane checkbox geometry belongs to the shared UI projection')
+  if (/\.kg-workspace-pane-toggle(?!s-item)|\.agentic-toggle-group/.test(responsiveToolbarCssText)) {
+    throw new Error('Workspace pane button geometry belongs to the shared UI projection')
   }
 
   if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggles-item') || !markdownWorkspaceToolbarText.includes('kg-workspace-pane-toggles-item')) {

@@ -1,6 +1,6 @@
 type KeyEventLike = Pick<KeyboardEvent, 'code' | 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'repeat' | 'target'>
 
-const isEditableTarget = (t: unknown): boolean => {
+const targetOwnsSpaceKey = (t: unknown): boolean => {
   if (!t || typeof t !== 'object') return false
   const el = t as Element
   const withEditable = el as unknown as { isContentEditable?: boolean }
@@ -8,15 +8,15 @@ const isEditableTarget = (t: unknown): boolean => {
   const withTag = el as unknown as { tagName?: string }
   const tag = typeof withTag.tagName === 'string' ? withTag.tagName : ''
   const upper = tag.toUpperCase()
-  if (upper === 'INPUT' || upper === 'TEXTAREA' || upper === 'SELECT') return true
+  if (upper === 'BUTTON' || upper === 'INPUT' || upper === 'TEXTAREA' || upper === 'SELECT') return true
   const withRole = el as unknown as { getAttribute?: (name: string) => string | null }
   const role = typeof withRole.getAttribute === 'function' ? withRole.getAttribute('role') : null
-  if (role === 'textbox' || role === 'combobox') return true
+  if (role === 'button' || role === 'textbox' || role === 'combobox') return true
   return false
 }
 
 const shouldClearSpaceHeldFromFocusTarget = (t: unknown): boolean => {
-  if (isEditableTarget(t)) return true
+  if (targetOwnsSpaceKey(t)) return true
   if (!t || typeof t !== 'object') return false
   const el = t as Element
   const withTag = el as unknown as { tagName?: string }
@@ -61,7 +61,7 @@ export function ensureSpacePanKeyListenerInstalled(): void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (!isSpaceKeyEvent(e)) return
     if (e.metaKey || e.ctrlKey || e.altKey) return
-    if (isEditableTarget(e.target)) return
+    if (targetOwnsSpaceKey(e.target)) return
     if (e.repeat) {
       spaceHeld = true
       return

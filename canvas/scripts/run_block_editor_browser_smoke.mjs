@@ -1,3 +1,4 @@
+import { setButtonPressed } from './lib/set-button-pressed.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -70,9 +71,9 @@ try {
   await python.getByRole('button', { name: 'Save source', exact: true }).click()
   await awaitStoredSource(source)
   const explorer = page.getByLabel('Show Explorer pane', { exact: true })
-  if (await explorer.isChecked()) await explorer.uncheck()
+  await setButtonPressed(explorer, false)
   const blockToggle = page.getByLabel('Show Block editor pane', { exact: true })
-  await blockToggle.check()
+  await setButtonPressed(blockToggle, true)
   const block = page.getByRole('region', { name: 'Block editor', exact: true })
   await block.getByRole('tree', { name: 'Program hierarchy' }).waitFor({ timeout: 60000 })
   assert.equal(await page.locator('[data-kg-block-canvas="true"]').count(), 1)
@@ -99,7 +100,7 @@ try {
   assert.equal(await block.getByRole('button', { name: 'Edit', exact: true }).isEnabled(), true, 'touch selection still works after pinch')
   await page.screenshot({ path: join(output, 'mobile-block.png'), fullPage: true })
   if (!dev) {
-  await blockToggle.uncheck()
+  await setButtonPressed(blockToggle, false)
   await python.getByRole('button', { name: 'Results', exact: true }).click()
   await python.getByText('Offline lessons', { exact: true }).click()
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
@@ -120,8 +121,8 @@ try {
   await python.waitFor({ timeout: 60000 })
   await awaitVisibleSource(source)
   await dismissVisibleFloatingPanel(page)
-  if (await explorer.isChecked()) await explorer.uncheck()
-  await blockToggle.check()
+  await setButtonPressed(explorer, false)
+  await setButtonPressed(blockToggle, true)
   await block.getByRole('tree', { name: 'Program hierarchy' }).waitFor({ timeout: 60000 })
   assert.equal(await page.locator('[data-kg-block-canvas="true"]').count(), 1)
   await block.getByText('assign score', { exact: true }).waitFor({ timeout: 30000 })
@@ -138,8 +139,8 @@ try {
   await python.waitFor({ timeout: 60000 })
   await awaitVisibleSource(changed)
   await dismissVisibleFloatingPanel(page)
-  if (await explorer.isChecked()) await explorer.uncheck()
-  await blockToggle.check()
+  await setButtonPressed(explorer, false)
+  await setButtonPressed(blockToggle, true)
   await block.getByText('3', { exact: true }).waitFor({ timeout: 30000 })
   await awaitStoredSource(changed)
   await page.screenshot({ path: join(output, 'offline-mobile-block.png'), fullPage: true })

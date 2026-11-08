@@ -548,9 +548,9 @@ export async function testMarkdownWorkspaceLocalCsvProjectionKeepsViewerRows() {
     await waitForRows(firstRows)
     await act(async () => {
       for (const label of ['Show JSON editor pane', 'Show Markdown editor pane']) {
-        const toggle = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+        const toggle = container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
         if (!toggle) throw new Error(`Missing CSV pane toggle ${label}`)
-        if (!toggle.checked) toggle.click()
+        if (toggle.getAttribute('aria-pressed') !== 'true') toggle.click()
       }
       await tick(2)
     })

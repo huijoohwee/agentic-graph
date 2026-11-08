@@ -63,6 +63,9 @@ export const testSpacePanKeyStateTracksHeldSpace = () => {
     keydown({ code: 'Space', key: ' ', metaKey: false, ctrlKey: false, altKey: false, repeat: false, target: { tagName: 'INPUT' }, preventDefault: () => (prevented += 1) })
     if (isSpacePanHeld()) throw new Error('expected Space not to be held when typing in input')
 
+    keydown({ code: 'Space', key: ' ', target: { tagName: 'BUTTON' }, preventDefault: () => { throw new Error('Space must activate the focused button') } })
+    if (isSpacePanHeld()) throw new Error('expected a focused button to retain native Space activation')
+
     keydown({ code: 'Space', key: ' ', metaKey: true, ctrlKey: false, altKey: false, repeat: false, target: { tagName: 'SECTION' }, preventDefault: () => (prevented += 1) })
     if (isSpacePanHeld()) throw new Error('expected Space not to be held with meta modifier')
   } finally {

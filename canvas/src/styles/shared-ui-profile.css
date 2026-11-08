@@ -25,6 +25,26 @@
   --agentic-menu-padding: 0.25rem;
   --agentic-menu-gap: 0.25rem;
 }
+.agentic-toggle-group {
+  box-sizing: border-box; display: inline-flex; align-items: stretch;
+  min-inline-size: 0; max-inline-size: 100%; block-size: var(--agentic-control-height); overflow-x: auto;
+  scrollbar-width: none; border: 1px solid var(--agentic-base-border, var(--kg-border, ButtonBorder));
+  border-radius: var(--agentic-control-radius); background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas));
+  color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText));
+  font: 500 var(--kg-text-xs, .75rem)/var(--kg-text-xs-line, 1rem) var(--agentic-font-sans);
+}
+.agentic-toggle-group > button {
+  display: inline-flex; flex: none; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block);
+  margin: 0; padding: 0 var(--agentic-control-padding-inline); border: 0; border-radius: 0;
+  background: transparent; color: inherit; font: inherit; white-space: nowrap; cursor: pointer;
+}
+.agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, currentColor 6%, transparent))); }
+.agentic-toggle-group > button[aria-pressed="true"] { background: color-mix(in srgb, currentColor 15%, transparent); }
+.agentic-toggle-group > button:focus-visible { outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: calc(-1 * var(--agentic-control-focus-width)); }
+.agentic-toggle-group > button:disabled { opacity: .5; cursor: not-allowed; }
+@media (forced-colors: active) {
+  .agentic-toggle-group > button[aria-pressed="true"] { color: HighlightText; background: Highlight; forced-color-adjust: none; }
+}
 .agentic-checkbox-group {
   display: inline-flex; align-items: center; gap: var(--agentic-control-padding-block);
   min-inline-size: 0; max-inline-size: 100%; overflow-x: auto;

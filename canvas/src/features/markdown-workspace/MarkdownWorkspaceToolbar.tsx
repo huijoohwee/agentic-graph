@@ -11,7 +11,7 @@ import { WorkspaceHeaderRow } from '@/components/ui/WorkspaceHeader'
 import { CollapsibleToolbar } from '@/components/ui/CollapsibleToolbar'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
-import { CheckboxGroup, CheckboxOption } from '@/lib/ui/CheckboxGroup'
+import { ToggleButtonGroup, ToggleButton } from '@agentic-base/views-react/controls'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
@@ -246,103 +246,112 @@ export function MarkdownWorkspaceToolbar({
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
-            <CheckboxGroup
+            <ToggleButtonGroup
               id={workspacePanesControlId}
               aria-label="Workspace panes"
               title="Workspace panes"
             >
-              <CheckboxOption
-                label="Explorer"
+              <ToggleButton
                 title="Explorer pane"
                 aria-label="Show Explorer pane"
-                checked={explorerOpen}
-                onChange={() => setExplorerOpen(!explorerOpen)}
-              />
-              <CheckboxOption
-                label="bin"
+                pressed={explorerOpen}
+                onClick={() => setExplorerOpen(!explorerOpen)}
+              >
+                Explorer
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('bin', effectivePaneAvailability.bin)}
                 aria-label="Show binary model pane"
-                checked={effectivePaneAvailability.bin}
+                pressed={effectivePaneAvailability.bin}
                 disabled
-              />
-              <CheckboxOption
-                label="Python"
+              >
+                bin
+              </ToggleButton>
+              <ToggleButton
                 title={effectivePaneVisibility.block ? 'Close Block before hiding Python' : paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
                 aria-label="Show Python editor pane"
-                checked={!!effectivePaneVisibility.python}
+                pressed={!!effectivePaneVisibility.python}
                 disabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
-                onChange={() => handleSplitPaneToggle('python')}
-              />
-              <CheckboxOption
-                label="Block"
+                onClick={() => handleSplitPaneToggle('python')}
+              >
+                Python
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('Block editor pane', !!effectivePaneAvailability.block)}
                 aria-label="Show Block editor pane"
-                checked={!!effectivePaneVisibility.block}
+                pressed={!!effectivePaneVisibility.block}
                 disabled={!effectivePaneAvailability.block}
-                onChange={() => handleSplitPaneToggle('block')}
-              />
-              <CheckboxOption
-                label="JSON"
+                onClick={() => handleSplitPaneToggle('block')}
+              >
+                Block
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('JSON', effectivePaneAvailability.json)}
                 aria-label="Show JSON editor pane"
-                checked={effectivePaneVisibility.json}
+                pressed={effectivePaneVisibility.json}
                 disabled={!effectivePaneAvailability.json}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.json) return
                   handleContentPaneToggle('json')
                 }}
-              />
-              <CheckboxOption
-                label="Markdown"
+              >
+                JSON
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('Markdown editor pane', effectivePaneAvailability.markdown)}
                 aria-label="Show Markdown editor pane"
-                checked={effectivePaneVisibility.markdown}
+                pressed={effectivePaneVisibility.markdown}
                 disabled={!effectivePaneAvailability.markdown}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.markdown) return
                   handleContentPaneToggle('markdown')
                 }}
-              />
+              >
+                Markdown
+              </ToggleButton>
               {showDocumentVersionGraphToggle ? (
-                <CheckboxOption
-                  label="diff"
+                <ToggleButton
                   title="Document version graph"
                   aria-label="Show document version graph"
-                  checked={documentVersionGraphOpen}
-                  onChange={event => setDocumentVersionGraphOpen?.(event.currentTarget.checked)}
-                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" />}
-                  labelProps={{ className: 'relative z-[260]', 'data-kg-markdown-workspace-document-version-graph-toggle': '1' }}
-                />
+                  pressed={documentVersionGraphOpen}
+                  onClick={() => setDocumentVersionGraphOpen?.(!documentVersionGraphOpen)}
+                  data-kg-markdown-workspace-document-version-graph-toggle="1"
+                >
+                  <FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" /> diff
+                </ToggleButton>
               ) : null}
-              <CheckboxOption
-                label="Viewer"
+              <ToggleButton
                 title={paneToggleTitle('Viewer preview pane', effectivePaneAvailability.viewer)}
                 aria-label="Show Viewer preview pane"
-                checked={effectivePaneVisibility.viewer}
+                pressed={effectivePaneVisibility.viewer}
                 disabled={!effectivePaneAvailability.viewer}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.viewer) return
                   handleSplitPaneToggle('viewer')
                 }}
-              />
-              <CheckboxOption
-                label="HTML"
+              >
+                Viewer
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('HTML', htmlPaneAvailable)}
                 aria-label="Show HTML viewer pane"
-                checked={htmlPaneChecked}
+                pressed={htmlPaneChecked}
                 disabled={!htmlPaneAvailable}
-                onChange={handleHtmlPaneToggle}
-              />
+                onClick={handleHtmlPaneToggle}
+              >
+                HTML
+              </ToggleButton>
               {typeof canvasOpen === 'boolean' && typeof setCanvasOpen === 'function' ? (
-                <CheckboxOption
-                  label="Canvas"
+                <ToggleButton
                   title="Canvas pane"
                   aria-label="Show Canvas pane"
-                  checked={canvasOpen}
-                  onChange={() => setCanvasOpen(!canvasOpen)}
-                />
+                  pressed={canvasOpen}
+                  onClick={() => setCanvasOpen(!canvasOpen)}
+                >
+                  Canvas
+                </ToggleButton>
               ) : null}
-            </CheckboxGroup>
+            </ToggleButtonGroup>
           </li>
           <li className="list-none">
             <button

@@ -1,3 +1,4 @@
+import { setButtonPressed } from './lib/set-button-pressed.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -154,7 +155,7 @@ try {
   const hint = { ...initial.binding, operation: 'hint', requestId: 'registered-hint' }
   await control(hint); await control(hint)
   assert.equal((await inspect()).hintStage, 1, 'request replay must not apply another hint')
-  if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
+  await setButtonPressed(page.getByRole('button', { name: 'Show Explorer pane', exact: true }), false)
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await dismissVisibleFloatingPanel(page)

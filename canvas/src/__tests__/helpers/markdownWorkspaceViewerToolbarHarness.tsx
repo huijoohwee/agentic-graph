@@ -105,11 +105,11 @@ export async function runViewerToolbarActionCase(args: {
       await tick(6)
     })
 
-    const markdownPaneToggle = doc.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
-    const jsonPaneToggle = doc.querySelector('input[aria-label="Show JSON editor pane"]') as HTMLInputElement | null
+    const markdownPaneToggle = doc.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
+    const jsonPaneToggle = doc.querySelector('button[aria-label="Show JSON editor pane"]') as HTMLButtonElement | null
     if (!markdownPaneToggle || !jsonPaneToggle) throw new Error('expected split pane toggles for Viewer toolbar html actions test')
     await act(async () => {
-      if (!markdownPaneToggle.checked) markdownPaneToggle.click()
+      if (markdownPaneToggle.getAttribute('aria-pressed') !== 'true') markdownPaneToggle.click()
       jsonPaneToggle.click()
       await tick(6)
     })

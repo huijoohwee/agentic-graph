@@ -61,11 +61,11 @@ export const installInlineExecCommandStub = (
 }
 
 export const enableWorkspaceViewerPane = async (doc: Document): Promise<void> => {
-  const toggle = doc.querySelector('input[aria-label="Show Viewer preview pane"]') as HTMLInputElement | null
+  const toggle = doc.querySelector('button[aria-label="Show Viewer preview pane"]') as HTMLButtonElement | null
   if (!toggle || toggle.disabled) throw new Error('expected an available Viewer preview pane toggle')
   await act(async () => {
-    if (!toggle.checked) toggle.click()
+    if (toggle.getAttribute('aria-pressed') !== 'true') toggle.click()
     await tick(6)
   })
-  if (!toggle.checked || toggle.disabled) throw new Error('expected Viewer preview pane to be enabled')
+  if (toggle.getAttribute('aria-pressed') !== 'true' || toggle.disabled) throw new Error('expected Viewer preview pane to be enabled')
 }

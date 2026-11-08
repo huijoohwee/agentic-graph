@@ -245,8 +245,8 @@ export async function testMarkdownWorkspaceViewerInlineSelectionToolbarSyncsSpli
       await tick(6)
     })
 
-    let markdownPaneToggle = doc.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
-    let jsonPaneToggle = doc.querySelector('input[aria-label="Show JSON editor pane"]') as HTMLInputElement | null
+    let markdownPaneToggle = doc.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
+    let jsonPaneToggle = doc.querySelector('button[aria-label="Show JSON editor pane"]') as HTMLButtonElement | null
     if (!markdownPaneToggle || !jsonPaneToggle) {
       const splitButton = container.querySelector('button[title="Split"]') as HTMLButtonElement | null
       if (splitButton) {
@@ -254,14 +254,14 @@ export async function testMarkdownWorkspaceViewerInlineSelectionToolbarSyncsSpli
           splitButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
           await tick(4)
         })
-        markdownPaneToggle = doc.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
-        jsonPaneToggle = doc.querySelector('input[aria-label="Show JSON editor pane"]') as HTMLInputElement | null
+        markdownPaneToggle = doc.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
+        jsonPaneToggle = doc.querySelector('button[aria-label="Show JSON editor pane"]') as HTMLButtonElement | null
       }
     }
     if (!markdownPaneToggle) throw new Error('expected split pane selector to expose Markdown pane toggle')
     if (!jsonPaneToggle) throw new Error('expected split pane selector to expose JSON pane toggle')
     await act(async () => {
-      if (!markdownPaneToggle.checked) markdownPaneToggle.click()
+      if (markdownPaneToggle.getAttribute('aria-pressed') !== 'true') markdownPaneToggle.click()
       jsonPaneToggle.click()
       await tick(6)
     })
