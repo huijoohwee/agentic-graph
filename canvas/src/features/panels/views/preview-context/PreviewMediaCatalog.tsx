@@ -1,5 +1,5 @@
 import React from 'react'
-import { Grid2X2, List, Rows3 } from 'lucide-react'
+import { MediaCatalogLayoutControls } from '@/features/command-menu/MediaCatalogLayoutControls'
 import type { CommandMenuRichMediaItem } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { FloatingPanelCatalogHeader, FloatingPanelCatalogSearchControl, floatingPanelCatalogCompactRowClassName, floatingPanelCatalogThreeRowClassName, matchesFloatingPanelCatalogSearch, useFloatingPanelCatalogSearch } from '@/lib/ui/floatingPanelCatalogLayout'
@@ -22,12 +22,7 @@ export default function PreviewMediaCatalog({ items, models = false }: { items: 
   return (
     <section className="min-w-0 space-y-2" aria-label={models ? 'Preview 3D models' : 'Preview document media'}>
       <FloatingPanelCatalogHeader title={models ? '3D for XR' : 'Media'} subtitle={`${items.length} in current document or selection`} actionsLabel="Preview media layout"
-        actions={<section className="inline-flex" role="group" aria-label="Preview layout">
-          {([{ value: 'list', Icon: List }, { value: 'card', Icon: Rows3 }, { value: 'grid', Icon: Grid2X2 }] as const).map(({ value, Icon }) =>
-            <button key={value} type="button" aria-label={`Preview ${value} layout`} aria-pressed={layout === value} onClick={() => setLayout(value)} className={cn('rounded p-1', layout === value ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}>
-              <Icon className="size-4" role="img" aria-label={`${value} layout`} />
-            </button>)}
-        </section>}
+        actions={<MediaCatalogLayoutControls context="preview" layout={layout} onChange={setLayout} />}
         searchControl={<FloatingPanelCatalogSearchControl state={search} id="kg-preview-media-search" buttonLabel="Search preview media" panelLabel="Search preview media" placeholder="Search current media" />} />
       {visible.length ? <ul className={cn('m-0 grid list-none gap-2 p-0', layout === 'grid' && 'grid-cols-2')} aria-label="Preview media items">
         {visible.slice(0, 100).map(item => {

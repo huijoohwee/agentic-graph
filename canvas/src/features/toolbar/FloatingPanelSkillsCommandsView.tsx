@@ -1,4 +1,6 @@
 import React from 'react'
+import { ToggleButton, ToggleButtonGroup } from '@agentic-base/views-react/controls'
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'
 import {
   resolveSkillsCommandsGroupKeys,
@@ -111,6 +113,7 @@ export function FloatingPanelSkillsCommandsView({
   promptRuntime = defaultPromptPresetSelectionRuntime,
   openPrompt = openCommandPrompt,
 }: FloatingPanelSkillsCommandsViewProps = {}) {
+  const iconClass = useToolbarIconClass()
   const panelTypography = usePanelTypography()
   const search = useFloatingPanelCatalogSearch()
   const mcpTarget = useSkillsCommandsMcpTarget()
@@ -277,63 +280,25 @@ export function FloatingPanelSkillsCommandsView({
         dataAttributes={{ 'data-kg-floating-panel-skills-commands-header': '1' }}
         actions={(
           <>
-            <section
-              className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
-              role="group"
-              aria-label="Skills & Commands prefix"
-              data-kg-floating-panel-skills-commands-prefix-filter="1"
-            >
-              {SKILLS_COMMANDS_PREFIX_FILTERS.map(option => {
-                const Icon = option.Icon
-                const active = prefixFilter === 'all' || prefixFilter === option.filter
-                return (
-                  <button
-                    key={option.filter}
-                    type="button"
-                    className={cn(
-                      'inline-flex h-full w-6 items-center justify-center border-0 px-0',
-                      active ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.button.hoverBg,
-                      UI_THEME_TOKENS.text.secondary,
-                    )}
-                    title={option.label}
-                    aria-label={option.label}
-                    aria-pressed={active}
-                    data-kg-skills-commands-prefix-toggle={option.filter}
-                    onClick={() => setPrefixFilter(current => current === option.filter ? 'all' : option.filter)}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                )
-              })}
-            </section>
-            <section
-              className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
-              role="group"
-              aria-label="Skills & Commands group by"
-              data-kg-floating-panel-skills-commands-grammar-group="1"
-            >
-              {SKILLS_COMMANDS_GRAMMAR_GROUPS.map(option => {
-                const active = grammarGroupBy === option.groupBy
-                return (
-                  <button
-                    key={option.groupBy}
-                    type="button"
-                    className={cn(
-                      'inline-flex h-full w-6 items-center justify-center border-0 px-0 text-xs font-semibold',
-                      active ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.button.hoverBg,
-                      UI_THEME_TOKENS.text.secondary,
-                    )}
-                    title={`Group by ${option.label}`}
-                    aria-label={`Group by ${option.label}`}
-                    aria-pressed={active}
-                    data-kg-skills-commands-grammar-toggle={option.groupBy}
-                    onClick={() => setGrammarGroupBy(option.groupBy)}
-                  >
-                    {option.shortLabel}
-                  </button>
-                )
-              })}
-            </section>
+            <ToggleButtonGroup aria-label="Skills & Commands prefix" data-kg-floating-panel-skills-commands-prefix-filter="1">
+              {SKILLS_COMMANDS_PREFIX_FILTERS.map(({ filter, label, Icon }) => (
+                <ToggleButton key={filter} title={label} aria-label={label}
+                  pressed={prefixFilter === 'all' || prefixFilter === filter}
+                  data-kg-skills-commands-prefix-toggle={filter}
+                  onClick={() => setPrefixFilter(current => current === filter ? 'all' : filter)}>
+                  <Icon className={iconClass} aria-hidden />
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+            <ToggleButtonGroup aria-label="Skills & Commands group by" data-kg-floating-panel-skills-commands-grammar-group="1">
+              {SKILLS_COMMANDS_GRAMMAR_GROUPS.map(({ groupBy, label, shortLabel }) => (
+                <ToggleButton key={groupBy} title={`Group by ${label}`} aria-label={`Group by ${label}`}
+                  pressed={grammarGroupBy === groupBy} data-kg-skills-commands-grammar-toggle={groupBy}
+                  onClick={() => setGrammarGroupBy(groupBy)}>
+                  {shortLabel}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
           </>
         )}
         searchControl={(
@@ -368,7 +333,7 @@ export function FloatingPanelSkillsCommandsView({
         )}
         trailingActions={visibleGroupKeyValues.length > 0 ? (
           <section
-            className="inline-flex h-6 shrink-0 items-center"
+            className="inline-flex shrink-0 items-center"
             aria-label="Skills & Commands group disclosure"
             data-kg-skills-commands-disclosure-actions="header"
           >

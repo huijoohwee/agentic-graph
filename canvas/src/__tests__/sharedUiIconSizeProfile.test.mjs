@@ -86,3 +86,18 @@ test('Graph styles cannot redeclare the shared selected control palette or selec
     assert.doesNotMatch(css, /--agentic-control-selected-[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group)\b/, file)
   }
 })
+
+test('Preview and the Media library share the layout picker and the panel toggles use Base controls', () => {
+  const source = path => fs.readFileSync(new URL('../features/' + path, import.meta.url), 'utf8')
+  for (const file of ['command-menu/MediaCatalogPanelView.tsx', 'panels/views/preview-context/PreviewMediaCatalog.tsx']) {
+    const consumer = source(file)
+    assert.match(consumer, /<MediaCatalogLayoutControls\b/, file)
+    assert.doesNotMatch(consumer, /aria-label="(?:Preview )?(?:list|card|grid) layout"/i, file)
+  }
+  for (const file of ['command-menu/MediaCatalogLayoutControls.tsx', 'toolbar/FloatingPanelSkillsCommandsView.tsx', 'immersive-media/ImmersiveMediaPanelProjection.tsx']) {
+    const consumer = source(file)
+    assert.match(consumer, /from '@agentic-base\/views-react\/controls'/, file)
+    assert.match(consumer, /<ToggleButtonGroup\b/, file)
+    assert.doesNotMatch(consumer, /function ToggleButton\b|className="agentic-toggle-group"/, file)
+  }
+})
