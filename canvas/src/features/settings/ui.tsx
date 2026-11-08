@@ -1,20 +1,12 @@
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react'
-import { Settings as SettingsIcon, Tag as TagIcon } from 'lucide-react'
-import { ScopeIcon } from '@/features/graph-fields/ui/graphFieldIcons'
-import { getIconSizeClass, getPillClass } from '@/lib/ui/icons'
+import { DesignIcon } from '@agentic-base/views-react/controls'
 import {
-  UI_RESPONSIVE_BADGE_CHIP_CLASSNAME,
-  UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
-  UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME,
-  UI_RESPONSIVE_COLOR_SWATCH_DASHED_CLASSNAME,
-  UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
   UI_RESPONSIVE_PANEL_CODE_EDITOR_FRAME_CLASSNAME,
   UI_RESPONSIVE_PANEL_CODE_EDITOR_SMALL_FRAME_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS, UI_ICON_DEFAULTS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
+import { UI_THEME_TOKENS, UI_ICON_APPEARANCE, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
 import { PanelCheckbox, PanelTextarea, PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
-import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import { renderChatContextScopeSettingInput, renderChatModelSettingInput, renderChatProviderSettingInput } from '@/features/settings/chatProviderSettingInput'
 
@@ -39,16 +31,6 @@ export const renderSettingInput = (
     'three.graph.starfieldColor': '#facc15',
   }
   const v = typeof displayValueOverride === 'undefined' ? values[key] : displayValueOverride
-  const pillBaseRaw = values.uiIconPillClass
-  const pillBaseClass =
-    typeof pillBaseRaw === 'string' && pillBaseRaw.trim().length > 0
-      ? pillBaseRaw
-      : `${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} gap-1 h-6 rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg} px-1.5`
-  const badgeChipBaseRaw = values.uiIconBadgeChipClass
-  const badgeChipBaseClass =
-    typeof badgeChipBaseRaw === 'string' && badgeChipBaseRaw.trim().length > 0
-      ? badgeChipBaseRaw
-      : `${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} gap-1 h-6 ${UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME} ${UI_THEME_TOKENS.panel.bg}`
   const rawPanelInputClass = values['uiPanelKeyValueInputClass']
   const uiPanelKeyValueInputClass =
     typeof rawPanelInputClass === 'string' && rawPanelInputClass.trim().length > 0
@@ -56,11 +38,6 @@ export const renderSettingInput = (
       : normalizePanelValueInputClassName(PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass)
   const uiPanelKeyValueInputLeftClass = normalizePanelValueInputClassName(uiPanelKeyValueInputClass, 'left')
   const uiPanelKeyValueTextareaClass = `${singleLineControlDecorationClassName(uiPanelKeyValueInputClass).replace(/\btext-(left|right)\b/g, '')} px-2 py-1 text-left font-mono text-xs`
-  const iconSizeClass = getIconSizeClass(values.uiIconScale === 'compact' ? 'compact' : 'default')
-  const iconStrokeWidth =
-    typeof values.uiIconStrokeWidth === 'number' && Number.isFinite(values.uiIconStrokeWidth)
-      ? values.uiIconStrokeWidth
-      : UI_ICON_DEFAULTS.strokeWidth
   const setStringValue = (keyName: string, nextValue: string) => {
     dirtyRef.current.add(keyName)
     setValues(prev => ({ ...prev, [keyName]: nextValue }))
@@ -105,6 +82,14 @@ export const renderSettingInput = (
       onChange={e => setStringValue(options.keyName, e.target.value)}
     />
   )
+  if (Object.hasOwn(UI_ICON_APPEARANCE, key)) {
+    const role = UI_ICON_APPEARANCE[key as keyof typeof UI_ICON_APPEARANCE]
+    return <output data-shared-icon-role={key} aria-label={`${key}: shared design role`}
+      title={`Design System · ${key}: ${role}`} tabIndex={0} className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
+      <DesignIcon name="Palette" label="Shared design role" />
+      <span className="min-w-0 truncate">{String(role)}</span>
+    </output>
+  }
   if (!writable) {
     return <span className={`block min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${UI_THEME_TOKENS.text.primary}`}>{String(v)}</span>
   }
@@ -127,185 +112,6 @@ export const renderSettingInput = (
       className: uiPanelKeyValueInputClass,
       type: 'password',
     })
-  }
-  if (key === 'uiIconColorClass' || key === 'uiIconHoverBgClass') {
-    const str = String(v || '')
-    const placeholder = key === 'uiIconColorClass' ? UI_THEME_TOKENS.icon.color : UI_THEME_TOKENS.button.hoverBg
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewBase =
-      `${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded ${UI_THEME_TOKENS.panel.bg} text-xs`
-    const previewClass =
-      key === 'uiIconColorClass'
-        ? `${previewBase} ${appliedClass}`
-        : `${previewBase} ${UI_THEME_TOKENS.text.secondary} ${appliedClass}`
-    const previewLabel = key === 'uiIconColorClass' ? 'Aa' : 'Hover'
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        {renderSharedTextInput({ value: previewLabel, readOnly: true, className: previewClass })}
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder,
-        })}
-      </section>
-    )
-  }
-  if (key === 'uiIconButtonPaddingClass') {
-    const str = String(v || '')
-    const placeholder = UI_THEME_TOKENS.button.padding
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${UI_RESPONSIVE_COLOR_SWATCH_DASHED_CLASSNAME} rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.panel.bg} text-xs ${appliedClass}`
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        <section className={previewClass}>
-          <SettingsIcon className={iconSizeClass} strokeWidth={iconStrokeWidth} aria-hidden="true" />
-        </section>
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder,
-        })}
-      </section>
-    )
-  }
-  if (key === 'uiIconPillClass') {
-    const str = String(v || '')
-    const placeholder = pillBaseClass
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} justify-center gap-1 h-6 box-border text-xs`
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        <section className={previewClass}>
-          <TagIcon className={iconSizeClass} strokeWidth={iconStrokeWidth} aria-hidden="true" />
-          <span>Scope</span>
-        </section>
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder: pillBaseClass,
-        })}
-      </section>
-    )
-  }
-  if (key === 'uiIconPillLegendTextSizeClass' || key === 'uiIconPillBadgeTextSizeClass') {
-    const str = String(v || '')
-    const placeholder = 'text-xs'
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const legendPreviewClass =
-      key === 'uiIconPillLegendTextSizeClass'
-        ? getPillClass('legend', {
-            baseClass: `${pillBaseClass} box-border`,
-            legendTextSizeClass: appliedClass,
-            textColorClass: UI_THEME_TOKENS.text.primary,
-          })
-        : ''
-    const badgePreviewClass =
-      key === 'uiIconPillBadgeTextSizeClass'
-        ? getPillClass('badge', {
-            baseClass: `${pillBaseClass} box-border`,
-            badgeTextSizeClass: appliedClass,
-            textColorClass: UI_THEME_TOKENS.text.primary,
-          })
-        : ''
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        {key === 'uiIconPillLegendTextSizeClass' ? (
-          <section className={`${uiToolbarRowScrollClassName} gap-1`}>
-            <span className={legendPreviewClass}>
-              <ScopeIcon scope="node" className={iconSizeClass} strokeWidth={iconStrokeWidth} aria-hidden="true" />
-              <span>Base</span>
-            </span>
-            <span className={legendPreviewClass}>
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                className={iconSizeClass}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={iconStrokeWidth}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="5" />
-                <path d="M9 12h3l2-3" />
-              </svg>
-              <span>Origin</span>
-            </span>
-            <span className={legendPreviewClass}>
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                className={iconSizeClass}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={iconStrokeWidth}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 12c2-4 5.5-6.5 10-6.5S20 8 22 12c-2 4-5.5 6.5-10 6.5S4 16 2 12Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span>Visibility</span>
-            </span>
-          </section>
-        ) : (
-          <section className={`${uiToolbarRowScrollClassName} gap-1`}>
-            <span className={badgePreviewClass}>
-              <span>Base</span>
-            </span>
-          </section>
-        )}
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder,
-        })}
-      </section>
-    )
-  }
-  if (key === 'uiIconBadgeChipClass') {
-    const str = String(v || '')
-    const placeholder = UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} justify-center gap-1 h-6 box-border ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} text-xs`
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        <section className={previewClass}>
-          <TagIcon className={iconSizeClass} strokeWidth={iconStrokeWidth} aria-hidden="true" />
-          <span>Badge</span>
-        </section>
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder,
-        })}
-      </section>
-    )
-  }
-  if (key === 'uiIconBadgeChipTextSizeClass') {
-    const str = String(v || '')
-    const placeholder = 'text-xs'
-    const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${badgeChipBaseClass} ${appliedClass} gap-1 h-6 box-border ${UI_THEME_TOKENS.text.primary}`
-    return (
-      <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        <section className={previewClass}>
-          <TagIcon className="w-3 h-3" aria-hidden="true" />
-          <span>Badge</span>
-        </section>
-        {renderSharedTextInput({
-          keyName: key,
-          value: str,
-          className: `${uiPanelKeyValueInputClass} flex-1 min-w-0`,
-          placeholder,
-        })}
-      </section>
-    )
   }
   if (key in colorKeyDefaults) {
     const str = String(v || '')

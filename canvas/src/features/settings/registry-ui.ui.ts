@@ -1,6 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
-import { UI_ICON_DEFAULTS, UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_ICON_APPEARANCE, UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { themeSettingsRegistry } from './themeSettings'
 import { LS_KEYS } from '@/lib/config'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
@@ -31,7 +31,6 @@ import {
   CHAT_AI_MARKDOWN_MAX_TOKENS_DEFAULT,
 } from '@/features/chat/chatAiMarkdownSpec'
 import {
-  UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
@@ -189,103 +188,10 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     docKey: 'uiSectionHeaderRowPaddingClass',
     default: () => 'py-1',
   },
-  {
-    key: 'uiIconFormat',
-    type: 'string',
-    source: 'store',
-    read: () => s().uiIconFormat,
-    write: (v) => {
-      const raw = String(v || '')
-      const format: 'default' | 'minimal' | '1' =
-        raw === 'minimal' ? 'minimal' : raw === '1' ? '1' : 'default'
-      s().setUiIconFormat(format)
-    },
-    docKey: 'uiIconFormat',
-    default: () => '1',
-    options: ['1', 'default', 'minimal'],
-  },
-  {
-    key: 'uiIconStrokeWidth',
-    type: 'number',
-    source: 'store',
-    read: () => s().uiIconStrokeWidth,
-    write: (v) => s().setUiIconStrokeWidth(Number(v)),
-    docKey: 'uiIconStrokeWidth',
-    default: () => UI_ICON_DEFAULTS.strokeWidth,
-  },
-  {
-    key: 'uiIconColorClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconColorClass,
-    write: (v) => s().setUiIconColorClass(String(v || '')),
-    docKey: 'uiIconColorClass',
-    default: () => UI_THEME_TOKENS.icon.color,
-  },
-  {
-    key: 'uiIconHoverBgClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconHoverBgClass,
-    write: (v) => s().setUiIconHoverBgClass(String(v || '')),
-    docKey: 'uiIconHoverBgClass',
-    default: () => UI_THEME_TOKENS.button.hoverBg,
-  },
-  {
-    key: 'uiIconButtonPaddingClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconButtonPaddingClass,
-    write: (v) => s().setUiIconButtonPaddingClass(String(v || '')),
-    docKey: 'uiIconButtonPaddingClass',
-    default: () => 'p-2',
-  },
-  {
-    key: 'uiIconPillClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconPillClass,
-    write: (v) => s().setUiIconPillClass(String(v || '')),
-    docKey: 'uiIconPillClass',
-    default: () =>
-      `inline-flex items-center justify-center rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg} px-1.5 py-0.5`,
-  },
-  {
-    key: 'uiIconPillLegendTextSizeClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconPillLegendTextSizeClass,
-    write: (v) => s().setUiIconPillLegendTextSizeClass(String(v || '')),
-    docKey: 'uiIconPillLegendTextSizeClass',
-    default: () => 'text-xs',
-  },
-  {
-    key: 'uiIconPillBadgeTextSizeClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconPillBadgeTextSizeClass,
-    write: (v) => s().setUiIconPillBadgeTextSizeClass(String(v || '')),
-    docKey: 'uiIconPillBadgeTextSizeClass',
-    default: () => 'text-xs',
-  },
-  {
-    key: 'uiIconBadgeChipClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconBadgeChipClass,
-    write: (v) => s().setUiIconBadgeChipClass(String(v || '')),
-    docKey: 'uiIconBadgeChipClass',
-    default: () => UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
-  },
-  {
-    key: 'uiIconBadgeChipTextSizeClass',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().uiIconBadgeChipTextSizeClass,
-    write: (v) => s().setUiIconBadgeChipTextSizeClass(String(v || '')),
-    docKey: 'uiIconBadgeChipTextSizeClass',
-    default: () => 'text-xs',
-  },
+  ...Object.entries(UI_ICON_APPEARANCE).map(([key, value]): SettingMeta => ({
+    key, type: typeof value === 'number' ? 'number' : 'string', source: 'store',
+    read: () => value, docKey: key, default: () => value,
+  })),
   {
     key: 'uiPanelMicroLabelTextSizeClass',
     type: 'string',

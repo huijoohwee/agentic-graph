@@ -1,3 +1,4 @@
+import { centralTokenValue } from './fontStacks.js'
 import { UI_INTENT_TOKENS } from './intentTokens.js'
 import { resolveCssVarWithKgFallback } from './kgTokens.js'
 
@@ -59,10 +60,26 @@ const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--agentic-control-height)]'
 /** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
 export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
 
-/** One setting controls UI glyphs; authored SVG/chart strokes keep their own semantics. */
-export const UI_ICON_DEFAULTS = { strokeWidth: 1.5 } as const
-export function normalizeUiIconStrokeWidth(value: number): number {
-  return Number.isFinite(value) ? Math.max(0.5, Math.min(4, value)) : UI_ICON_DEFAULTS.strokeWidth
+/** Contract adapter; values and presentation live in the pinned central profile. */
+export const UI_ICON_DEFAULTS = { strokeWidth: Number(centralTokenValue('--agentic-icon-stroke-width')) } as const
+export const UI_ICON_APPEARANCE = Object.freeze({
+  uiIconFormat: '1',
+  uiIconStrokeWidth: UI_ICON_DEFAULTS.strokeWidth,
+  uiIconColorClass: 'agentic-icon-color',
+  uiIconHoverBgClass: 'agentic-icon-hover',
+  uiIconButtonPaddingClass: 'agentic-icon-padding',
+  uiIconPillClass: 'agentic-icon-pill',
+  uiIconPillLegendTextSizeClass: 'agentic-icon-text',
+  uiIconPillBadgeTextSizeClass: 'agentic-icon-text',
+  uiIconBadgeChipClass: 'agentic-icon-badge',
+  uiIconBadgeChipTextSizeClass: 'agentic-icon-text',
+} as const)
+/** Legacy saved values normalize to the shared owner without writing local overrides. */
+export function normalizeUiIconStrokeWidth(_value: number): number { return UI_ICON_DEFAULTS.strokeWidth }
+export function assertCentralIconAppearance<K extends keyof typeof UI_ICON_APPEARANCE>(key: K, value: unknown): typeof UI_ICON_APPEARANCE[K] {
+  const owned = UI_ICON_APPEARANCE[key]
+  if (value !== owned) throw new Error(`${key} is read-only; change the shared Design System owner`)
+  return owned
 }
 
 // A stronger primary wash distinguishes keyboard focus even on a selected icon.

@@ -527,7 +527,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
           </span>
         }}
       />}
-      {captureRefresh ? <section role="dialog" aria-label="Refresh from rendered page" className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-xl rounded-lg border bg-background p-3 shadow-xl">
+      {captureRefresh ? <section role="dialog" aria-label="Refresh from rendered page" className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-xl rounded-lg border bg-background p-3 shadow-[var(--kg-shadow-overlay)]">
         <h2 className="mb-2 text-sm font-semibold">Refresh from a rendered page</h2>
         <ImportUrlPrompt
           urlDraft={captureRefresh.url}

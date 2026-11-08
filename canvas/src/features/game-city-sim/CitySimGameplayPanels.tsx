@@ -98,7 +98,7 @@ export function CitySimGeoXrGameplayPanels({
             <button
               type="button"
               className={cn(
-                'App-toolbar__btn inline-flex min-h-10 w-full justify-start rounded border px-3 py-2 text-sm font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                'App-toolbar__btn inline-flex min-h-10 w-full justify-start rounded border px-3 py-2 text-sm font-semibold shadow-[var(--kg-shadow-raised)] transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                 UI_THEME_TOKENS.button.activeBorder,
                 UI_THEME_TOKENS.button.activeBg,
                 UI_THEME_TOKENS.button.activeText,

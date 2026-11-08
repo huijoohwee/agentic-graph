@@ -1,4 +1,4 @@
-import { UI_ICON_DEFAULTS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
+import { UI_ICON_APPEARANCE } from '@/lib/ui/theme-tokens'
 import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
@@ -25,10 +25,8 @@ import { DEFAULT_DRAG_ALPHA_TARGET, DEFAULT_FIT_TO_SCREEN_FILL_RATIO } from '@/l
 import { buildWorkspaceGraphMutationTransitionState } from '@/features/workspace-table/workspaceTableSsot'
 import { readGrabMapsByokApiKeyFromBrowser } from 'grph-shared/geospatial/grabMapsAuth'
 import {
-  UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { normalizeBadgeChipBaseClassName } from '@/lib/ui/icons'
 import type { UiStorageReaders } from './uiSliceStorage'
 import type { InitialChatUiContext } from './uiSliceChat'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -435,58 +433,7 @@ export const createUiInitialState = (
     uiIconScale: lsJson<'compact' | 'default'>(LS_KEYS.iconScale, 'default', value =>
       value === 'compact' || value === 'default' ? value : 'default',
     ),
-    uiIconFormat: lsJson<'default' | 'minimal' | '1'>(LS_KEYS.iconFormat, '1', value =>
-      value === 'minimal' || value === 'default' || value === '1' ? value : '1',
-    ),
-    uiIconStrokeWidth: normalizeUiIconStrokeWidth(lsFloat(LS_KEYS.iconStrokeWidth, UI_ICON_DEFAULTS.strokeWidth)),
-    uiIconColorClass: lsJson<string>(
-      LS_KEYS.iconColorClass,
-      UI_THEME_TOKENS.text.secondary,
-      value => (typeof value === 'string' ? value : UI_THEME_TOKENS.text.secondary),
-    ),
-    uiIconHoverBgClass: lsJson<string>(
-      LS_KEYS.iconHoverBgClass,
-      'hover:bg-[var(--kg-panel-action-bg-hover)]',
-      value => {
-        if (typeof value !== 'string') return 'hover:bg-[var(--kg-panel-action-bg-hover)]'
-        const normalized = value.trim()
-        if (!normalized || normalized === 'hover:bg-gray-100') return 'hover:bg-[var(--kg-panel-action-bg-hover)]'
-        return normalized
-      },
-    ),
-    uiIconButtonPaddingClass: lsJson<string>(
-      LS_KEYS.iconButtonPadding,
-      'p-2',
-      value => (typeof value === 'string' ? value : 'p-2'),
-    ),
-    uiIconPillClass: lsJson<string>(
-      LS_KEYS.iconPillClass,
-      `inline-flex items-center justify-center rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.neutralSubtle} px-1.5 py-0.5`,
-      value =>
-        typeof value === 'string'
-          ? value
-          : `inline-flex items-center justify-center rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.neutralSubtle} px-1.5 py-0.5`,
-    ),
-    uiIconBadgeChipClass: lsJson<string>(
-      LS_KEYS.iconBadgeChipClass,
-      UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME,
-      value => (typeof value === 'string' ? normalizeBadgeChipBaseClassName(value) : UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME),
-    ),
-    uiIconBadgeChipTextSizeClass: lsJson<string>(
-      LS_KEYS.iconBadgeChipTextSizeClass,
-      'text-xs',
-      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
-    ),
-    uiIconPillLegendTextSizeClass: lsJson<string>(
-      LS_KEYS.iconPillLegendTextSizeClass,
-      'text-xs',
-      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
-    ),
-    uiIconPillBadgeTextSizeClass: lsJson<string>(
-      LS_KEYS.iconPillBadgeTextSizeClass,
-      'text-xs',
-      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
-    ),
+    ...UI_ICON_APPEARANCE,
     uiIconAnimationEnabled: lsBool(LS_KEYS.iconAnimationEnabled, true),
     uiOverlayOpacity: lsNum(LS_KEYS.overlayOpacity, 0.95),
     uiPanelOpacity: lsNum(LS_KEYS.panelOpacity, 0.95),
