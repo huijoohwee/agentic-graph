@@ -177,7 +177,6 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     observer.observe(root, { attributes: true, attributeFilter: ['data-kg-installable'] })
     return () => observer.disconnect()
   }, [])
-  const navClassBase = 'Island App-toolbar App-toolbar--compact w-fit'
   const clampedMainPanelPos = isMainPanelOpen && mainPanelDragPos ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
   const isNarrowViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode
@@ -245,7 +244,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
   return (
     <nav
       ref={toolbarNavRef}
-      className={`${navClassBase} ${shouldUseToolbarRowScroll ? uiToolbarTouchRowScrollClassName : ''}`}
+      className={`agentic-toolbar ${shouldUseToolbarRowScroll ? uiToolbarTouchRowScrollClassName : ''}`}
       role="navigation"
       aria-label="Main Toolbar"
       data-kg-canvas-pointer-ignore="true"

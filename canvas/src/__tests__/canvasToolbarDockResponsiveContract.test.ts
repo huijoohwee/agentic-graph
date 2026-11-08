@@ -73,6 +73,11 @@ export function testCanvasToolbarDockResponsiveContract() {
   if (!indexCssText.includes("@import './styles/responsive-canvas-toolbar.css';")) {
     throw new Error('expected index.css to load the focused responsive canvas toolbar stylesheet')
   }
+  if (!indexCssText.includes("@import '@agentic-base/views-react/toolbar.css';") ||
+      !toolbarText.includes('agentic-toolbar ${shouldUseToolbarRowScroll') ||
+      /\.agentic-toolbar\s*\{|\.App-toolbar(?:--compact)?\s*\{/.test(indexCssText + dockCssText)) {
+    throw new Error('Main Toolbar must reuse the pinned Design System surface through Base')
+  }
   assertWorkspaceToolbarBoundaryStyle(canvasText)
   if (
     !canvasText.includes("useMediaQuery('(max-width: 768px), (pointer: coarse)')") ||
