@@ -80,6 +80,8 @@ export const UI_RESPONSIVE_SIDE_PANEL_CLASSNAME = 'kg-responsive-side-panel'
 
 export const UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME = 'kg-floating-panel-subpanel'
 
+export const UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME = 'min-w-0 w-full max-w-full [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full'
+
 export const UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME = 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden'
 
 export const UI_RESPONSIVE_CANVAS_PAGE_SURFACE_CLASSNAME = 'kg-canvas-page-surface relative flex h-[100dvh] min-h-[100dvh] w-full max-w-full flex-col overflow-hidden'

@@ -1,4 +1,6 @@
 import { PanelSelect } from '@/lib/ui/panelFormControls'
+import { ResponsiveControlRow } from '@/lib/ui/responsiveControlRows'
+import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRendererPanelState } from '@/features/panels/hooks/useRendererPanelState'
@@ -230,8 +232,7 @@ export function ToolbarToolMenuRendererView(props: {
         <section className={`text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>
           Rich media
         </section>
-        <label className="flex items-center gap-2 text-xs">
-          <span className="min-w-0">Panel mode</span>
+        <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
           <PanelSelect
             className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
             value={richMediaPanelMode}
@@ -243,17 +244,17 @@ export function ToolbarToolMenuRendererView(props: {
             <option value="snapshot">Snapshot preview</option>
             <option value="embed">Interactive embed</option>
           </PanelSelect>
-        </label>
+        </ResponsiveControlRow>
       </section>
       {showDesignWireframeUi ? <DesignWireframeSettings /> : null}
       {showGraphEditorUi ? (
-        <section className="flex gap-2" aria-label="Graph editor tools and inspector">
+        <section className="flex min-w-0 max-w-full flex-wrap gap-2" aria-label="Graph editor tools and inspector">
           <GraphEditorToolRail
             activeToolId={toolId}
             onSelectTool={setToolId}
             disabled={!graphData}
           />
-          <section className="flex-1 min-w-0">
+          <section className="flex-1 basis-64 min-w-0 max-w-full">
             <GraphEditorRightPanel />
           </section>
         </section>
