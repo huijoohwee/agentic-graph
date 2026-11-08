@@ -1,5 +1,5 @@
 import React from 'react'
-import { DashboardCanvasLayout } from '@agentic-base/views-react/dashboard'
+import { DashboardCanvasLayout, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
 import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics } from './dashboardWidgetConfiguration'
 import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
@@ -96,8 +96,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           <DashboardCanvasLayout className="kg-dashboard-content" data-kg-dashboard-responsive-width="1"
             ariaLabel="Saved Markdown dashboard" data-dashboard-document={widgetConfiguration.sourcePath ?? undefined}
             beforeHeader={exportControl}
-            title={<h2 className="text-lg font-semibold">{saved.template.id}</h2>}
-            description={<p className="text-sm">{saved.source.sourceId} · Revision {saved.source.sequence} · {saved.source.complete ? 'Complete' : 'Partial'} coverage</p>}
+            title={<DashboardPrimitive kind="heading">{saved.template.id}</DashboardPrimitive>}
+            description={<DashboardPrimitive kind="text">{saved.source.sourceId} · Revision {saved.source.sequence} · {saved.source.complete ? 'Complete' : 'Partial'} coverage</DashboardPrimitive>}
             observation={`Historical snapshot · ${new Date(saved.source.observedAt).toISOString()}`}>
             <React.Suspense fallback={<p>Opening saved dashboard…</p>}><DashboardSnapshotView /></React.Suspense>
             {props.insights}
@@ -105,7 +105,9 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
         ) : (
           <DashboardCanvasLayout className="kg-dashboard-content" data-kg-dashboard-responsive-width="1"
             ariaLabel="Dashboard content" beforeHeader={exportControl}
-            title={<DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header']?.markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header']?.title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header']?.subtitle ?? model.subtitle}`} label="Dashboard heading and description" />}
+            title={widgetConfiguration.document.widgets['graph:header']
+              ? <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header'].markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header'].title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header'].subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
+              : <section aria-label="Dashboard heading and description"><p className="agentic-dashboard-observation">Dashboard</p><DashboardPrimitive kind="heading">{model.title}</DashboardPrimitive><DashboardPrimitive kind="text">{model.subtitle}</DashboardPrimitive></section>}
             hero={<DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />}
             observation={widgetConfiguration.dashboard?.mission && `Historical snapshot · ${new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}`}
             overview={props.overview} insights={props.insights}

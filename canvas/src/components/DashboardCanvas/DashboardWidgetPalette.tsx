@@ -1,6 +1,6 @@
 import React from 'react'
 import DashboardLayoutPanel from './DashboardLayoutPanel'
-import { DashboardMarkdown } from './DashboardMarkdown'
+import { DashboardPrimitive, DashboardWidgetDisclosure } from '@agentic-base/views-react/dashboard'
 import { WidgetPaletteCardLayoutPreview } from '@/features/toolbar/WidgetPaletteCardLayoutPreview'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import DashboardWidgetFlip, { type DashboardTemplate } from './DashboardWidgetFlip'
@@ -15,6 +15,19 @@ const templates: { kind: DashboardTemplate; title: string }[] = [
   { kind: 'disclosure', title: 'Expand / Collapse' }, { kind: 'divider', title: 'Divider' }, { kind: 'container', title: 'Container' },
 ]
 
+function PrimitivePreview({ kind }: { kind: DashboardTemplate }) {
+  const [expanded, setExpanded] = React.useState(false)
+  switch (kind) {
+    case 'heading': return <DashboardPrimitive kind="heading">Heading</DashboardPrimitive>
+    case 'text': return <DashboardPrimitive kind="text">Write <strong>Markdown</strong> text, lists, and links.</DashboardPrimitive>
+    case 'divider': return <DashboardPrimitive kind="divider" />
+    case 'container': return <DashboardPrimitive kind="container" columns={2}><strong>Row / columns</strong><span>Group reusable widgets.</span></DashboardPrimitive>
+    case 'disclosure': return <DashboardWidgetDisclosure id="preview-disclosure" title="Expand / Collapse" expanded={expanded} onExpandedChange={setExpanded}>
+      <DashboardPrimitive kind="text">Write Markdown text, lists, and links.</DashboardPrimitive>
+    </DashboardWidgetDisclosure>
+  }
+}
+
 /** Unbound templates: real sources and instance settings appear only on the back. */
 export default function DashboardWidgetPalette() {
   return <><li className="min-w-0"><DashboardLayoutPanel /></li>{templates.map(({ kind, title }) => {
@@ -25,7 +38,7 @@ export default function DashboardWidgetPalette() {
     return <li key={kind} aria-label={`Template ${title}`} className="min-w-0">
       <DashboardWidgetFlip template={kind} title={title}>
         {kind === 'metric' ? <DashboardMetricTile metric={{ id: 'template-metric', label: title, value: '—', detail: 'Select, then Flip to configure', tone: 'slate' }} />
-          : ['heading', 'text', 'divider', 'container', 'disclosure'].includes(kind) ? <DashboardCardView card={card}><DashboardMarkdown text={kind === 'heading' ? '## Heading' : kind === 'divider' ? '---' : kind === 'container' ? '**Row / columns**\n\nGroup reusable widgets.' : 'Write **Markdown** text, lists, and links.'} /></DashboardCardView>
+          : ['heading', 'text', 'divider', 'container', 'disclosure'].includes(kind) ? <DashboardCardView card={card}><PrimitivePreview kind={kind} /></DashboardCardView>
           : kind === 'codebase' ? <WidgetPaletteCardLayoutPreview variant={{ id: 'dashboard-codebase', label: title, aspectRatio: '16:9', layoutKind: 'card-media' }} />
           : <DashboardCardView card={card}>{kind === 'tree' ? <p className="text-xs">Agent Mission · selected run</p> : undefined}</DashboardCardView>}
       </DashboardWidgetFlip>
