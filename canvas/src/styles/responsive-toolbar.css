@@ -2226,7 +2226,6 @@
 
   .kg-explorer-search-control,
   .kg-explorer-search-input,
-  .kg-workspace-pane-toggles,
   .kg-graph-data-table-menu-row,
   .kg-graph-data-table-menu-field,
   .kg-graph-data-table-kanban-lane,
@@ -2241,39 +2240,11 @@
     width: min(10rem, calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 4rem));
   }
 
-  .kg-workspace-pane-toggles label,
   .kg-graph-data-table-menu-row,
   .kg-graph-data-table-menu-field {
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
-  }
-
-  .kg-workspace-pane-toggle {
-    min-height: var(--kg-control-height, 28px);
-    max-width: min(10rem, calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 2rem));
-    align-items: center;
-    padding-inline: 0.125rem;
-  }
-
-  .kg-workspace-pane-toggles { border: 0; background: transparent; padding: 0; }
-
-  .kg-workspace-pane-toggles .kg-workspace-pane-toggle--viewer {
-    min-width: 0;
-    scroll-margin-inline: 0;
-  }
-
-  .kg-workspace-pane-toggle-input {
-    flex: 0 0 auto;
-    width: 0.875rem;
-    height: 0.875rem;
-    margin: 0;
-  }
-
-  .kg-workspace-pane-toggle-label {
-    display: inline-block;
-    min-width: 0;
-    max-width: 7.5rem;
   }
 
   .kg-graph-data-table-kanban-lane {
@@ -2596,19 +2567,8 @@
       width: min(8rem, calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 4rem));
     }
 
-    .kg-workspace-pane-toggles {
-      width: 100%;
-      gap: 0.375rem;
-    }
-
     .kg-markdown-workspace-toolbar-row > .kg-markdown-workspace-toolbar-controls {
       scroll-padding-inline: 0.5rem;
-    }
-
-    .kg-workspace-pane-toggle {
-      flex: 0 0 auto;
-      min-height: var(--kg-touch-target, 44px);
-      padding-inline: 0.25rem;
     }
 
     .kg-touch-menu-row {
@@ -2657,16 +2617,6 @@
 
     .kg-import-url-addon-action {
       --kg-import-url-addon-action-size: var(--kg-touch-target, 44px);
-    }
-
-    .kg-workspace-pane-toggles .kg-workspace-pane-toggle--viewer {
-      min-width: 5.25rem;
-      scroll-margin-inline: 0.5rem;
-    }
-
-    .kg-workspace-pane-toggle-input {
-      width: 1rem;
-      height: 1rem;
     }
 
     .kg-graph-data-table-menu-row {

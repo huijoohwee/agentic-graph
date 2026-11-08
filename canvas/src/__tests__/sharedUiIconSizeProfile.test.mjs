@@ -63,8 +63,9 @@ test('legacy renderer fields reuse the KTV adapter and palette and renderer sect
   assert.ok(palette.includes('className={uiToolbarSettingsPanelBodyClassName}'))
   assert.ok(palette.includes('CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow'))
   assert.ok(!palette.includes('densityClassName='), 'Palette and legacy controls must use the same row runtime')
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0\.75rem;/)
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0\.5rem;/)
+  const toolbarStyles = fs.readFileSync(new URL('../features/toolbar/ui/toolbarStyles.ts', import.meta.url), 'utf8')
+  assert.ok(toolbarStyles.includes("uiToolbarSettingsPanelBodyClassName = 'agentic-panel-section-body'"))
+  assert.doesNotMatch(toolbarCss, /--kg-toolbar-settings-panel-body-padding-(?:inline|block)\s*:/)
 })
 
 

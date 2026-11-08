@@ -25,6 +25,22 @@
   --agentic-menu-padding: 0.25rem;
   --agentic-menu-gap: 0.25rem;
 }
+.agentic-checkbox-group {
+  display: inline-flex; align-items: center; gap: var(--agentic-control-padding-block);
+  min-inline-size: 0; max-inline-size: 100%; overflow-x: auto;
+  margin: 0; padding: 0; border: 0;
+  font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
+}
+.agentic-checkbox-group > label {
+  display: inline-flex; flex: none; align-items: center; gap: var(--agentic-control-padding-block);
+  box-sizing: border-box; min-block-size: var(--agentic-control-height); padding-inline: var(--agentic-control-padding-block);
+  margin: 0; white-space: nowrap; font: inherit; cursor: pointer;
+}
+.agentic-checkbox-group > label:has(:disabled) { opacity: .5; cursor: not-allowed; }
+.agentic-checkbox-group > label > input[type="checkbox"] {
+  flex: none; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default);
+  min-inline-size: 0; min-block-size: 0; margin: 0; padding: 0; cursor: inherit;
+}
 .agentic-panel-section { box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%; padding-inline: calc(var(--agentic-control-padding-inline) + var(--agentic-control-padding-block)); }
 .agentic-panel-section-header { box-sizing: border-box; display: flex; min-inline-size: 0; max-inline-size: 100%; min-block-size: var(--agentic-row-height); align-items: center; justify-content: space-between; gap: var(--agentic-control-padding-block); padding-inline: var(--agentic-control-padding-inline); font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
 .agentic-panel-section-title { min-inline-size: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
