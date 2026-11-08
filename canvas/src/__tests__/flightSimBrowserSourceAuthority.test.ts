@@ -86,7 +86,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(sourceSelection, /editor_workspace_button\.click\(\)/)
   assert.match(sourceSelection, /name=["']Show Explorer pane["'],\s*exact=True/)
   assert.match(sourceSelection, /name=["']Source Files["'],\s*exact=True/)
-  assert.match(sourceSelection, /explorer_toggle\.check\(\)/)
+  assert.match(sourceSelection, /explorer_toggle\.click\(\)/)
   assert.match(sourceSelection, /source_files_button\.click\(\)/)
   assert.match(sourceSelection, /docs_button\.click\(\)/)
   assert.match(sourceSelection, /workspace_seeds_button\.click\(\)/)

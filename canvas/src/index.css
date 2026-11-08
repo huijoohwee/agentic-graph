@@ -1,3 +1,4 @@
+@import '@agentic-base/views-react/toolbar.css';
 @import "tailwindcss";
 @import './styles/tailwind-theme.css';
 @import 'katex/dist/katex.min.css';
@@ -277,17 +278,6 @@ html, body, #root {
     border: var(--kg-surface-border);
     border-radius: var(--island-radius);
     box-shadow: var(--island-shadow);
-  }
-  .App-toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--toolbar-gap);
-    padding: var(--toolbar-padding);
-    background-color: rgba(var(--panel-bg-rgb),var(--toolbar-opacity));
-    border: var(--kg-surface-border);
-    border-radius: var(--island-radius);
-    box-shadow: var(--island-shadow);
-    min-height: var(--kg-control-height, 36px);
   }
   .App-toolbar--collapsed {
     min-height: var(--kg-control-height, 36px);

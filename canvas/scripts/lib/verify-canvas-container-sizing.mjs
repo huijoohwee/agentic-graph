@@ -1,10 +1,11 @@
+import { setButtonPressed } from './set-button-pressed.mjs'
 import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { openEditorWorkspace } from './mission-card-face.mjs'
 
 export async function verifyCanvasContainerSizing(page) {
-  await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
-    .getByRole('checkbox', { name: 'Show Canvas pane', exact: true }).check()
+  await setButtonPressed(page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+    .getByRole('button', { name: 'Show Canvas pane', exact: true }), true)
   const container = page.locator('[data-kg-canvas-view-container]')
   const editor = page.locator('[data-kg-workspace-left-pane="1"]')
   const frame = page.locator('[data-kg-canvas-container-frame="1"]')
@@ -18,8 +19,8 @@ export async function verifyCanvasContainerSizing(page) {
     await panel.getByRole('button', { name: 'Apply', exact: true }).click()
     await panel.getByRole('button', { name: 'Close', exact: true }).click()
     await openEditorWorkspace(page)
-    await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
-      .getByRole('checkbox', { name: 'Show Canvas pane', exact: true }).check()
+    await setButtonPressed(page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+      .getByRole('button', { name: 'Show Canvas pane', exact: true }), true)
     await page.waitForFunction(expected => document.querySelector('[data-kg-canvas-view-container]')?.getAttribute('data-kg-canvas-view-container') === expected, mode)
   }
   assert.equal(await container.getAttribute('data-kg-canvas-view-container'), 'full')

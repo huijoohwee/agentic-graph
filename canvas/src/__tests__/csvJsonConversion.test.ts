@@ -336,8 +336,8 @@ export async function testWorkspaceExternalValidationCsvImportShowsJsonPanePrevi
     })
     const legacyMultiDimToggle = dom.window.document.querySelector('input[aria-label="Show Multi-dimensional Table"]')
     if (legacyMultiDimToggle) throw new Error('expected external CSV validation import to remove the legacy Multi-dimensional Table pane toggle')
-    const viewerToggle = dom.window.document.querySelector('input[aria-label="Show Viewer preview pane"]') as HTMLInputElement | null
-    if (!viewerToggle?.checked) throw new Error('expected external CSV validation import to check the Viewer pane toggle')
+    const viewerToggle = dom.window.document.querySelector('button[aria-label="Show Viewer preview pane"]') as HTMLButtonElement | null
+    if (viewerToggle?.getAttribute('aria-pressed') !== 'true') throw new Error('expected external CSV validation import to check the Viewer pane toggle')
     const dataView = dom.window.document.querySelector('section[aria-label="Workspace data view"]')
     if (!dataView) throw new Error('expected external CSV validation import to render the Viewer data view')
     const dataViewText = String(dataView.textContent || '')
@@ -353,7 +353,7 @@ export async function testWorkspaceExternalValidationCsvImportShowsJsonPanePrevi
       throw new Error(`expected external CSV Viewer data view to render first-row value ${expectedValue.slice(0, 80)}, got ${dataViewText.slice(0, 240)}`)
     }
 
-    const markdownToggle = dom.window.document.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
+    const markdownToggle = dom.window.document.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
     if (!markdownToggle) throw new Error('expected Markdown pane toggle to exist for external CSV validation import')
     await act(async () => {
       markdownToggle.click()
@@ -450,10 +450,10 @@ export async function testMarkdownWorkspaceCsvImportUsesViewerPaneWithoutJsonDoc
     })
     const legacyMultiDimToggle = dom.window.document.querySelector('input[aria-label="Show Multi-dimensional Table"]')
     if (legacyMultiDimToggle) throw new Error('expected CSV import to remove the legacy Multi-dimensional Table pane toggle')
-    const viewerToggle = dom.window.document.querySelector('input[aria-label="Show Viewer preview pane"]') as HTMLInputElement | null
-    if (!viewerToggle?.checked) throw new Error('expected CSV import to check the Viewer pane toggle')
-    const jsonToggle = dom.window.document.querySelector('input[aria-label="Show JSON editor pane"]') as HTMLInputElement | null
-    if (jsonToggle?.checked) throw new Error('expected CSV import to keep the JSON pane opt-in')
+    const viewerToggle = dom.window.document.querySelector('button[aria-label="Show Viewer preview pane"]') as HTMLButtonElement | null
+    if (viewerToggle?.getAttribute('aria-pressed') !== 'true') throw new Error('expected CSV import to check the Viewer pane toggle')
+    const jsonToggle = dom.window.document.querySelector('button[aria-label="Show JSON editor pane"]') as HTMLButtonElement | null
+    if (jsonToggle?.getAttribute('aria-pressed') === 'true') throw new Error('expected CSV import to keep the JSON pane opt-in')
     const jsonEditor = dom.window.document.querySelector('textarea[aria-label="JSON Editor Text"]') as HTMLTextAreaElement | null
     if (jsonEditor) throw new Error('expected CSV import not to mount a separate JSON editor pane by default')
     const dataView = dom.window.document.querySelector('section[aria-label="Workspace data view"]')
@@ -530,9 +530,9 @@ export async function testMarkdownWorkspaceCsvRefreshProjectsJsonAndMarkdownPane
       await tick()
     })
 
-    const jsonToggle = dom.window.document.querySelector('input[aria-label="Show JSON editor pane"]') as HTMLInputElement | null
+    const jsonToggle = dom.window.document.querySelector('button[aria-label="Show JSON editor pane"]') as HTMLButtonElement | null
     if (!jsonToggle) throw new Error('expected JSON pane toggle to exist for refreshed CSV source')
-    const markdownToggle = dom.window.document.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
+    const markdownToggle = dom.window.document.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
     if (!markdownToggle) throw new Error('expected Markdown pane toggle to exist for refreshed CSV source')
     await act(async () => {
       jsonToggle.click()
@@ -664,8 +664,8 @@ export async function testMarkdownWorkspaceLargeCsvJsonPreviewRendersViewerPane(
     })
     const legacyMultiDimToggle = dom.window.document.querySelector('input[aria-label="Show Multi-dimensional Table"]')
     if (legacyMultiDimToggle) throw new Error('expected large CSV import to remove the legacy Multi-dimensional Table pane toggle')
-    const viewerToggle = dom.window.document.querySelector('input[aria-label="Show Viewer preview pane"]') as HTMLInputElement | null
-    if (!viewerToggle?.checked) throw new Error('expected large CSV import to check the Viewer pane toggle')
+    const viewerToggle = dom.window.document.querySelector('button[aria-label="Show Viewer preview pane"]') as HTMLButtonElement | null
+    if (viewerToggle?.getAttribute('aria-pressed') !== 'true') throw new Error('expected large CSV import to check the Viewer pane toggle')
     const dataView = dom.window.document.querySelector('section[aria-label="Workspace data view"]')
     if (!dataView) throw new Error('expected large CSV import to render the Viewer data view')
     const text = String(dataView.textContent || '')
@@ -698,7 +698,7 @@ export async function testMarkdownWorkspaceLargeCsvJsonPreviewRendersViewerPane(
       throw new Error(`expected large Viewer data view to render deferred CSV rows after request, got ${expandedText.slice(0, 240)}`)
     }
 
-    const markdownToggle = dom.window.document.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
+    const markdownToggle = dom.window.document.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
     if (!markdownToggle) throw new Error('expected Markdown pane toggle to exist for large CSV import')
     await act(async () => {
       markdownToggle.click()

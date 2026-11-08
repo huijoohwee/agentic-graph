@@ -1,18 +1,7 @@
 import { reorderKanbanRowIds, type KanbanDropPosition } from '@/features/markdown/ui/kanban/kanbanReorder'
-import { snapPointToGrid, snapScalarToGrid, type SnapGridConfig } from '@/lib/canvas/gridSnap'
+import { snapPointToGrid, type SnapGridConfig } from '@/lib/canvas/gridSnap'
 
-/** Display placement only; source graphs and observation evidence never move. */
-export function dashboardWidgetRows(saved: string[][] | undefined, ids: string[], columns: number): string[][] {
-  const available = new Set(ids), seen = new Set<string>()
-  const rows = (saved ?? []).map(row => row.filter(id => {
-    if (!available.has(id) || seen.has(id)) return false
-    seen.add(id); return true
-  })).filter(row => row.length)
-  const missing = [...new Set(ids)].filter(id => !seen.has(id))
-  columns = Math.max(1, Math.min(12, Math.floor(columns) || 1))
-  for (let i = 0; i < missing.length; i += columns) rows.push(missing.slice(i, i + columns))
-  return rows
-}
+export { dashboardWidgetRows, dashboardColumnStyle } from '@agentic-base/views-react/dashboard'
 
 export function moveDashboardWidget(rows: string[][], id: string, target: string | null, position: KanbanDropPosition): string[][] {
   if (!rows.flat().includes(id) || id === target || target && !rows.flat().includes(target)) return rows
@@ -39,11 +28,4 @@ export function dashboardDropPosition(point: { x: number; y: number }, rect: Pic
     if (p.x > rect.width * 0.75) return 'right'
   }
   return p.y >= rect.height / 2 ? 'after' : 'before'
-}
-
-export function dashboardColumnStyle(width: number, columns: number, grid: SnapGridConfig) {
-  const gap = grid.enabled ? Math.max(grid.x, snapScalarToGrid(12, grid)) : 12
-  const available = Math.max(0, (width - gap * (columns - 1)) / columns)
-  const snapped = Math.min(snapScalarToGrid(available, grid), Math.floor(available / grid.x) * grid.x)
-  return { gap, width: grid.enabled && snapped > 0 ? `${snapped}px` : `calc((100% - ${gap * (columns - 1)}px) / ${columns})` }
 }

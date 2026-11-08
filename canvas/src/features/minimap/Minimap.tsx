@@ -1,11 +1,9 @@
 import React from 'react'
 import { startPointerDrag } from 'grph-shared/dom/pointerDrag';
-import { Map as MapIcon, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
+import { MinimapControls } from './MinimapControls'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
-import IconButton from '@/components/IconButton'
-import { UI_LABELS } from '@/lib/config'
 import { useMinimapCollapsed } from '@/features/minimap/minimapVisibility'
 import type { GraphNode, GraphEdge } from '@/lib/graph/types'
 import { defaultSchema, getRendererPalette, MVP_COLOR_PALETTE } from '@/lib/graph/schema'
@@ -43,7 +41,6 @@ import { readZoomScaleExtent } from '@/lib/graph/layoutDefaults'
 import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { buildMinimapStoryboardWidgetOverlayNodeById, buildMinimapStoryboardWidgetOverlaySubset } from '@/features/minimap/storyboardWidgetOverlayProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { dispatchRuntimeZoomActionSoon } from '@/lib/canvas/runtimeZoomDispatch'
 import { resolveContextualZoomDetail } from '@/lib/zoom/viewport'
 
 type ZoomT = { k: number; x: number; y: number };
@@ -531,27 +528,10 @@ function Minimap() {
     return Math.abs(lx - cx) <= centerThreshold && Math.abs(ly - cy) <= centerThreshold;
   }, [viewRect, centerThreshold]);
   const onRectMouseLeave = () => setHoverCenter(false);
-  const handleReset = React.useCallback(() => dispatchRuntimeZoomActionSoon('reset'), [])
-  const handleZoomIn = React.useCallback(() => dispatchRuntimeZoomActionSoon('in'), [])
-  const handleZoomOut = React.useCallback(() => dispatchRuntimeZoomActionSoon('out'), [])
-
-  if (minimapCollapsed) {
-    return (
-      <IconButton
-        title="Show Minimap"
-        onClick={() => setMinimapCollapsed(false)}
-        className="p-1"
-        showTooltip={false}
-        style={{ opacity: minimapOpacity }}
-      >
-        <MapIcon size={14} aria-hidden="true" />
-      </IconButton>
-    )
-  }
 
   return (
     <aside className="relative isolate group kg-minimap-root" aria-label="Minimap" data-kg-minimap-root="1" data-kg-css-inspector-selectable="minimap">
-      <section
+      {!minimapCollapsed && <section
         className={`relative overflow-hidden rounded border kg-minimap-surface ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} shadow backdrop-blur-sm`}
         style={{ opacity: minimapOpacity }} data-kg-css-inspector-selectable="minimap-surface"
       >
@@ -599,41 +579,8 @@ function Minimap() {
             </g>
           )}
         </svg>
-      </section>
-      <section className="absolute top-1 right-1 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <IconButton
-          title="Hide Minimap"
-          onClick={() => setMinimapCollapsed(true)}
-          className="p-1"
-          showTooltip={false}
-        >
-          <MapIcon size={14} aria-hidden="true" />
-        </IconButton>
-        <IconButton
-          title={UI_LABELS.reset}
-          onClick={handleReset}
-          className="p-1"
-          showTooltip={false}
-        >
-          <RotateCcw size={14} aria-hidden="true" />
-        </IconButton>
-        <IconButton
-          title={UI_LABELS.zoomIn}
-          onClick={handleZoomIn}
-          className="p-1"
-          showTooltip={false}
-        >
-          <ZoomIn size={14} aria-hidden="true" />
-        </IconButton>
-        <IconButton
-          title={UI_LABELS.zoomOut}
-          onClick={handleZoomOut}
-          className="p-1"
-          showTooltip={false}
-        >
-          <ZoomOut size={14} aria-hidden="true" />
-        </IconButton>
-      </section>
+      </section>}
+      <MinimapControls collapsed={minimapCollapsed} opacity={minimapOpacity} onToggle={setMinimapCollapsed} />
     </aside>
   );
 }

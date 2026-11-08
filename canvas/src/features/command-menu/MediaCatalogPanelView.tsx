@@ -1,5 +1,7 @@
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
+import { MediaCatalogLayoutControls } from './MediaCatalogLayoutControls'
 import React from 'react'
-import { Grid2X2, List, Plus, Rows3 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { CommandMenuRichMediaItem } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { readCommandMenuMediaNameDraft, type CommandMenuMediaNameDrafts } from '@/lib/command-menu/commandMenuMediaNameSync'
@@ -134,6 +136,7 @@ export function MediaCatalogPanelView({
   onSelectUploadedMedia,
   onUploadMediaFiles,
 }: MediaCatalogPanelViewProps) {
+  const iconClass = useToolbarIconClass()
   const search = useFloatingPanelCatalogSearch()
   const xrSurfaceActive = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const xrSimulationWorkbenchOpenRevision = React.useSyncExternalStore(
@@ -228,42 +231,18 @@ export function MediaCatalogPanelView({
             /> : null}
             {catalogMode === 'media' ? <button
               type="button"
-              className={cn('inline-flex h-6 min-w-6 items-center justify-center rounded border px-1 text-xs font-semibold', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
+              className={cn(UI_THEME_TOKENS.button.square, 'shrink-0 rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
               title="New Media"
               aria-label="New Media"
               data-kg-media-new-button="1"
               onClick={onNewMedia}
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
+              <Plus className={iconClass} aria-hidden />
             </button> : null}
             <MediaCatalogModeControls mode={catalogMode} onChange={setMediaCatalogMode} />
-            {catalogMode === 'media' ? <section className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} role="group" aria-label="Media layout" data-kg-media-layout-selector="1">
-              {([
-                { layout: 'list' as const, label: 'List layout', Icon: List },
-                { layout: 'card' as const, label: 'Card layout', Icon: Rows3 },
-                { layout: 'grid' as const, label: 'Grid layout', Icon: Grid2X2 },
-              ]).map(option => {
-                const Icon = option.Icon
-                return (
-                  <button
-                    key={option.layout}
-                    type="button"
-                    className={cn(
-                      'inline-flex h-full w-6 items-center justify-center border-0 px-0',
-                      catalogLayout === option.layout ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.button.hoverBg,
-                      UI_THEME_TOKENS.text.secondary,
-                    )}
-                    title={option.label}
-                    aria-label={option.label}
-                    aria-pressed={catalogLayout === option.layout}
-                    data-kg-media-layout-toggle={option.layout}
-                    onClick={() => onLayoutChange(option.layout)}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                )
-              })}
-            </section> : null}
+            {catalogMode === 'media' ? (
+              <MediaCatalogLayoutControls context="library" layout={catalogLayout} onChange={onLayoutChange} />
+            ) : null}
           </>
         )}
         searchControl={catalogMode === 'voice-studio' ? null : (

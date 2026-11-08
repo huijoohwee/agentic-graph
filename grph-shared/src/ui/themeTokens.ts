@@ -102,7 +102,7 @@ export const UI_THEME_TOKENS = {
   },
   button: {
     iconControl: `kg-icon-control min-w-[var(--kg-control-height)]! min-h-[var(--kg-default-glyph-size,1rem)] rounded border-0 outline-none transition-colors shadow-none ${ICON_FOCUS_CLASS_NAME}`,
-    selectedIcon: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text}`,
+    selectedIcon: 'agentic-control-selected',
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
     hoverBg: 'hover:bg-[var(--kg-panel-action-bg-hover)]',

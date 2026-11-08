@@ -1,4 +1,7 @@
 import React from 'react';
+import { getIconButtonProps } from '@agentic-base/views-react/toolbar-icons';
+import type { LucideIcon } from 'lucide-react';
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass';
 import { cn } from '@/lib/utils';
 import Tooltip from '@/features/panels/ui/Tooltip';
 import { useGraphStore } from '@/hooks/useGraphStore';
@@ -10,16 +13,23 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens';
 
 type BaseButtonProps = Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
-  'title' | 'aria-label' | 'children' | 'type'
+  'title' | 'aria-label' | 'children' | 'type' | 'style'
 >;
 
-interface IconButtonProps extends BaseButtonProps {
+type IconButtonProps = BaseButtonProps & {
   title: string;
-  children: React.ReactNode;
   showTooltip?: boolean;
   tooltipContent?: string;
   ariaLabel?: string;
   suppressTitleAttribute?: boolean;
+} & (
+  | { icon: LucideIcon; children?: never; className?: never; style?: Pick<React.CSSProperties, 'opacity'> }
+  | { icon?: never; children: React.ReactNode; style?: React.CSSProperties }
+);
+
+function ButtonGlyph({ icon: Glyph }: { icon: LucideIcon }) {
+  const className = useToolbarIconClass();
+  return <Glyph className={className} aria-hidden="true" />;
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -32,6 +42,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       onMouseDown,
       disabled,
       className = '',
+      icon,
       children,
       showTooltip = false,
       tooltipContent,
@@ -75,7 +86,6 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       <button
         ref={ref}
         {...buttonProps}
-        type="button"
         disabled={isDisabled}
         onPointerDown={e => {
           pointerActivationHandledRef.current = false
@@ -123,7 +133,8 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           e.stopPropagation()
           if (pointerActivationHandledRef.current) {
             pointerActivationHandledRef.current = false
-            return
+            // A touch can move the control before its click. Keyboard activation is independent.
+            if (e.detail > 0 || ('pointerType' in e.nativeEvent && e.nativeEvent.pointerType)) return
           }
           if (e.currentTarget instanceof HTMLElement) {
             try {
@@ -134,20 +145,23 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           }
           onClick?.(e)
         }}
-        className={cn(
-          'kg-icon-button group relative select-none rounded justify-center',
-          UI_THEME_TOKENS.button.iconControl,
-          UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
-          paddingClass,
-          isDisabled
-            ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none`
-            : enabledClasses,
-          className,
-        )}
+        {...(icon ? getIconButtonProps(ariaLabel ?? title) : {
+          type: 'button' as const,
+          'aria-label': ariaLabel ?? title,
+          className: cn(
+            'kg-icon-button group relative select-none rounded justify-center',
+            UI_THEME_TOKENS.button.iconControl,
+            UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
+            paddingClass,
+            isDisabled
+              ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none`
+              : enabledClasses,
+            className,
+          ),
+        })}
         title={showTooltip || suppressTitleAttribute ? undefined : title}
-        aria-label={ariaLabel ?? title}
       >
-        {inner}
+        {icon ? <ButtonGlyph icon={icon} /> : inner}
       </button>
     )
 

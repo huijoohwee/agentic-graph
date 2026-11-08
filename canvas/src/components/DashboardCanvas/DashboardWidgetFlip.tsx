@@ -63,7 +63,10 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     onPointerDownCapture={() => { dragged.current = false }} onDragStartCapture={() => { dragged.current = true; setToolbarVisible(false) }}
     onClickCapture={event => {
       if (!flipped && !props.widgetId && !dragged.current && !(event.target as Element).closest('[data-kg-bubble-toolbar]')) {
-        event.preventDefault(); event.stopPropagation(); select()
+        select()
+        // Native disclosure previews toggle while their palette frame remains selected.
+        if ((event.target as Element).closest('details[data-dashboard-primitive="disclosure"] > summary')) return
+        event.preventDefault(); event.stopPropagation()
       }
     }} onClick={event => {
       if (!event.defaultPrevented && !flipped && !dragged.current && !(event.target as Element).closest(interactive)) select()

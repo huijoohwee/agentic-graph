@@ -332,7 +332,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         </details>}
       </section></details>
       <section aria-label="Span view controls" className="flex min-w-0 flex-wrap items-center gap-2 py-2 text-xs">
-        <label className="flex min-w-0 max-w-full items-center gap-1">Inspect <PanelSelect aria-label="Inspect run details" title={views.find(item => item.key === view)?.label} value={view} onValueChange={selectedValueInput => setView(selectedValueInput)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</PanelSelect></label>
+        <label className="flex min-w-0 max-w-full items-center gap-1"><span className="shrink-0">Inspect</span> <PanelSelect aria-label="Inspect run details" title={views.find(item => item.key === view)?.label} value={view} onValueChange={selectedValueInput => setView(selectedValueInput)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</PanelSelect></label>
         {view === 'tree' && <AgentRunMetricSelector value={spanMetrics} onToggle={metric => setSpanMetrics(current => toggleSpanMetric(current, metric))} />}
         <input aria-label="Search spans by name, kind or status" title={search || "Search spans by name, kind or status"} placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} />
       </section>

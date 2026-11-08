@@ -101,7 +101,7 @@ for (const file of ['shared-borders.css', 'application-typography.css']) {
   nativeStyles.push(shadowScope(await read('canvas/src/styles/' + file)).replace(/\bbody\s*\{/g, ':host {'))
 }
 nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css')))
-// Base's standalone panel import is already included by its exact browser CSS.
+// Base's browser CSS already includes the shared UI roles.
 const iconLibraryBytes = await read(`${basePrefix}/packages/views-react/src/controls/icons.json`)
 const iconLibraryPin = JSON.parse(await read(`${basePrefix}/packages/views-react/src/controls/icons.pin.json`))
 assert.equal(iconLibraryPin.owner, 'github.com/huijoohwee/agentic-design-system')
@@ -112,9 +112,14 @@ assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'),
 for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '.agentic-panel-section-body']) {
   assert(baseProfile.includes(`${role} {`), `Central panel layout owner missing: ${role}`)
 }
-const panelCss = await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')
-assert(panelCss.startsWith('@import "../browser/shared-ui-profile.css";'), 'Unknown Base panel stylesheet import')
-nativeStyles.push(shadowScope(panelCss.replace('@import "../browser/shared-ui-profile.css";', '')))
+const panelRoot = `${basePrefix}/packages/views-react/src/panels`
+const panelCss = await read(`${panelRoot}/floatingPanelShell.css`)
+const panelPin = JSON.parse(await read(`${panelRoot}/floatingPanelShell.pin.json`))
+assert.equal(panelPin.owner, iconLibraryPin.owner)
+assert.equal(panelPin.path, 'site/floating-panel.css')
+assert.match(panelPin.revision, /^[a-f0-9]{40}$/)
+assert.equal(sha256(panelCss), panelPin.sha256, 'FloatingPanel must match its Design System source')
+nativeStyles.push(shadowScope(panelCss))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()

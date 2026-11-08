@@ -293,24 +293,8 @@ export function assertPhase5(fixture: SourceFixture) {
     throw new Error('expected Explorer header to keep file mutations in the file context menu and consolidate URL refresh into Refresh')
   }
 
-  if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggles') || !markdownWorkspaceToolbarText.includes('kg-workspace-pane-toggles') || !markdownWorkspaceToolbarText.includes('uiToolbarRowScrollInlineClassName')) {
-    throw new Error('expected workspace pane toggles to keep a shared mobile row-scroll owner')
-  }
-
-  if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggles') || !responsiveToolbarCssText.includes('border: 0;') || !responsiveToolbarCssText.includes('background: transparent;') || !responsiveToolbarCssText.includes('padding: 0;')) {
-    throw new Error('expected workspace pane toggles to stay unframed inside the shared toolbar panel')
-  }
-
-  if (markdownWorkspaceToolbarText.includes('kg-workspace-pane-toggles ${uiToolbarRowScrollInlineClassName} gap-2 rounded border')) {
-    throw new Error('expected workspace pane toggles to avoid a nested bordered toolbar panel')
-  }
-
-  if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggle') || !responsiveToolbarCssText.includes('.kg-workspace-pane-toggle-input') || !responsiveToolbarCssText.includes('.kg-workspace-pane-toggle-label')) {
-    throw new Error('expected workspace pane toggles to expose shared touch-sized label/input/text classes')
-  }
-
-  if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggle--viewer') || !markdownWorkspaceToolbarText.includes('kg-workspace-pane-toggle--viewer')) {
-    throw new Error('expected Viewer pane toggle to expose a dedicated bounded mobile touch target class')
+  if (/\.kg-workspace-pane-toggle(?!s-item)|\.agentic-toggle-group/.test(responsiveToolbarCssText)) {
+    throw new Error('Workspace pane button geometry belongs to the shared UI projection')
   }
 
   if (!responsiveToolbarCssText.includes('.kg-workspace-pane-toggles-item') || !markdownWorkspaceToolbarText.includes('kg-workspace-pane-toggles-item')) {

@@ -1,3 +1,5 @@
+import { ToggleButton, ToggleButtonGroup } from '@agentic-base/views-react/controls'
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { ThreeRendererControls } from '@/lib/three/ThreeRendererControls'
 import React from 'react'
@@ -81,30 +83,6 @@ function SurfaceIcon({ surface }: { surface: ImmersiveMediaProjectionSurface }) 
   if (surface === 'gameMode') return <Gamepad2 className={className} aria-hidden="true" />
   if (surface === 'flightSim') return <Compass className={className} aria-hidden="true" />
   return <Aperture className={className} aria-hidden="true" />
-}
-
-function ToggleButton({
-  active,
-  children,
-  onClick,
-  title,
-}: {
-  active: boolean
-  children: React.ReactNode
-  onClick: () => void
-  title: string
-}) {
-  return (
-    <button
-      type="button"
-      className={cn('App-toolbar__btn', active ? UI_THEME_TOKENS.status.info : '')}
-      aria-pressed={active}
-      title={title}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
 }
 
 function MediaSourceControls() {
@@ -216,6 +194,7 @@ function SemanticSpaceMediaSource() {
 }
 
 function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
+  const iconClass = useToolbarIconClass()
   const snapshot = readImmersiveMediaSnapshot()
   if (surface === 'media') {
     const cropped = snapshot.crop.horizontalSpanDegrees < 360
@@ -225,16 +204,18 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
       <>
         <MediaSourceControls />
         <SemanticSpaceMediaSource />
-        <section className="flex flex-wrap gap-1" aria-label="Media presentation controls">
-          <ToggleButton active={cropped} title="Toggle cropped panorama" onClick={() => configureImmersiveMedia({ cropped: !cropped })}>
-            <Crop className="h-3.5 w-3.5" aria-hidden="true" /> Crop
-          </ToggleButton>
-          <ToggleButton active={places?.visible !== false} title="Toggle place markers" onClick={() => toggleImmersiveMediaLayer('places')}>
-            <MapPinned className="h-3.5 w-3.5" aria-hidden="true" /> Places
-          </ToggleButton>
-          <ToggleButton active={media?.visible !== false} title="Toggle media markers" onClick={() => toggleImmersiveMediaLayer('media')}>
-            <Layers3 className="h-3.5 w-3.5" aria-hidden="true" /> Media
-          </ToggleButton>
+        <section className="min-w-0">
+          <ToggleButtonGroup aria-label="Media presentation controls">
+            <ToggleButton pressed={cropped} title="Toggle cropped panorama" onClick={() => configureImmersiveMedia({ cropped: !cropped })}>
+              <Crop className={iconClass} aria-hidden="true" /> Crop
+            </ToggleButton>
+            <ToggleButton pressed={places?.visible !== false} title="Toggle place markers" onClick={() => toggleImmersiveMediaLayer('places')}>
+              <MapPinned className={iconClass} aria-hidden="true" /> Places
+            </ToggleButton>
+            <ToggleButton pressed={media?.visible !== false} title="Toggle media markers" onClick={() => toggleImmersiveMediaLayer('media')}>
+              <Layers3 className={iconClass} aria-hidden="true" /> Media
+            </ToggleButton>
+          </ToggleButtonGroup>
         </section>
       </>
     )
@@ -243,10 +224,10 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
     return (
       <section className="flex flex-wrap gap-1" aria-label="Immersive animation controls">
         <button type="button" className="App-toolbar__btn" onClick={playImmersiveMediaIntro}>
-          <Play className="h-3.5 w-3.5" aria-hidden="true" /> Intro
+          <Play className={iconClass} aria-hidden="true" /> Intro
         </button>
         <button type="button" className="App-toolbar__btn" onClick={transitionImmersiveMedia}>
-          <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> Transition
+          <Clapperboard className={iconClass} aria-hidden="true" /> Transition
         </button>
         <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {snapshot.transitionDurationMs} ms · revision {snapshot.transitionRevision}
@@ -257,20 +238,22 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
   if (surface === 'motionControl') {
     return (
       <section className="flex flex-wrap gap-1" aria-label="Immersive input controls">
-        <ToggleButton
-          active={snapshot.navigation.keyboardActions}
-          title="Toggle keyboard actions"
-          onClick={() => configureImmersiveMedia({ keyboardActions: !snapshot.navigation.keyboardActions })}
-        >
-          <Keyboard className="h-3.5 w-3.5" aria-hidden="true" /> Keys
-        </ToggleButton>
-        <ToggleButton
-          active={snapshot.navigation.doubleClickZoom}
-          title="Toggle double-click zoom"
-          onClick={() => configureImmersiveMedia({ doubleClickZoom: !snapshot.navigation.doubleClickZoom })}
-        >
-          <MousePointer2 className="h-3.5 w-3.5" aria-hidden="true" /> Double click
-        </ToggleButton>
+        <ToggleButtonGroup aria-label="Input options">
+          <ToggleButton
+            pressed={snapshot.navigation.keyboardActions}
+            title="Toggle keyboard actions"
+            onClick={() => configureImmersiveMedia({ keyboardActions: !snapshot.navigation.keyboardActions })}
+          >
+            <Keyboard className={iconClass} aria-hidden="true" /> Keys
+          </ToggleButton>
+          <ToggleButton
+            pressed={snapshot.navigation.doubleClickZoom}
+            title="Toggle double-click zoom"
+            onClick={() => configureImmersiveMedia({ doubleClickZoom: !snapshot.navigation.doubleClickZoom })}
+          >
+            <MousePointer2 className={iconClass} aria-hidden="true" /> Double click
+          </ToggleButton>
+        </ToggleButtonGroup>
         <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           Drag to look · WASD/arrows · +/- · 0 · I
         </span>
@@ -280,16 +263,18 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
   if (surface === 'camera') {
     return (
       <section className="flex flex-wrap gap-1" aria-label="Immersive Camera controls">
-        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('in')}><ZoomIn className="h-3.5 w-3.5" aria-hidden="true" /> Zoom</button>
-        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('out')}><ZoomOut className="h-3.5 w-3.5" aria-hidden="true" /> Zoom</button>
-        <button type="button" className="App-toolbar__btn" onClick={resetImmersiveMediaView}><RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset</button>
-        <ToggleButton
-          active={snapshot.view.lensStrength > 0}
-          title="Toggle lens effect"
-          onClick={() => configureImmersiveMedia({ lensStrength: snapshot.view.lensStrength > 0 ? 0 : 0.72 })}
-        >
-          <Focus className="h-3.5 w-3.5" aria-hidden="true" /> Fisheye
-        </ToggleButton>
+        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('in')}><ZoomIn className={iconClass} aria-hidden="true" /> Zoom</button>
+        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('out')}><ZoomOut className={iconClass} aria-hidden="true" /> Zoom</button>
+        <button type="button" className="App-toolbar__btn" onClick={resetImmersiveMediaView}><RotateCcw className={iconClass} aria-hidden="true" /> Reset</button>
+        <ToggleButtonGroup aria-label="Lens options">
+          <ToggleButton
+            pressed={snapshot.view.lensStrength > 0}
+            title="Toggle lens effect"
+            onClick={() => configureImmersiveMedia({ lensStrength: snapshot.view.lensStrength > 0 ? 0 : 0.72 })}
+          >
+            <Focus className={iconClass} aria-hidden="true" /> Fisheye
+          </ToggleButton>
+        </ToggleButtonGroup>
         <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {Math.round(snapshot.view.fieldOfViewDegrees)}° · yaw {Math.round(snapshot.view.yawDegrees)}°
         </span>
@@ -298,28 +283,30 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
   }
   return (
     <>
-      <section className="flex flex-wrap gap-1" aria-label="Immersive context controls">
-        <ToggleButton
-          active={snapshot.overlay.enabled}
-          title="Toggle partial overlay"
-          onClick={() => setImmersiveMediaOverlay(!snapshot.overlay.enabled)}
-        >
-          <PanelLeft className="h-3.5 w-3.5" aria-hidden="true" /> Overlay
-        </ToggleButton>
-        <ToggleButton
-          active={snapshot.polygonPattern}
-          title="Toggle polygon marker pattern"
-          onClick={() => setImmersiveMediaPolygonPattern(!snapshot.polygonPattern)}
-        >
-          <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> Polygon
-        </ToggleButton>
-        <ToggleButton
-          active={snapshot.selectedMarkerId === 'marker-custom-element'}
-          title="Focus the Info element in the shared Camera"
-          onClick={() => focusImmersiveMediaMarker('marker-custom-element', 'map')}
-        >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> {snapshot.navigation.customElementLabel}
-        </ToggleButton>
+      <section className="min-w-0">
+        <ToggleButtonGroup aria-label="Immersive context controls">
+          <ToggleButton
+            pressed={snapshot.overlay.enabled}
+            title="Toggle partial overlay"
+            onClick={() => setImmersiveMediaOverlay(!snapshot.overlay.enabled)}
+          >
+            <PanelLeft className={iconClass} aria-hidden="true" /> Overlay
+          </ToggleButton>
+          <ToggleButton
+            pressed={snapshot.polygonPattern}
+            title="Toggle polygon marker pattern"
+            onClick={() => setImmersiveMediaPolygonPattern(!snapshot.polygonPattern)}
+          >
+            <Maximize2 className={iconClass} aria-hidden="true" /> Polygon
+          </ToggleButton>
+          <ToggleButton
+            pressed={snapshot.selectedMarkerId === 'marker-custom-element'}
+            title="Focus the Info element in the shared Camera"
+            onClick={() => focusImmersiveMediaMarker('marker-custom-element', 'map')}
+          >
+            <Sparkles className={iconClass} aria-hidden="true" /> {snapshot.navigation.customElementLabel}
+          </ToggleButton>
+        </ToggleButtonGroup>
       </section>
       <ImmersiveMediaMarkerProjections snapshot={snapshot} />
     </>

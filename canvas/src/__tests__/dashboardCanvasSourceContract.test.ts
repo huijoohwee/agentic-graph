@@ -32,8 +32,8 @@ export function testDashboardCanvasReusesBaseVisuals() {
     'CanvasGridOverlaySurface',
     'DashboardWidgetBoard',
     'data-kg-dashboard-scroll-surface="1"',
-    'data-kg-dashboard-sections-board="1"',
-    'data-kg-dashboard-metrics-board="1"',
+    'data-kg-dashboard-sections-board',
+    'data-kg-dashboard-metrics-board',
   ]) {
     if (!canvas.includes(snippet)) throw new Error(`expected Graph to retain dashboard product composition: ${snippet}`)
   }

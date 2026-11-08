@@ -57,7 +57,7 @@ try {
   const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   await pane.waitFor({ timeout: 60000 })
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
-  const labels = await page.getByRole('group', { name: 'Workspace panes', exact: true }).locator('label').allTextContents()
+  const labels = await page.getByRole('group', { name: 'Workspace panes', exact: true }).getByRole('button').allTextContents()
   assert.equal(labels[labels.findIndex(label => label.trim() === 'bin') + 1].trim(), 'Python')
   const editor = page.getByRole('textbox', { name: 'Python source text', exact: true })
   const lessons = await page.evaluate(() => window.__pythonLearningProof.lessons)

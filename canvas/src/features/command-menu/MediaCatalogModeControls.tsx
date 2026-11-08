@@ -1,6 +1,6 @@
 import { Box, Image as ImageIcon, Mic2 } from 'lucide-react'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { cn } from '@/lib/utils'
+import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
+import { ToggleButton } from '@agentic-base/views-react/controls'
 import type { MediaCatalogMode } from './mediaCatalogModeRuntime'
 
 const modes = [
@@ -14,15 +14,15 @@ export function MediaCatalogModeControls({ mode, onChange, context = 'library' }
   onChange: (mode: MediaCatalogMode) => void
   context?: 'library' | 'preview'
 }) {
+  const iconClass = useToolbarIconClass()
   return (
-    <nav className={cn('inline-flex max-w-full flex-wrap overflow-hidden rounded border', UI_THEME_TOKENS.panel.border)} aria-label={context === 'preview' ? 'Preview modes' : 'Media catalog mode'} data-kg-media-mode-switcher="header-icons">
+    <nav className="agentic-toggle-group" aria-label={context === 'preview' ? 'Preview modes' : 'Media catalog mode'} data-kg-media-mode-switcher="header-icons">
       {modes.map(({ value, label, action, Icon, marker }) => (
-        <button key={value} type="button" title={label} aria-label={context === 'preview' ? `Preview ${label}` : action} aria-pressed={mode === value}
-          {...{ [marker]: '1' }} onClick={() => onChange(value)}
-          className={cn('inline-flex min-h-7 items-center justify-center gap-1 px-2 text-xs', mode === value ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}>
-          <Icon className="size-3.5 shrink-0" role="img" aria-label={label} />
+        <ToggleButton key={value} title={label} aria-label={context === 'preview' ? `Preview ${label}` : action} pressed={mode === value}
+          {...{ [marker]: '1' }} onClick={() => onChange(value)}>
+          <Icon className={iconClass} role="img" aria-label={label} />
           {context === 'preview' ? <span>{label}</span> : null}
-        </button>
+        </ToggleButton>
       ))}
     </nav>
   )

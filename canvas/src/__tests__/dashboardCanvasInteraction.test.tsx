@@ -329,6 +329,9 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     if (selected !== 2 || container.querySelector('form')) throw Error('Span selection and control labels must not flip their enclosing card')
     const graphBeforeTemplate = useGraphStore.getState().graphData
     await act(async () => { root.render(<ul><DashboardWidgetPalette /></ul>); await waitFrame() })
+    for (const kind of ['heading', 'text', 'disclosure', 'divider', 'container']) {
+      if (!container.querySelector(`[data-dashboard-widget="template:${kind}"] [data-dashboard-primitive="${kind}"]`)) throw Error(`Palette preview does not use the shared ${kind} primitive`)
+    }
     const codebaseTemplate = container.querySelector('[data-dashboard-widget="template:codebase"]')!
     if (!codebaseTemplate) throw Error('Props palette must expose the native Codebase Graph template')
     await act(async () => { Simulate.click(codebaseTemplate); await waitFrame() })

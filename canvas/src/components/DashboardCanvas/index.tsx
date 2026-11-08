@@ -1,4 +1,5 @@
 import React from 'react'
+import { DashboardCanvasLayout, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
 import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics } from './dashboardWidgetConfiguration'
 import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
@@ -13,10 +14,6 @@ import DashboardWidgetBoard from './DashboardWidgetBoard'
 import { CanvasGridOverlaySurface } from '@/components/CanvasGridOverlaySurface'
 import { readCanvasGridRenderConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
-import {
-  UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME,
-  buildResponsiveViewportFitContentStyle,
-} from '@/lib/ui/responsiveViewportFitGrid'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   buildDashboardCanvasModel,
@@ -31,7 +28,6 @@ type DashboardCanvasProps = {
   insights?: React.ReactNode
 }
 
-const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()
 const DashboardSnapshotView = React.lazy(() => import('./DashboardSnapshotView'))
 const AgentMissionDashboardExport = React.lazy(() => import('@/features/agent-ready/AgentMissionDashboardExport'))
 
@@ -71,6 +67,9 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
 
   if (!active) return null
 
+  const saved = !readOnly ? widgetConfiguration.dashboard : null
+  const exportControl = <React.Suspense fallback={null}><AgentMissionDashboardExport /></React.Suspense>
+
   return (
     <section
       ref={containerRef}
@@ -93,37 +92,36 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
         surfaceId="dashboard"
       />
       <section className="absolute inset-0 overflow-auto z-[1]" data-kg-dashboard-scroll-surface="1">
-        <section
-          className={`kg-dashboard-content ${UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME}`}
-          style={DASHBOARD_CONTENT_STYLE}
-          data-kg-dashboard-responsive-width="1"
-        >
-          <React.Suspense fallback={null}><AgentMissionDashboardExport /></React.Suspense>
-          {widgetConfiguration.dashboard && !readOnly ? <React.Suspense fallback={<p>Opening saved dashboard…</p>}><DashboardSnapshotView /></React.Suspense> : <>
-          <header className="kg-dashboard-header grid min-w-0 grid-cols-1 items-center gap-3 border-b border-[var(--kg-border)] pb-3 lg:grid-cols-[minmax(0,1fr)_minmax(200px,28%)]">
-            <section className="min-w-0">
-              <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header']?.markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header']?.title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header']?.subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
-            </section>
-            <section className="h-[72px] min-w-0 lg:h-[96px]">
-              <DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />
-            </section>
-          </header>
-
-          {widgetConfiguration.dashboard?.mission && <p className="text-xs">Historical snapshot · {new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}</p>}
-          {props.overview}
-          {props.insights}
-
-          <section className="min-w-0" aria-label="Dashboard metrics" data-kg-dashboard-metrics-board="1">
-            <DashboardWidgetBoard id="dashboard-metrics" columns={5} items={displayMetrics.map(metric => ({
-              id: `graph:${metric.id}`, cardId: metric.id,
-              content: <DashboardWidgetFlip widgetId={`graph:${metric.id}`} template="metric" title={metric.label} defaults={{ title: metric.label, subtitle: metric.detail, tone: metric.tone }}>
-                <DashboardMetricTile metric={metric} />
-              </DashboardWidgetFlip>,
-            }))} />
-          </section>
-
-          <section className="min-w-0" data-kg-dashboard-sections-board="1">
-            <section className="grid min-w-0 grid-cols-1 gap-5">
+        {saved ? (
+          <DashboardCanvasLayout className="kg-dashboard-content" data-kg-dashboard-responsive-width="1"
+            ariaLabel="Saved Markdown dashboard" data-dashboard-document={widgetConfiguration.sourcePath ?? undefined}
+            beforeHeader={exportControl}
+            title={<DashboardPrimitive kind="heading">{saved.template.id}</DashboardPrimitive>}
+            description={<DashboardPrimitive kind="text">{saved.source.sourceId} · Revision {saved.source.sequence} · {saved.source.complete ? 'Complete' : 'Partial'} coverage</DashboardPrimitive>}
+            observation={`Historical snapshot · ${new Date(saved.source.observedAt).toISOString()}`}>
+            <React.Suspense fallback={<p>Opening saved dashboard…</p>}><DashboardSnapshotView /></React.Suspense>
+            {props.insights}
+          </DashboardCanvasLayout>
+        ) : (
+          <DashboardCanvasLayout className="kg-dashboard-content" data-kg-dashboard-responsive-width="1"
+            ariaLabel="Dashboard content" beforeHeader={exportControl}
+            title={widgetConfiguration.document.widgets['graph:header']
+              ? <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header'].markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header'].title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header'].subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
+              : <section aria-label="Dashboard heading and description"><p className="agentic-dashboard-observation">Dashboard</p><DashboardPrimitive kind="heading">{model.title}</DashboardPrimitive><DashboardPrimitive kind="text">{model.subtitle}</DashboardPrimitive></section>}
+            hero={<DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />}
+            observation={widgetConfiguration.dashboard?.mission && `Historical snapshot · ${new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}`}
+            overview={props.overview} insights={props.insights}
+            metricsAttributes={{ 'data-kg-dashboard-metrics-board': '1' }}
+            metrics={
+              <DashboardWidgetBoard id="dashboard-metrics" columns={5} items={displayMetrics.map(metric => ({
+                id: `graph:${metric.id}`, cardId: metric.id,
+                content: <DashboardWidgetFlip widgetId={`graph:${metric.id}`} template="metric" title={metric.label} defaults={{ title: metric.label, subtitle: metric.detail, tone: metric.tone }}>
+                  <DashboardMetricTile metric={metric} />
+                </DashboardWidgetFlip>,
+              }))} />
+            }
+            sectionsAttributes={{ 'data-kg-dashboard-sections-board': '1' }}
+            sections={<section>
               {displaySections.map(section => (
                 <DashboardWidgetContainer key={section.id} id={section.id} title={section.title} subtitle={section.cadence}
                     columns={3} items={section.cards.map(card => ({
@@ -135,13 +133,11 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                       </DashboardWidgetFlip>,
                     }))} />
               ))}
-            </section>
-          </section>
-          <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
-          {props.children}
-          </>}
-          {widgetConfiguration.dashboard && !readOnly ? props.insights : null}
-        </section>
+            </section>}>
+            <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
+            {props.children}
+          </DashboardCanvasLayout>
+        )}
       </section>
     </section>
   )

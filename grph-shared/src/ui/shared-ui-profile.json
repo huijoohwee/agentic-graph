@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/shared-ui-profile/v1",
   "id": "shared-ui",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-design-system",
@@ -153,6 +153,84 @@
       "cssVar": "--agentic-menu-gap",
       "type": "dimension",
       "value": "0.25rem"
+    },
+    {
+      "key": "control.selected.foreground",
+      "cssVar": "--agentic-control-selected-foreground",
+      "type": "themed-color",
+      "value": "light-dark(oklch(48.8% 0.243 264.376), oklch(70.7% 0.165 254.624))"
+    },
+    {
+      "key": "control.selected.background",
+      "cssVar": "--agentic-control-selected-background",
+      "type": "themed-color",
+      "value": "light-dark(oklch(97% 0.014 254.604), oklch(37.9% 0.146 265.522 / 0.3))"
+    },
+    {
+      "key": "dashboard.card-gap",
+      "cssVar": "--agentic-dashboard-card-gap",
+      "type": "dimension",
+      "value": "12px"
+    },
+    {
+      "key": "dashboard.section-gap",
+      "cssVar": "--agentic-dashboard-section-gap",
+      "type": "dimension",
+      "value": "1rem"
+    },
+    {
+      "key": "dashboard.inset",
+      "cssVar": "--agentic-dashboard-inset",
+      "type": "dimension",
+      "value": "1.25rem"
+    },
+    {
+      "key": "dashboard.max-width",
+      "cssVar": "--agentic-dashboard-max-width",
+      "type": "dimension",
+      "value": "1420px"
+    },
+    {
+      "key": "dashboard.hero-height",
+      "cssVar": "--agentic-dashboard-hero-height",
+      "type": "dimension",
+      "value": "72px"
+    },
+    {
+      "key": "dashboard.hero-height-wide",
+      "cssVar": "--agentic-dashboard-hero-height-wide",
+      "type": "dimension",
+      "value": "96px"
+    },
+    {
+      "key": "dashboard.breakpoint.medium",
+      "cssVar": "--agentic-dashboard-breakpoint-medium",
+      "type": "dimension",
+      "value": "640px"
+    },
+    {
+      "key": "dashboard.breakpoint.wide",
+      "cssVar": "--agentic-dashboard-breakpoint-wide",
+      "type": "dimension",
+      "value": "1024px"
+    },
+    {
+      "key": "dashboard.primary",
+      "cssVar": "--agentic-dashboard-primary",
+      "type": "themed-color",
+      "value": "light-dark(oklch(48% 0.12 237), oklch(77% 0.14 237))"
+    },
+    {
+      "key": "dashboard.secondary",
+      "cssVar": "--agentic-dashboard-secondary",
+      "type": "themed-color",
+      "value": "light-dark(oklch(49% 0.22 293), oklch(78% 0.15 293))"
+    },
+    {
+      "key": "dashboard.success",
+      "cssVar": "--agentic-dashboard-success",
+      "type": "themed-color",
+      "value": "light-dark(oklch(45% 0.1 165), oklch(76% 0.16 165))"
     }
   ]
 }

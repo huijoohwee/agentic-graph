@@ -43,11 +43,11 @@ def prepare_source_files_selection_surface(page: Page) -> None:
         '[aria-label="Markdown Workspace"]'
     ).wait_for(state="visible", timeout=120_000)
     explorer_toggle = page.get_by_role(
-        "checkbox", name="Show Explorer pane", exact=True
+        "button", name="Show Explorer pane", exact=True
     )
     explorer_toggle.wait_for(state="visible", timeout=120_000)
-    if not explorer_toggle.is_checked():
-        explorer_toggle.check()
+    if explorer_toggle.get_attribute("aria-pressed") == "false":
+        explorer_toggle.click()
     source_files_button = page.get_by_role(
         "button", name="Source Files", exact=True
     )

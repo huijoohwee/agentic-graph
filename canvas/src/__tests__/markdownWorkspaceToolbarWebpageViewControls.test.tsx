@@ -13,14 +13,13 @@ const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
 }
 
-const checkboxFor = (doc: Document, label: string): HTMLInputElement => {
-  const labels = Array.from(doc.querySelectorAll('label')) as HTMLLabelElement[]
-  const found = labels.find(l => String(l.textContent || '').replace(/\s+/g, ' ').trim() === label) || null
-  if (!found) throw new Error(`expected ${label} checkbox to exist`)
-  const input = found.querySelector('input[type="checkbox"]') as HTMLInputElement | null
-  if (!input) throw new Error(`expected ${label} checkbox input`)
-  return input
+const paneButton = (doc: Document, label: string): HTMLButtonElement => {
+  const buttons = doc.querySelectorAll<HTMLButtonElement>('[aria-label="Workspace panes"] button[aria-pressed]')
+  const button = Array.from(buttons).find(option => option.textContent?.trim() === label)
+  if (!button) throw new Error(`Missing pane button: ${label}`)
+  return button
 }
+const isPressed = (button: HTMLButtonElement) => button.getAttribute('aria-pressed') === 'true'
 
 export async function testMarkdownWorkspaceToolbarContentFormatUsesPaneChecks() {
   const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
@@ -71,29 +70,29 @@ export async function testMarkdownWorkspaceToolbarContentFormatUsesPaneChecks() 
     })
 
     if (dom.window.document.querySelector('[aria-label="YouTube transcript format"]')) {
-      throw new Error('expected active document format controls to use the workspace pane checkboxes')
+      throw new Error('expected active document format controls to use the workspace pane buttons')
     }
-    const jsonInput = checkboxFor(dom.window.document, 'JSON')
-    const markdownInput = checkboxFor(dom.window.document, 'Markdown')
-    if (jsonInput.checked) throw new Error('expected JSON pane to start closed')
-    if (!markdownInput.checked) throw new Error('expected Markdown pane to start open')
+    const jsonButton = paneButton(dom.window.document, 'JSON')
+    const markdownButton = paneButton(dom.window.document, 'Markdown')
+    if (isPressed(jsonButton)) throw new Error('expected JSON pane to start closed')
+    if (!isPressed(markdownButton)) throw new Error('expected Markdown pane to start open')
 
     await act(async () => {
-      jsonInput.click()
+      jsonButton.click()
       await tick()
     })
-    if (formatCalls[0] !== 'json') throw new Error(`expected JSON pane checkbox to switch content format, got ${JSON.stringify(formatCalls)}`)
-    if (!jsonInput.checked) throw new Error('expected JSON pane to open from the consolidated checkbox')
-    if (!markdownInput.checked) throw new Error('expected Markdown pane to remain open after JSON format switch')
+    if (formatCalls[0] !== 'json') throw new Error(`expected JSON pane button to switch content format, got ${JSON.stringify(formatCalls)}`)
+    if (!isPressed(jsonButton)) throw new Error('expected JSON pane to open from the consolidated button')
+    if (!isPressed(markdownButton)) throw new Error('expected Markdown pane to remain open after JSON format switch')
 
     await act(async () => {
-      markdownInput.click()
+      markdownButton.click()
       await tick()
     })
     if (formatCalls[1] !== 'markdown') {
-      throw new Error(`expected visible Markdown pane checkbox to switch content format without hiding, got ${JSON.stringify(formatCalls)}`)
+      throw new Error(`expected visible Markdown pane button to switch content format without hiding, got ${JSON.stringify(formatCalls)}`)
     }
-    if (!markdownInput.checked) throw new Error('expected Markdown pane to remain open when used as a format switch')
+    if (!isPressed(markdownButton)) throw new Error('expected Markdown pane to remain open when used as a format switch')
 
     await act(async () => {
       root.unmount()
@@ -146,24 +145,24 @@ export async function testMarkdownWorkspaceToolbarViewerToggleKeepsEditablePane(
       await tick()
     })
 
-    const viewerInput = checkboxFor(dom.window.document, 'Viewer')
-    const markdownInput = checkboxFor(dom.window.document, 'Markdown')
-    if (viewerInput.checked) {
+    const viewerButton = paneButton(dom.window.document, 'Viewer')
+    const markdownButton = paneButton(dom.window.document, 'Markdown')
+    if (isPressed(viewerButton)) {
       throw new Error('expected Viewer pane to start closed in the editability regression')
     }
-    if (!markdownInput.checked) {
-      throw new Error('expected forced editor-mode Markdown pane to report checked when it is visible')
+    if (!isPressed(markdownButton)) {
+      throw new Error('expected forced editor-mode Markdown pane to report pressed when it is visible')
     }
 
     await act(async () => {
-      viewerInput.click()
+      viewerButton.click()
       await tick()
     })
 
-    if (!checkboxFor(dom.window.document, 'Viewer').checked) {
-      throw new Error('expected Viewer checkbox to turn on from the mobile pane toggle')
+    if (!isPressed(paneButton(dom.window.document, 'Viewer'))) {
+      throw new Error('expected Viewer button to turn on from the mobile pane toggle')
     }
-    if (!checkboxFor(dom.window.document, 'Markdown').checked) {
+    if (!isPressed(paneButton(dom.window.document, 'Markdown'))) {
       throw new Error('expected Viewer toggle to keep an editable Markdown pane visible')
     }
 
@@ -221,28 +220,28 @@ export async function testMarkdownWorkspaceToolbarRemovesMultiDimTableToggleAndV
       await tick()
     })
 
-    const tableInput = dom.window.document.querySelector('input[aria-label="Show Multi-dimensional Table"]')
-    const markdownInput = checkboxFor(dom.window.document, 'Markdown')
-    const viewerInput = checkboxFor(dom.window.document, 'Viewer')
+    const tableInput = dom.window.document.querySelector('[aria-label="Show Multi-dimensional Table"]')
+    const markdownButton = paneButton(dom.window.document, 'Markdown')
+    const viewerButton = paneButton(dom.window.document, 'Viewer')
     if (tableInput) {
       throw new Error('expected the legacy Multi-dimensional Table pane toggle to be removed')
     }
-    if (viewerInput.checked) {
+    if (isPressed(viewerButton)) {
       throw new Error('expected Viewer pane to start closed in the pane toggle regression')
     }
-    if (!markdownInput.checked) {
-      throw new Error('expected forced editor-mode Markdown pane to report checked when it is visible')
+    if (!isPressed(markdownButton)) {
+      throw new Error('expected forced editor-mode Markdown pane to report pressed when it is visible')
     }
 
     await act(async () => {
-      viewerInput.click()
+      viewerButton.click()
       await tick()
     })
 
-    if (!checkboxFor(dom.window.document, 'Viewer').checked) {
-      throw new Error('expected Viewer checkbox to turn on from the pane toggle')
+    if (!isPressed(paneButton(dom.window.document, 'Viewer'))) {
+      throw new Error('expected Viewer button to turn on from the pane toggle')
     }
-    if (!checkboxFor(dom.window.document, 'Markdown').checked) {
+    if (!isPressed(paneButton(dom.window.document, 'Markdown'))) {
       throw new Error('expected Viewer toggle to keep an editable Markdown pane visible')
     }
     const layoutModeOutput = dom.window.document.querySelector('[data-testid="layout-mode"]')
@@ -443,11 +442,11 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
     const viewSelect = dom.window.document.querySelector('button[data-kg-select][aria-label="Webpage view mode"]')
     if (viewSelect) throw new Error('expected Webpage view dropdown to be removed')
 
-    const htmlInput = checkboxFor(dom.window.document, 'HTML')
-    const viewerInput = checkboxFor(dom.window.document, 'Viewer')
-    const jsonInput = checkboxFor(dom.window.document, 'JSON')
-    const markdownInput = checkboxFor(dom.window.document, 'Markdown')
-    if (!htmlInput.checked || !viewerInput.checked) {
+    const htmlButton = paneButton(dom.window.document, 'HTML')
+    const viewerButton = paneButton(dom.window.document, 'Viewer')
+    const jsonButton = paneButton(dom.window.document, 'JSON')
+    const markdownButton = paneButton(dom.window.document, 'Markdown')
+    if (!isPressed(htmlButton) || !isPressed(viewerButton)) {
       throw new Error('expected HTML import view to start with Viewer and HTML panes active')
     }
     if (!dom.window.document.querySelector('section[aria-label="Viewer"]')) {
@@ -457,15 +456,15 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
       throw new Error('expected HTML pane to render webpage viewer independently')
     }
     await act(async () => {
-      jsonInput.click()
+      jsonButton.click()
       await tick()
     })
     await act(async () => {
-      markdownInput.click()
+      markdownButton.click()
       await tick()
     })
-    if (!jsonInput.checked || !markdownInput.checked || !viewerInput.checked || !htmlInput.checked) {
-      throw new Error('expected JSON, Markdown, Viewer, and HTML checkboxes to stay open together')
+    if (!isPressed(jsonButton) || !isPressed(markdownButton) || !isPressed(viewerButton) || !isPressed(htmlButton)) {
+      throw new Error('expected JSON, Markdown, Viewer, and HTML buttons to stay open together')
     }
     if (!dom.window.document.querySelector('section[aria-label="JSON Editor"]')) {
       throw new Error('expected JSON pane to render while Viewer and HTML stay open')
@@ -568,24 +567,24 @@ export async function testMarkdownWorkspaceToolbarViewerAndHtmlRenderTogetherAft
       await tick()
     })
 
-    const viewerInput = checkboxFor(dom.window.document, 'Viewer')
-    const htmlInput = checkboxFor(dom.window.document, 'HTML')
-    if (htmlInput.checked) throw new Error('expected HTML pane to start closed in markdown view')
+    const viewerButton = paneButton(dom.window.document, 'Viewer')
+    const htmlButton = paneButton(dom.window.document, 'HTML')
+    if (isPressed(htmlButton)) throw new Error('expected HTML pane to start closed in markdown view')
     await act(async () => {
-      viewerInput.click()
+      viewerButton.click()
       await tick()
       await tick()
     })
-    if (!checkboxFor(dom.window.document, 'Viewer').checked) {
-      throw new Error('expected Viewer checkbox to stay checked before selecting HTML')
+    if (!isPressed(paneButton(dom.window.document, 'Viewer'))) {
+      throw new Error('expected Viewer button to stay pressed before selecting HTML')
     }
     await act(async () => {
-      checkboxFor(dom.window.document, 'HTML').click()
+      paneButton(dom.window.document, 'HTML').click()
       await tick()
       await tick()
     })
-    if (!checkboxFor(dom.window.document, 'Viewer').checked || !checkboxFor(dom.window.document, 'HTML').checked) {
-      throw new Error('expected Viewer and HTML checkboxes to stay checked together after selection without waiting for webpage view persistence')
+    if (!isPressed(paneButton(dom.window.document, 'Viewer')) || !isPressed(paneButton(dom.window.document, 'HTML'))) {
+      throw new Error('expected Viewer and HTML buttons to stay pressed together after selection without waiting for webpage view persistence')
     }
     if (JSON.stringify(viewCalls) !== JSON.stringify(['html'])) {
       throw new Error(`expected HTML pane selection to request persisted webpage html view once, got ${JSON.stringify(viewCalls)}`)

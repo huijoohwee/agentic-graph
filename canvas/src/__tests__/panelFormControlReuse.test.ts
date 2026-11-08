@@ -163,13 +163,12 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     throw new Error('expected WorkspaceDataViewHeader search control to reuse the shared panel text input primitive instead of a raw search input')
   }
 
-  if (
-    !markdownWorkspaceToolbarText.includes("from '@/lib/ui/panelFormControls'") ||
-    !markdownWorkspaceToolbarText.includes('PanelCheckbox') ||
-    !markdownWorkspaceToolbarText.includes('function WorkspacePaneToggle') ||
-    markdownWorkspaceToolbarText.includes('type="checkbox"')
-  ) {
-    throw new Error('expected MarkdownWorkspaceToolbar pane toggles to reuse a shared local owner backed by the shared panel checkbox primitive instead of repeated raw checkbox inputs')
+  const metrics = readUtf8('src/features/agent-ready/AgentRunMetricSelector.tsx')
+  for (const source of [metrics, markdownWorkspaceToolbarText]) {
+    if (!source.includes("from '@agentic-base/views-react/controls'") || !source.includes('<ToggleButtonGroup')
+      || !source.includes('<ToggleButton') || source.includes('CheckboxGroup')) {
+      throw new Error('Workspace panes and span metrics must reuse the shared toggle buttons')
+    }
   }
 
   if (

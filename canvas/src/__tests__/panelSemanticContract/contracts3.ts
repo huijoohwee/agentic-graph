@@ -32,6 +32,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     'CommandMenuCatalogPanel.tsx',
     'MediaCatalogPanel.tsx',
     'MediaCatalogPanelView.tsx',
+    'MediaCatalogLayoutControls.tsx',
     'mediaCatalogActionSelection.ts',
     'mediaCatalogCandidateItems.tsx',
     'mediaCatalogListItems.tsx',

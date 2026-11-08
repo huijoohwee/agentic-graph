@@ -1,3 +1,4 @@
+import { setButtonPressed } from './set-button-pressed.mjs'
 import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -69,8 +70,12 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal((await dashboard.locator('[data-kg-dashboard-metric="nodes"]').innerText()).replace(/\s+/g, ' '), 'Nodes 1 1 types')
     assert.equal(await dashboard.locator('[data-kg-dashboard-card="numeric-summary"]').getByText('Visual StrokeWidth', { exact: true }).count(), 0, 'Renderer styling is not observation data')
     const metric = mission.getByRole('group', { name: 'Span metric', exact: true })
+    const buttonHeights = group => group.getByRole('button').evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height))
     const inspectHeight = (await mission.getByRole('button', { name: 'Inspect run details', exact: true }).boundingBox()).height
     assert.equal((await metric.boundingBox()).height, inspectHeight, 'Metric controls align with the Inspect selector')
+    const metricHeights = await buttonHeights(metric)
+    assert.equal(metricHeights.length, 6)
+    assert.ok(metricHeights.every(height => height >= inspectHeight - 2 && height <= inspectHeight), 'Metric buttons fill the bordered control')
     await metric.getByRole('button', { name: 'Show Exclusive observed', exact: true }).click()
     await tree.locator('[data-span-metric="exclusive"][data-span-metric-value="4"]').waitFor()
     await metric.getByRole('button', { name: 'Show Tokens', exact: true }).click()
@@ -111,9 +116,12 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     await showMissionFace(mission, false)
     await openEditorWorkspace(page)
     const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
-    await editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
+    const panes = editor.getByRole('group', { name: 'Workspace panes', exact: true })
+    const paneHeights = await buttonHeights(panes)
+    assert.ok(paneHeights.length > 0 && paneHeights.every(height => height === metricHeights[0]), 'Pane and metric choices share the same responsive height')
+    await setButtonPressed(editor.getByRole('button', { name: 'Show Explorer pane', exact: true }), true)
     await editor.getByRole('region', { name: 'JSON Editor', exact: true }).waitFor()
-    assert.equal(await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).isChecked(), true,
+    assert.equal(await editor.getByRole('button', { name: 'Show JSON editor pane', exact: true }).getAttribute('aria-pressed'), 'true',
       'The active workflow manifest opens as JSON without selecting a file')
     await page.waitForFunction(async expected => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots()
       .some(model => model.language === 'json' && model.uri.startsWith('inmemory://agent-run/') && model.value === expected), manifest())

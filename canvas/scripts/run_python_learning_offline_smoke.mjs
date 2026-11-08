@@ -1,3 +1,4 @@
+import { setButtonPressed } from './lib/set-button-pressed.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -88,7 +89,7 @@ try {
     // Cloud status belongs to the native file actions, not the navigation row.
     await row.click({ button: 'right' })
     const actions = page.getByRole('toolbar', { name: `Actions for ${file.name}`, exact: true })
-    await actions.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    await expect(actions.getByRole('button', { name: /^Online sync is off\./ })).toHaveAttribute('data-source-file-cloud-status', 'disabled')
     await page.keyboard.press('Escape')
     await expect(actions).toBeHidden()
   }
@@ -154,7 +155,7 @@ try {
   const hint = { ...initial.binding, operation: 'hint', requestId: 'registered-hint' }
   await control(hint); await control(hint)
   assert.equal((await inspect()).hintStage, 1, 'request replay must not apply another hint')
-  if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
+  await setButtonPressed(page.getByRole('button', { name: 'Show Explorer pane', exact: true }), false)
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await dismissVisibleFloatingPanel(page)

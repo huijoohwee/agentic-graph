@@ -336,10 +336,10 @@ export async function testMarkdownWorkspaceViewerTaskRowUnderlineKeepsRenderedUn
       await tick(6)
     })
 
-    const markdownPaneToggle = doc.querySelector('input[aria-label="Show Markdown editor pane"]') as HTMLInputElement | null
+    const markdownPaneToggle = doc.querySelector('button[aria-label="Show Markdown editor pane"]') as HTMLButtonElement | null
     if (!markdownPaneToggle) throw new Error('expected markdown pane toggle')
     await act(async () => {
-      if (!markdownPaneToggle.checked) markdownPaneToggle.click()
+      if (markdownPaneToggle.getAttribute('aria-pressed') !== 'true') markdownPaneToggle.click()
       await tick(4)
     })
 

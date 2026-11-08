@@ -1,3 +1,4 @@
+import { setButtonPressed } from './set-button-pressed.mjs'
 import { selectMenuOption } from './select-menu-option.mjs'
 import { BASE_FLOATING_PANEL_ROOT_SELECTOR } from './panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
@@ -21,7 +22,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   const deadline = Date.now() + 60000
   const remaining = () => Math.max(1, deadline - Date.now())
   await shell.waitFor({ state: 'visible', timeout: remaining() })
-  await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check({ timeout: remaining() })
+  await setButtonPressed(shell.getByRole('button', { name: 'Show Explorer pane', exact: true }), true, { timeout: remaining() })
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
   const manifest = files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true })
   await Promise.all([
@@ -39,7 +40,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   assert.equal(await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).count(), 1)
   assert.equal(await page.getByText('Agent observability', { exact: true }).count(), 0)
-  await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+  await setButtonPressed(editor.getByRole('button', { name: 'Show JSON editor pane', exact: true }), true)
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
   await verifyFullCanvas(page)
   await editor.getByRole('button', { name: 'Close', exact: true }).click()

@@ -60,7 +60,8 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
         {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
         {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
         <section
-          className={`min-h-0 flex-1 ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
+          // Keep the catalog header and rows reachable when the projections fill the viewport.
+          className={`flex-1 ${view === 'media' ? 'min-h-[min(100%,calc(3*var(--agentic-row-height)))]' : 'min-h-0'} ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
           data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
         >
           {panel}

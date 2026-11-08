@@ -255,7 +255,6 @@ export default function SkillsCommandsView({
                 flushTop={index === 0}
                 id={buildSkillsCommandsGroupContentId(group.key)}
                 className="mt-1 border-t pt-1"
-                headerClassName="px-0"
               >
                 <section className="grid min-w-0 gap-1" data-kg-skills-commands-grammar-group-rows={group.key}>
                   {group.entries.map(({ grammar, option }) => {

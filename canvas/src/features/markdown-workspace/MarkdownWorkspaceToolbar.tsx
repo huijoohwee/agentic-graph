@@ -11,18 +11,15 @@ import { WorkspaceHeaderRow } from '@/components/ui/WorkspaceHeader'
 import { CollapsibleToolbar } from '@/components/ui/CollapsibleToolbar'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
-import { PanelCheckbox } from '@/lib/ui/panelFormControls'
+import { ToggleButtonGroup, ToggleButton } from '@agentic-base/views-react/controls'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
-import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import {
   UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
-  UI_RESPONSIVE_LABEL_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import {
-  uiToolbarRowScrollInlineClassName,
   uiToolbarRowScrollClassName,
   uiToolbarRowScrollListClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
@@ -62,7 +59,7 @@ export type MarkdownWorkspaceToolbarProps = {
   viewerMode?: MarkdownWorkspaceDerivedViewerMode
   setViewerMode?: (next: MarkdownWorkspaceDerivedViewerMode) => void
   splitPaneVisibility?: MarkdownWorkspacePaneVisibility
-  setSplitPaneVisibility?: (next: MarkdownWorkspacePaneVisibility) => void
+  setSplitPaneVisibility?: React.Dispatch<React.SetStateAction<MarkdownWorkspacePaneVisibility>>
   paneAvailability?: MarkdownWorkspacePaneAvailability
   onSaveAs?: () => void
   onExportWorkspaceFile?: () => void
@@ -82,53 +79,6 @@ export type MarkdownWorkspaceToolbarProps = {
 }
 
 const TOOLBAR_BUTTON_CLASSNAME = `kg-toolbar-btn ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`
-
-type WorkspacePaneToggleProps = {
-  label: string
-  title: string
-  ariaLabel: string
-  checked: boolean
-  labelClassName: string
-  textClassName: string
-  disabled?: boolean
-  ariaDisabled?: boolean | 'true'
-  onChange?: React.ChangeEventHandler<HTMLInputElement>
-  icon?: React.ReactNode
-  labelProps?: Omit<React.LabelHTMLAttributes<HTMLLabelElement>, 'className' | 'title'> & Record<`data-${string}`, string | undefined>
-}
-
-function WorkspacePaneToggle({
-  label,
-  title,
-  ariaLabel,
-  checked,
-  labelClassName,
-  textClassName,
-  disabled,
-  ariaDisabled,
-  onChange,
-  icon,
-  labelProps,
-}: WorkspacePaneToggleProps) {
-  return (
-    <label
-      {...labelProps}
-      className={labelClassName}
-      title={title}
-    >
-      <PanelCheckbox
-        className="kg-workspace-pane-toggle-input"
-        aria-label={ariaLabel}
-        checked={checked}
-        disabled={disabled}
-        aria-disabled={ariaDisabled}
-        onChange={onChange}
-      />
-      {icon}
-      <span className={textClassName}>{label}</span>
-    </label>
-  )
-}
 
 export function MarkdownWorkspaceToolbar({
   explorerOpen,
@@ -210,19 +160,14 @@ export function MarkdownWorkspaceToolbar({
     return current
   }, [contentFormat, effectivePaneAvailability.json, effectivePaneAvailability.markdown])
   const toggleSplitPane = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
-    if (!setSplitPaneVisibility) return
-    const current = effectiveSplitPanes
-    if (key === 'python' && current.block && current.python) return
-    const enabledCount = visiblePaneCount(current)
-    if (current[key] && enabledCount <= 1) return
-    const next = { ...current, [key]: !current[key] }
-    if (key === 'block' && next.block) next.python = true
-    setSplitPaneVisibility(
-      key === 'viewer' && next.viewer
-        ? resolveViewerEditPaneVisibility(next)
-        : next,
-    )
-  }, [effectiveSplitPanes, resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
+    setSplitPaneVisibility?.(current => {
+      if (key === 'python' && current.block && current.python) return current
+      if (current[key] && visiblePaneCount(current) <= 1) return current
+      const next = { ...current, [key]: !current[key] }
+      if (key === 'block' && next.block) next.python = true
+      return key === 'viewer' && next.viewer ? resolveViewerEditPaneVisibility(next) : next
+    })
+  }, [resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
   const handleSplitPaneToggle = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
@@ -238,16 +183,12 @@ export function MarkdownWorkspaceToolbar({
       handleSplitPaneToggle(key)
       return
     }
-    const current = effectiveSplitPanes
-    const isVisible = Boolean(current[key])
     const hasFormatSwitch = !!contentFormat && !!onContentFormatChange
     if (hasFormatSwitch && contentFormat !== key) {
       if (layoutMode !== 'split') {
         setLayoutMode('split')
       }
-      if (!isVisible) {
-        setSplitPaneVisibility({ ...current, [key]: true })
-      }
+      setSplitPaneVisibility(current => current[key] ? current : { ...current, [key]: true })
       void onContentFormatChange(key)
       return
     }
@@ -255,7 +196,6 @@ export function MarkdownWorkspaceToolbar({
   }, [
     contentFormat,
     effectivePaneAvailability,
-    effectiveSplitPanes,
     handleSplitPaneToggle,
     layoutMode,
     onContentFormatChange,
@@ -270,7 +210,7 @@ export function MarkdownWorkspaceToolbar({
     const current = effectiveSplitPanes
     if (htmlPaneChecked) {
       if (visiblePaneCount(current) <= 1) return
-      setSplitPaneVisibility({ ...current, html: false })
+      setSplitPaneVisibility(latest => visiblePaneCount(latest) <= 1 ? latest : { ...latest, html: false })
       if (webpageControls?.view === 'html') {
         onWebpageChangeView('markdown')
       }
@@ -279,19 +219,16 @@ export function MarkdownWorkspaceToolbar({
     if (layoutMode !== 'split') {
       setLayoutMode('split')
     }
-    setSplitPaneVisibility({
-      ...current,
-      viewer: current.viewer || effectivePaneAvailability.viewer,
+    setSplitPaneVisibility(latest => ({
+      ...latest,
+      viewer: latest.viewer || effectivePaneAvailability.viewer,
       html: true,
-    })
+    }))
     onWebpageChangeView('html')
   }, [effectivePaneAvailability.viewer, effectiveSplitPanes, htmlPaneAvailable, htmlPaneChecked, layoutMode, onWebpageChangeView, setLayoutMode, setSplitPaneVisibility, visiblePaneCount, webpageControls?.view])
 
-  const paneToggleLabelClass = (available: boolean): string =>
-    `kg-workspace-pane-toggle ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} ${available ? 'cursor-pointer' : 'cursor-not-allowed opacity-45'}`
   const paneToggleTitle = (label: string, available: boolean): string =>
     available ? label : `${label} not applicable for this Source File`
-  const paneToggleTextClassName = `kg-workspace-pane-toggle-label ${UI_TEXT_TRUNCATE}`
   const showDocumentVersionGraphToggle = typeof setDocumentVersionGraphOpen === 'function'
 
   return (
@@ -299,131 +236,112 @@ export function MarkdownWorkspaceToolbar({
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
-            <fieldset
+            <ToggleButtonGroup
               id={workspacePanesControlId}
-              className={`kg-workspace-pane-toggles ${uiToolbarRowScrollInlineClassName} gap-1`}
               aria-label="Workspace panes"
               title="Workspace panes"
             >
-              <WorkspacePaneToggle
-                label="Explorer"
+              <ToggleButton
                 title="Explorer pane"
-                ariaLabel="Show Explorer pane"
-                checked={explorerOpen}
-                onChange={() => setExplorerOpen(!explorerOpen)}
-                labelClassName={`kg-workspace-pane-toggle ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} cursor-pointer`}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="bin"
+                aria-label="Show Explorer pane"
+                pressed={explorerOpen}
+                onClick={() => setExplorerOpen(!explorerOpen)}
+              >
+                Explorer
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('bin', effectivePaneAvailability.bin)}
-                ariaLabel="Show binary model pane"
-                checked={effectivePaneAvailability.bin}
+                aria-label="Show binary model pane"
+                pressed={effectivePaneAvailability.bin}
                 disabled
-                ariaDisabled="true"
-                labelClassName={paneToggleLabelClass(effectivePaneAvailability.bin)}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="Python"
+              >
+                bin
+              </ToggleButton>
+              <ToggleButton
                 title={effectivePaneVisibility.block ? 'Close Block before hiding Python' : paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
-                ariaLabel="Show Python editor pane"
-                checked={!!effectivePaneVisibility.python}
+                aria-label="Show Python editor pane"
+                pressed={!!effectivePaneVisibility.python}
                 disabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
-                ariaDisabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
-                onChange={() => handleSplitPaneToggle('python')}
-                labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.python)}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="Block"
+                onClick={() => handleSplitPaneToggle('python')}
+              >
+                Python
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('Block editor pane', !!effectivePaneAvailability.block)}
-                ariaLabel="Show Block editor pane"
-                checked={!!effectivePaneVisibility.block}
+                aria-label="Show Block editor pane"
+                pressed={!!effectivePaneVisibility.block}
                 disabled={!effectivePaneAvailability.block}
-                ariaDisabled={!effectivePaneAvailability.block}
-                onChange={() => handleSplitPaneToggle('block')}
-                labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.block)}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="JSON"
+                onClick={() => handleSplitPaneToggle('block')}
+              >
+                Block
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('JSON', effectivePaneAvailability.json)}
-                ariaLabel="Show JSON editor pane"
-                checked={effectivePaneVisibility.json}
+                aria-label="Show JSON editor pane"
+                pressed={effectivePaneVisibility.json}
                 disabled={!effectivePaneAvailability.json}
-                ariaDisabled={!effectivePaneAvailability.json}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.json) return
                   handleContentPaneToggle('json')
                 }}
-                labelClassName={paneToggleLabelClass(effectivePaneAvailability.json)}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="Markdown"
+              >
+                JSON
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('Markdown editor pane', effectivePaneAvailability.markdown)}
-                ariaLabel="Show Markdown editor pane"
-                checked={effectivePaneVisibility.markdown}
+                aria-label="Show Markdown editor pane"
+                pressed={effectivePaneVisibility.markdown}
                 disabled={!effectivePaneAvailability.markdown}
-                ariaDisabled={!effectivePaneAvailability.markdown}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.markdown) return
                   handleContentPaneToggle('markdown')
                 }}
-                labelClassName={paneToggleLabelClass(effectivePaneAvailability.markdown)}
-                textClassName={paneToggleTextClassName}
-              />
+              >
+                Markdown
+              </ToggleButton>
               {showDocumentVersionGraphToggle ? (
-                <WorkspacePaneToggle
-                  label="diff"
+                <ToggleButton
                   title="Document version graph"
-                  ariaLabel="Show document version graph"
-                  checked={documentVersionGraphOpen}
-                  onChange={event => setDocumentVersionGraphOpen?.(event.currentTarget.checked)}
-                  labelClassName={`kg-workspace-pane-toggle relative z-[260] ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} cursor-pointer`}
-                  textClassName={paneToggleTextClassName}
-                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" />}
-                  labelProps={{ 'data-kg-markdown-workspace-document-version-graph-toggle': '1' }}
-                />
+                  aria-label="Show document version graph"
+                  pressed={documentVersionGraphOpen}
+                  onClick={() => setDocumentVersionGraphOpen?.(!documentVersionGraphOpen)}
+                  data-kg-markdown-workspace-document-version-graph-toggle="1"
+                >
+                  <FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" /> diff
+                </ToggleButton>
               ) : null}
-              <WorkspacePaneToggle
-                label="Viewer"
+              <ToggleButton
                 title={paneToggleTitle('Viewer preview pane', effectivePaneAvailability.viewer)}
-                ariaLabel="Show Viewer preview pane"
-                checked={effectivePaneVisibility.viewer}
+                aria-label="Show Viewer preview pane"
+                pressed={effectivePaneVisibility.viewer}
                 disabled={!effectivePaneAvailability.viewer}
-                ariaDisabled={!effectivePaneAvailability.viewer}
-                onChange={() => {
+                onClick={() => {
                   if (!effectivePaneAvailability.viewer) return
                   handleSplitPaneToggle('viewer')
                 }}
-                labelClassName={`${paneToggleLabelClass(effectivePaneAvailability.viewer)} kg-workspace-pane-toggle--viewer`}
-                textClassName={paneToggleTextClassName}
-              />
-              <WorkspacePaneToggle
-                label="HTML"
+              >
+                Viewer
+              </ToggleButton>
+              <ToggleButton
                 title={paneToggleTitle('HTML', htmlPaneAvailable)}
-                ariaLabel="Show HTML viewer pane"
-                checked={htmlPaneChecked}
+                aria-label="Show HTML viewer pane"
+                pressed={htmlPaneChecked}
                 disabled={!htmlPaneAvailable}
-                ariaDisabled={!htmlPaneAvailable}
-                onChange={handleHtmlPaneToggle}
-                labelClassName={paneToggleLabelClass(htmlPaneAvailable)}
-                textClassName={paneToggleTextClassName}
-              />
+                onClick={handleHtmlPaneToggle}
+              >
+                HTML
+              </ToggleButton>
               {typeof canvasOpen === 'boolean' && typeof setCanvasOpen === 'function' ? (
-                <WorkspacePaneToggle
-                  label="Canvas"
+                <ToggleButton
                   title="Canvas pane"
-                  ariaLabel="Show Canvas pane"
-                  checked={canvasOpen}
-                  onChange={() => setCanvasOpen(!canvasOpen)}
-                  labelClassName={`kg-workspace-pane-toggle ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} cursor-pointer`}
-                  textClassName={paneToggleTextClassName}
-                />
+                  aria-label="Show Canvas pane"
+                  pressed={canvasOpen}
+                  onClick={() => setCanvasOpen(!canvasOpen)}
+                >
+                  Canvas
+                </ToggleButton>
               ) : null}
-            </fieldset>
+            </ToggleButtonGroup>
           </li>
           <li className="list-none">
             <button

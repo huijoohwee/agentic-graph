@@ -63,8 +63,9 @@ test('legacy renderer fields reuse the KTV adapter and palette and renderer sect
   assert.ok(palette.includes('className={uiToolbarSettingsPanelBodyClassName}'))
   assert.ok(palette.includes('CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow'))
   assert.ok(!palette.includes('densityClassName='), 'Palette and legacy controls must use the same row runtime')
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0\.75rem;/)
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0\.5rem;/)
+  const toolbarStyles = fs.readFileSync(new URL('../features/toolbar/ui/toolbarStyles.ts', import.meta.url), 'utf8')
+  assert.ok(toolbarStyles.includes("uiToolbarSettingsPanelBodyClassName = 'agentic-panel-section-body'"))
+  assert.doesNotMatch(toolbarCss, /--kg-toolbar-settings-panel-body-padding-(?:inline|block)\s*:/)
 })
 
 
@@ -74,4 +75,42 @@ test('sequence inspector body and spacing consume the same shared roles', () => 
   assert.doesNotMatch(inspectorCss, /\.sequence-inspector[^{}]*\{[^}]*font-size: (?:12|13)px/)
   const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
   assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
+})
+
+test('Graph styles cannot redeclare the shared control or dashboard styles', () => {
+  const src = new URL('../', import.meta.url)
+  const shared = 'styles/shared-ui-profile.css'
+  for (const file of fs.readdirSync(src, { recursive: true })) {
+    if (!file.endsWith('.css') || file === shared) continue
+    const css = fs.readFileSync(new URL(file, src), 'utf8')
+    assert.doesNotMatch(css, /--agentic-(?:control-selected-|base-dashboard-|dashboard-(?!top-inset\b))[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group|dashboard-[\w-]+)\b/, file)
+  }
+})
+
+test('Preview and the Media library share the layout picker and the panel toggles use Base controls', () => {
+  const source = path => fs.readFileSync(new URL('../features/' + path, import.meta.url), 'utf8')
+  for (const file of ['command-menu/MediaCatalogPanelView.tsx', 'panels/views/preview-context/PreviewMediaCatalog.tsx']) {
+    const consumer = source(file)
+    assert.match(consumer, /<MediaCatalogLayoutControls\b/, file)
+    assert.doesNotMatch(consumer, /aria-label="(?:Preview )?(?:list|card|grid) layout"/i, file)
+  }
+  for (const file of ['command-menu/MediaCatalogLayoutControls.tsx', 'toolbar/FloatingPanelSkillsCommandsView.tsx', 'immersive-media/ImmersiveMediaPanelProjection.tsx']) {
+    const consumer = source(file)
+    assert.match(consumer, /from '@agentic-base\/views-react\/controls'/, file)
+    assert.match(consumer, /<ToggleButtonGroup\b/, file)
+    assert.doesNotMatch(consumer, /function ToggleButton\b|className="agentic-toggle-group"/, file)
+  }
+})
+
+test('Mission dashboard composition uses the Base shell, card grid, board and layout helpers', () => {
+  const source = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+  for (const [file, name] of [
+    ['components/DashboardCanvas/index.tsx', 'DashboardCanvasLayout'],
+    ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCardGrid'],
+    ['components/DashboardCanvas/DashboardWidgetBoard.tsx', 'BaseWidgetBoard'],
+  ]) {
+    assert.match(source(file), /from '@agentic-base\/views-react\/dashboard'/, file)
+    assert.ok(source(file).includes('<' + name), file)
+  }
+  assert.match(source('components/DashboardCanvas/dashboardWidgetLayout.ts'), /export \{ dashboardWidgetRows, dashboardColumnStyle \} from '@agentic-base\/views-react\/dashboard'/)
 })

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { floatingPanelCatalogCompactRowMetaClassName, floatingPanelCatalogCompactRowTitleClassName } from '@/lib/ui/floatingPanelCatalogLayout'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
@@ -80,7 +81,8 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
       !storybuildingIconSvg?.getAttribute('class')?.includes('kg-skill-command-icon-glyph') ||
-      !storybuildingIconSvg?.getAttribute('class')?.includes('kg-default-glyph')
+      !storybuildingIconSvg?.classList.contains('agentic-icon') ||
+      storybuildingIconSvg.classList.contains('agentic-icon-compact')
     ) {
       throw new Error('Expected Storybuilding to expose a CSS-selectable toolbar-fidelity subject icon')
     }
@@ -254,15 +256,15 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       panel.getAttribute('data-kg-floating-panel-catalog-layout') !== 'media-reuse' ||
       !sharedHeader ||
       sharedHeader.getAttribute('data-kg-floating-panel-catalog-header-fixed') !== '1' ||
-      !sharedHeader.className.includes('shrink-0') ||
+      !sharedHeader.matches('.agentic-panel-section-header.shrink-0') ||
       sharedHeader.className.includes('sticky') ||
       !sharedBody ||
       !sharedBody.className.includes('overflow-auto') ||
       !catalogSurface ||
       catalogSurface.className.includes('overflow-auto') ||
-      !prefixFilter ||
+      !prefixFilter?.matches('.agentic-panel-section-actions > .agentic-toggle-group[role="group"]') ||
       prefixFilter.nextElementSibling !== grammarGroup ||
-      !grammarGroup ||
+      !grammarGroup?.matches('.agentic-toggle-group[role="group"]') ||
       container.querySelectorAll('[data-kg-skills-commands-prefix-toggle]').length !== 3 ||
       container.querySelectorAll('[data-kg-skills-commands-grammar-toggle]').length !== 3 ||
       !(subjectGroupToggle instanceof dom.window.HTMLButtonElement) ||
@@ -304,7 +306,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       storySubjectGroup.getAttribute('data-kg-skills-commands-grammar-group-collapsed') !== 'false' ||
       !(storySubjectGroupToggle instanceof dom.window.HTMLElement) ||
       storySubjectGroupToggle.getAttribute('aria-expanded') !== 'true' ||
-      !storySubjectGroupToggle.className.includes('px-0') ||
+      !storySubjectGroupToggle.classList.contains('agentic-panel-section-header') ||
       !storySubjectGroupToggle.className.includes('sticky') ||
       !storySubjectGroupToggle.className.includes('top-0') ||
       !agentSubjectGroup ||
@@ -364,8 +366,8 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !storybuildingIcon.className.includes('kg-skill-command-icon') ||
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
-      !storybuildingTitle?.className.includes('text-xs') ||
-      !storybuildingMeta?.className.includes('text-[11px]') ||
+      storybuildingTitle?.className !== floatingPanelCatalogCompactRowTitleClassName() ||
+      storybuildingMeta?.className !== floatingPanelCatalogCompactRowMetaClassName() ||
       storybuildingToken?.getAttribute('data-kg-card-inline-keyword-pill') !== '1' ||
       storybuildingToken.getAttribute('data-kg-skill-command-token-chip') !== '1' ||
       !storybuildingToken.className.includes('kg-responsive-element-row') ||
@@ -561,7 +563,6 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
     !floatingSkillsPanel.includes("from '@/features/panels/ui/ExpandCollapseAllButton'") ||
     !floatingSkillsPanel.includes("from '@/features/panels/ui/useCollapsibleSectionGroup'") ||
     !floatingSkillsPanel.includes('data-kg-skills-commands-disclosure-actions="header"') ||
-    !skillsCommandsView.includes('headerClassName="px-0"') ||
     skillsCommandsView.includes('stickyHeader={false}') ||
     !skillsCommandsView.includes('data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
     !mediaCatalogListItems.includes('floatingPanelCatalogCompactRowTitleClassName()') ||

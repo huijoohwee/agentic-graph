@@ -4,7 +4,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui/icons'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from './mainPanelHelpIconLibrary'
 
-export function MainPanelIconButton({ iconKey, label, ariaLabel, ...props }: Omit<React.ComponentProps<typeof IconButton>, 'title' | 'children'> & { iconKey: MainPanelTypeIconKey; label: string }) {
+export function MainPanelIconButton({ iconKey, label, ariaLabel, ...props }: Omit<React.ComponentProps<typeof IconButton>, 'title' | 'children' | 'icon'> & { iconKey: MainPanelTypeIconKey; label: string }) {
   const scale = useGraphStore(s => s.uiIconScale)
   const strokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
   return <IconButton {...props} title={label} ariaLabel={ariaLabel || label} showTooltip>

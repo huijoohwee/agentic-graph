@@ -54,7 +54,7 @@ export const FloatingPanel = React.memo(
 
 export type FloatingPanelShellProps = BaseFloatingPanelShellProps
 
-/** Graph supplies placement and theme tokens; Base owns the panel chrome and layout. */
+/** Graph supplies placement and theme tokens; Base renders the Design System’s pinned FloatingPanel shell. */
 export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell(props, ref) {
   const rootStyle = readFloatingPanelThemeStyle(props.rootStyle, props.minimized)
   return <BaseFloatingPanelShell {...props} ref={ref} rootStyle={rootStyle} />

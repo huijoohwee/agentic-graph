@@ -238,7 +238,7 @@ export const WidgetEditorActionsToolbar = React.memo(function WidgetEditorAction
     <>
       <nav
         className={cn(
-          'Island App-toolbar App-toolbar--compact App-toolbar--touch-scroll pointer-events-auto w-fit shadow-[var(--kg-shadow-raised)]',
+          'agentic-toolbar App-toolbar--touch-scroll',
           args.navClassName || '',
         )}
         aria-label={args.ariaLabel || UI_LABELS.flowWidgetActions}
