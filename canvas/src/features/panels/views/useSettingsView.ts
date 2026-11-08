@@ -1113,8 +1113,7 @@ export function useSettingsView({
       ...concreteEntries.filter(entry => {
         if (!entry.writable && !Object.hasOwn(UI_ICON_APPEARANCE, entry.meta.key)) return false
         if (hiddenConcreteIntegrationKeys && hiddenConcreteIntegrationKeys.has(entry.meta.key)) return false
-        if (hiddenConcreteMapsKeys.has(entry.meta.key)) return false
-        if (hiddenConcreteMcpKeys.has(entry.meta.key)) return false
+        if (hiddenConcreteMapsKeys.has(entry.meta.key) || hiddenConcreteMcpKeys.has(entry.meta.key)) return false
         return true
       }),
       ...virtualEntries,
