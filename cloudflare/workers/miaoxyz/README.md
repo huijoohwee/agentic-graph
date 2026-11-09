@@ -45,14 +45,15 @@ Buyers can compare up to three designs, customize one design at a time, change a
 - The request API requires a same-origin JSON post, a unique idempotency key, explicit request-only consent, an allowed catalog revision, and server-recomputed price.
 - Request bodies and customer details are never written to application logs.
 - Staff endpoints require the OPERATOR_ACCESS_TOKEN secret. The browser keeps that token in session storage only.
-- A scheduled task deletes request records and their status history after the operator-configured retention period, and expires rate-limit digests.
-- The retention control is limited to 1–365 days. Set it only after the florist approves the retention rule and customer notice.
+- A scheduled task removes request records, status history, and operator-event rows linked to those requests after 30 days, and expires rate-limit digests. A D1 index on `operator_events.object_id` supports the linked-event purge.
+- The approved application retention period is fixed at 30 days in the operator interface, API, and database migration.
+- Cloudflare D1 keeps provider-managed recovery history beyond application-row deletion: up to 7 days on Workers Free or up to 30 days on Workers Paid. Disclose the applicable plan window in the florist's buyer notice before enabling intake.
 
 ## Release boundary
 
 The production route is `airvio.co/MiaoXYZ` and `airvio.co/MiaoXYZ/*`; Cloudflare route paths are case-sensitive. Wrangler is pinned in this package and the generated Worker types come from `wrangler types`.
 
-Production remains blocked while its D1 ID is a placeholder or any approval flag is `false`. After actual approvals, update the Production D1 UUID and the four approval vars in `wrangler.jsonc` in the reviewed source candidate. Before release, the owner must select the data region, provision the production D1 database, set both required secrets in the protected `production` environment, approve the privacy baseline, and retain backup/restore and rate-limit evidence.
+Production remains blocked while its D1 ID is a placeholder or any approval flag is `false`. The selected APAC placement is best-effort and does not guarantee Singapore or Malaysia residency. Before release, the owner must set both required secrets in the protected `production` environment and retain the exact privacy, data-region, backup/restore, and rate-limit evidence. Customer request intake remains disabled until a florist configures the shop, publishes a catalog, and enters its buyer notice.
 
 The `miaoxyz_governance_evidence` workflow input accepts this JSON shape; each digest must identify a retained evidence record, and `reviewedAt` must be a canonical UTC timestamp:
 

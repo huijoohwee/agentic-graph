@@ -66,10 +66,10 @@
         "DEPLOYMENT_ENV": "production",
         "RELEASE_SOURCE_REVISION": "unreleased",
         "RELEASE_CANDIDATE_DIGEST": "unreleased",
-        "PRIVACY_BASELINE_APPROVED": "false",
-        "DATA_REGION_APPROVED": "false",
+        "PRIVACY_BASELINE_APPROVED": "true",
+        "DATA_REGION_APPROVED": "true",
         "BACKUP_RESTORE_APPROVED": "false",
-        "RATE_LIMIT_REVIEW_APPROVED": "false"
+        "RATE_LIMIT_REVIEW_APPROVED": "true"
       },
       "triggers": {
         "crons": ["17 3 * * *"]

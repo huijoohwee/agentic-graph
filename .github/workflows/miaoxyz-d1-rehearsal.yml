@@ -1,0 +1,55 @@
+name: MiaoXYZ D1 Restore Rehearsal
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: miaoxyz-d1-restore-rehearsal
+  cancel-in-progress: false
+jobs:
+  rehearsal:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    name: Restore only a synthetic temporary D1 database
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+    steps:
+      - name: Checkout exact protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact manual main workflow run
+        run: |
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REPOSITORY" = huijoohwee/agentic-graph
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote https://github.com/huijoohwee/agentic-graph.git refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Rehearse bookmark, mutation, restore, and temporary D1 deletion
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MIAOXYZ_REHEARSAL_ENVIRONMENT: production
+          MIAOXYZ_REHEARSAL_RECEIPT: ${{ runner.temp }}/miaoxyz-d1-restore-rehearsal.json
+        run: node ./scripts/miaoxyz-d1-restore-rehearsal.mjs run
+      - name: Summarize rehearsal receipt
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/miaoxyz-d1-restore-rehearsal.json"; then
+            jq '{schema, status, sourceRevision, workflowRunId, workflowRunAttempt, locationHintRequested, observedRegion, temporaryDatabaseName, temporaryDatabaseId, seededRowCount, bookmarkDigest, mutationObserved, restoreVerified, restoredRowCount, temporaryDatabaseDeleted, workerRoutesTouched, productionDatabaseTouched, failure}' "$RUNNER_TEMP/miaoxyz-d1-restore-rehearsal.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain synthetic rehearsal receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: miaoxyz-d1-restore-rehearsal-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/miaoxyz-d1-restore-rehearsal.json
+          if-no-files-found: warn
+          retention-days: 90
