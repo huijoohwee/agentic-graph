@@ -1,5 +1,5 @@
 import React from 'react'
-import { DashboardCardGrid } from '@agentic-base/views-react/dashboard'
+import { DashboardCanvasLayout, DashboardCardGrid, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
 import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -74,7 +74,7 @@ export function MissionGraphExplorer({ graph, span, context = 'mission', onClear
     } catch (error) { setExpansionStatus(error instanceof Error ? error.message : 'Neighbor expansion unavailable.') }
     finally { setExpanding(false) }
   }
-  return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3 pt-3">
+  return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3">
     <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{contextLabel}</p><p>{contextReason}</p>
       {span && onClear && <button className={`${button} mt-2`} onClick={onClear}>Clear span focus</button>}
     </div>
@@ -114,7 +114,7 @@ export function MissionGraphExplorer({ graph, span, context = 'mission', onClear
 }
 
 /** Shared read-only Mission summary used by the dashboard and observability workspace. */
-export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExplore, onOpenFile, onOpenView, embedded = false }: {
+export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExplore, onOpenFile, onOpenView, embedded = false, showHeading = true }: {
   trace: RunTrace
   codebase: { data?: MissionCodebaseIndex; error?: string }
   exploring: boolean
@@ -122,14 +122,15 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
   onOpenFile: (path: string) => void
   onOpenView?: (view: 'tree' | 'source' | 'evidence') => void
   embedded?: boolean
+  showHeading?: boolean
 }) {
   const { data, error } = codebase, model = agentMissionOverviewModel(trace, data?.index), files = agentMissionWorkspace(trace, data), source = workflowSourceLink(trace)
   const inventory = loadedProjectionSummary(data)
   return <>
-    <header className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="text-base font-semibold">Codebase → Agent Mission</h3>
-      {source && <a className="text-xs underline" href={source} target="_blank" rel="noreferrer">Workflow source revision</a>}
-    </header>
+    {(showHeading || source) && <header className="agentic-dashboard-header">
+      {showHeading && <DashboardPrimitive kind="heading" level={2}>Codebase → Agent Mission</DashboardPrimitive>}
+      {source && <a data-dashboard-primitive="text" className="underline" href={source} target="_blank" rel="noreferrer">Workflow source revision</a>}
+    </header>}
     <DashboardCardGrid ariaLabel="Index to observability" headingLevel={4} cards={[
       {
         id: 'index', accent: 'primary', eyebrow: '01 · INDEX',
@@ -168,20 +169,27 @@ export default function AgentMissionDashboardView({ retained, retainedSpanId, on
   const codebase = { data: retained.codebase }, trace = retained.trace
   const selectedSpan = trace.spans.find(span => span.spanId === retainedSpanId) ?? null
   const sourceDocument = agentMissionSourceDocument(trace, selectedSource, retained.codebase)
-  return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
-    <AgentMissionDashboardSummary trace={trace} codebase={codebase} exploring={exploring} onExplore={() => setExploring(value => !value)}
-      embedded onOpenFile={setSelectedSource} />
-    {exploring && retained.graph && <MissionGraphExplorer graph={retained.graph} span={selectedSpan} onClear={() => onRetainedSpan?.(null)} provenance={provenance} onExpandNode={onExpandNode} />}
-    {exploring && !retained.graph && <p role="status">This mission has no retained D3 projection.</p>}
-    {sourceDocument && <details className={`rounded border p-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
-      <summary className="cursor-pointer text-sm font-semibold">{sourceDocument.path}</summary>
-      <p className="pt-2 text-xs">Mission source · read only · no execution or release authority.</p>
-      <pre aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all pt-2 text-xs">{sourceDocument.text}</pre>
-    </details>}
-    {provenance && <details className={`rounded border p-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
-      <summary className="cursor-pointer text-sm font-semibold">Source identity</summary>
-      <p className="pt-2 text-xs">Workflow receipts and the codebase snapshot keep their own identities. Static relationships do not prove execution.</p>
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(provenance, null, 2)}</pre>
-    </details>}
-  </section>
+  return <DashboardCanvasLayout ariaLabel="Mission evidence loop"
+    title={<DashboardPrimitive kind="heading" level={1}>Agent Mission</DashboardPrimitive>}
+    description={<DashboardPrimitive kind="text">Read-only manifest and codebase evidence. No execution or release authority.</DashboardPrimitive>}
+    overview={<AgentMissionDashboardSummary trace={trace} codebase={codebase} exploring={exploring} onExplore={() => setExploring(value => !value)}
+      embedded onOpenFile={setSelectedSource} showHeading={false} />}
+    sections={exploring || sourceDocument || provenance ? <>
+      {exploring && retained.graph && <MissionGraphExplorer graph={retained.graph} span={selectedSpan} onClear={() => onRetainedSpan?.(null)} provenance={provenance} onExpandNode={onExpandNode} />}
+      {exploring && !retained.graph && <section aria-label="Codebase projection status">
+        <p data-dashboard-primitive="text" role="status">This mission has no retained D3 projection.</p>
+      </section>}
+      {(sourceDocument || provenance) && <section aria-label="Mission documents and identity">
+        {sourceDocument && <details data-dashboard-primitive="disclosure">
+          <summary>{sourceDocument.path}</summary>
+          <DashboardPrimitive kind="text">Mission source · read only · no execution or release authority.</DashboardPrimitive>
+          <pre data-dashboard-primitive="text" aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all">{sourceDocument.text}</pre>
+        </details>}
+        {provenance && <details data-dashboard-primitive="disclosure">
+          <summary>Source identity</summary>
+          <DashboardPrimitive kind="text">Workflow receipts and the codebase snapshot keep their own identities. Static relationships do not prove execution.</DashboardPrimitive>
+          <pre data-dashboard-primitive="text" className="max-h-56 overflow-auto whitespace-pre-wrap break-all">{JSON.stringify(provenance, null, 2)}</pre>
+        </details>}
+      </section>}
+    </> : undefined} />
 }

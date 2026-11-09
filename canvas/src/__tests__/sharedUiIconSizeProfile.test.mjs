@@ -84,7 +84,11 @@ test('Graph styles cannot redeclare the shared control or dashboard styles', () 
     if (!file.endsWith('.css') || file === shared) continue
     const css = fs.readFileSync(new URL(file, src), 'utf8')
     assert.doesNotMatch(css, /--agentic-(?:control-selected-|base-dashboard-|dashboard-(?!top-inset\b))[\w-]+\s*:|\.agentic-(?:control-selected|toggle-group|dashboard-[\w-]+)\b/, file)
+    if (css.includes('--agentic-dashboard-top-inset')) assert.equal(file, 'styles/responsive-canvas-toolbar.css', 'only the canvas safe-area integration may supply the shared shell inset')
   }
+  const canvasToolbar = fs.readFileSync(new URL('../styles/responsive-canvas-toolbar.css', import.meta.url), 'utf8')
+  assert.match(canvasToolbar, /--agentic-dashboard-top-inset: calc\(var\(--kg-safe-top\) \+ var\(--kg-canvas-viewport-edge-gap\) \+ var\(--kg-toolbar-compact-surface-height, 38px\) \+ 0\.5rem\)/)
+  assert.match(canvasToolbar, /\.kg-canvas-page-surface \.kg-dashboard-content \{ --agentic-dashboard-top-inset: 0px; \}/)
 })
 
 test('Preview and the Media library share the layout picker and the panel toggles use Base controls', () => {
@@ -102,15 +106,24 @@ test('Preview and the Media library share the layout picker and the panel toggle
   }
 })
 
-test('Mission dashboard composition uses the Base shell, card grid, board and layout helpers', () => {
+test('Mission dashboard composition uses the Base shell, card grid, primitives, board and layout helpers', () => {
   const source = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
   for (const [file, name] of [
     ['components/DashboardCanvas/index.tsx', 'DashboardCanvasLayout'],
+    ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCanvasLayout'],
+    ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardPrimitive'],
     ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCardGrid'],
     ['components/DashboardCanvas/DashboardWidgetBoard.tsx', 'BaseWidgetBoard'],
   ]) {
     assert.match(source(file), /from '@agentic-base\/views-react\/dashboard'/, file)
     assert.ok(source(file).includes('<' + name), file)
   }
+  const missionView = source('features/agent-ready/AgentMissionDashboardView.tsx')
+  assert.match(missionView, /className="agentic-dashboard-header"/)
+  assert.match(missionView, /<details data-dashboard-primitive="disclosure"/)
+  const missionOverview = source('features/agent-ready/AgentMissionOverview.tsx')
+  assert.match(missionOverview, /from '@agentic-base\/views-react\/dashboard'/)
+  assert.match(missionOverview, /<DashboardPrimitive kind="text">Native mission source/)
+  assert.match(missionOverview, /<pre data-dashboard-primitive="text"/)
   assert.match(source('components/DashboardCanvas/dashboardWidgetLayout.ts'), /export \{ dashboardWidgetRows, dashboardColumnStyle \} from '@agentic-base\/views-react\/dashboard'/)
 })
