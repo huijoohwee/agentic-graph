@@ -6,6 +6,7 @@ import React from 'react'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import DashboardWidgetBoard from '@/components/DashboardCanvas/DashboardWidgetBoard'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
+import { DashboardPrimitive } from '@agentic-base/views-react/dashboard'
 import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import type { GraphData } from '@/lib/graph/types'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -84,12 +85,12 @@ export default function AgentMissionOverview({ children, retained, retainedSpanI
     <AgentMissionDashboardSummary trace={trace} codebase={codebase} exploring={exploring} onExplore={() => setExploring(value => !value)}
       onOpenFile={openFile} onOpenView={openView} embedded={embedded} />
     {sourceDocument && <DashboardWidgetDisclosure id="mission:source-document" title={sourceDocument.path}>
-      <p className="text-xs">Native mission source · read only · no execution or release authority.</p>
-      <pre aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all pt-2 text-xs">{sourceDocument.text}</pre>
+      <DashboardPrimitive kind="text">Native mission source · read only · no execution or release authority.</DashboardPrimitive>
+      <pre data-dashboard-primitive="text" aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all">{sourceDocument.text}</pre>
     </DashboardWidgetDisclosure>}
     {embedded && provenance && <DashboardWidgetDisclosure id="mission:source-binding" title="Source identity">
-      <p className="text-xs">Workflow receipts and the codebase snapshot keep their own identities. Static relationships do not prove execution.</p>
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(provenance, null, 2)}</pre>
+      <DashboardPrimitive kind="text">Workflow receipts and the codebase snapshot keep their own identities. Static relationships do not prove execution.</DashboardPrimitive>
+      <pre data-dashboard-primitive="text" className="max-h-56 overflow-auto whitespace-pre-wrap break-all">{JSON.stringify(provenance, null, 2)}</pre>
     </DashboardWidgetDisclosure>}
     <section key="widgets" ref={explorer}>
       <DashboardWidgetBoard id="mission" items={[
