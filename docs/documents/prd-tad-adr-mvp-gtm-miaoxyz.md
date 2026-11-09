@@ -162,7 +162,7 @@ The canonical source is `agentic-graph` at baseline revision `d7b367354a48757269
 
 ### Architecture Overview and Boundaries
 
-The implementation candidate is a single-origin Cloudflare Worker named `miaoxyz`, with bundled HTML/CSS/JavaScript assets, Worker API handlers, and a D1 database. The production Wrangler environment declares `airvio.co/MiaoXYZ`; this route is source configuration only and has not been attached to the live zone. The Worker owns catalog reads and validation, deterministic price calculation, request idempotency, request transitions, staff settings, and retention cleanup. D1 stores catalog revisions, settings, request snapshots, state history and short-lived rate-limit digests. The bundled flower mark is original; product photography is not required by the UI.
+The implementation candidate is a single-origin Cloudflare Worker named `agentic-miaoxyz`, with bundled HTML/CSS/JavaScript assets, Worker API handlers, and an `agentic-miaoxyz-dev` D1 database. Production uses `agentic-miaoxyz-production` and declares `airvio.co/MiaoXYZ`; this route is source configuration only and has not been attached to the live zone. The Worker owns catalog reads and validation, deterministic price calculation, request idempotency, request transitions, staff settings, and retention cleanup. D1 stores catalog revisions, settings, request snapshots, state history and short-lived rate-limit digests. The bundled flower mark is original; product photography is not required by the UI.
 
 No AI component, third-party product-data source, payment processor, delivery API, email sender, external account or agent gateway is used. The browser does not persist a buyer draft. The Worker is authoritative for price snapshots, availability rules and submitted requests. Store only the minimum data required for florist follow-up and fulfillment.
 
@@ -256,7 +256,7 @@ flowchart TB
   Buyer[Buyer browser]
   Staff[Florist operator browser]
   subgraph Cloudflare[Cloudflare application boundary]
-    Worker[Worker: miaoxyz]
+    Worker[Worker: agentic-miaoxyz]
     Assets[Bundled static assets]
     D1[(D1: settings, catalog, requests)]
   end
@@ -316,7 +316,7 @@ No paid service or production resource is authorized by this specification. Do n
 | Buyer catalog and filtering | New `cloudflare/workers/miaoxyz/public` surface, baseline `d7b367354a4875726965bdf342aa1ab618d6075c` | New, product-owned schema and buyer view | Worker catalog API and bundled buyer page | Local empty-state preview rendered; catalog content remains absent |
 | Design system and assets | New Worker `public` assets | New, original style tokens and SVG mark | Bundled CSS and original SVG mark; no external asset dependency | Code is present; product photo rights/need remain unassessed |
 | Request storage and staff access | New Worker API and D1 migrations | New request store and operator queue | Bearer-token protected operator API and status history | Local schema migrated; production auth policy and data region remain unapproved |
-| Deployment and observability | `cloudflare/workers/miaoxyz/wrangler.jsonc` | Cloudflare Worker + D1 for Dev candidate | Worker `miaoxyz`; production route config `airvio.co/MiaoXYZ` | Wrangler local preview and TypeScript check succeeded; no remote deployment, production IDs, backup/restore or billing evidence |
+| Deployment and observability | `cloudflare/workers/miaoxyz/wrangler.jsonc` | Cloudflare Worker + D1 for Dev candidate | Worker `agentic-miaoxyz`; production Worker `agentic-miaoxyz-production`; route config `airvio.co/MiaoXYZ` | Wrangler local preview and TypeScript check succeeded; no remote deployment, production IDs, backup/restore or billing evidence |
 
 Canonical source baseline: `agentic-graph` revision `d7b367354a4875726965bdf342aa1ab618d6075c`. Candidate code is in `cloudflare/workers/miaoxyz`; the product PRD is colocated in `docs/documents`. Existing source capabilities were not reused. The candidate has not been merged, immutably published, deployed to Cloudflare Dev, or released to Production.
 
@@ -342,7 +342,7 @@ Canonical source baseline: `agentic-graph` revision `d7b367354a4875726965bdf342a
 | Static catalog with manual contact outside the product | Fail `persisted request and operator queue` for this MVP; usable only as a discovery experiment | Lowest runtime complexity; staff re-entry and lost-request risk unmeasured | Excluded from the product MVP; may be used only as a separately labeled experiment |
 | Hosted commerce platform | Pass buyer-flow feasibility only if export, data region, request-only semantics and staff controls are proven | License, transaction fee and migration cost unknown; not evaluated against cap | Incomparable until a candidate contract and price are grounded |
 
-**Decision:** Implement one Cloudflare Worker named `miaoxyz`, with bundled static assets and a D1 binding. Local Dev uses local D1 and synthetic data. The production Wrangler environment declares `airvio.co/MiaoXYZ` and a separate D1 binding with placeholder IDs that must be replaced only through approved resource provisioning. No production route or database has been created by this lane. Intake remains gated by explicit store settings, privacy, region, backup/restore and rate-limit review approvals, operator and rate-limit secrets, a published catalog and approved retention/service details.
+**Decision:** Implement one Cloudflare Worker named `agentic-miaoxyz`, with bundled static assets and a D1 binding. Local Dev uses the `agentic-miaoxyz-dev` local D1 database and synthetic data. Production uses Worker `agentic-miaoxyz-production` and declares `airvio.co/MiaoXYZ` with a separate `agentic-miaoxyz-production` D1 binding whose placeholder ID must be replaced only through approved resource provisioning. No production route or database has been created by this lane. Intake remains gated by explicit store settings, privacy, region, backup/restore and rate-limit review approvals, operator and rate-limit secrets, a published catalog and approved retention/service details.
 
 **Rationale:** One Worker owns price validation, request lifecycle, operator routes and same-origin assets. D1 migrations make the request store explicit, while local D1 keeps the current preview synthetic. No payment data, purchase charge, stock hold, email sender or external image service is introduced. The stack is reversible by exporting catalog/request records and recreating the documented schema in a successor architecture.
 

@@ -658,7 +658,7 @@ jobs:
           {
             echo "## MiaoXYZ Production candidate awaiting human authorization"
             echo "- Source: \`$SOURCE_SHA\`"
-            echo "- Worker: \`miaoxyz-production\`"
+            echo "- Worker: \`agentic-miaoxyz-production\`"
             echo "- Route: \`https://airvio.co/MiaoXYZ\`"
             echo "- Candidate digest: \`$digest\`"
             echo "- Authorize from an interactive terminal: \`npm run miaoxyz:production:authorize -- --repository ${{ github.repository }} --run-id ${{ github.run_id }}\`"

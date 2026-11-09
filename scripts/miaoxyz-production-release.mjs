@@ -97,7 +97,7 @@ const readWorkerConfig = repoRoot => JSON.parse(fs.readFileSync(
 export const validateProductionConfig = (config, governanceEvidence) => {
   const issues = []
   const production = config?.env?.production
-  if (!production || production.name !== 'miaoxyz-production') issues.push('production Worker name must be miaoxyz-production')
+  if (!production || production.name !== 'agentic-miaoxyz-production') issues.push('production Worker name must be agentic-miaoxyz-production')
   const configuredRoutes = Array.isArray(production?.routes)
     ? production.routes.map(route => route.pattern).sort()
     : []
@@ -126,8 +126,8 @@ export const validateProductionConfig = (config, governanceEvidence) => {
   }
   const database = production?.d1_databases?.find(binding => binding.binding === 'DB')
   const databaseId = database?.database_id
-  if (production?.d1_databases?.length !== 1 || database?.database_name !== 'miaoxyz-production' || database?.migrations_dir !== 'migrations') {
-    issues.push('production must use only the miaoxyz-production D1 binding and tracked migrations directory')
+  if (production?.d1_databases?.length !== 1 || database?.database_name !== 'agentic-miaoxyz-production' || database?.migrations_dir !== 'migrations') {
+    issues.push('production must use only the agentic-miaoxyz-production D1 binding and tracked migrations directory')
   }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(String(databaseId || '')) || /^0{8}-0{4}-4{4}-8{4}-0{12}$/iu.test(String(databaseId || ''))) {
     issues.push('production D1 database ID must be a provisioned UUID')
@@ -290,7 +290,7 @@ export const captureProductionBaseline = async repoRoot => {
 }
 
 const validateBaseline = baseline => {
-  if (!baseline || baseline.schema !== MIAOXYZ_BASELINE_SCHEMA || baseline.workerName !== 'miaoxyz-production') {
+  if (!baseline || baseline.schema !== MIAOXYZ_BASELINE_SCHEMA || baseline.workerName !== 'agentic-miaoxyz-production') {
     throw new Error('MiaoXYZ baseline state schema or Worker identity is invalid')
   }
   if (!Array.isArray(baseline.activeVersions)) throw new Error('MiaoXYZ baseline activeVersions must be an array')
@@ -358,7 +358,7 @@ const createCandidateCore = ({ repoRoot, sourceRevision, sourceTree, localReview
       wranglerConfigDigest: digest(readWorkerConfig(repoRoot)),
       migrationsDigest: migrationsDigest(repoRoot),
     },
-    database: { name: 'miaoxyz-production', id: databaseId },
+    database: { name: 'agentic-miaoxyz-production', id: databaseId },
     governance: {
       privacyBaselineDigest: governanceEvidence.privacyBaselineDigest,
       dataRegionDigest: governanceEvidence.dataRegionDigest,
@@ -442,7 +442,7 @@ export const validateMiaoxyzCandidate = (candidate, repoRoot) => {
       core.worker.fileCount !== files.length ||
       core.worker.wranglerConfigDigest !== digest(config) ||
       core.worker.migrationsDigest !== migrationsDigest(repoRoot) ||
-      core.database?.name !== 'miaoxyz-production' ||
+      core.database?.name !== 'agentic-miaoxyz-production' ||
       core.database?.id !== databaseId ||
       core.baseline?.d1DatabaseId !== databaseId ||
       core.baseline?.workerName !== production.name) {

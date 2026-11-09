@@ -1,6 +1,6 @@
 {
   "$schema": "../../../../node_modules/wrangler/config-schema.json",
-  "name": "miaoxyz",
+  "name": "agentic-miaoxyz",
   "main": "src/worker.ts",
   "compatibility_date": "2026-10-28",
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
@@ -14,7 +14,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "miaoxyz-dev",
+      "database_name": "agentic-miaoxyz-dev",
       "database_id": "00000000-0000-4000-8000-000000000001",
       "migrations_dir": "migrations"
     }
@@ -42,7 +42,7 @@
   },
   "env": {
     "production": {
-      "name": "miaoxyz-production",
+      "name": "agentic-miaoxyz-production",
       "workers_dev": false,
       "preview_urls": false,
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
@@ -53,7 +53,7 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "miaoxyz-production",
+          "database_name": "agentic-miaoxyz-production",
           "database_id": "00000000-0000-4000-8000-000000000002",
           "migrations_dir": "migrations"
         }
