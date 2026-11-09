@@ -55,6 +55,8 @@
     "dev:latest": "node ./scripts/run-dev-latest.mjs && npm run dev",
     "worktree:check": "node ./scripts/check-worktree-policy.mjs",
     "dev": "npm run dev --workspace=@agentic-graph/canvas --",
+    "miaoxyz:dev": "npm --prefix cloudflare/workers/miaoxyz run dev",
+    "miaoxyz:production:authorize": "node ./scripts/miaoxyz-production-release.mjs authorize",
     "demo:runtime-readiness": "node ./scripts/run-runtime-readiness-demo.mjs",
     "dev:apex": "VITE_BASE_PATH=/ VITE_APEX_ROOT_ALIAS=1 npm run dev --workspace=@agentic-graph/canvas --",
     "demo:care-agent": "npm run dev:care-agent --workspace=@agentic-graph/canvas --",
