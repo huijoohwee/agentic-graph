@@ -71,7 +71,7 @@ local_development:
       pinned_ref_allowed: true
       pinned_ref_frontmatter: "docs/runtime-readiness-contract.md"
 deployment:
-  allowed_workflows: [".github/workflows/release.yml", ".github/workflows/travel-mesh-bootstrap.yml"]
+  allowed_workflows: [".github/workflows/release.yml", ".github/workflows/miaoxyz-production-release.yml", ".github/workflows/travel-mesh-bootstrap.yml"]
   required_trigger: "workflow_dispatch"
   required_branch: "main"
   promotion_policy: "human-authorized-candidate"
@@ -572,7 +572,6 @@ The automatic gate passes only with at least two distinct authenticated device p
 - Already-running servers retain the SHA they started with. Restart them after `origin/main` advances so the startup gate can validate the new canonical source.
 
 ## Checkout-Free Object Publication
-
 - `release:manifest:create` builds a deterministic schema-valid manifest from one exact source commit and its pinned docs contract; `release:manifest:check` binds downloaded bytes to expected app/docs SHAs and a SHA-256 manifest digest.
 - `release:publish:immutable` is the only allowed non-current-HEAD publication path. It performs an expected-remote compare-and-set, fast-forward proof, object and pair validation, Git-metadata-only manifest write, exact object push, and remote read-back without switching or editing the checkout.
 - The installed pre-push gate runs ordinary checkout integration only for the active branch and validates non-current object refs from their commit trees. The canonical publisher records `repository-owned-object-gate` and invokes its identical object checks before its bounded hook bypass, so an older occupied checkout cannot run unrelated checkout CI.

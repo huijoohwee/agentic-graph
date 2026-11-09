@@ -1,0 +1,152 @@
+name: MiaoXYZ Production Release
+on:
+  workflow_call:
+    inputs:
+      release_target: { required: true, type: string }
+      source_sha: { required: true, type: string }
+      recovery_run_id: { required: false, type: string }
+      local_review_candidate: { required: true, type: string }
+      release_evidence: { required: true, type: string }
+      miaoxyz_governance_evidence: { required: true, type: string }
+permissions: { actions: read, contents: read }
+jobs:
+  miaoxyz_verify:
+    if: inputs.release_target == 'miaoxyz'
+    name: Verify MiaoXYZ Worker Candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      candidate_digest: ${{ steps.candidate.outputs.digest }}
+    steps:
+      - name: Checkout exact protected main candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 2
+      - name: Enforce protected main and exact source
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          LOCAL_REVIEW_INPUT: ${{ inputs.local_review_candidate }}
+          RELEASE_EVIDENCE_INPUT: ${{ inputs.release_evidence }}
+          GOVERNANCE_EVIDENCE_INPUT: ${{ inputs.miaoxyz_governance_evidence }}
+          RECOVERY_RUN_ID: ${{ inputs.recovery_run_id }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$SOURCE_SHA"
+          test -z "$RECOVERY_RUN_ID"
+          test -n "$LOCAL_REVIEW_INPUT"
+          test -n "$RELEASE_EVIDENCE_INPUT"
+          test -n "$GOVERNANCE_EVIDENCE_INPUT"
+          printf '%s' "$LOCAL_REVIEW_INPUT" > "$RUNNER_TEMP/local-review-candidate.json"
+          printf '%s' "$RELEASE_EVIDENCE_INPUT" > "$RUNNER_TEMP/release-evidence.json"
+          printf '%s' "$GOVERNANCE_EVIDENCE_INPUT" > "$RUNNER_TEMP/miaoxyz-governance-evidence.json"
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install pinned MiaoXYZ Wrangler
+        run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Check generated Worker bindings
+        run: npm run types:check --prefix cloudflare/workers/miaoxyz
+      - name: Compile exact Production Worker without mutation
+        run: node ./scripts/miaoxyz-production-release.mjs dry-run --repo-root .
+      - name: Prepare exact MiaoXYZ candidate and read-only rollback baseline
+        id: candidate
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_READ_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          node ./scripts/miaoxyz-production-release.mjs prepare \
+            --repo-root . \
+            --source-sha "$SOURCE_SHA" \
+            --local-review "$RUNNER_TEMP/local-review-candidate.json" \
+            --release-evidence "$RUNNER_TEMP/release-evidence.json" \
+            --governance-evidence "$RUNNER_TEMP/miaoxyz-governance-evidence.json" \
+            --output "$RUNNER_TEMP/miaoxyz-production-candidate.json"
+          digest="$(jq -r .candidateDigest "$RUNNER_TEMP/miaoxyz-production-candidate.json")"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          {
+            echo "## MiaoXYZ Production candidate awaiting human authorization"
+            echo "- Source: \`$SOURCE_SHA\`"
+            echo "- Worker: \`agentic-miaoxyz-production\`"
+            echo "- Route: \`https://airvio.co/MiaoXYZ\`"
+            echo "- Candidate digest: \`$digest\`"
+            echo "- Authorize from an interactive terminal: \`npm run miaoxyz:production:authorize -- --repository ${{ github.repository }} --run-id ${{ github.run_id }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain exact MiaoXYZ candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: miaoxyz-production-candidate-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-production-candidate.json
+          if-no-files-found: error
+          retention-days: 90
+  miaoxyz_deploy:
+    if: inputs.release_target == 'miaoxyz' && needs.miaoxyz_verify.result == 'success'
+    name: Human-Authorized MiaoXYZ Worker Release
+    needs: miaoxyz_verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://airvio.co/MiaoXYZ
+    steps:
+      - name: Checkout exact reviewed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Install pinned MiaoXYZ Wrangler
+        run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Download exact candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: miaoxyz-production-candidate-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-candidate
+      - name: Read exact human Production approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/approvals" > "$RUNNER_TEMP/miaoxyz-production-approvals.json"
+      - name: Verify exact candidate before production mutation
+        run: |
+          node ./scripts/miaoxyz-production-release.mjs verify \
+            --repo-root . \
+            --candidate "$RUNNER_TEMP/miaoxyz-candidate/miaoxyz-production-candidate.json"
+      - name: Deploy authorized Worker, apply reviewed migrations, and probe public route
+        id: miaoxyz_release
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          MIAOXYZ_OPERATOR_ACCESS_TOKEN: ${{ secrets.MIAOXYZ_OPERATOR_ACCESS_TOKEN }}
+          MIAOXYZ_RATE_LIMIT_HMAC_SECRET: ${{ secrets.MIAOXYZ_RATE_LIMIT_HMAC_SECRET }}
+          EXPECTED_CANDIDATE_DIGEST: ${{ needs.miaoxyz_verify.outputs.candidate_digest }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+        run: |
+          node ./scripts/miaoxyz-production-release.mjs deploy \
+            --repo-root . \
+            --candidate "$RUNNER_TEMP/miaoxyz-candidate/miaoxyz-production-candidate.json" \
+            --approvals "$RUNNER_TEMP/miaoxyz-production-approvals.json" \
+            --expected-candidate-digest "$EXPECTED_CANDIDATE_DIGEST" \
+            --repository "$RELEASE_REPOSITORY" \
+            --run-id "$RELEASE_RUN_ID" \
+            --receipt "$RUNNER_TEMP/miaoxyz-production-receipt.json"
+      - name: Summarize MiaoXYZ deployment receipt
+        if: always()
+        run: if test -f "$RUNNER_TEMP/miaoxyz-production-receipt.json"; then cat "$RUNNER_TEMP/miaoxyz-production-receipt.json" >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Retain MiaoXYZ deployment receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: miaoxyz-production-receipt-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-production-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
