@@ -24,9 +24,9 @@
     "host-qualified-repository-pin",
     "integration-method:squash",
     "protected-integration:pull-request",
-    "remove-clean-worktree-cleanup-opt-in",
     "read-only-repository-observation",
     "read-only-review-observation",
+    "remove-clean-worktree-cleanup-opt-in",
     "shallow-observation-default"
   ],
   "authority": {
