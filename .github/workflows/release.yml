@@ -10,7 +10,9 @@ on:
       miaoxyz_governance_evidence: { description: 'Approved MiaoXYZ governance JSON with retained privacy, region, backup/restore, and rate-limit evidence digests', required: false, type: string }
       recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
-concurrency: { group: production-release, cancel-in-progress: false }
+concurrency:
+  group: production-release
+  cancel-in-progress: false
 jobs:
   recover: { if: "inputs.release_target == 'platform' && inputs.recovery_run_id != ''", uses: './.github/workflows/production-release-recovery.yml', with: { source_sha: '${{ inputs.source_sha }}', original_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}' }, secrets: inherit }
   verify:
@@ -28,8 +30,7 @@ jobs:
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}', GH_TOKEN: '${{ github.token }}' }
         run: |
-          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
+          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
           node scripts/check-runtime-docs-parity.mjs
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
