@@ -1,0 +1,12 @@
+{
+  "name": "miaoxyz-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler d1 migrations apply agentic-miaoxyz-dev --local --config wrangler.jsonc && wrangler dev --config wrangler.jsonc",
+    "types": "wrangler types",
+    "types:check": "wrangler types --include-runtime=false --check"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

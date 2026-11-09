@@ -1,20 +1,22 @@
 name: Production Release
-run-name: ${{ inputs.recovery_run_id && format('Production recovery {0}', inputs.recovery_run_id) || format('Production candidate {0}', inputs.source_sha) }}
+run-name: ${{ inputs.recovery_run_id && format('Production recovery {0}', inputs.recovery_run_id) || format('Production {0} candidate {1}', inputs.release_target, inputs.source_sha) }}
 on:
   workflow_dispatch:
     inputs:
+      release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz] }
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
-      local_review_candidate: { description: 'Reviewed candidate JSON; use the retained original for recovery', required: true, type: string }
-      release_evidence: { description: 'Release evidence JSON; use the retained original for recovery', required: true, type: string }
+      local_review_candidate: { description: 'Exact local review candidate JSON; required by platform and MiaoXYZ lanes', required: false, type: string }
+      release_evidence: { description: 'Exact release evidence JSON; required by platform and MiaoXYZ lanes', required: true, type: string }
+      miaoxyz_governance_evidence: { description: 'Approved MiaoXYZ governance JSON with retained privacy, region, backup/restore, and rate-limit evidence digests', required: false, type: string }
       recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
 concurrency:
   group: production-release
   cancel-in-progress: false
 jobs:
-  recover: { if: "inputs.recovery_run_id != ''", uses: './.github/workflows/production-release-recovery.yml', with: { source_sha: '${{ inputs.source_sha }}', original_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}' }, secrets: inherit }
+  recover: { if: "inputs.release_target == 'platform' && inputs.recovery_run_id != ''", uses: './.github/workflows/production-release-recovery.yml', with: { source_sha: '${{ inputs.source_sha }}', original_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}' }, secrets: inherit }
   verify:
-    if: inputs.recovery_run_id == ''
+    if: inputs.release_target == 'platform' && inputs.recovery_run_id == ''
     name: Verify Release Candidate
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -28,8 +30,7 @@ jobs:
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}', GH_TOKEN: '${{ github.token }}' }
         run: |
-          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
+          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
           node scripts/check-runtime-docs-parity.mjs
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
@@ -138,6 +139,7 @@ jobs:
       - { name: Stage complete verified release artifact, working-directory: agentic-graph, run: 'node scripts/production-mirror-artifact-entries.mjs stage "$GITHUB_WORKSPACE/huijoohwee" "$RUNNER_TEMP/verified-production-artifact"' }
       - { name: Upload verified release artifact, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/verified-production-artifact', if-no-files-found: error, include-hidden-files: true, retention-days: 1 } }
   deploy:
+    if: inputs.release_target == 'platform'
     name: Human-Authorized Deploy, Verify, And Publish Mirror
     needs: verify
     runs-on: ubuntu-latest
@@ -594,3 +596,4 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/gamexr-*.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
+  miaoxyz_release: { if: "inputs.release_target == 'miaoxyz'", uses: './.github/workflows/miaoxyz-production-release.yml', with: { release_target: '${{ inputs.release_target }}', source_sha: '${{ inputs.source_sha }}', recovery_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}', miaoxyz_governance_evidence: '${{ inputs.miaoxyz_governance_evidence }}' }, secrets: inherit }

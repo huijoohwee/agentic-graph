@@ -33,6 +33,9 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
   const forbiddenTriggers = new Set(contract.deployment.forbidden_triggers)
   const deploymentPatterns = contract.deployment.command_patterns.map(pattern => new RegExp(pattern, 'i'))
   const seenAllowed = new Set()
+  const reusableCallers = new Map([
+    ['.github/workflows/miaoxyz-production-release.yml', '.github/workflows/release.yml'],
+  ])
 
   for (const { workflowPath: rel, source } of workflowSources) {
     const containsDeployment = deploymentPatterns.some(pattern => pattern.test(source))
@@ -42,6 +45,24 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
     seenAllowed.add(rel)
     const workflow = load(source)
     const triggers = workflowTriggers(workflow)
+    const callerPath = reusableCallers.get(rel)
+    if (callerPath) {
+      const callerSource = workflowSources.find(item => item.workflowPath === callerPath)
+      const caller = callerSource ? load(callerSource.source) : null
+      const callerJobs = Object.values(caller?.jobs ?? {}).filter(job => job?.uses === `./${rel}`)
+      const protectedRefCheck = `test "$GITHUB_REF" = "refs/heads/${requiredBranch}"`
+      if (triggers.length !== 1 || triggers[0] !== 'workflow_call' ||
+          !source.includes(protectedRefCheck) ||
+          !source.includes('test "$(git rev-parse HEAD)" = "$SOURCE_SHA"') ||
+          !source.includes('test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$SOURCE_SHA"') ||
+          !caller || !workflowTriggers(caller).includes(requiredTrigger) ||
+          workflowTriggers(caller).some(trigger => forbiddenTriggers.has(trigger)) ||
+          !callerSource.source.includes(protectedRefCheck) || callerJobs.length !== 1 ||
+          !String(callerJobs[0]?.if ?? '').includes("inputs.release_target == 'miaoxyz'")) {
+        throw new Error(`${rel} must be called only by the protected ${requiredTrigger} release lane with exact main-source checks`)
+      }
+      continue
+    }
     const configuredBranches = workflow?.on?.[requiredTrigger]?.branches
     if (!triggers.includes(requiredTrigger) || triggers.some(trigger => forbiddenTriggers.has(trigger))) {
       throw new Error(`${rel} must use only the protected ${requiredTrigger} deployment trigger`)

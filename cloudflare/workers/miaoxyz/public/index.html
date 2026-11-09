@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f4ee">
+    <meta name="description" content="MiaoXYZ — a florist-led bouquet studio. Browse published designs and send a request for confirmation.">
+    <title>MiaoXYZ — Bouquet studio</title>
+    <link rel="icon" href="./flower-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles-base.css">
+    <link rel="stylesheet" href="./styles-layout.css">
+    <script src="./app-core.js" defer></script>
+    <script src="./app-catalog.js" defer></script>
+    <script src="./app-editor.js" defer></script>
+    <script src="./app-canvas.js" defer></script>
+    <script src="./app-interactions.js" defer></script>
+    <script src="./app-requests.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="MiaoXYZ home">
+        <img src="./flower-mark.svg" alt="" width="40" height="40">
+        <span>Miao<span class="brand-accent">XYZ</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Main navigation">
+        <a href="#collection">Collection</a>
+        <a href="#how-it-works">How it works</a>
+        <button id="custom-bouquet" class="outline-button" type="button">Custom bouquet</button>
+        <button id="compare-open" class="outline-button compare-button" type="button">＋ <span id="compare-count">Compare (0)</span></button>
+        <button id="operator-entry" class="quiet-button" type="button" aria-label="Florist access">Florist access</button>
+      </nav>
+    </header>
+    <div id="preview-banner" class="preview-banner" role="status" aria-live="polite" hidden>
+      Local interface preview · synthetic designs and prices · request submission is disabled.
+    </div>
+
+    <main id="main">
+      <div id="public-view">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-dot"></span> A considered flower studio</p>
+            <h1>Make the moment<br><em>feel like yours.</em></h1>
+            <p id="hero-intro" class="hero-intro">Explore florist-approved bouquets, shape a few thoughtful details, and send a request for the studio to confirm.</p>
+            <p id="store-summary" class="hero-service-note" hidden></p>
+            <div class="hero-actions">
+              <a class="button button-dark" href="#collection">Explore the collection <span aria-hidden="true">↗</span></a>
+              <span id="hero-quiet-note" class="quiet-note">A request is not a payment or stock hold.</span>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="art-orbit art-orbit-one"></div>
+            <div class="art-orbit art-orbit-two"></div>
+            <div class="art-sun"></div>
+            <img src="./flower-mark.svg" alt="">
+            <span class="art-caption">composed<br>with care</span>
+          </div>
+          <div class="hero-bottomline">
+            <span id="hero-proof-label">FLORIST-APPROVED DESIGNS</span>
+            <span>BOUNDED PERSONALIZATION</span>
+            <span>NO AUTOMATIC CHARGE</span>
+          </div>
+        </section>
+
+        <section id="collection" class="collection section-wrap">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">The current edit</p>
+              <h2>Find your kind of bloom.</h2>
+            </div>
+          <p id="collection-intro" class="section-intro">Every design and price is published by the florist. Choose a ready-made arrangement or adjust only the details currently offered.</p>
+          </div>
+          <div id="catalog-filters" class="filters collection-toolbar" aria-label="Filter bouquets">
+            <div class="filter-controls">
+              <label>Price range
+                <select id="filter-price"><option value="">Any price</option></select>
+              </label>
+              <label>Occasion
+                <select id="filter-occasion"><option value="">Any occasion</option></select>
+              </label>
+              <details class="more-filters">
+                <summary>More filters</summary>
+                <div class="more-filters-panel">
+                  <label>Palette
+                    <select id="filter-palette"><option value="">Any palette</option></select>
+                  </label>
+                  <label>Service date
+                    <input id="filter-date" type="date">
+                  </label>
+                  <button id="clear-filters" class="quiet-button filter-reset" type="button">Clear filters</button>
+                </div>
+              </details>
+            </div>
+            <p id="catalog-count" class="collection-count" aria-live="polite">0 bouquets</p>
+          </div>
+          <p id="compare-limit-note" class="compare-limit-note" role="status" hidden>Three designs are selected. Remove one from comparison to add another.</p>
+          <div id="catalog-grid" class="catalog-grid" aria-live="polite"></div>
+          <div id="catalog-empty" class="empty-catalog" hidden>
+            <div class="empty-flower" aria-hidden="true"><img src="./flower-mark.svg" alt=""></div>
+            <p class="eyebrow">The first collection is taking shape</p>
+            <h3>Florist-approved designs will appear here.</h3>
+            <p>The studio has not published a catalog yet. No products, prices, or service promises are shown until the florist adds them.</p>
+          </div>
+          <div id="catalog-unavailable" class="empty-catalog" hidden>
+            <div class="empty-flower" aria-hidden="true"><img src="./flower-mark.svg" alt=""></div>
+            <p class="eyebrow">A brief pause in the garden</p>
+            <h3>No designs are available right now.</h3>
+            <p>Please check back later, or contact the studio about a future date.</p>
+          </div>
+          <div id="catalog-error" class="notice catalog-no-matches" hidden>
+            <p id="catalog-error-message" role="status">No current designs match those filters. Try widening your choices.</p>
+            <button id="clear-no-match-filters" class="outline-button" type="button">Clear filters</button>
+          </div>
+        </section>
+
+        <section id="how-it-works" class="how-section">
+          <div class="section-wrap">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">A clear, human process</p>
+                <h2 id="process-heading">Choose. Make it yours.<br><em>Let the florist confirm.</em></h2>
+              </div>
+              <p id="process-intro" class="section-intro">The studio reviews every request before it becomes an order. Availability and next steps are confirmed directly with you.</p>
+            </div>
+            <div class="steps-grid">
+              <article class="step-card">
+                <span class="step-index">01</span>
+                <h3>Start with a feeling</h3>
+                <p id="step-one-copy">Browse current designs by occasion, palette, date, or estimate.</p>
+              </article>
+              <article class="step-card">
+                <span class="step-index">02</span>
+                <h3>Choose the details</h3>
+                <p id="step-two-copy">Adjust only the recipe options the florist has approved. The estimate updates as you choose.</p>
+              </article>
+              <article class="step-card">
+                <span class="step-index">03</span>
+                <h3 id="step-three-title">Send a request</h3>
+                <p id="step-three-copy">The florist checks availability and contacts you. A request does not reserve flowers or charge you.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="promise-section section-wrap">
+          <div class="promise-mark" aria-hidden="true"><img src="./flower-mark.svg" alt=""></div>
+          <div>
+            <p class="eyebrow">Made clear, from the first stem</p>
+            <h2>Thoughtful choices.<br><em>No surprises.</em></h2>
+          </div>
+          <p id="promise-copy">Only florist-published designs and prices appear here. Your request stays pending until the studio confirms the arrangement, date, and next step.</p>
+        </section>
+      </div>
+
+      <section id="operator-view" class="operator-view section-wrap" hidden>
+        <div class="operator-topline">
+          <a class="back-link" href="./">← Back to the shop</a>
+          <button id="operator-signout" class="quiet-button" type="button" hidden>Sign out</button>
+        </div>
+        <div class="operator-heading">
+          <p class="eyebrow">Private studio desk</p>
+          <h1>Manage the<br><em>daily details.</em></h1>
+          <p class="section-intro">Publish approved designs, review incoming requests, and keep service information current.</p>
+        </div>
+        <div id="operator-auth" class="operator-panel auth-panel">
+          <h2>Florist access</h2>
+          <p>Enter the studio access key. It stays in this browser tab and is cleared when you sign out.</p>
+          <form id="operator-auth-form">
+            <label for="operator-token">Studio access key</label>
+            <input id="operator-token" type="password" autocomplete="current-password" minlength="32" required>
+            <button class="button button-dark" type="submit">Open studio desk</button>
+          </form>
+          <p id="operator-auth-error" class="form-error" role="status" hidden></p>
+        </div>
+
+        <div id="operator-content" class="operator-content" hidden>
+          <div class="operator-grid">
+            <section class="operator-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">Studio profile</p><h2>Service & privacy</h2></div>
+                <span id="intake-state" class="state-pill state-off">Requests paused</span>
+              </div>
+              <p class="panel-copy">Complete these details before enabling customer requests. The notice and retention rule are shown to buyers before submission.</p>
+              <form id="settings-form" class="stack-form">
+                <label>Studio name<input name="storeName" maxlength="120" required></label>
+                <label>Service area<input name="serviceArea" maxlength="240" required></label>
+                <label>Estimate note<input name="priceNote" maxlength="240" placeholder="For example: final availability is confirmed by the florist" required></label>
+                <div class="field-row">
+                  <label>Privacy notice version<input name="privacyNoticeVersion" maxlength="80" required></label>
+                  <label>Retention period in days<input name="retentionDays" type="number" min="1" max="365" step="1" required></label>
+                </div>
+                <label>Buyer privacy notice<textarea name="privacyNotice" rows="4" minlength="20" maxlength="1200" required></textarea></label>
+                <div class="choice-row">
+                  <label class="check-label"><input name="pickupEnabled" type="checkbox"> Pickup requests</label>
+                  <label class="check-label"><input name="deliveryEnabled" type="checkbox"> Delivery requests</label>
+                  <label class="check-label check-emphasis"><input name="orderIntakeEnabled" type="checkbox"> Enable customer requests</label>
+                </div>
+                <label>Delivery fee (SGD)<input name="deliveryFeeSgd" type="number" min="0" max="2000" step="0.01" inputmode="decimal" placeholder="Set a fee or enter 0 if delivery is free"><small class="small-note">Required when delivery is enabled. Included in the request estimate.</small></label>
+                <p id="runtime-gate-note" class="small-note">The deployment privacy and security controls must also be approved before intake can be enabled.</p>
+                <button class="button button-dark" type="submit">Save studio settings</button>
+                <p id="settings-result" class="form-result" role="status" hidden></p>
+              </form>
+            </section>
+
+            <section class="operator-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">Published catalog</p><h2>Florist-approved designs</h2></div>
+                <span id="catalog-revision" class="revision-note">No revision yet</span>
+              </div>
+              <p class="panel-copy">Enter only real, current designs, prices, date ranges, and recipe choices. Publishing creates a new immutable revision; earlier request snapshots stay unchanged.</p>
+              <label for="catalog-json">Catalog JSON</label>
+              <textarea id="catalog-json" class="code-input" rows="18" spellcheck="false" aria-describedby="catalog-format-note">[]</textarea>
+              <p id="catalog-format-note" class="small-note">Required fields and choice format are documented in the Worker README. Price values are SGD cents; no external image URL is accepted.</p>
+              <button id="publish-catalog" class="button button-dark" type="button">Validate & publish catalog</button>
+              <p id="catalog-result" class="form-result" role="status" hidden></p>
+            </section>
+          </div>
+
+          <section class="operator-panel queue-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Order intake</p><h2>Request queue</h2></div>
+              <button id="refresh-queue" class="quiet-button" type="button">Refresh queue</button>
+            </div>
+            <p class="panel-copy">Only the newest 50 requests are shown. Contact details are visible to this authenticated studio session and are removed after the configured retention period.</p>
+            <div id="queue-list" class="queue-list" aria-live="polite"></div>
+            <p id="queue-result" class="form-result" role="status" hidden></p>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="arrangement-dialog" class="editor-dialog" aria-labelledby="dialog-title">
+      <form id="request-form" novalidate>
+        <section id="builder-step" class="editor-step">
+          <header class="editor-topbar">
+            <a class="editor-brand" href="#collection"><img src="./flower-mark.svg" alt="" width="32" height="32"><span>Miao<span class="brand-accent">XYZ</span></span></a>
+            <div class="editor-product"><span id="builder-type-label" class="eyebrow">Florist-approved design</span><h1 id="dialog-title">Make it yours.</h1><p id="builder-product-description" class="dialog-copy"></p></div>
+            <div class="editor-total"><span>Total</span><strong id="builder-estimate" aria-live="polite"></strong><small id="builder-fee-note"></small></div>
+            <button id="editor-back-to-shop" class="outline-button editor-back" type="button">Back to shop</button>
+            <button id="editor-continue" class="outline-button editor-continue" type="button" disabled>Continue</button>
+            <button id="dialog-close" class="icon-button editor-close" type="button" aria-label="Close bouquet editor">×</button>
+          </header>
+          <div class="editor-workspace">
+            <aside class="editor-controls" aria-label="Bouquet layers and wrapping">
+              <section class="editor-panel layer-panel">
+                <div class="editor-panel-heading"><span class="eyebrow">Arrange</span><h2>Layers</h2></div>
+                <fieldset class="editor-group"><legend>Wrapping</legend><div id="builder-size-options" class="segmented-options"></div></fieldset>
+                <details class="editor-group stem-recipe-details"><summary><span>Stem recipe</span><span id="stem-recipe-current"></span></summary><div id="builder-stem-options" class="segmented-options"></div></details>
+                <section class="finish-group"><h3>Ribbon</h3><div id="ribbon-options" class="finish-options"></div></section>
+                <section class="finish-group"><h3>Outer wrapping</h3><div id="outer-wrap-options" class="finish-options"></div></section>
+                <section class="finish-group"><h3>Inner wrapping</h3><div id="inner-wrap-options" class="finish-options"></div></section>
+              </section>
+              <section class="editor-panel flower-panel">
+                <div class="editor-panel-heading"><div><span id="flower-type-label" class="eyebrow">Flowers</span></div>
+                  <button id="open-flower-picker" class="square-button" type="button" aria-label="Choose a flower to add" aria-expanded="false" aria-controls="flower-picker-popover">＋</button></div>
+                <div id="flower-picker-popover" class="flower-picker-popover" hidden>
+                  <label class="editor-label" for="flower-picker">Add a flower</label>
+                  <select id="flower-picker"></select>
+                  <button id="add-flower" class="button button-dark" type="button">Add flower layer</button>
+                </div>
+                <ol id="flower-layer-list" class="flower-layer-list" aria-label="Flower layers"></ol>
+                <p id="flower-layer-empty" class="layer-empty">Choose stems from the florist’s approved list.</p>
+              </section>
+            </aside>
+
+            <section class="editor-canvas-panel" aria-label="Bouquet preview">
+              <div class="canvas-caption"><span id="canvas-size-label">Medium wrap</span><span id="canvas-layer-count">0 flower layers</span></div>
+              <fieldset class="canvas-view-tools" aria-label="Bouquet canvas controls">
+                <legend class="sr-only">Canvas view controls</legend>
+                <span class="canvas-gesture-label">Canvas view · drag blank space or pinch</span>
+                <button id="canvas-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                <output id="canvas-zoom-level" aria-label="Canvas zoom" aria-live="off">100%</output>
+                <button id="canvas-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                <button id="canvas-view-reset" type="button" aria-label="Reset canvas view" title="Reset view">Reset</button>
+              </fieldset>
+              <p id="canvas-gesture-help" class="sr-only">Focus a flower layer to select it. Drag a flower to move only that layer. Use the resize handle, wheel over the flower, or pinch the same flower to change its scale. Use the selected layer controls for precise position, size, rotation, and orientation. When a flower move button has focus, use arrow keys to move it, plus or minus to resize it, and Home to reset its position, size, and orientation. On the resize handle, use arrow keys to change size. Drag blank canvas space to pan the view, or use the mouse wheel and pinch away from a flower to zoom the view. When the canvas itself has focus, arrow keys pan, plus and minus zoom, and Home resets the view.</p>
+              <svg id="bouquet-canvas" class="bouquet-canvas" viewBox="0 0 640 680" role="group" aria-label="Live bouquet composition. Each flower layer can be moved and resized." tabindex="0" aria-describedby="canvas-gesture-help" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight + - Home"></svg>
+              <p id="builder-price-note" class="canvas-note"></p>
+            </section>
+
+            <aside class="editor-details" aria-label="Edit history and selected layer">
+              <section class="editor-panel history-panel">
+                <div class="editor-panel-heading"><span class="eyebrow">Your composition</span><h2>History</h2></div>
+                <div class="history-actions"><button id="undo-edit" class="outline-button" type="button" disabled>Undo</button><button id="redo-edit" class="outline-button" type="button" disabled>Redo</button></div>
+                <div class="snapshots-heading"><h3>Snapshots</h3><button id="save-snapshot" class="outline-button" type="button">Save snapshot</button></div>
+                <ol id="snapshot-list" class="snapshot-list"></ol>
+                <p id="snapshot-empty" class="snapshot-empty">No saved arrangements yet.</p>
+              </section>
+              <section class="editor-panel selected-panel">
+                <span class="eyebrow">Selected layer</span><h2 id="selected-flower-name">Nothing selected</h2>
+                <fieldset id="selected-flower-controls" class="selected-flower-controls" hidden>
+                  <legend class="sr-only">Selected flower controls</legend>
+                  <label class="editor-label" for="selected-layer-flower">Flower variety</label>
+                  <select id="selected-layer-flower" aria-label="Selected flower variety"></select>
+                  <label class="editor-label" for="selected-flower-quantity">Stems of this flower <span id="selected-flower-quantity-value">1</span></label>
+                  <input id="selected-flower-quantity" type="range" min="1" max="12" step="1" value="1">
+                  <p id="selected-flower-price" class="small-note"></p>
+                  <fieldset id="selected-layer-transform" class="selected-layer-transform">
+                    <legend>Position and appearance</legend>
+                    <label class="editor-label" for="selected-layer-horizontal">Horizontal position <output id="selected-layer-horizontal-value" for="selected-layer-horizontal">0</output></label>
+                    <input id="selected-layer-horizontal" type="range" min="-240" max="240" step="1" value="0" aria-label="Selected flower horizontal position">
+                    <label class="editor-label" for="selected-layer-vertical">Vertical position <output id="selected-layer-vertical-value" for="selected-layer-vertical">0</output></label>
+                    <input id="selected-layer-vertical" type="range" min="-240" max="240" step="1" value="0" aria-label="Selected flower vertical position">
+                    <label class="editor-label" for="selected-layer-scale">Layer size <output id="selected-layer-scale-value" for="selected-layer-scale">100%</output></label>
+                    <input id="selected-layer-scale" type="range" min="50" max="200" step="5" value="100" aria-label="Selected layer scale">
+                    <label class="editor-label" for="selected-layer-rotation">Rotation <output id="selected-layer-rotation-value" for="selected-layer-rotation">0°</output></label>
+                    <input id="selected-layer-rotation" type="range" min="-180" max="180" step="1" value="0" aria-label="Selected flower rotation">
+                    <fieldset class="selected-layer-actions" aria-label="Selected flower actions">
+                      <legend class="sr-only">Selected flower actions</legend>
+                      <button id="mirror-selected-layer" class="outline-button" type="button" aria-pressed="false">Mirror horizontally</button>
+                      <button id="bring-selected-layer-into-view" class="outline-button" type="button">Bring flower into view</button>
+                    </fieldset>
+                    <button id="reset-selected-layer" class="text-button" type="button">Reset position, size, and orientation</button>
+                  </fieldset>
+                  <button id="remove-selected-flower" class="text-button" type="button">Remove selected flower</button>
+                </fieldset>
+                <p id="selected-flower-hint" class="panel-copy">Select a flower from the canvas or layer list.</p>
+              </section>
+            </aside>
+          </div>
+        </section>
+        <div id="request-step" hidden>
+          <button id="back-to-builder" class="back-link" type="button">← Edit bouquet choices</button>
+          <p class="eyebrow">Request details</p>
+          <h2 id="request-title">Where and when should we send it?</h2>
+          <p class="dialog-copy">The florist checks availability and confirms the details before anything becomes an order.</p>
+          <section class="request-summary" aria-labelledby="request-summary-label">
+            <p id="request-summary-label" class="eyebrow">Review your arrangement</p>
+            <div class="request-summary-heading"><h3 id="request-summary-product"></h3><strong id="request-summary-total" aria-live="polite"></strong></div>
+            <div class="request-summary-body">
+              <div id="request-summary-art" class="request-summary-art" aria-hidden="true"></div>
+              <dl class="request-summary-details">
+                <div><dt>Size</dt><dd id="request-summary-size"></dd></div>
+                <div><dt>Stem profile</dt><dd id="request-summary-stems"></dd></div>
+                <div><dt>Ribbon</dt><dd id="request-summary-ribbon"></dd></div>
+                <div><dt>Outer wrapping</dt><dd id="request-summary-outer-wrap"></dd></div>
+                <div><dt>Inner wrapping</dt><dd id="request-summary-inner-wrap"></dd></div>
+                <div><dt>Flowers</dt><dd id="request-summary-flowers"></dd></div>
+              </dl>
+            </div>
+            <p id="request-summary-fee" class="small-note"></p>
+          </section>
+          <div class="request-service-fields">
+            <label class="dialog-label">Service date<input id="service-date" name="serviceDate" type="date" required></label>
+            <label class="dialog-label">Fulfilment<select id="fulfillment" name="fulfillment" required></select></label>
+            <label id="delivery-address-wrap" class="dialog-label" hidden>Delivery address<textarea id="delivery-address" name="deliveryAddress" rows="2" maxlength="300"></textarea></label>
+          </div>
+          <hr class="request-divider">
+          <h3>How can the florist reach you?</h3>
+          <p class="dialog-copy">Your details are used only to review this request and follow up under the notice below.</p>
+          <label class="dialog-label">Your name<input id="buyer-name" name="buyerName" autocomplete="name" maxlength="100" required></label>
+          <div class="field-row">
+            <label class="dialog-label">Contact by
+              <select id="contact-method" name="contactMethod"><option value="email">Email</option><option value="phone">Phone</option></select>
+            </label>
+            <label class="dialog-label">Email or phone<input id="contact-value" name="contactValue" type="email" autocomplete="email" maxlength="240" required></label>
+          </div>
+          <label class="dialog-label">Gift note <span class="optional-label">Optional</span>
+            <textarea id="gift-note" name="note" rows="3" maxlength="500"></textarea>
+          </label>
+          <div id="buyer-privacy-notice" class="privacy-note"></div>
+          <label class="check-label consent-check"><input id="request-consent" type="checkbox" required> I understand this is a request, not a confirmed order, payment, or stock reservation.</label>
+          <p id="request-error" class="form-error" role="alert" hidden></p>
+          <button id="submit-request" class="button button-dark button-wide" type="submit">Send request for confirmation</button>
+          <p class="small-note">No card details are collected. The florist will confirm availability and next steps.</p>
+        </div>
+        <div id="request-confirmation" class="confirmation-panel" hidden aria-live="polite">
+          <div class="confirmation-flower" aria-hidden="true"><img src="./flower-mark.svg" alt=""></div>
+          <p class="eyebrow">Request received</p>
+          <h2 id="request-confirmation-title">Now the florist takes a look.</h2>
+          <p id="confirmation-message"></p>
+          <p class="request-reference">Request <strong id="request-reference"></strong></p>
+          <button id="confirmation-close" class="button button-dark button-wide" type="button">Done</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="compare-dialog" class="compare-dialog" aria-labelledby="compare-title">
+      <div class="compare-dialog-head"><div><p class="eyebrow">A closer look</p><h2 id="compare-title">Compare designs</h2></div><button id="compare-close" class="icon-button" type="button" aria-label="Close comparison">×</button></div>
+      <p id="compare-guidance" class="compare-guidance" role="status"></p>
+      <div id="compare-content" class="compare-content"></div>
+    </dialog>
+
+    <dialog id="custom-design-dialog" class="custom-design-dialog" aria-labelledby="custom-design-title" aria-describedby="custom-design-description">
+      <div class="compare-dialog-head">
+        <div><p class="eyebrow">Build a bouquet</p><h2 id="custom-design-title">Choose a starting design</h2>
+          <p id="custom-design-description" class="dialog-copy">Choose one of the available designs as the starting point for your edits.</p></div>
+        <button id="custom-design-close" class="icon-button" type="button" aria-label="Close design chooser">×</button>
+      </div>
+      <div id="custom-design-list" class="custom-design-list"></div>
+    </dialog>
+
+    <div id="global-status" class="sr-only" aria-live="polite" role="status"></div>
+    <footer class="site-footer">
+      <a class="brand brand-footer" href="./"><img src="./flower-mark.svg" alt="" width="32" height="32"><span>Miao<span class="brand-accent">XYZ</span></span></a>
+      <p id="footer-copy">Every request waits for the florist’s confirmation.</p>
+      <span>© MiaoXYZ</span>
+    </footer>
+  </body>
+</html>
