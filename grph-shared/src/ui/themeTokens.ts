@@ -54,6 +54,7 @@ export function resolveThemeColors(): ThemeColors {
 
 const NEUTRAL_BORDER_COLOR_CLASS_NAME = 'border-[color:var(--kg-border)]'
 const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-width,1px)]'
+const CONTROL_BORDER_CLASS_NAME = '[border:var(--agentic-control-border)]'
 
 const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--agentic-control-height)]'
 
@@ -176,8 +177,8 @@ export const UI_THEME_TOKENS = {
   },
   input: {
     bg: 'bg-[var(--kg-panel-bg)]',
-    border: NEUTRAL_BORDER_COLOR_CLASS_NAME,
-    hoverBorder: 'hover:border-blue-500/30 dark:hover:border-blue-400/40',
+    border: CONTROL_BORDER_CLASS_NAME,
+    hoverBorder: 'hover:[border:var(--agentic-control-border)]',
     placeholder: 'placeholder:text-[color:var(--kg-text-tertiary)]',
     selectionControl: 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400',
     text: 'text-[color:var(--kg-text-primary)]',
@@ -185,7 +186,7 @@ export const UI_THEME_TOKENS = {
   focus: {
     primaryRing: 'focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400',
     primaryStrongRing: 'focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400',
-    primaryBorderRing: 'focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400',
+    primaryBorderRing: 'focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400',
     primarySoftRing: 'focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:focus:ring-blue-400/40',
     primarySofterRing: 'focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50',
   },
