@@ -12,6 +12,9 @@ const purgeExpired = async (db: D1Database): Promise<void> => {
     const placeholders = ids.map(() => '?').join(', ')
     await db.batch([
       db.prepare(
+        'DELETE FROM operator_events WHERE object_id IN (' + placeholders + ')',
+      ).bind(...ids),
+      db.prepare(
         'DELETE FROM request_status_history WHERE request_id IN (' + placeholders + ')',
       ).bind(...ids),
       db.prepare(

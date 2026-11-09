@@ -51,13 +51,13 @@ const handleSettingsUpdate = async (request: Request, env: Env): Promise<Respons
   const deliveryFee = value.deliveryFeeMinor
   const intake = value.orderIntakeEnabled
   if (!storeName || !serviceArea || !priceNote || !noticeVersion || !notice
-    || typeof retention !== 'number' || !Number.isInteger(retention) || retention < 1 || retention > 365
+    || retention !== 30
     || typeof pickup !== 'boolean' || typeof delivery !== 'boolean'
     || !(deliveryFee === null || (typeof deliveryFee === 'number'
       && Number.isInteger(deliveryFee) && deliveryFee >= 0 && deliveryFee <= 200_000))
     || (delivery && deliveryFee === null)
     || typeof intake !== 'boolean' || (!pickup && !delivery)) {
-    return json(422, { error: 'Complete the required store, service, privacy, retention, and fulfillment fields.' })
+    return json(422, { error: 'Complete the required store, service, privacy, 30-day retention, and fulfillment fields.' })
   }
   const settings = await readSettings(env.DB)
   if (!settings) return json(503, { error: 'Store settings are unavailable.' })

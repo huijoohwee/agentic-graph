@@ -71,12 +71,12 @@ local_development:
       pinned_ref_allowed: true
       pinned_ref_frontmatter: "docs/runtime-readiness-contract.md"
 deployment:
-  allowed_workflows: [".github/workflows/release.yml", ".github/workflows/miaoxyz-production-release.yml", ".github/workflows/travel-mesh-bootstrap.yml"]
+  allowed_workflows: [".github/workflows/release.yml", ".github/workflows/miaoxyz-production-release.yml", ".github/workflows/miaoxyz-d1-rehearsal.yml", ".github/workflows/travel-mesh-bootstrap.yml"]
   required_trigger: "workflow_dispatch"
   required_branch: "main"
   promotion_policy: "human-authorized-candidate"
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
-  command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-production-release\\.mjs\\s+(?:prepare|dry-run|deploy)(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
+  command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-production-release\\.mjs\\s+(?:prepare|dry-run|deploy)(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-d1-restore-rehearsal\\.mjs\\s+run(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   production_runtime_readiness_local_browser:
     roots: ["docs/TESTING.md", "canvas/scripts/run_production_runtime_readiness_e2e.mjs", "scripts/__tests__/production-runtime-ready-demo.test.mjs", "canvas/src/features/observability-workspace/ObservabilityWorkspace.tsx", "canvas/src/features/observability-workspace/host.mjs", "canvas/src/components/LiveCanvasHero.tsx", "canvas/src/features/agentic-os/LiveCanvasHeroPromptPresetPicker.tsx", "canvas/src/features/agentic-os/activateLiveCanvasHeroDemo.ts", "canvas/src/features/agentic-os/liveCanvasHeroDemoSource.ts", "docs/workspace-seeds/demo.md", "scripts/run-runtime-readiness-demo.mjs"]

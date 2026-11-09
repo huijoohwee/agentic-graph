@@ -195,9 +195,7 @@ export const settingsReady = (settings: StoreSettingsRow): boolean =>
   && !!text(settings.price_note, 1, 240)
   && !!text(settings.privacy_notice_version, 1, 80)
   && !!text(settings.privacy_notice, 20, 1200)
-  && typeof settings.retention_days === 'number'
-  && settings.retention_days >= 1
-  && settings.retention_days <= 365
+  && settings.retention_days === 30
   && (settings.delivery_enabled !== 1 || (
     typeof settings.delivery_fee_minor === 'number'
     && Number.isInteger(settings.delivery_fee_minor)

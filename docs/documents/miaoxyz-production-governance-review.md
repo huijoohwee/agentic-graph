@@ -2,10 +2,10 @@
 title: "MiaoXYZ Production Governance Review"
 doc_type: "Production Governance Evidence"
 version: "1.0.0"
-date: "2026-11-09"
+date: "2026-11-10"
 owner: "Product Owner"
-source_revision: "572baf9d60583d6b6c8264a2b0152310b3054a1c"
-review_status: "pending-owner-approval"
+source_revision: "551e144f73512d27c2310c3b266612d27937aa39"
+review_status: "privacy-and-rate-limit-approved-backup-rehearsal-pending"
 ---
 
 # MiaoXYZ Production Governance Review
@@ -24,40 +24,40 @@ Cloudflare documents that `apac` is a location hint, not a guarantee, and that i
 
 Each record is a byte-stable block between its named markers. Its SHA-256 digest is calculated over the UTF-8 bytes inside the markers, excluding the marker lines. The digests identify retained evidence records; they do not turn a pending review into an approval.
 
-### Privacy baseline — pending owner approval
+### Privacy baseline — owner approved
 
 <!-- RECORD privacy-baseline BEGIN -->
-Source review at `572baf9d60583d6b6c8264a2b0152310b3054a1c`: `cloudflare/workers/miaoxyz/src/requests.ts` accepts buyer name, email or phone contact, service date, fulfillment choice, a delivery address only for delivery, optional message, bouquet configuration, and the privacy-notice version. The request is described as a request only; the code does not take payment or reserve stock. `cloudflare/workers/miaoxyz/src/operator.ts` protects staff endpoints with the operator secret. `cloudflare/workers/miaoxyz/src/worker.ts` schedules deletion of expired request rows and their status history using the florist-configured 1–365 day retention period. The request purge does not currently delete `operator_events`; status events can retain a request identifier after its request row is purged. Cloudflare D1 Time Travel remains on after application-row deletion. Cloudflare documents a restore window of up to 30 days on Workers Paid and up to 7 days on Workers Free; the account plan is not recorded in this evidence. Owner review still needs to approve the buyer notice, purpose, retention rule, event-row treatment, deletion expectations, and disclosure of the applicable backup/history window before intake is enabled. No legal conclusion is made here. Status: pending.
+Owner decision dated 2026-11-10: approve 30-day retention for request records and purge of linked operator-event rows. Requests collect the buyer name and email or phone contact, service date, fulfillment choice, delivery address only for delivery, optional message, bouquet configuration, and privacy-notice version so the florist can follow up. A submission is a request only; it does not take payment or reserve stock. The operator API is protected by the operator secret. The scheduled purge selects expired request IDs, deletes `operator_events` rows whose `object_id` matches those IDs, then removes the matching status history and request rows. Retention is fixed at 30 days in the profile UI, API, and D1 migration. Cloudflare D1 Time Travel remains provider-managed after application-row deletion and can retain history up to 7 days on Workers Free or 30 days on Workers Paid. The available Cloudflare token could not read the account subscription endpoint (HTTP 403), so the account's specific plan remains unverified; the florist's buyer notice must disclose both possible limits until the plan is observed. The notice and store identity still need operator configuration before intake. This record is a product-owner policy decision, not a legal conclusion. Status: approved for the 30-day retention and linked-event deletion baseline.
 <!-- RECORD privacy-baseline END -->
 
 ### Data region — owner decision recorded; narrow scope
 
 <!-- RECORD data-region BEGIN -->
-Owner decision dated 2026-11-09: continue with the observed APAC D1 primary as best-effort. Provider readback reported APAC, no jurisdiction restriction, and read replication disabled; the pending migration list and system-table-only schema were also observed read-only. Cloudflare’s D1 location documentation says location hints do not guarantee placement and lists no Singapore or Malaysia jurisdiction. This decision approves the APAC best-effort placement choice for this deployment only; it is not a statutory-residency approval and does not approve personal-data collection. Re-observe provider state during candidate preparation. Status: owner-selected, limited to best-effort APAC.
+Owner decision dated 2026-11-09: continue with the observed APAC D1 primary as best-effort. Provider readback reported APAC, no jurisdiction restriction, and read replication disabled; the pending migration list and system-table-only schema were also observed read-only. Cloudflare’s D1 location documentation says location hints do not guarantee placement and lists no Singapore or Malaysia jurisdiction. This decision approves the APAC best-effort placement choice for this deployment only; it is not a statutory-residency approval and does not approve personal-data collection. Re-observe provider state during candidate preparation. Status: owner-approved, limited to best-effort APAC.
 <!-- RECORD data-region END -->
 
 ### Backup and restore — pending rehearsal and owner approval
 
 <!-- RECORD backup-restore BEGIN -->
-Cloudflare’s current D1 Time Travel documentation states that history is always on and supports point-in-time restore to any minute within the previous 30 days on Workers Paid or 7 days on Workers Free; the account plan has not been recorded. A read-only `wrangler d1 time-travel info` query returned a current bookmark on 2026-11-09, confirming that the command is available for this database; this is not a restore rehearsal. Cloudflare documents restore as destructive and in-place. The production D1 exists, but both application migrations are still pending; there is no MiaoXYZ schema or retained restore-rehearsal receipt yet. Before production migration or buyer intake, rehearse restore against a separate non-production database, verify the restored schema and representative synthetic rows, capture the pre-restore state and recovery procedure, and retain the result. Do not rehearse by restoring the production database. Owner approval remains pending. Reference: [D1 Time Travel and backups](https://developers.cloudflare.com/d1/reference/time-travel/).
+Cloudflare’s current D1 Time Travel documentation states that history is always on and supports point-in-time restore to any minute within the previous 30 days on Workers Paid or 7 days on Workers Free. A read-only `wrangler d1 time-travel info` query returned a current bookmark on 2026-11-09. The owner authorized a protected GitHub Actions rehearsal dated 2026-11-10 using one temporary D1 database with synthetic rows and an APAC location hint. The workflow must capture a pre-mutation bookmark, mutate synthetic data, restore to that bookmark, verify the restored rows, and delete only the temporary database. It must not access or mutate the production D1 database or Worker routes. The workflow implementation is pending merge and no rehearsal receipt is retained yet. Cloudflare documents restore as destructive and in-place; this rehearsal confines that operation to the temporary database. Status: rehearsal authorized, evidence pending. Reference: [D1 Time Travel and backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 <!-- RECORD backup-restore END -->
 
 ### Rate-limit review — code review complete; approval pending
 
 <!-- RECORD rate-limit-review BEGIN -->
-Source review at `572baf9d60583d6b6c8264a2b0152310b3054a1c`: `cloudflare/workers/miaoxyz/src/validation.ts` sets a limit of five requests per ten-minute window. `cloudflare/workers/miaoxyz/src/requests.ts` derives the bucket with HMAC-SHA-256 over the Cloudflare client IP and window start, stores the digest and count with a twenty-minute expiry, and returns 429 after the limit. The raw address is not inserted into the application D1 tables by this path. The scheduled cleanup runs daily at 03:17 UTC, so an expired bucket may remain until the next run. Missing rate-limit secret or client IP fails closed; code-review found no production load/abuse exercise, alerting evidence, or owner-approved threshold. The operator must confirm the threshold and response, keep the HMAC secret protected, and decide whether the daily purge delay is acceptable. No secret values are recorded here. Status: pending owner approval.
+Owner decision dated 2026-11-10: approve the current control values: five requests per 10-minute window, HMAC-SHA-256 bucket expiry after 20 minutes, and daily cleanup at 03:17 UTC. The request path does not store the raw client address in application D1 tables. An expired bucket can remain until the next daily cleanup run. Missing rate-limit secret or client IP fails closed. No production load/abuse exercise or alerting evidence is claimed. The HMAC secret remains protected; no secret values are recorded here. Status: owner-approved for the documented current values.
 <!-- RECORD rate-limit-review END -->
 
 ## Approval state and release gate
 
 | Gate | Status | Evidence needed before its source flag can be true |
 |---|---|---|
-| `DATA_REGION_APPROVED` | Owner’s APAC best-effort choice recorded | Re-observe the D1 location and keep the documented no-guarantee limit bound to the exact candidate |
-| `PRIVACY_BASELINE_APPROVED` | Pending | Owner approval of notice, collection purpose, retention/deletion behavior, operator-event retention, and D1 history window |
-| `BACKUP_RESTORE_APPROVED` | Pending | Retained non-production restore-rehearsal evidence and owner approval of recovery procedure |
-| `RATE_LIMIT_REVIEW_APPROVED` | Pending | Owner approval of the five-per-ten-minute threshold, expiry/purge behavior, and retained security review |
+| `DATA_REGION_APPROVED` | Owner approved APAC best-effort, with no country-specific guarantee | Re-observe the D1 location and keep the documented limit bound to the exact candidate |
+| `PRIVACY_BASELINE_APPROVED` | Owner approved 30-day request retention and linked operator-event purge; buyer notice must disclose D1 history limits | Retain this decision digest and require operator notice configuration before intake |
+| `BACKUP_RESTORE_APPROVED` | Protected synthetic rehearsal authorized; evidence pending | Retain the exact non-production restore-rehearsal receipt and verify production D1/routes were untouched |
+| `RATE_LIMIT_REVIEW_APPROVED` | Owner approved five requests per 10 minutes, 20-minute HMAC expiry, and 03:17 UTC cleanup | Retain this decision digest and keep the secret protected |
 
-The production gate requires all four approval flags, both required secrets, a real production D1 UUID, and a candidate carrying an `approved` governance-evidence object with four retained SHA-256 records. This document does not authorize changing pending flags to `true`, applying migrations, enabling order intake, or deploying the Worker. The D1 database currently has no MiaoXYZ application schema, and production migrations must run only through the protected release workflow after the required evidence and approvals exist.
+The production gate requires all four approval flags, both required secrets, a real production D1 UUID, and a candidate carrying an `approved` governance-evidence object with four retained SHA-256 records. The three owner-approved source flags are true in this candidate; backup/restore remains false until the protected synthetic rehearsal passes and its receipt is retained. No production D1 migration, order-intake enablement, or Worker deployment is authorized by this document. The production D1 currently has no MiaoXYZ application schema, and its migrations may run only through the protected release workflow after all four evidence records are approved.
 
 ## Record digests
 
@@ -65,7 +65,7 @@ The four digests below are SHA-256 over the exact UTF-8 contents between each ma
 
 | Record | SHA-256 |
 |---|---|
-| Privacy baseline | `9b6ae8f31f74670e1812cec5c811c4271696bfd0777c45569d8318c1f8c0f49b` |
-| Data region | `b6eb902f742a5d8cec065c25c0647e8c85d55d97264a99cc4f71989a770c8266` |
-| Backup and restore | `b24e352fd4482781f6cf8e46afd2f53be6e8db93f12c6b56570ce8f0fcdb0924` |
-| Rate-limit review | `5465628d632381593c206f9ad32157e65466abb94a157a7199d99aae93fe6bbd` |
+| Privacy baseline | `1128d0883fe261d91b90b07f58cfbff37dd6940d39374a55a08afd3c5a3dd3cf` |
+| Data region | `cc925159999b5d8c42bff7111aef2bdfb25898c1f576dd8b77739ef03c335540` |
+| Backup and restore | `48b297bfb275e2dfbaad95a6ee333db5c1c7fa8f15392f208932f462e88c7398` |
+| Rate-limit review | `99e8a94882aa65e5c013480d8d6f31d83dc6f4de255e6ccbf9a99c0473cedba7` |
