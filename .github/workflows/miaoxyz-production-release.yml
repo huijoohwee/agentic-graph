@@ -15,6 +15,9 @@ jobs:
     name: Verify MiaoXYZ Worker Candidate
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: production
+      url: https://airvio.co/MiaoXYZ
     outputs:
       candidate_digest: ${{ steps.candidate.outputs.digest }}
     steps:

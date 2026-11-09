@@ -54,7 +54,7 @@
         {
           "binding": "DB",
           "database_name": "agentic-miaoxyz-production",
-          "database_id": "00000000-0000-4000-8000-000000000002",
+          "database_id": "cc6558f0-03cd-4401-8c20-51909b437174",
           "migrations_dir": "migrations"
         }
       ],
