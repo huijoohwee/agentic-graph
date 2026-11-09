@@ -24,7 +24,7 @@ jobs:
       - name: Verify exact manual main workflow run
         run: |
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
-          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REF" = "refs/heads/main"
           test "$GITHUB_REPOSITORY" = huijoohwee/agentic-graph
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git ls-remote https://github.com/huijoohwee/agentic-graph.git refs/heads/main | cut -f1)" = "$GITHUB_SHA"
