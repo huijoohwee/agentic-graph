@@ -247,15 +247,9 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Download immutable release manifest proof
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: immutable-release-manifest
-          path: ${{ runner.temp }}/immutable-release-manifest-proof
-
-      - name: Validate immutable release manifest proof
+      - name: Validate immutable release manifest
         working-directory: agentic-graph
-        run: npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$AGENTIC_OS_SOURCE_REVISION" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
+        run: npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest.json" --source-sha "$AGENTIC_OS_SOURCE_REVISION" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
 
       - name: Validate cross-device scope ownership
         working-directory: agentic-graph
