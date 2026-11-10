@@ -6,6 +6,12 @@
     <meta name="theme-color" content="#f7f4ee">
     <meta name="description" content="MiaoXYZ — a florist-led bouquet studio. Browse published designs and send a request for confirmation.">
     <title>MiaoXYZ — Bouquet studio</title>
+    <script>
+      const appBase = /^\/MiaoXYZ(?:\/|$)/u.test(location.pathname) ? '/MiaoXYZ/' : '/'
+      const baseElement = document.createElement('base')
+      baseElement.href = appBase
+      document.head.append(baseElement)
+    </script>
     <link rel="icon" href="./flower-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles-base.css">
     <link rel="stylesheet" href="./styles-layout.css">
