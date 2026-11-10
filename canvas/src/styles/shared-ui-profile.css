@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@30e403a55bd9f5b6c7e58a7cc7de632e1b2714ae; profile sha256 26e70f6d765e97d4dae02175d312c50b9038b1448d5710b8c78102ae4493bba3. Do not edit. */
+/* Generated from agentic-design-system@267cdb31047b02d4f54ea6708fb2518a8a2a57f4; profile sha256 6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -13,6 +13,7 @@
   --agentic-ktv-columns-narrow: minmax(0,1fr) 2rem;
   --agentic-ktv-stack-breakpoint: 22.25rem;
   --agentic-ktv-panel-width: 26.25rem;
+  --agentic-floating-panel-radius: 8px;
   --agentic-control-height: 28px;
   --agentic-control-height-touch: 48px;
   --agentic-control-padding-inline: 0.5rem;
