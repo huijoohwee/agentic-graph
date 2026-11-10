@@ -106,8 +106,7 @@ export default function HeaderActions({
       )}
 
       {showCloseButton ? (
-        <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!}
-          iconClassName={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+        <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!} />
       ) : null}
     </section>
   )
