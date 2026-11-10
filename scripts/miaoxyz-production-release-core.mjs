@@ -5,7 +5,7 @@ import path from 'node:path'
 
 export const MIAOXYZ_CANDIDATE_SCHEMA = 'agentic-miaoxyz-production-candidate/v2'
 export const MIAOXYZ_GOVERNANCE_SCHEMA = 'agentic-miaoxyz-production-governance-evidence/v1'
-export const MIAOXYZ_BASELINE_SCHEMA = 'agentic-miaoxyz-production-baseline/v2'
+export const MIAOXYZ_BASELINE_SCHEMA = 'agentic-miaoxyz-production-baseline/v3'
 
 export const routePatterns = ['airvio.co/MiaoXYZ', 'airvio.co/MiaoXYZ/*']
 export const approvalNames = [
