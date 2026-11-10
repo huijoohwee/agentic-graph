@@ -22,4 +22,4 @@ The publication job uses the protected `production` environment. Its approval au
 - The publisher sends the candidate to the authenticated operator catalog API using the existing production secret. It never logs or stores the secret in the candidate or receipt.
 - After the API accepts the update, a public readback must match the candidate digest and revision, and `store.intakeEnabled` must remain false.
 
-The workflow changes catalog snapshot data only. Store settings, request intake, routes, Worker code, and D1 migrations are outside this operation. Candidate and publication receipts are retained as GitHub Actions artifacts for 90 days.
+The workflow changes catalog snapshot data only. Store settings, request intake, routes, Worker code, and D1 migrations are outside this operation. Candidate and publication receipts are retained as GitHub Actions artifacts for one day under the repository’s current artifact-retention limit; the catalog revision and publication event remain in the Worker’s D1 catalog history.
