@@ -51,11 +51,16 @@ export const runWrangler = (repoRoot, args, { allowMissingScript = false } = {})
   }
 }
 
-export const cloudflareApiResult = async (url, token) => {
+export const cloudflareApiResult = async (url, token, { method = 'GET', body } = {}) => {
   let response
   try {
     response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(15000),
     })
   } catch {
@@ -71,6 +76,49 @@ export const cloudflareApiResult = async (url, token) => {
     throw new Error('MiaoXYZ Cloudflare inventory was not complete and successful')
   }
   return payload.result
+}
+
+const MIAOXYZ_MIGRATION_STATE_SCHEMA = 'agentic-miaoxyz-applied-migrations/v1'
+const migrationsFor = repoRoot => {
+  const migrationDirectory = path.join(appRootFrom(repoRoot), 'migrations')
+  const files = fs.readdirSync(migrationDirectory).filter(file => file.endsWith('.sql')).sort()
+  if (!files.length || files.some(file => !/^\d+_[A-Za-z0-9_-]+\.sql$/u.test(file))) {
+    throw new Error('MiaoXYZ local D1 migration inventory is missing or malformed')
+  }
+  return { migrationDirectory, files }
+}
+
+export const captureAppliedMigrationNames = async ({ repoRoot, accountId, databaseId, migrationsTable = 'd1_migrations' }) => {
+  const token = requireText(process.env.CLOUDFLARE_API_TOKEN, 'read-only Cloudflare API token')
+  const account = requireText(accountId, 'Cloudflare account ID').toLowerCase()
+  const database = requireText(databaseId, 'MiaoXYZ production D1 ID').toLowerCase()
+  if (!/^[0-9a-f]{32}$/u.test(account) || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u.test(database) ||
+      typeof migrationsTable !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/u.test(migrationsTable)) {
+    throw new Error('MiaoXYZ production D1 migration inventory identity is invalid')
+  }
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${database}/query`
+  const query = async (sql, params = []) => {
+    const results = await cloudflareApiResult(endpoint, token, { method: 'POST', body: { sql, params } })
+    if (!Array.isArray(results) || results.length !== 1 || results[0]?.success !== true ||
+        !Array.isArray(results[0]?.results) || results[0]?.meta?.changed_db !== false ||
+        results[0]?.meta?.changes !== 0 || results[0]?.meta?.rows_written !== 0) {
+      throw new Error('MiaoXYZ production D1 migration inventory did not prove a read-only query')
+    }
+    return results[0].results
+  }
+  const tables = await query('SELECT name FROM sqlite_master WHERE type = ? AND name = ?', ['table', migrationsTable])
+  if (tables.length > 1 || tables.some(row => row?.name !== migrationsTable)) {
+    throw new Error('MiaoXYZ production D1 migration table inventory is malformed')
+  }
+  if (tables.length === 0) return []
+  const rows = await query(`SELECT name FROM "${migrationsTable}" ORDER BY name`)
+  const localMigrations = new Set(migrationsFor(repoRoot).files)
+  const names = rows.map(row => row?.name)
+  if (names.some(name => typeof name !== 'string' || !localMigrations.has(name)) ||
+      new Set(names).size !== names.length) {
+    throw new Error('MiaoXYZ production D1 contains unknown or duplicate applied migrations')
+  }
+  return names.sort()
 }
 
 export const captureRouteInventory = async () => {
@@ -151,10 +199,12 @@ export const captureProductionBaseline = async repoRoot => {
       d1Location.readReplicationMode !== 'disabled') {
     throw new Error('MiaoXYZ production D1 no longer matches the approved APAC best-effort, no-jurisdiction, replication-disabled decision')
   }
-  const migrationText = runWrangler(repoRoot, [
-    'd1', 'migrations', 'list', production.d1_databases?.find(binding => binding.binding === 'DB')?.database_name,
-    '--remote', '--env', 'production',
-  ])
+  const appliedMigrations = await captureAppliedMigrationNames({
+    repoRoot,
+    accountId: routeInventory.accountId,
+    databaseId: database.database_id,
+    migrationsTable: database.migrations_table ?? 'd1_migrations',
+  })
   return {
     schema: MIAOXYZ_BASELINE_SCHEMA,
     workerName: production.name,
@@ -163,7 +213,8 @@ export const captureProductionBaseline = async repoRoot => {
     routes: routeInventory.routes,
     activeVersions: collectVersions(status),
     d1Location,
-    migrationStateDigest: digestBytes(migrationText.replace(/\r\n/gu, '\n').trim()),
+    migrationStateSchema: MIAOXYZ_MIGRATION_STATE_SCHEMA,
+    migrationStateDigest: digest({ schema: MIAOXYZ_MIGRATION_STATE_SCHEMA, appliedMigrations }),
     d1DatabaseId: database.database_id,
   }
 }
@@ -175,6 +226,9 @@ export const validateBaseline = baseline => {
   if (baseline.d1Location?.runningInRegion !== 'APAC' || baseline.d1Location?.jurisdiction !== null ||
       baseline.d1Location?.readReplicationMode !== 'disabled') {
     throw new Error('MiaoXYZ baseline must bind the approved APAC best-effort D1 location, no jurisdiction, and disabled read replication')
+  }
+  if (baseline.migrationStateSchema !== MIAOXYZ_MIGRATION_STATE_SCHEMA) {
+    throw new Error('MiaoXYZ baseline migration state semantics are invalid')
   }
   if (!Array.isArray(baseline.activeVersions)) throw new Error('MiaoXYZ baseline activeVersions must be an array')
   if (!/^[0-9a-f]{32}$/u.test(String(baseline.accountId || '')) ||
@@ -202,9 +256,7 @@ export const validateBaseline = baseline => {
 
 export const artifactDigests = repoRoot => readCommittedWorkerFiles(repoRoot)
 export const migrationsDigest = repoRoot => {
-  const migrationDirectory = path.join(appRootFrom(repoRoot), 'migrations')
-  const files = fs.readdirSync(migrationDirectory).filter(file => file.endsWith('.sql')).sort()
-  if (!files.length) throw new Error('MiaoXYZ has no D1 migrations')
+  const { migrationDirectory, files } = migrationsFor(repoRoot)
   return digest(files.map(file => ({ file, digest: digestBytes(fs.readFileSync(path.join(migrationDirectory, file))) })))
 }
 
