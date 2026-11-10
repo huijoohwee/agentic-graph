@@ -24,14 +24,16 @@ export const writeSecrets = output => {
 export const compareBaseline = (expected, actual) => {
   validateBaseline(expected)
   validateBaseline(actual)
-  if (JSON.stringify(expected.activeVersions) !== JSON.stringify(actual.activeVersions) ||
-      expected.migrationStateDigest !== actual.migrationStateDigest ||
-      expected.d1DatabaseId !== actual.d1DatabaseId ||
-      digest(expected.d1Location) !== digest(actual.d1Location) ||
-      expected.accountId !== actual.accountId ||
-      expected.zoneId !== actual.zoneId ||
-      digest(expected.routes) !== digest(actual.routes)) {
-    throw new Error('MiaoXYZ Production state drifted after candidate authorization; no migration or deployment was started')
+  const changedFields = []
+  if (JSON.stringify(expected.activeVersions) !== JSON.stringify(actual.activeVersions)) changedFields.push('activeVersions')
+  if (expected.migrationStateDigest !== actual.migrationStateDigest) changedFields.push('migrationStateDigest')
+  if (expected.d1DatabaseId !== actual.d1DatabaseId) changedFields.push('d1DatabaseId')
+  if (digest(expected.d1Location) !== digest(actual.d1Location)) changedFields.push('d1Location')
+  if (expected.accountId !== actual.accountId) changedFields.push('accountId')
+  if (expected.zoneId !== actual.zoneId) changedFields.push('zoneId')
+  if (digest(expected.routes) !== digest(actual.routes)) changedFields.push('routes')
+  if (changedFields.length) {
+    throw new Error(`MiaoXYZ Production state drifted after candidate authorization in ${changedFields.join(', ')}; no migration or deployment was started`)
   }
 }
 
