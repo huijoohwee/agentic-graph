@@ -221,19 +221,11 @@ export function ToolbarToolMenu({
     [floatingPanelPinned, onHeaderPointerDown],
   )
 
-  const floatingPanelRootClassName = 'fixed inset-0 pointer-events-none'
   const handlePinToggle = toggleFloatingPanelPinned
   const registerManagedHeaderActions = React.useCallback((actions: FloatingHeaderActions) => {
     setManagedHeaderActions(actions)
   }, [])
   const panelStack = usePanelStack('floating', resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen))
-  const floatingPanelRootStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    pointerEvents: 'none',
-    zIndex: panelStack.zIndex,
-  }
-
   const floatingPanelSizeStyle = React.useMemo(() => {
     return {
       width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio),
@@ -308,8 +300,8 @@ export function ToolbarToolMenu({
   return (
     <FloatingPanelShell
       ref={toolMenuCardRef}
-      rootClassName={floatingPanelRootClassName}
-      rootStyle={floatingPanelRootStyle}
+      rootPlacement="viewport-overlay"
+      rootStyle={{ zIndex: panelStack.zIndex }}
       panelLayer="floating"
       onPointerDownCapture={panelStack.onPointerDownCapture}
       onFocusCapture={panelStack.onFocusCapture}
@@ -323,9 +315,6 @@ export function ToolbarToolMenu({
             <FloatingPanelViewTabs
               view={floatingPanelView}
               onSelect={handleSelectView}
-              iconSizeClass={iconSizeClass}
-              iconStrokeWidth={uiIconStrokeWidth}
-              fontClass={uiPanelTextFontClass}
             >
               <FloatingPanelHeaderStatus
                 pipelineStatus={pipelineStatus}

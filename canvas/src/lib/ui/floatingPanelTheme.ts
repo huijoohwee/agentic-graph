@@ -1,7 +1,9 @@
-import type React from 'react'
+import type { FloatingPanelShellProps } from '@agentic-base/views-react/panels'
+
+type FloatingPanelRootStyle = NonNullable<FloatingPanelShellProps['rootStyle']>
 
 /** Theme adapter shared by native panels and the store-free browser export. */
-export function readFloatingPanelThemeStyle(rootStyle?: React.CSSProperties, minimized = false): React.CSSProperties {
+export function readFloatingPanelThemeStyle(rootStyle?: FloatingPanelRootStyle, minimized = false): FloatingPanelRootStyle {
   return {
     ...rootStyle,
     '--base-accent': 'var(--kg-accent)',
@@ -13,6 +15,5 @@ export function readFloatingPanelThemeStyle(rootStyle?: React.CSSProperties, min
     '--base-toolbar-compact-padding': minimized
       ? '0 var(--kg-toolbar-compact-pad-x)'
       : 'var(--kg-toolbar-compact-padding)',
-    '--base-control-height': 'var(--kg-toolbar-compact-surface-height)',
-  } as React.CSSProperties
+  }
 }
