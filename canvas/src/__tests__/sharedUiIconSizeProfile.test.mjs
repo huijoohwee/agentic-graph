@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
 import test from 'node:test'
 
 const styles = new URL('../styles/', import.meta.url)
@@ -14,8 +16,12 @@ const sha256 = value => `sha256:${createHash('sha256').update(value).digest('hex
 test('Graph glyph roles consume the pinned Design System icon-size projection', () => {
   assert.equal(pin.schema, 'agentic-design-system/consumer-pin/v1')
   assert.equal(pin.profile.id, 'shared-ui')
+  assert.equal(pin.profile.sourceRevision, '267cdb31047b02d4f54ea6708fb2518a8a2a57f4')
+  assert.equal(pin.profile.registryRevision, 'f9e058d7b3be3acc411634ad84695d6d642f1cd2')
   assert.equal(sha256(profileCss), pin.profile.projectionSha256)
   assert.ok(profileCss.toString('utf8').includes(`agentic-design-system@${pin.profile.sourceRevision}`))
+  assert.equal(pin.metrics.floatingPanelRadius, 8)
+  assert.match(profileCss.toString('utf8'), /--agentic-floating-panel-radius:\s*8px;/)
   assert.match(applicationCss, /@import '\.\/styles\/shared-ui-profile\.css';/)
   assert.match(centralGraphCss, /--kg-compact-glyph-size:\s*var\(--agentic-icon-size-compact\);/)
   assert.match(centralGraphCss, /--kg-default-glyph-size:\s*var\(--agentic-icon-size-default\);/)
@@ -23,6 +29,26 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.match(toolbarCss, /\.kg-default-glyph\s*\{[^}]*width:\s*var\(--kg-default-glyph-size\);/s)
   assert.doesNotMatch(toolbarCss, /@import '\.\/shared-ui-profile\.css';/)
   assert.doesNotMatch(toolbarCss, /var\(--kg-(?:compact|default)-glyph-size,\s*(?:0\.75rem|1rem)\)/)
+})
+
+test('Graph FloatingPanel consumes Base structure and the single pinned Design System radius', () => {
+  const require = createRequire(import.meta.url)
+  const baseCssExport = require.resolve('@agentic-base/views-react/browser.css')
+  const basePackage = path.resolve(path.dirname(baseCssExport), '..')
+  const panelCss = fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.css'), 'utf8')
+  const panelPin = JSON.parse(fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.pin.json'), 'utf8'))
+  assert.equal(panelPin.revision, 'f9e058d7b3be3acc411634ad84695d6d642f1cd2')
+  assert.equal(panelPin.sha256, 'aa9b616350de6e532ce708262ae6674aa21af3096d25bb29ab6c243d7b281594')
+  assert.match(panelCss, /border-radius:\s*var\(--agentic-floating-panel-radius\)/)
+  const adapter = fs.readFileSync(new URL('../components/ui/FloatingPanel.tsx', import.meta.url), 'utf8')
+  assert.match(adapter, /FloatingPanelShell as BaseFloatingPanelShell/)
+  const theme = fs.readFileSync(new URL('../lib/ui/floatingPanelTheme.ts', import.meta.url), 'utf8')
+  assert.doesNotMatch(theme, /(?:borderRadius|--agentic-floating-panel-radius)\s*:/)
+  const sourceDirectory = new URL('../styles/', import.meta.url)
+  for (const file of fs.readdirSync(sourceDirectory, { recursive: true })) {
+    if (!file.endsWith('.css') || file === 'shared-ui-profile.css') continue
+    assert.doesNotMatch(fs.readFileSync(new URL(file, sourceDirectory), 'utf8'), /--agentic-floating-panel-radius\s*:/, file)
+  }
 })
 
 test('Graph toolbar, table and virtualized row metrics share the Base and Design System owner', () => {

@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/shared-ui-profile/v1",
   "id": "shared-ui",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-design-system",
@@ -87,6 +87,12 @@
       "cssVar": "--agentic-ktv-panel-width",
       "type": "dimension",
       "value": "26.25rem"
+    },
+    {
+      "key": "overlay.floating.radius",
+      "cssVar": "--agentic-floating-panel-radius",
+      "type": "dimension",
+      "value": "8px"
     },
     {
       "key": "control.height",
