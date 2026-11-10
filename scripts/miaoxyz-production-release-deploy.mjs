@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { digest, requireText, writeAtomicJson, writeJson } from './miaoxyz-production-release-core.mjs'
+import { digest, readJson, requireText, writeAtomicJson, writeJson } from './miaoxyz-production-release-core.mjs'
 import {
   captureProductionBaseline, collectVersions, runWrangler, validateBaseline, validateMiaoxyzCandidate,
 } from './miaoxyz-production-release-candidate.mjs'
