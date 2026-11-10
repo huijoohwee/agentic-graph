@@ -1,6 +1,6 @@
 import React from 'react'
 import { ListOrdered } from 'lucide-react'
-import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
+import { FloatingPanelTab, FloatingPanelTabs } from '@agentic-base/views-react/panels'
 import { FLOATING_PANEL_TYPE_ICON_BY_VIEW } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
 import { UI_LABELS } from '@/lib/config'
@@ -42,31 +42,31 @@ export const FLOATING_PANEL_VIEW_TABS: readonly FloatingPanelViewTab[] = [
   { view: 'graphTraversal', title: UI_LABELS.graphTraversal, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.graphTraversal },
 ]
 
-export function FloatingPanelViewTabs({ view, onSelect, iconSizeClass, iconStrokeWidth, fontClass, children }: {
+export function FloatingPanelViewTabs({ view, onSelect, children }: {
   view: FloatingPanelView
   onSelect: (view: FloatingPanelView) => void
-  iconSizeClass: string
-  iconStrokeWidth: number
-  fontClass: string
   children?: React.ReactNode
 }) {
+  const selectView = (key: string) => {
+    const selected = FLOATING_PANEL_VIEW_TABS.find(tab => tab.view === key)?.view
+    if (selected) onSelect(selected)
+  }
+
   return (
-    <PanelViewTabs activeKey={view} className={fontClass} aria-label="Floating panel views">
+    <FloatingPanelTabs label="Floating panel views" activeKey={view} onSelect={selectView}>
       {FLOATING_PANEL_VIEW_TABS.map(spec => {
-        const Icon = spec.icon
         return (
-          <PanelViewTab
+          <FloatingPanelTab
             key={spec.view}
-            title={spec.title}
-            onClick={() => onSelect(spec.view)}
-            aria-pressed={view === spec.view}
-            data-kg-floating-panel-view-trigger={spec.view}
-          >
-            <Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} role="img" aria-label={spec.title} />
-          </PanelViewTab>
+            tabKey={spec.view}
+            label={spec.title}
+            icon={spec.icon}
+            iconOnly
+            dataAttributes={{ 'data-kg-floating-panel-view-trigger': spec.view }}
+          />
         )
       })}
       {children}
-    </PanelViewTabs>
+    </FloatingPanelTabs>
   )
 }
