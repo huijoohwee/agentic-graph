@@ -50,6 +50,13 @@ jobs:
           node-version: 22
       - name: Install pinned MiaoXYZ Wrangler
         run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Install Agentic Graph release-script dependencies
+        env:
+          AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
+          AGENTIC_GRAPH_NATIVE_REBUILD: skip
+        run: bash ./scripts/install-agentic-graph-dependencies.sh
+      - name: Build shared Graph runtime dependency
+        run: npm run build --workspace=grph-shared
       - name: Check generated Worker bindings
         run: npm run types:check --prefix cloudflare/workers/miaoxyz
       - name: Compile exact Production Worker without mutation
