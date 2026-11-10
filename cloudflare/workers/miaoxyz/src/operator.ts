@@ -90,11 +90,19 @@ const handleSettingsUpdate = async (request: Request, env: Env): Promise<Respons
 const handleCatalogUpdate = async (request: Request, env: Env): Promise<Response> => {
   if (!operatorAuthorized(request, env)) return json(401, { error: 'Florist access is required.' })
   const value = await readJson(request, MAX_CATALOG_BYTES)
-  if (!value || !exactKeys(value, ['products'])) return json(400, { error: 'Check the catalog format and try again.' })
+  if (!value || !exactKeys(value, ['products', 'expectedRevision'])) return json(400, { error: 'Check the catalog format and try again.' })
+  const expectedRevision = value.expectedRevision
+  if (expectedRevision !== undefined && (typeof expectedRevision !== 'number'
+    || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0)) {
+    return json(400, { error: 'The expected catalog revision is invalid.' })
+  }
   const products = parseCatalog(value.products)
   if (!products) return json(422, { error: 'The catalog contains an invalid item, date, price, tag, wrapping finish, or flower recipe.' })
   const settings = await readSettings(env.DB)
   if (!settings) return json(503, { error: 'Catalog settings are unavailable.' })
+  if (expectedRevision !== undefined && expectedRevision !== settings.catalog_revision) {
+    return json(409, { error: 'The catalog changed after this update was prepared. Reload and try again.' })
+  }
   const revision = settings.catalog_revision + 1
   const publishedAt = new Date().toISOString()
   const snapshot = JSON.stringify({ revision, products })
