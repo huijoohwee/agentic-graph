@@ -34,7 +34,9 @@ const appPath = (pathname: string, basePath: string): string | null => {
 
 const assetResponse = async (request: Request, env: Env, path: string): Promise<Response> => {
   if (request.method !== 'GET' && request.method !== 'HEAD') return json(404, { error: 'Page not found.' })
-  const assetPath = path === '/' ? '/index.html' : path
+  // Workers Static Assets canonicalizes `/index.html` back to the origin root.
+  // Keep the request on the configured subpath so its index stays under `/MiaoXYZ/`.
+  const assetPath = path
   const url = new URL(request.url)
   url.pathname = assetPath
   const assetRequest = new Request(url, request)

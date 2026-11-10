@@ -39,7 +39,9 @@ export const compareBaseline = (expected, actual) => {
 
 export const probeProduction = async ({ sourceRevision, candidateDigest, expectedVersionIds } = {}) => {
   const probes = [
-    { url: 'https://airvio.co/MiaoXYZ/', expected: response => response.ok },
+    { url: 'https://airvio.co/MiaoXYZ/', expected: response => response.ok &&
+      response.url === 'https://airvio.co/MiaoXYZ/' &&
+      response.headers.get('content-type')?.includes('text/html') },
     { url: 'https://airvio.co/MiaoXYZ/api/health', expected: async response => {
       if (!response.ok) return false
       const body = await response.json()
