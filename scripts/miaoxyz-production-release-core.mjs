@@ -7,7 +7,7 @@ export const MIAOXYZ_CANDIDATE_SCHEMA = 'agentic-miaoxyz-production-candidate/v2
 export const MIAOXYZ_GOVERNANCE_SCHEMA = 'agentic-miaoxyz-production-governance-evidence/v1'
 export const MIAOXYZ_BASELINE_SCHEMA = 'agentic-miaoxyz-production-baseline/v3'
 
-export const routePatterns = ['airvio.co/MiaoXYZ', 'airvio.co/MiaoXYZ/*']
+export const routePatterns = ['airvio.co/MiaoXYZ*']
 export const approvalNames = [
   'PRIVACY_BASELINE_APPROVED',
   'DATA_REGION_APPROVED',
@@ -86,10 +86,10 @@ export const validateProductionConfig = (config, governanceEvidence) => {
     ? production.routes.map(route => route.pattern).sort()
     : []
   if (JSON.stringify(configuredRoutes) !== JSON.stringify([...routePatterns].sort())) {
-    issues.push('production routes must exactly target airvio.co/MiaoXYZ and airvio.co/MiaoXYZ/*')
+    issues.push('production route must exactly target airvio.co/MiaoXYZ* so query-bearing app URLs reach the Worker')
   }
   if (production?.routes?.some(route => route.zone_name !== 'airvio.co')) {
-    issues.push('both production routes must use the airvio.co zone')
+    issues.push('the production route must use the airvio.co zone')
   }
   if (production?.vars?.APP_BASE_PATH !== '/MiaoXYZ') issues.push('production APP_BASE_PATH must be /MiaoXYZ')
   if (production?.vars?.DEPLOYMENT_ENV !== 'production') issues.push('production DEPLOYMENT_ENV must be production')
