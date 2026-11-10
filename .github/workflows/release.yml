@@ -3,10 +3,10 @@ run-name: ${{ inputs.recovery_run_id && format('Production recovery {0}', inputs
 on:
   workflow_dispatch:
     inputs:
-      release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz] }
+      release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz, miaoxyz-catalog] }
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
       local_review_candidate: { description: 'Exact local review candidate JSON; required by platform and MiaoXYZ lanes', required: false, type: string }
-      release_evidence: { description: 'Exact release evidence JSON; required by platform and MiaoXYZ lanes', required: true, type: string }
+      release_evidence: { description: 'Exact release evidence JSON; required by platform and Worker release lanes', required: false, type: string }
       miaoxyz_governance_evidence: { description: 'Approved MiaoXYZ governance JSON with retained privacy, region, backup/restore, and rate-limit evidence digests', required: false, type: string }
       recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
@@ -597,3 +597,102 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/gamexr-*.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
   miaoxyz_release: { if: "inputs.release_target == 'miaoxyz'", uses: './.github/workflows/miaoxyz-production-release.yml', with: { release_target: '${{ inputs.release_target }}', source_sha: '${{ inputs.source_sha }}', recovery_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}', miaoxyz_governance_evidence: '${{ inputs.miaoxyz_governance_evidence }}' }, secrets: inherit }
+  miaoxyz_catalog_prepare:
+    if: inputs.release_target == 'miaoxyz-catalog'
+    name: Prepare exact MiaoXYZ catalog candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      candidate_digest: ${{ steps.candidate.outputs.digest }}
+      publish_required: ${{ steps.candidate.outputs.publish_required }}
+    steps:
+      - name: Checkout exact protected main source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Prepare exact catalog candidate and read-only production baseline
+        id: candidate
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$GITHUB_SHA" = "$SOURCE_SHA"
+          node ./scripts/miaoxyz-catalog-publish.mjs prepare \
+            --repo-root . \
+            --source-sha "$SOURCE_SHA" \
+            --output "$RUNNER_TEMP/miaoxyz-catalog-candidate.json" \
+            > "$RUNNER_TEMP/miaoxyz-catalog-plan.json"
+          digest="$(jq -r .candidateDigest "$RUNNER_TEMP/miaoxyz-catalog-plan.json")"
+          action="$(jq -r .action "$RUNNER_TEMP/miaoxyz-catalog-plan.json")"
+          publish_required=false
+          if test "$action" = "publish"; then publish_required=true; fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "publish_required=$publish_required" >> "$GITHUB_OUTPUT"
+          {
+            echo "## MiaoXYZ catalog candidate"
+            echo "- Source: `$SOURCE_SHA`"
+            echo "- Action: `$action`"
+            echo "- Candidate digest: `$digest`"
+            echo "- Catalog digest: `$(jq -r .catalogDigest "$RUNNER_TEMP/miaoxyz-catalog-plan.json")`"
+            echo "- Production baseline: revision `$(jq -r .baselineRevision "$RUNNER_TEMP/miaoxyz-catalog-plan.json")`, `$(jq -r .baselineProductCount "$RUNNER_TEMP/miaoxyz-catalog-plan.json")` offers"
+            echo "- Request intake: `disabled`"
+            echo "- Approved offers:"
+            jq -r '.products[] | "  - \(.name) — SGD \(.basePriceMinor / 100)"' "$RUNNER_TEMP/miaoxyz-catalog-candidate.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain exact MiaoXYZ catalog candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: miaoxyz-catalog-candidate-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-catalog-candidate.json
+          if-no-files-found: error
+          retention-days: 90
+  miaoxyz_catalog_publish:
+    if: inputs.release_target == 'miaoxyz-catalog' && needs.miaoxyz_catalog_prepare.outputs.publish_required == 'true'
+    name: Human-authorized MiaoXYZ catalog publication
+    needs: miaoxyz_catalog_prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://airvio.co/MiaoXYZ
+    steps:
+      - name: Checkout exact protected main source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Download exact catalog candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: miaoxyz-catalog-candidate-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-catalog-candidate
+      - name: Publish exact catalog through authenticated operator API
+        env:
+          MIAOXYZ_OPERATOR_ACCESS_TOKEN: ${{ secrets.MIAOXYZ_OPERATOR_ACCESS_TOKEN }}
+          EXPECTED_CANDIDATE_DIGEST: ${{ needs.miaoxyz_catalog_prepare.outputs.candidate_digest }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$GITHUB_SHA" = "$SOURCE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$SOURCE_SHA"
+          node ./scripts/miaoxyz-catalog-publish.mjs publish \
+            --repo-root . \
+            --candidate "$RUNNER_TEMP/miaoxyz-catalog-candidate/miaoxyz-catalog-candidate.json" \
+            --receipt "$RUNNER_TEMP/miaoxyz-catalog-publication-receipt.json"
+      - name: Retain catalog publication receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: miaoxyz-catalog-publication-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/miaoxyz-catalog-publication-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
