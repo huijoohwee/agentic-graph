@@ -6,7 +6,7 @@ on:
       release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz, miaoxyz-catalog] }
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
       local_review_candidate: { description: 'Exact local review candidate JSON; required by platform and MiaoXYZ lanes', required: false, type: string }
-      release_evidence: { description: 'Exact release evidence JSON; required by platform and Worker release lanes', required: false, type: string }
+      release_evidence: { description: 'Exact release evidence JSON for platform and Worker release lanes; ignored by the catalog-only lane', required: true, default: 'not-applicable-for-catalog', type: string }
       miaoxyz_governance_evidence: { description: 'Approved MiaoXYZ governance JSON with retained privacy, region, backup/restore, and rate-limit evidence digests', required: false, type: string }
       recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
