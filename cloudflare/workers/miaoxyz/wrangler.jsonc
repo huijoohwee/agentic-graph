@@ -47,8 +47,7 @@
       "preview_urls": false,
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "routes": [
-        { "pattern": "airvio.co/MiaoXYZ", "zone_name": "airvio.co" },
-        { "pattern": "airvio.co/MiaoXYZ/*", "zone_name": "airvio.co" }
+        { "pattern": "airvio.co/MiaoXYZ*", "zone_name": "airvio.co" }
       ],
       "d1_databases": [
         {

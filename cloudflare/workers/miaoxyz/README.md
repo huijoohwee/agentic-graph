@@ -51,7 +51,7 @@ Buyers can compare up to three designs, customize one design at a time, change a
 
 ## Release boundary
 
-The production route is `airvio.co/MiaoXYZ` and `airvio.co/MiaoXYZ/*`; Cloudflare route paths are case-sensitive. Wrangler is pinned in this package and the generated Worker types come from `wrangler types`.
+The production route is `airvio.co/MiaoXYZ*`. Its trailing wildcard lets Cloudflare route the exact subpath with query strings as well as the app’s nested assets and API paths. The Worker redirects `/MiaoXYZ` to `/MiaoXYZ/` while preserving the query string. Cloudflare route paths are case-sensitive. Wrangler is pinned in this package and the generated Worker types come from `wrangler types`.
 
 Production remains blocked while its D1 ID is a placeholder or any approval flag is `false`. The selected APAC placement is best-effort and does not guarantee Singapore or Malaysia residency. Before release, the owner must set both required secrets in the protected `production` environment and retain the exact privacy, data-region, backup/restore, and rate-limit evidence. Customer request intake remains disabled until a florist configures the shop, publishes a catalog, and enters its buyer notice.
 
