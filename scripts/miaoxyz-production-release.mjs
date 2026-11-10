@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util'
 import { validateLocalReviewCandidate } from './production-release-authorization.mjs'
 import { normalizeReleaseEvidence } from './lib/production-release-lifecycle-evidence.mjs'
 import {
-  MIAOXYZ_GOVERNANCE_SCHEMA, gitText, readJson, readWorkerConfig, repoRootFrom, requireText,
+  MIAOXYZ_GOVERNANCE_SCHEMA, gitText, readCommittedWorkerFiles, readJson, readWorkerConfig, repoRootFrom, requireText,
   validateProductionConfig, writeJson,
 } from './miaoxyz-production-release-core.mjs'
 import {
