@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import Ajv2020 from 'ajv/dist/2020.js'
 import { repoRoot } from './collaboration-contract.mjs'
 
 export const PRODUCTION_RUNTIME_READINESS_SCHEMA = 'agentic-os-production-runtime-readiness/v2'
@@ -17,7 +16,10 @@ export const resolveProductionRuntimeReadinessSchemaPath = ({ rootDir = repoRoot
 
 const loadValidator = async () => {
   if (!validatorPromise) {
-    validatorPromise = fs.readFile(resolveProductionRuntimeReadinessSchemaPath(), 'utf8').then(source => {
+    validatorPromise = Promise.all([
+      import('ajv/dist/2020.js'),
+      fs.readFile(resolveProductionRuntimeReadinessSchemaPath(), 'utf8'),
+    ]).then(([{ default: Ajv2020 }, source]) => {
       const schema = JSON.parse(source)
       const ajv = new Ajv2020({ allErrors: true, strict: true })
       return { ajv, validate: ajv.compile(schema) }
