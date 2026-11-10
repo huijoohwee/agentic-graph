@@ -3,10 +3,10 @@ run-name: ${{ inputs.recovery_run_id && format('Production recovery {0}', inputs
 on:
   workflow_dispatch:
     inputs:
-      release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz] }
+      release_target: { description: 'Protected release lane', required: true, default: platform, type: choice, options: [platform, miaoxyz, miaoxyz-catalog] }
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
       local_review_candidate: { description: 'Exact local review candidate JSON; required by platform and MiaoXYZ lanes', required: false, type: string }
-      release_evidence: { description: 'Exact release evidence JSON; required by platform and MiaoXYZ lanes', required: true, type: string }
+      release_evidence: { description: 'Exact release evidence JSON for platform and Worker release lanes; ignored by the catalog-only lane', required: true, default: 'not-applicable-for-catalog', type: string }
       miaoxyz_governance_evidence: { description: 'Approved MiaoXYZ governance JSON with retained privacy, region, backup/restore, and rate-limit evidence digests', required: false, type: string }
       recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
@@ -596,4 +596,4 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/gamexr-*.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
-  miaoxyz_release: { if: "inputs.release_target == 'miaoxyz'", uses: './.github/workflows/miaoxyz-production-release.yml', with: { release_target: '${{ inputs.release_target }}', source_sha: '${{ inputs.source_sha }}', recovery_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}', miaoxyz_governance_evidence: '${{ inputs.miaoxyz_governance_evidence }}' }, secrets: inherit }
+  miaoxyz_release: { if: "inputs.release_target == 'miaoxyz' || inputs.release_target == 'miaoxyz-catalog'", uses: './.github/workflows/miaoxyz-production-release.yml', with: { release_target: '${{ inputs.release_target }}', source_sha: '${{ inputs.source_sha }}', recovery_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}', miaoxyz_governance_evidence: '${{ inputs.miaoxyz_governance_evidence }}' }, secrets: inherit }
