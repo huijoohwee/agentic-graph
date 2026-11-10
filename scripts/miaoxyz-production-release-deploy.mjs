@@ -27,6 +27,7 @@ export const compareBaseline = (expected, actual) => {
   if (JSON.stringify(expected.activeVersions) !== JSON.stringify(actual.activeVersions) ||
       expected.migrationStateDigest !== actual.migrationStateDigest ||
       expected.d1DatabaseId !== actual.d1DatabaseId ||
+      digest(expected.d1Location) !== digest(actual.d1Location) ||
       expected.accountId !== actual.accountId ||
       expected.zoneId !== actual.zoneId ||
       digest(expected.routes) !== digest(actual.routes)) {

@@ -25,28 +25,33 @@ export const challengeForMiaoxyz = ({ repository, runId, candidate }) => digest(
 
 export const validateMiaoxyzAuthorization = ({ approvals, repository, runId, candidate }) => {
   if (!Array.isArray(approvals)) throw new Error('Production approval history must be an array')
-  const matches = approvals.filter(approval => (
+  const authenticatedApprovals = approvals.filter(approval => (
     approval?.state === 'approved' &&
     approval?.user?.type === 'User' &&
     Number.isSafeInteger(approval.user.id) &&
     typeof approval.user.login === 'string' &&
     approval.environments?.some(environment => environment?.name === 'production')
   ))
-  if (matches.length !== 1) throw new Error(`MiaoXYZ release needs exactly one authenticated Production approval; found ${matches.length}`)
-  const approval = matches[0]
-  const evidence = parseTerminalAuthorizationComment(approval.comment)
-  const humanActorId = `github-user:${approval.user.id}:${approval.user.login}`
   const challengeDigest = challengeForMiaoxyz({ repository, runId, candidate })
-  if (evidence.repository !== repository || evidence.runId !== String(runId) ||
-      evidence.sourceRevision !== candidate.source.revision ||
-      evidence.candidateDigest !== candidate.candidateDigest ||
-      evidence.lifecycleCandidateDigest !== candidate.lifecycleCandidateDigest ||
-      evidence.targetDigest !== candidate.targetDigest || evidence.humanActorId !== humanActorId ||
-      evidence.challengeDigest !== challengeDigest ||
-      evidence.responseDigest !== responseFor({ challengeDigest, candidateDigest: candidate.candidateDigest })) {
-    throw new Error('Production approval is not bound to this exact MiaoXYZ source, artifact, route, and baseline')
+  const expectedResponseDigest = responseFor({ challengeDigest, candidateDigest: candidate.candidateDigest })
+  const matches = []
+  for (const approval of authenticatedApprovals) {
+    let evidence
+    try { evidence = parseTerminalAuthorizationComment(approval.comment) } catch { continue }
+    const humanActorId = `github-user:${approval.user.id}:${approval.user.login}`
+    if (evidence.repository === repository && evidence.runId === String(runId) &&
+        evidence.sourceRevision === candidate.source.revision &&
+        evidence.candidateDigest === candidate.candidateDigest &&
+        evidence.lifecycleCandidateDigest === candidate.lifecycleCandidateDigest &&
+        evidence.targetDigest === candidate.targetDigest && evidence.humanActorId === humanActorId &&
+        evidence.challengeDigest === challengeDigest && evidence.responseDigest === expectedResponseDigest) {
+      matches.push(evidence)
+    }
   }
-  return evidence
+  if (matches.length !== 1) {
+    throw new Error(`MiaoXYZ release needs exactly one authenticated Production approval bound to this candidate; found ${matches.length}`)
+  }
+  return matches[0]
 }
 
 export const assertProtectedDeployRuntime = ({ repository, runId, candidate }) => {

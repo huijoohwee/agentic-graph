@@ -120,6 +120,8 @@ export const captureProductionBaseline = async repoRoot => {
   const config = readWorkerConfig(repoRoot)
   const production = config.env?.production
   if (!production) throw new Error('production Wrangler environment is missing')
+  const database = production.d1_databases?.find(binding => binding.binding === 'DB')
+  if (!database?.database_name || !database.database_id) throw new Error('production D1 identity is missing')
   requireText(process.env.CLOUDFLARE_API_TOKEN, 'read-only Cloudflare API token')
   requireText(process.env.CLOUDFLARE_ACCOUNT_ID, 'Cloudflare account ID')
   const routeInventory = await captureRouteInventory()
@@ -130,6 +132,24 @@ export const captureProductionBaseline = async repoRoot => {
   let status = null
   if (statusText.trim()) {
     try { status = JSON.parse(statusText) } catch { throw new Error('Wrangler deployment status did not return JSON') }
+  }
+  const d1InfoText = runWrangler(repoRoot, [
+    'd1', 'info', database.database_name, '--json', '--env', 'production',
+  ])
+  let d1Info
+  try { d1Info = JSON.parse(d1InfoText) } catch { throw new Error('Wrangler D1 info did not return JSON') }
+  const d1Database = d1Info?.result && typeof d1Info.result === 'object' ? d1Info.result : d1Info
+  if (d1Database?.uuid !== database.database_id || d1Database?.name !== database.database_name) {
+    throw new Error('MiaoXYZ D1 info does not match the reviewed production database identity')
+  }
+  const d1Location = {
+    runningInRegion: d1Database.running_in_region,
+    jurisdiction: d1Database.jurisdiction,
+    readReplicationMode: d1Database.read_replication?.mode,
+  }
+  if (d1Location.runningInRegion !== 'APAC' || d1Location.jurisdiction !== null ||
+      d1Location.readReplicationMode !== 'disabled') {
+    throw new Error('MiaoXYZ production D1 no longer matches the approved APAC best-effort, no-jurisdiction, replication-disabled decision')
   }
   const migrationText = runWrangler(repoRoot, [
     'd1', 'migrations', 'list', production.d1_databases?.find(binding => binding.binding === 'DB')?.database_name,
@@ -142,14 +162,19 @@ export const captureProductionBaseline = async repoRoot => {
     zoneId: routeInventory.zoneId,
     routes: routeInventory.routes,
     activeVersions: collectVersions(status),
+    d1Location,
     migrationStateDigest: digestBytes(migrationText.replace(/\r\n/gu, '\n').trim()),
-    d1DatabaseId: production.d1_databases?.find(binding => binding.binding === 'DB')?.database_id,
+    d1DatabaseId: database.database_id,
   }
 }
 
 export const validateBaseline = baseline => {
   if (!baseline || baseline.schema !== MIAOXYZ_BASELINE_SCHEMA || baseline.workerName !== 'agentic-miaoxyz-production') {
     throw new Error('MiaoXYZ baseline state schema or Worker identity is invalid')
+  }
+  if (baseline.d1Location?.runningInRegion !== 'APAC' || baseline.d1Location?.jurisdiction !== null ||
+      baseline.d1Location?.readReplicationMode !== 'disabled') {
+    throw new Error('MiaoXYZ baseline must bind the approved APAC best-effort D1 location, no jurisdiction, and disabled read replication')
   }
   if (!Array.isArray(baseline.activeVersions)) throw new Error('MiaoXYZ baseline activeVersions must be an array')
   if (!/^[0-9a-f]{32}$/u.test(String(baseline.accountId || '')) ||
