@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { repoRoot } from './collaboration-contract.mjs'
+
+const repoRoot = path.resolve(import.meta.dirname, '..')
 
 export const PRODUCTION_RUNTIME_READINESS_SCHEMA = 'agentic-os-production-runtime-readiness/v2'
 export const PRODUCTION_RUNTIME_READINESS_FILENAME = 'runtime-readiness.json'
