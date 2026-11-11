@@ -175,7 +175,7 @@ try {
       && document.querySelectorAll('[data-kg-xr-document-loaded="1"]').length > 0
   }, undefined, { timeout: coldStartTimeoutMs })
   await page.waitForTimeout(3000)
-  await page.getByRole('button', { name: 'Motion Control', exact: true }).click()
+  await page.locator('[data-kg-floating-panel-view-trigger="motionControl"]').click()
   const panel = page.locator('[data-kg-motion-control-floating-panel="1"]')
   await panel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const startCamera = page.locator('[data-kg-motion-control-start="1"]')
