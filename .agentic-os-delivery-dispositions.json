@@ -98,6 +98,45 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "no-deploy",
+      "candidateRevision": "f84d939c0bc67fb6682abdd8e7ebe759a7698146",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-storage-no-deploy-pr1954.md",
+      "evidenceDigest": "51525762b65f713d654209069e8a1e6f69c3f343502a89ee0e1c46333e4506d4",
+      "ref": "agent/device-0232231d4a19/e2e-storage-economy",
+      "laneHead": "63b849dbc2b98eb19d3e4d36b0ec7da5bf290ed5",
+      "paths": [
+        "canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs",
+        "docs/TESTING.md"
+      ],
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1954",
+      "reason": "The owner selected no-deploy for PR #1954, covering exactly canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs and docs/TESTING.md. Both paths are excluded from the product artifact: one is a CI browser-smoke verifier and the other is repository documentation outside Pages and mirror artifact inputs. This records no deployment, mirror publication, or runtime verification."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "no-deploy",
+      "candidateRevision": "f84d939c0bc67fb6682abdd8e7ebe759a7698146",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-storage-no-deploy-pr1954.md",
+      "evidenceDigest": "51525762b65f713d654209069e8a1e6f69c3f343502a89ee0e1c46333e4506d4",
+      "ref": "agent/device-0232231d4a19/e2e-storage-no-deploy-evidence",
+      "laneHead": "fa7238c270ca22eb4186c6004cc473ff5cb05a34",
+      "paths": [
+        "canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs",
+        "docs/TESTING.md",
+        "docs/reports/agentic-graph-storage-no-deploy-pr1954.md"
+      ],
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1955",
+      "reason": "The owner selected no-deploy for evidence lane PR #1955. Its complete inherited path set is canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs, docs/TESTING.md, and docs/reports/agentic-graph-storage-no-deploy-pr1954.md. Every listed path is excluded from the product artifact per the report. This records no deployment, mirror publication, or runtime verification."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-poi-directory-mvp-ci-repair",
       "laneHead": "77fc84f0721d3594ef6a7d2fc4e88c0e48adecad",
       "paths": [
@@ -185,12 +224,22 @@
       "reason": null
     },
     {
-      "schema": "agentic-os/delivery-disposition/v1", "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
       "laneHead": "20245223a00f8770bc7f7b4e48b56069645ddc5d",
-      "paths": [".agentic-os-delivery-dispositions.json", "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts", "docs/runtime-readiness-contract.md", "package-lock.json", "package.json"],
-      "disposition": "no-deploy", "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts",
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
       "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
-      "sourceReleaseReceiptDigest": null, "deploymentReceiptDigest": null, "runtimeVerificationReceiptDigest": null,
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
       "evidencePath": "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
       "evidenceDigest": "e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1875",
@@ -349,7 +398,29 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
       "reason": null
     },
-    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-0232231d4a19/local-poi-adlc-closeout-budget-fix","laneHead":"0c77f1beb0dfa8a2c6c98328934e607674ee8485","paths":[".agentic-os-delivery-dispositions.json","docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md","docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json","docs/runtime-readiness-contract.md","package-lock.json","package.json"],"disposition":"no-deploy","candidateRevision":"01ac9b448d13358c3e6dc8258f2e25a92f343989","candidateDigest":"2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json","evidenceDigest":"e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/1877","reason":"PR #1877 changes only these exact paths: .agentic-os-delivery-dispositions.json, docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md, docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Each listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary in the committed evidence report. The existing POI production candidate remains unchanged; this no-deploy disposition does not authorize deployment or mirror publication."},
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/local-poi-adlc-closeout-budget-fix",
+      "laneHead": "0c77f1beb0dfa8a2c6c98328934e607674ee8485",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md",
+        "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "01ac9b448d13358c3e6dc8258f2e25a92f343989",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
+      "evidenceDigest": "e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1877",
+      "reason": "PR #1877 changes only these exact paths: .agentic-os-delivery-dispositions.json, docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md, docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Each listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary in the committed evidence report. The existing POI production candidate remains unchanged; this no-deploy disposition does not authorize deployment or mirror publication."
+    },
     {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "deployed",
@@ -595,5 +666,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "1ccdb66d09e4cba569d8e0768a0c6d8444da08ad9a8761a587c71a6131839a5a"
+  "receiptDigest": "7ecfa4a9ab8a6d840845ef45dc3ec39e0eadc6edb34334f4974ab9943863a6ef"
 }
