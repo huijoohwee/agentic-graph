@@ -6,9 +6,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/browser-gate-software-forensics",
       "laneHead": "7ceb353afdec0120207523e167e92382f2050bd8",
-      "paths": [
-        "docs/workspace-seeds/demo.md"
-      ],
+      "paths": ["docs/workspace-seeds/demo.md"],
       "disposition": "no-deploy",
       "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
       "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
@@ -196,9 +194,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-scratch-disposition-refresh",
       "laneHead": "4a1960675a57d4ada7fc718e38b0f9802198104f",
-      "paths": [
-        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
-      ],
+      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
       "disposition": "no-deploy",
       "candidateRevision": "8423d340f0e2f99882b90d8d3f71f584a20aae34",
       "candidateDigest": "a82c90dadbb65ad00a8da6152862962175e905091b5f8798f1c4b575d3694631",
@@ -214,9 +210,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights",
       "laneHead": "84e656bbccb5ab5c5bf4a2150696a939ae9d4af3",
-      "paths": [
-        "grph-shared/src/ui/TOKEN-LICENSES.md"
-      ],
+      "paths": ["grph-shared/src/ui/TOKEN-LICENSES.md"],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
@@ -232,9 +226,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights-current-main",
       "laneHead": "e54a71fae162604260efbcb2c36406fc47a190e0",
-      "paths": [
-        "grph-shared/src/ui/TOKEN-LICENSES.md"
-      ],
+      "paths": ["grph-shared/src/ui/TOKEN-LICENSES.md"],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
@@ -250,9 +242,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights-delivery-evidence",
       "laneHead": "926e668f8c8ad6c6580eabee5d027b374055296f",
-      "paths": [
-        "docs/reports/graph-token-rights-no-deploy-20261030.md"
-      ],
+      "paths": ["docs/reports/graph-token-rights-no-deploy-20261030.md"],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "8268199a8d5312555b4478a88665cdc8cf113246a590a7a3fe3d7fa8795c4621",
@@ -268,9 +258,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
       "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json"
-      ],
+      "paths": [".agentic-os-delivery-dispositions.json"],
       "disposition": "no-deploy",
       "candidateRevision": "13553d6ea549562b2baa6ddfba1454aa5b3c232f",
       "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
@@ -371,9 +359,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-delivery-closeout",
       "laneHead": "c3503bb2e367610e8a9b81855518b337093839b9",
-      "paths": [
-        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
-      ],
+      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
       "disposition": "no-deploy",
       "candidateRevision": "fac919f3cc872fce1d5f8427f0d016a824d47207",
       "candidateDigest": "548982a869e4c497dfae81a61e4e5ae892c0c81efcaafa964fddcb9614ad372e",
@@ -408,9 +394,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-directory-plan",
       "laneHead": "0435a95c5533d3ac4b82bb3825b3d84b1c170c5c",
-      "paths": [
-        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
-      ],
+      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
       "disposition": "no-deploy",
       "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
       "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
@@ -426,9 +410,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-user-device-acceptance",
       "laneHead": "f77dd5ec3738598dafeb3b1a270d7223dbd4a186",
-      "paths": [
-        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
-      ],
+      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
       "disposition": "no-deploy",
       "candidateRevision": "83b6541a9da9e1fb71dae67c79f5a92cc7bf8440",
       "candidateDigest": "957a32f5207b3a4b4465a7be29366f21386fed1a0611f9c5743e632f5a1edd4a",
@@ -507,9 +489,7 @@
       "runtimeVerificationReceiptDigest": null,
       "ref": "agent/device-0232231d4a19/release-install-dependency-gate-delivery-closeout",
       "laneHead": "08927d4da631e6ab8793ae0ebd4e79f55c300e8a",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json"
-      ],
+      "paths": [".agentic-os-delivery-dispositions.json"],
       "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
       "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
       "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
@@ -520,9 +500,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/software-forensics-browser-local-rebuild",
       "laneHead": "c757992a5c4db735e99490de6d999c5a2d08ac1d",
-      "paths": [
-        "canvas/package.json"
-      ],
+      "paths": ["canvas/package.json"],
       "disposition": "no-deploy",
       "candidateRevision": "1253e0036c23ff4adaba670da2228c33435030cd",
       "candidateDigest": "4a796911e4ade7533afe8803e557fa84c0bc273e882176b35bb8330599267da0",
@@ -538,9 +516,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/source-evidence-lookup-budget",
       "laneHead": "d9ef3ca8f2c4dc99ddc50738d58f25a4d7f0d554",
-      "paths": [
-        ".github/actions/protected-ci-evidence/action.yml"
-      ],
+      "paths": [".github/actions/protected-ci-evidence/action.yml"],
       "disposition": "deployed",
       "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
       "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
