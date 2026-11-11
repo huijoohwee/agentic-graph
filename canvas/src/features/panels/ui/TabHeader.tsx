@@ -8,7 +8,6 @@ import {
   uiToolbarRowScrollJustifyEndClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 
 type Tab = { key: string; label: string }
 
@@ -52,12 +51,6 @@ function TabHeaderImpl({
   tabIconByKey,
 }: TabHeaderProps) {
   const clickTimeoutRef = React.useRef<number | null>(null)
-  const uiHeaderRowHeightClass = useGraphStore(
-    s => s.uiHeaderRowHeightClass || UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
-  )
-  const uiHeaderRowPaddingClass = useGraphStore(
-    s => s.uiHeaderRowPaddingClass || 'py-1',
-  )
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
   const iconSizeClass = getIconSizeClass(uiIconScale)
@@ -116,14 +109,11 @@ function TabHeaderImpl({
     <header
       className={
         [
-	          'HeaderBar',
-	          uiToolbarRowScrollClassName,
-	          'gap-y-1',
+          'kg-main-panel-header agentic-base-floating-panel-header',
+          uiToolbarRowScrollClassName,
           'select-none',
           onDragStart ? 'cursor-move' : '',
           onToggle ? 'cursor-pointer' : '',
-          collapsed ? UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME : uiHeaderRowHeightClass,
-          collapsed ? '' : uiHeaderRowPaddingClass,
         ].join(' ')
       }
       onClick={onHeaderClick}

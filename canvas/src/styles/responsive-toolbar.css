@@ -2667,7 +2667,7 @@
       border-top: var(--kg-surface-border);
     }
 
-    .HeaderBar,
+    .kg-main-panel-header,
     .FooterBar {
       min-width: 0;
       max-width: 100%;

@@ -69,7 +69,16 @@ export function testSharedPanelBordersForbidLegacyVariants() {
   assert.match(read('lib/ui/panelFormControls.tsx'), /UI_THEME_TOKENS.border.outline/)
   assert.match(read('lib/ui/dropdownMenu.tsx'), /from '@agentic-base\/views-react\/controls'/)
   assert.doesNotMatch(read('lib/ui/dropdownMenu.tsx'), /UI_THEME_TOKENS.border.outline/)
-  assert.match(read('features/panels/ui/MainPanelContainer.tsx'), /UI_THEME_TOKENS.border.outline/)
+  const mainPanel = read('features/panels/ui/MainPanelContainer.tsx')
+  const bottomPanel = read('features/strybldr/StrybldrTimelineBottomPanel.tsx')
+  const panelChrome = read('index.css')
+  const responsivePanelChrome = read('styles/responsive-canvas-toolbar.css')
+  assert.match(mainPanel, /agentic-base-floating-panel/)
+  assert.match(bottomPanel, /agentic-base-floating-panel/)
+  assert.doesNotMatch(mainPanel, /UI_THEME_TOKENS\.(?:border\.outline|shadow\.overlay)|backgroundColor|borderRadius|boxShadow/)
+  assert.doesNotMatch(bottomPanel, /ModalContainer|UI_THEME_TOKENS\.panel\.bg|UI_THEME_TOKENS\.text\.primary/)
+  assert.doesNotMatch(panelChrome, /\.MainPanelContainer\s*\{[^}]*\b(?:background-color|border|border-radius|box-shadow)\s*:/s)
+  assert.doesNotMatch(responsivePanelChrome, /border-radius:\s*var\(--island-radius\)/)
 }
 
 export function testResizeSeparatorKeyboardUsesBoundedDragOwner() {
