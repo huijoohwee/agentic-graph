@@ -32,6 +32,16 @@ a static demo and does not check current release state. A pass does not prove
 deployed production availability, release authority, physical-device behavior,
 or production runtime readiness.
 
+The runner creates its prompt-catalog fixture in an OS temporary directory and
+removes that run-owned directory in `finally`; it also closes Chromium and both
+local servers on success or failure. It does not write a persistent E2E artifact
+into the repository. This is functional browser evidence, not a storage or
+latency benchmark. If a performance sample is needed, record one exact run's
+wall time and temporary-directory allocation separately; do not rerun unchanged
+inputs to claim savings. When launched through the shared Agentic OS validation
+owner, retain its elapsed-time and supported CPU/RSS receipt; do not present
+process RSS as total Chromium or device memory.
+
 ## XR v2 pinned runtime-readiness contract
 
 The XR v2 gates trace the v3.0.0 authority pinned at
