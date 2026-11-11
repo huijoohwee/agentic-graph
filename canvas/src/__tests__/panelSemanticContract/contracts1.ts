@@ -17,8 +17,10 @@ export const testMainPanelContainerUsesKgPanelBg = () => {
   const root = process.cwd()
   const filePath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelContainer.tsx')
   const text = readUtf8(filePath)
-  if (text.includes('var(--panel-bg)')) throw new Error('Expected MainPanelContainer to avoid var(--panel-bg)')
-  if (!text.includes('var(--kg-panel-bg)')) throw new Error('Expected MainPanelContainer to use var(--kg-panel-bg)')
+  if (!text.includes('agentic-base-floating-panel')) throw new Error('Expected MainPanelContainer to consume the pinned Design System shell')
+  if (/UI_THEME_TOKENS\.(?:border\.outline|shadow\.overlay)|backgroundColor|borderRadius|boxShadow/u.test(text)) {
+    throw new Error('Expected MainPanelContainer to leave shell visuals to the shared Design System class')
+  }
   if (text.includes('headerBarHeightPx') || text.includes('--kg-header-bar-height')) {
     throw new Error('Expected MainPanelContainer to avoid parsing header-height utility classes')
   }
@@ -64,18 +66,19 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveCss = readUtf8(responsiveCssPath)
   const responsiveElementClasses = readUtf8(responsiveElementClassesPath)
   const iconHelpers = readUtf8(iconHelpersPath)
-  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.path !== 'site/floating-panel.css' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
+  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.revision !== 'c758c593c296d175541a031396c7f9e30b7f0454' || panelPin.path !== 'site/floating-panel.css' || panelPin.sha256 !== '96d71b2009d4d93750bd09a187188979cbba9ea9b6e7cb4a94c5f62de9540d12' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
     throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the Design System shell through Base')
   }
   if (
-    !tabHeader.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
+    !tabHeader.includes('agentic-base-floating-panel-header') ||
+    tabHeader.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !responsiveCss.includes('.kg-responsive-panel-header-row') ||
     !responsiveCss.includes('--kg-responsive-panel-header-row-min-height') ||
     tabHeader.includes('min-h-[36px]') ||
     floatingPanel.includes('min-h-[36px]')
   ) {
-    throw new Error('Expected Graph panel headers to use their shared responsive row-height owner')
+    throw new Error('Expected Graph panel headers to use the Design System shared header row')
   }
   if (!baseFloatingPanelShell.includes('agentic-base-floating-panel-header') || !baseFloatingPanelStyles.includes('.agentic-base-floating-panel-header')) {
     throw new Error('Expected FloatingPanel header row sizing and alignment to be owned by the Design System shell through Base')
@@ -89,17 +92,13 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
     throw new Error('Expected IconButton text/icon groups to use the shared responsive element-row primitive')
   }
   if (
-    !iconHelpers.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') ||
-    !iconHelpers.includes('UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME') ||
-    !responsiveElementClasses.includes('UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME') ||
-    !responsiveCss.includes('.kg-default-glyph') ||
-    !responsiveCss.includes('--kg-default-glyph-size') ||
+    !iconHelpers.includes("export { getIconSizeClass } from '@agentic-base/views-react/toolbar-icons'") ||
     iconHelpers.includes("return 'w-3 h-3'") ||
     iconHelpers.includes("return 'w-4 h-4'") ||
     iconHelpers.includes('return "w-3 h-3"') ||
     iconHelpers.includes('return "w-4 h-4"')
   ) {
-    throw new Error('Expected getIconSizeClass to use shared responsive glyph owner classes')
+    throw new Error('Expected Graph icon sizing to delegate to the shared Base helper')
   }
 
   const toolbarStyles = readUtf8(toolbarStylesPath)

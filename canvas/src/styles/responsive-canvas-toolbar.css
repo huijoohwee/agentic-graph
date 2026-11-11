@@ -61,18 +61,14 @@
 /* Minimized panel chrome uses the same dimensions as the native compact toolbar. */
 [data-kg-panel-minimized="true"] {
   min-block-size: var(--kg-toolbar-compact-surface-height);
-  border-radius: var(--island-radius);
 }
 
-.MainPanelContainer .HeaderBar[data-kg-panel-header-minimized="true"] {
-  --kg-responsive-panel-header-row-min-height: var(--kg-control-height);
-  min-height: var(--kg-control-height);
-  min-block-size: var(--kg-control-height);
+.MainPanelContainer .kg-main-panel-header[data-kg-panel-header-minimized="true"] {
   padding: var(--kg-toolbar-compact-padding);
   border-bottom: 0;
 }
 
-.HeaderBar[data-kg-panel-header-minimized="true"] > .kg-panel-tabs-nav {
+.kg-main-panel-header[data-kg-panel-header-minimized="true"] > .kg-panel-tabs-nav {
   flex: 1 1 auto;
   width: auto;
 }

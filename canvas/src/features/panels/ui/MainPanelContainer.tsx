@@ -1,6 +1,9 @@
 import React from 'react'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
+
+type MainPanelLayoutStyle = Pick<React.CSSProperties,
+  'position' | 'inset' | 'top' | 'right' | 'bottom' | 'left' | 'width' | 'height' |
+  'minWidth' | 'minHeight' | 'maxWidth' | 'maxHeight' | 'zIndex'>
 
 export default function MainPanelContainer({
   children,
@@ -11,21 +14,18 @@ export default function MainPanelContainer({
 }: {
   children: React.ReactNode
   className?: string
-  style?: React.CSSProperties
+  style?: MainPanelLayoutStyle
   ariaLabel: string
   minimized?: boolean
 }) {
-  const base = `MainPanelContainer flex min-w-0 max-w-full flex-col p-0 ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.shadow.overlay} overflow-hidden`
+  const base = 'MainPanelContainer agentic-base-floating-panel flex-col'
   return (
     <FloatingPanel
       as="aside"
       ariaLabel={ariaLabel}
       data-kg-panel-minimized={minimized ? 'true' : undefined}
       className={`${base} ${className || 'h-full'}`}
-      style={{
-        backgroundColor: 'var(--kg-panel-bg)',
-        ...style,
-      }}
+      style={style}
     >
       {children}
     </FloatingPanel>

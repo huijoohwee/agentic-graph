@@ -360,21 +360,10 @@ html, body, #root {
     overflow: auto;
   }
 
-  .MainPanelContainer {
-    position: relative;
-    background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border: var(--kg-surface-border);
-    border-radius: 0.5rem;
-    box-shadow: var(--kg-shadow-overlay);
-    overflow: hidden;
-  }
-  .MainPanelContainer .HeaderBar {
+  .MainPanelContainer .kg-main-panel-header {
     position: sticky;
     top: 0;
     z-index: 20;
-    background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border-bottom: var(--kg-surface-border);
-    min-height: 36px;
   }
   .MainPanelContainer .FooterBar {
     min-height: 36px;

@@ -14,7 +14,6 @@ import { UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME } from '@/lib/ui/responsive
 import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { clampOverlayTopLeftToViewport } from '@/lib/ui/overlayClamp'
 import { beginOverlayPanelPositionDrag } from '@/lib/ui/overlayPanelDrag'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { GanttTimelineTransportPlaybackRuntime } from '@/features/gitgraph/GanttTimelineTransportPlaybackRuntime'
 import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
@@ -382,11 +381,9 @@ export function StrybldrTimelineBottomPanel({
           ariaLabel="Strybldr Timeline"
           ariaExpanded={!minimized}
           className={cn(
-            'pointer-events-auto ModalContainer relative flex min-h-0 flex-col overflow-hidden p-0',
+            'agentic-base-floating-panel flex-col',
             UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME,
             pinned && 'kg-canvas-bottom-panel--pinned',
-            UI_THEME_TOKENS.panel.bg,
-            UI_THEME_TOKENS.text.primary,
           )}
           style={panelStyle}
           data-kg-canvas-pointer-ignore="true"
