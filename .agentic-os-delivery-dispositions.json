@@ -518,6 +518,24 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/software-forensics-browser-local-rebuild",
+      "laneHead": "c757992a5c4db735e99490de6d999c5a2d08ac1d",
+      "paths": [
+        "canvas/package.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "1253e0036c23ff4adaba670da2228c33435030cd",
+      "candidateDigest": "4a796911e4ade7533afe8803e557fa84c0bc273e882176b35bb8330599267da0",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/software-forensics-browser-local-rebuild-no-deploy-20261111.md",
+      "evidenceDigest": "d6ef1798eface3e7ec020e218a1d42717e1630c4a0ebf2716205508ada6d5f9c",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1960",
+      "reason": "PR #1960 changes only the exact path canvas/package.json, and canvas/package.json is excluded from the product artifact for this delivery decision because pages:build-sync publishes generated canvas/dist outputs rather than the source workspace manifest. The change repairs local source-runner entrypoints only and grants no deployment, mirror publication, promotion, rollback, or runtime verification authority."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/source-evidence-lookup-budget",
       "laneHead": "d9ef3ca8f2c4dc99ddc50738d58f25a4d7f0d554",
       "paths": [
@@ -593,5 +611,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "7ecfa4a9ab8a6d840845ef45dc3ec39e0eadc6edb34334f4974ab9943863a6ef"
+  "receiptDigest": "50be15272d74aa42419e4e089390877fefc15ccc5e3a1b0d643c58a4f2a7aa42"
 }
