@@ -182,4 +182,4 @@ graph TD
     - `canvas/src/lib/graph/htmlViewer/runtimeScript.ts`
 - Schema and cross-repo contract:
   - AgenticRAG Canvas directives for renderer matrix, Rich Media overlays, and HTML Canvas export:
-    - `huijoohwee.github.io/schema/AgenticRAG/canvas.jsonld`
+    - `huijoohwee.github.io/schema/agentic-rag/canvas.jsonld`

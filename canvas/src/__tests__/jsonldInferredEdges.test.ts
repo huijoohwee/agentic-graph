@@ -3,9 +3,9 @@ import { parseJsonLd } from '@/lib/graph/jsonld'
 export function testJsonLdInferredEdgesFromCompactIriArrays() {
   const jsonld = {
     '@context': {
-      '@vocab': 'https://example.org/schema/AgenticRAG/v1/',
+      '@vocab': 'https://example.org/schema/agentic-rag/v1/',
       ex: 'https://example.org/pipeline/',
-      rag: 'https://example.org/schema/AgenticRAG/v1/',
+      rag: 'https://example.org/schema/agentic-rag/v1/',
       steps: { '@type': '@id' },
     },
     '@graph': [

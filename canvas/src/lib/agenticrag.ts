@@ -13,9 +13,9 @@ const resolveAgenticRagSchemaBase = (): string => {
   if (envValue) return envValue
   const maybeLocation = (globalThis as { location?: { origin?: string } }).location
   if (maybeLocation && typeof maybeLocation.origin === 'string' && maybeLocation.origin) {
-    return `${maybeLocation.origin}/schema/AgenticRAG`
+    return `${maybeLocation.origin}/schema/agentic-rag`
   }
-  return '/schema/AgenticRAG'
+  return '/schema/agentic-rag'
 }
 
 const agenticRagSchemaBase = normalizeUrlBase(resolveAgenticRagSchemaBase())

@@ -201,8 +201,8 @@ When changing shared packages that are wired via `file:` links (for example `sin
 
 ### Schema Contract (SSOT)
 
-- Structural JSON-LD contract: `huijoohwee.github.io/schema/AgenticRAG/README.md`
-- The Canvas app resolves schema URLs via `VITE_AGENTIC_RAG_SCHEMA_URL` (fallback: `/schema/AgenticRAG`):
+- Structural JSON-LD contract: `huijoohwee.github.io/schema/agentic-rag/README.md`
+- The Canvas app resolves schema URLs via `VITE_AGENTIC_RAG_SCHEMA_URL` (fallback: `/schema/agentic-rag`):
   - [agenticrag.ts](../../canvas/src/lib/agenticrag.ts)
 
 ## Pipeline Architecture

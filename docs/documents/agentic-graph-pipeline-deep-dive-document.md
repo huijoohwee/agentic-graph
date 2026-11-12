@@ -237,6 +237,6 @@ Canonical GraphData (Zustand store)
 
 ## Cross-Repo Documentation Map (AgenticRAG)
 
-- All Canvas pipeline docs under `agentic-graph/docs/documents` are indexed into a JSON-LD documentation graph at `huijoohwee.github.io/schema/AgenticRAG/agentic-graph-documents-map.graph.jsonld`.
-- The map is validated via `python3 schema/AgenticRAG/sync_map.py --mode check` in the `huijoohwee.github.io` repo; this ensures cross-repo references stay aligned when pipeline behavior or docs change.
+- All Canvas pipeline docs under `agentic-graph/docs/documents` are indexed into a JSON-LD documentation graph at `huijoohwee.github.io/schema/agentic-rag/agentic-graph-documents-map.graph.jsonld`.
+- The map is validated via `python3 schema/agentic-rag/sync_map.py --mode check` in the `huijoohwee.github.io` repo; this ensures cross-repo references stay aligned when pipeline behavior or docs change.
 - AgenticRAG schemas (`canvas.jsonld`, `pipeline.jsonld`, `markdown.jsonld`) describe the same import→parse→store→render pipeline and reference these agentic-graph docs as implementation notes; changes to pipeline stages in code must be reflected in both the docs here and the mapped schema comments.

@@ -239,4 +239,4 @@ browser cache while preserving immutable caching for verified asset bytes.
 - Storage schema appendix: `agentic-graph-storage-schemas-document.md`
 - Markdown discovery companion: `markdown-convertible-agent-discovery-document.md`
 - Shared sibling doc: `singabldr/docs/documents/singabldr-cross-repo-publish-topology.md`
-- Shared schema note: `huijoohwee.github.io/schema/AgenticRAG/README.md`
+- Shared schema note: `huijoohwee.github.io/schema/agentic-rag/README.md`

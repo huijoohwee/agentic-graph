@@ -126,7 +126,7 @@ The codebase refactor is complete only when:
 - Mobile, tablet, desktop, and wide-canvas behavior is controlled by one responsive policy layer with focused regression proof for narrow viewport interaction, canvas fit, widget visibility, edge readability, panel stacking, and Cloudflare route parity.
 - Cross-repo docs and API/schema mirrors are updated from the canonical upstream source after the upstream refactor is green.
 
-Post-task documentation must update the canonical upstream docs first, then the active `agentic-canvas-os/todo/YYYY-MM.md` planning shard, any matching API reference, responsive contract note, or cross-repo schema mirror. The expected handoff surfaces are `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/`, `agentic-graph/docs/`, and `huijoohwee.github.io/schema/AgenticRAG`.
+Post-task documentation must update the canonical upstream docs first, then the active `agentic-canvas-os/todo/YYYY-MM.md` planning shard, any matching API reference, responsive contract note, or cross-repo schema mirror. The expected handoff surfaces are `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/`, `agentic-graph/docs/`, and `huijoohwee.github.io/schema/agentic-rag`.
 
 ## Source File Management Contract
 

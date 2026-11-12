@@ -17,8 +17,8 @@
   "metadata": {
     "graphId": "example:multi-ontology-neutral-graph",
     "generatedAt": "2025-12-19T10:30:00Z",
-    "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
-    "agenticRagContext": "https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld",
+    "agenticRagSchema": "https://huijoohwee.github.io/schema/agentic-rag",
+    "agenticRagContext": "https://huijoohwee.github.io/schema/agentic-rag/v1/context.jsonld",
     "layoutMode": "force",
     "defaultLayer": "semantic",
     "semanticConfig": {
