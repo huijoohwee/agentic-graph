@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/shared-ui-profile/v1",
   "id": "shared-ui",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-design-system",
@@ -83,16 +83,94 @@
       "value": "22.25rem"
     },
     {
-      "key": "layout.ktv.panel-width",
-      "cssVar": "--agentic-ktv-panel-width",
+      "key": "layout.panel.width",
+      "cssVar": "--agentic-panel-width",
       "type": "dimension",
       "value": "26.25rem"
     },
     {
-      "key": "overlay.floating.radius",
-      "cssVar": "--agentic-floating-panel-radius",
+      "key": "layout.panel.main-width",
+      "cssVar": "--agentic-panel-main-width",
+      "type": "responsive-dimension",
+      "value": "80vw"
+    },
+    {
+      "key": "layout.panel.main-width-mobile",
+      "cssVar": "--agentic-panel-main-width-mobile",
+      "type": "responsive-dimension",
+      "value": "96vw"
+    },
+    {
+      "key": "layout.panel.main-max-width",
+      "cssVar": "--agentic-panel-main-max-width",
+      "type": "dimension",
+      "value": "75rem"
+    },
+    {
+      "key": "layout.panel.main-height",
+      "cssVar": "--agentic-panel-main-height",
+      "type": "responsive-dimension",
+      "value": "80vh"
+    },
+    {
+      "key": "layout.panel.main-height-mobile",
+      "cssVar": "--agentic-panel-main-height-mobile",
+      "type": "responsive-dimension",
+      "value": "85vh"
+    },
+    {
+      "key": "layout.panel.main-max-height",
+      "cssVar": "--agentic-panel-main-max-height",
+      "type": "dimension",
+      "value": "50rem"
+    },
+    {
+      "key": "layout.panel.bottom-height",
+      "cssVar": "--agentic-panel-bottom-height",
+      "type": "dimension",
+      "value": "17.5rem"
+    },
+    {
+      "key": "layout.panel.gap",
+      "cssVar": "--agentic-panel-gap",
+      "type": "dimension",
+      "value": "0.75rem"
+    },
+    {
+      "key": "surface.panel.background",
+      "cssVar": "--agentic-panel-background",
+      "type": "themed-color",
+      "value": "light-dark(oklch(100% 0 0), oklch(20% 0.012 260))"
+    },
+    {
+      "key": "surface.panel.foreground",
+      "cssVar": "--agentic-panel-foreground",
+      "type": "themed-color",
+      "value": "light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260))"
+    },
+    {
+      "key": "surface.panel.border-color",
+      "cssVar": "--agentic-panel-border-color",
+      "type": "themed-color",
+      "value": "light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260))"
+    },
+    {
+      "key": "surface.panel.border",
+      "cssVar": "--agentic-panel-border",
+      "type": "border",
+      "value": "1px solid var(--agentic-panel-border-color)"
+    },
+    {
+      "key": "surface.panel.radius",
+      "cssVar": "--agentic-panel-radius",
       "type": "dimension",
       "value": "8px"
+    },
+    {
+      "key": "surface.panel.shadow",
+      "cssVar": "--agentic-panel-shadow",
+      "type": "shadow",
+      "value": "0 16px 40px oklch(0% 0 0 / 0.2)"
     },
     {
       "key": "control.height",
