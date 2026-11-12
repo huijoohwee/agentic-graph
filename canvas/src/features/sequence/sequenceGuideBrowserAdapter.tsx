@@ -1,5 +1,4 @@
 import React from 'react'
-import { readFloatingPanelThemeStyle } from '../../lib/ui/floatingPanelTheme'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { coercePanelTypography } from 'grph-shared/ui/panelTypography'
@@ -7,7 +6,6 @@ import { FloatingPanelShell, FloatingPanelCloseButton } from '@agentic-base/view
 import {
   FLOATING_PANEL_CANVAS_TOP_INSET_CSS,
   FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
-  FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
   FLOATING_PANEL_DEFAULT_WIDTH_RATIO,
   resolveFloatingPanelWidthCss,
 } from '../../lib/ui/floatingPanelGeometry'
@@ -102,9 +100,9 @@ export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBr
   const render = () => {
     const selected = state.items.find(item => item.id === state.selectedId)!
     flushSync(() => root.render(<FloatingPanelShell ariaLabel={state.title} rootPlacement="viewport-overlay"
-      rootStyle={readFloatingPanelThemeStyle({ zIndex: 1000 })}
+      rootStyle={{ zIndex: 1000 }}
       panelStyle={{ position: 'absolute', top: FLOATING_PANEL_CANVAS_TOP_INSET_CSS, right: FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
-        width: resolveFloatingPanelWidthCss(FLOATING_PANEL_DEFAULT_WIDTH_RATIO), height: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS }}
+        width: resolveFloatingPanelWidthCss(FLOATING_PANEL_DEFAULT_WIDTH_RATIO) }}
       header={<><span aria-hidden="true" /><FloatingPanelCloseButton label={state.closeLabel!} onClose={close} /></>}>
       <section className="mt-1 flex-1 min-h-0 overflow-hidden" aria-label="Guide steps">
         <SequenceInspectorView title={state.title} summary={state.summary} status={state.status}

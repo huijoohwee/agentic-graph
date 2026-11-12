@@ -82,9 +82,13 @@ export function assertPhase5(fixture: SourceFixture) {
   if (
     !cssText.includes('--kg-canvas-viewport-edge-gap: 0.5rem') ||
     !responsiveCanvasToolbarCssText.includes('var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap)') ||
-    !responsiveCanvasToolbarCssText.includes('var(--kg-safe-bottom) + var(--kg-canvas-viewport-edge-gap)') || !responsiveCanvasToolbarCssText.includes('.kg-canvas-bottom-panel') ||
-    !responsiveCanvasToolbarCssText.includes('72rem') ||
-    !strybldrTimelineBottomPanelText.includes('UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME') || strybldrTimelineBottomPanelText.includes("bottom: 'calc(var(--kg-safe-bottom)") || strybldrTimelineBottomPanelText.includes("width: 'min(calc(100% - 1.5rem")
+    !responsiveCanvasToolbarCssText.includes('var(--kg-safe-bottom) + var(--kg-canvas-viewport-edge-gap)') ||
+    !responsiveCanvasToolbarCssText.includes('.kg-canvas-bottom-panel--pinned') ||
+    responsiveCanvasToolbarCssText.includes('.kg-canvas-bottom-panel {') ||
+    !strybldrTimelineBottomPanelText.includes('UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME') ||
+    !strybldrTimelineBottomPanelText.includes('agentic-panel-bottom') ||
+    !strybldrTimelineBottomPanelText.includes('var(--agentic-panel-bottom-height)') ||
+    strybldrTimelineBottomPanelText.includes("bottom: 'calc(var(--kg-safe-bottom)") || strybldrTimelineBottomPanelText.includes("width: 'min(calc(100% - 1.5rem")
   ) {
     throw new Error('expected Canvas Toolbar and Timeline bottom panel viewport-edge spacing plus wide timeline panel sizing to share the same CSS token')
   }
@@ -93,9 +97,10 @@ export function assertPhase5(fixture: SourceFixture) {
     !cssText.includes('--kg-toolbar-compact-surface-height') ||
     !cssText.includes('--toolbar-padding: var(--kg-toolbar-compact-padding)') ||
     !strybldrTimelineBottomPanelText.includes("data-kg-panel-minimized={minimized ? 'true' : undefined}") ||
-    !strybldrTimelineBottomPanelText.includes('agentic-base-floating-panel-header px-2') ||
-    !responsiveCanvasToolbarCssText.includes('--base-control-height: var(--kg-toolbar-compact-surface-height)') ||
-    !responsiveCanvasToolbarCssText.includes('min-block-size: var(--kg-toolbar-compact-surface-height)') ||
+    !strybldrTimelineBottomPanelText.includes('agentic-panel-header') ||
+    strybldrTimelineBottomPanelText.includes('agentic-base-floating-panel-header px-2') ||
+    responsiveCanvasToolbarCssText.includes('--base-control-height: var(--kg-toolbar-compact-surface-height)') ||
+    responsiveCanvasToolbarCssText.includes('min-block-size: var(--kg-toolbar-compact-surface-height)') ||
     strybldrTimelineBottomPanelText.includes('min-h-[36px]')
   ) {
     throw new Error('expected minimized Timeline bottom panel height to reuse existing compact Toolbar sizing tokens')
@@ -171,8 +176,8 @@ export function assertPhase5(fixture: SourceFixture) {
     throw new Error('expected Explorer/editor divider to stay visible on desktop and reset to a horizontal separator on stacked mobile')
   }
 
-  if (!responsiveToolbarCssText.includes('.MainPanelContainer')) {
-    throw new Error('expected main panel mobile viewport bounds to stay centralized in shared CSS')
+  if (responsiveToolbarCssText.includes('.MainPanelContainer') || !readUtf8(path.resolve(root, 'src/features/panels/ui/MainPanelContainer.tsx')).includes('agentic-panel-main')) {
+    throw new Error('expected main panel viewport bounds to come from the shared panel profile')
   }
 
   if (!responsiveToolbarCssText.includes('.kg-collapsible-toolbar-overflow')) {

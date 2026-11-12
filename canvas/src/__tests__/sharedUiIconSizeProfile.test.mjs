@@ -31,19 +31,19 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.doesNotMatch(toolbarCss, /var\(--kg-(?:compact|default)-glyph-size,\s*(?:0\.75rem|1rem)\)/)
 })
 
-test('Graph FloatingPanel consumes Base structure and the single pinned Design System radius', () => {
+test('Graph FloatingPanel consumes the exact Base shell without a local theme bridge', () => {
   const require = createRequire(import.meta.url)
   const baseCssExport = require.resolve('@agentic-base/views-react/browser.css')
   const basePackage = path.resolve(path.dirname(baseCssExport), '..')
   const panelCss = fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.css'), 'utf8')
   const panelPin = JSON.parse(fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.pin.json'), 'utf8'))
-  assert.equal(panelPin.revision, 'c758c593c296d175541a031396c7f9e30b7f0454')
-  assert.equal(panelPin.sha256, '96d71b2009d4d93750bd09a187188979cbba9ea9b6e7cb4a94c5f62de9540d12')
-  assert.match(panelCss, /border-radius:\s*var\(--agentic-floating-panel-radius\)/)
+  assert.equal(panelPin.revision, 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9')
+  assert.equal(panelPin.sha256, 'cdc28cad89e9e3b0a474e638f40d981d295e4058f2df878a72643776581a2427')
+  assert.match(panelCss, /border-radius:\s*var\(--agentic-panel-radius\)/)
   const adapter = fs.readFileSync(new URL('../components/ui/FloatingPanel.tsx', import.meta.url), 'utf8')
   assert.match(adapter, /FloatingPanelShell as BaseFloatingPanelShell/)
-  const theme = fs.readFileSync(new URL('../lib/ui/floatingPanelTheme.ts', import.meta.url), 'utf8')
-  assert.doesNotMatch(theme, /(?:borderRadius|--agentic-floating-panel-radius)\s*:/)
+  assert.equal(fs.existsSync(new URL('../lib/ui/floatingPanelTheme.ts', import.meta.url)), false)
+  assert.doesNotMatch(adapter, /readFloatingPanelThemeStyle|--base-(?:accent|text-primary|text-secondary|border|panel|shadow-overlay|toolbar-compact-padding)/)
   const sourceDirectory = new URL('../styles/', import.meta.url)
   for (const file of fs.readdirSync(sourceDirectory, { recursive: true })) {
     if (!file.endsWith('.css') || file === 'shared-ui-profile.css') continue

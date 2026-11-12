@@ -17,7 +17,7 @@ export const testMainPanelContainerUsesKgPanelBg = () => {
   const root = process.cwd()
   const filePath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelContainer.tsx')
   const text = readUtf8(filePath)
-  if (!text.includes('agentic-base-floating-panel')) throw new Error('Expected MainPanelContainer to consume the pinned Design System shell')
+  if (!text.includes('agentic-base-floating-panel') || !text.includes('agentic-panel-main')) throw new Error('Expected MainPanelContainer to consume the pinned Design System panel')
   if (/UI_THEME_TOKENS\.(?:border\.outline|shadow\.overlay)|backgroundColor|borderRadius|boxShadow/u.test(text)) {
     throw new Error('Expected MainPanelContainer to leave shell visuals to the shared Design System class')
   }
@@ -66,7 +66,7 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveCss = readUtf8(responsiveCssPath)
   const responsiveElementClasses = readUtf8(responsiveElementClassesPath)
   const iconHelpers = readUtf8(iconHelpersPath)
-  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.revision !== 'c758c593c296d175541a031396c7f9e30b7f0454' || panelPin.path !== 'site/floating-panel.css' || panelPin.sha256 !== '96d71b2009d4d93750bd09a187188979cbba9ea9b6e7cb4a94c5f62de9540d12' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
+  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.revision !== 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9' || panelPin.path !== 'site/floating-panel.css' || panelPin.sha256 !== 'cdc28cad89e9e3b0a474e638f40d981d295e4058f2df878a72643776581a2427' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
     throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the Design System shell through Base')
   }
   if (

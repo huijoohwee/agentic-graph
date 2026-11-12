@@ -15,7 +15,7 @@ export function resolveFloatingPanelWidthCss(widthRatio: number): string {
   const finiteRatio = Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO
   const safeRatio = Math.max(0.15, Math.min(0.6, finiteRatio))
   const width = safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO
-    ? 'var(--agentic-ktv-panel-width)'
+    ? 'var(--agentic-panel-width)'
     : `max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)`
   return `min(calc(100vw - ${FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS}), ${width})`
 }

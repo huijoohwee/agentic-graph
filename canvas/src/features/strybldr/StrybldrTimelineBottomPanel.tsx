@@ -22,7 +22,7 @@ import { StrybldrTimelinePanel } from './StrybldrTimelinePanel'
 import {
   TIMELINE_BOTTOM_PANEL_FALLBACK_SIZE, TIMELINE_BOTTOM_PANEL_MAX_HEIGHT_RATIO,
   TIMELINE_BOTTOM_PANEL_MIN_RESIZE_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_MIN_RESIZE_WIDTH_PX,
-  TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_UNPINNED_WIDTH_PX, TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
+  TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
   clampTimelineBottomPanelHeightRatio,
   resolveWorkspaceCanvasLayerInsetLeft,
 } from './strybldrTimelineBottomPanelLayout'
@@ -332,16 +332,16 @@ export function StrybldrTimelineBottomPanel({
   const resolvedBottomSurfaceHeightRatio = clampTimelineBottomPanelHeightRatio(bottomSurfaceHeightRatio)
   const expandedPinnedHeightStyle = {
     width: panelSizePx ? `${panelSizePx.width}px` : undefined,
-    height: panelSizePx ? `${panelSizePx.height}px` : `clamp(9rem, ${Math.round(resolvedBottomSurfaceHeightRatio * 10000) / 100}dvh, 24rem)`,
+    height: panelSizePx ? `${panelSizePx.height}px` : `max(var(--agentic-panel-bottom-height), clamp(9rem, ${Math.round(resolvedBottomSurfaceHeightRatio * 10000) / 100}dvh, 24rem))`,
     maxHeight: 'min(62dvh, 24rem)',
   }
   const expandedUnpinnedHeightStyle = {
-    width: panelSizePx ? `${panelSizePx.width}px` : `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_WIDTH_PX}px, calc(100% - 1.5rem - var(--kg-safe-left) - var(--kg-safe-right)))`,
-    height: panelSizePx ? `${panelSizePx.height}px` : `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX}px, 44dvh)`,
+    width: panelSizePx ? `${panelSizePx.width}px` : 'var(--agentic-panel-width)',
+    height: panelSizePx ? `${panelSizePx.height}px` : 'var(--agentic-panel-bottom-height)',
     maxHeight: 'min(62dvh, 24rem)',
   }
   const panelHeightStyle = minimized
-    ? { height: 'auto' }
+    ? {}
     : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
@@ -381,7 +381,8 @@ export function StrybldrTimelineBottomPanel({
           ariaLabel="Strybldr Timeline"
           ariaExpanded={!minimized}
           className={cn(
-            'agentic-base-floating-panel flex-col',
+            'agentic-base-floating-panel agentic-panel-bottom flex-col',
+            minimized && 'agentic-panel-bottom--collapsed',
             UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME,
             pinned && 'kg-canvas-bottom-panel--pinned',
           )}
@@ -398,7 +399,7 @@ export function StrybldrTimelineBottomPanel({
         >
           <header
             className={cn(
-              'agentic-base-floating-panel-header px-2',
+              'agentic-panel-header',
               !pinned && 'agentic-base-floating-panel-draggable',
             )}
             onPointerDown={handleHeaderPointerDown}

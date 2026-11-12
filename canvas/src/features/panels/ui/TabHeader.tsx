@@ -109,7 +109,7 @@ function TabHeaderImpl({
     <header
       className={
         [
-          'kg-main-panel-header agentic-base-floating-panel-header',
+          'kg-main-panel-header agentic-panel-header agentic-base-floating-panel-header',
           uiToolbarRowScrollClassName,
           'select-none',
           onDragStart ? 'cursor-move' : '',

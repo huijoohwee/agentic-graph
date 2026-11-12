@@ -88,9 +88,10 @@ export function assertPhase2(fixture: SourceFixture) {
     !responsiveToolbarCssText.includes('.kg-responsive-wide-dialog-panel') ||
     !responsiveToolbarCssText.includes('.kg-responsive-wide-dialog-message') ||
     !responsiveToolbarCssText.includes('--kg-responsive-wide-dialog-message-max-width') ||
-    !responsiveToolbarCssText.includes('.kg-main-panel-card') ||
-    !responsiveToolbarCssText.includes('.kg-main-panel-card--open') ||
-    !responsiveToolbarCssText.includes('.kg-main-panel-card--collapsed') ||
+    responsiveToolbarCssText.includes('.kg-main-panel-card') ||
+    responsiveToolbarCssText.includes('.kg-main-panel-card--open') ||
+    responsiveToolbarCssText.includes('.kg-main-panel-card--collapsed') ||
+    !readUtf8(path.resolve(root, 'src/features/panels/ui/MainPanelContainer.tsx')).includes('agentic-panel-main') ||
     !responsiveToolbarCssText.includes('.kg-responsive-floating-notice-card') ||
     !responsiveToolbarCssText.includes('--kg-floating-notice-card-width') ||
     !responsiveToolbarCssText.includes('.kg-graph-fields-editor') ||

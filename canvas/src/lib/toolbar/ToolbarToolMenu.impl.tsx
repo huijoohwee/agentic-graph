@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils'
 import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
 import { usePanelStack } from '@/lib/ui/usePanelStack'
 import {
-  FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
   resolveFloatingPanelWidthCss,
 } from '@/lib/ui/floatingPanelGeometry'
 import { LS_KEYS, UI_LABELS, UI_SELECTORS } from '@/lib/config'
@@ -229,8 +228,6 @@ export function ToolbarToolMenu({
   const floatingPanelSizeStyle = React.useMemo(() => {
     return {
       width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio),
-      height: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
-      maxHeight: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
     }
   }, [floatingPanelWidthRatio])
 

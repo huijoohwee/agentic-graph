@@ -324,10 +324,6 @@ export const UI_RESPONSIVE_WIDE_DIALOG_PANEL_CLASSNAME = 'kg-responsive-wide-dia
 
 export const UI_RESPONSIVE_WIDE_DIALOG_MESSAGE_CLASSNAME = 'kg-responsive-wide-dialog-message'
 
-export const UI_RESPONSIVE_MAIN_PANEL_OPEN_CARD_CLASSNAME = 'kg-main-panel-card kg-main-panel-card--open'
-
-export const UI_RESPONSIVE_MAIN_PANEL_COLLAPSED_CARD_CLASSNAME = 'kg-main-panel-card kg-main-panel-card--collapsed'
-
 export const UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME = 'kg-main-panel-mobile-sheet absolute pointer-events-auto'
 
 export const UI_RESPONSIVE_FLOATING_NOTICE_CARD_CLASSNAME = 'kg-responsive-floating-notice-card'
