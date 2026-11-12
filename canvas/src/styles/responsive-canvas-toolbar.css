@@ -86,6 +86,8 @@
 @media (pointer: coarse), (max-width: 768px) {
   /* Mobile floating panels use safe-area edge insets instead of centering. */
   .kg-canvas-bottom-panel--pinned {
+    inset-inline-start: auto;
+    inset-inline-end: calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap));
     transform: none;
   }
 
