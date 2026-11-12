@@ -84,7 +84,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Runtime source | Upstream application code | `agentic-graph/canvas/src/**` | Merge source logic first, then validate runtime behavior |
 | Canonical docs | Upstream documentation | `huijoohwee/.workspace/.todo/docs/TODO.md`, `huijoohwee/.workspace/.todo/todo/**`, `agentic-graph/docs/**`, `agentic-graph/README.md` | Merge canonical wording first, record an immutable Context at the private owner, then regenerate derived views |
 | Generators and sync logic | Upstream automation | `agentic-graph/scripts/**`, `agentic-graph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
-| Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/AgenticRAG/**` | Update only after the canonical owner is aligned |
+| Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/agentic-rag/**` | Update only after the canonical owner is aligned |
 | Publish mirrors | Downstream deploy surface | `huijoohwee/content/agentic-graph/**`, managed route files in `huijoohwee/agentic-graph/**` | Never hand-merge; rebuild and resync from `agentic-graph` |
 
 ---
@@ -125,7 +125,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 ### Schema Mirrors
 
-- Update `huijoohwee.github.io/schema/AgenticRAG/**` only after the canonical source is merged.
+- Update `huijoohwee.github.io/schema/agentic-rag/**` only after the canonical source is merged.
 - Keep mirror wording aligned with the canonical contract.
 - Remove duplicate schema wording if the same rule is defined upstream.
 

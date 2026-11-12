@@ -56,7 +56,7 @@
     "edge": {}
   },
   "metadata": {
-    "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
+    "agenticRagSchema": "https://huijoohwee.github.io/schema/agentic-rag",
     "generatedBy": "data/config/schema/agentic-graph-interviewer-schema-config.jsonld",
     "description": "Schema config for docs/assets/multi-ontology-kg.jsonld highlighting multi-ontology entities and hiding geo:Polygon clusters in semantic layer.",
     "dataset": "docs/assets/multi-ontology-kg.jsonld"

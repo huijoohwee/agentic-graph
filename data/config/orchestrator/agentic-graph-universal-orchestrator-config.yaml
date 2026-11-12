@@ -14,8 +14,8 @@ orchestrator:
     summary_json: ""
 
 agentic_rag:
-  schema: https://huijoohwee.github.io/schema/AgenticRAG
-  context_url: https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld
+  schema: https://huijoohwee.github.io/schema/agentic-rag
+  context_url: https://huijoohwee.github.io/schema/agentic-rag/v1/context.jsonld
   node_view_type: AgenticRagNodeView
   primary_fields:
     - chunk_text

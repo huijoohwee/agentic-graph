@@ -90,7 +90,7 @@
     }
   ],
   "metadata": {
-    "agenticRagSchema": "https://huijoohwee.github.io/schema/AgenticRAG",
+    "agenticRagSchema": "https://huijoohwee.github.io/schema/agentic-rag",
     "generatedBy": "agentic-graph.schema-config-template",
     "corpusSizePreset": "medium",
     "corpusSizePresets": {

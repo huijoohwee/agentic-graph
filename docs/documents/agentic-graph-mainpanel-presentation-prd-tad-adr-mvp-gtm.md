@@ -54,7 +54,7 @@ persistence schema, additional service, dependency or imported application surfa
 The portable FloatingPanelShell accepts optional capture callbacks; its host owns
 stack policy and it remains store-free. Expanded MainPanel typography remains configurable.
 
-The field reference is `schema/AgenticRAG/roles-actions-outcomes-schema.jsonld`
+The field reference is `schema/agentic-rag/roles-actions-outcomes-schema.jsonld`
 (schemaVersion 3.1.0) in huijoohwee.github.io; runtime field owners remain authoritative.
 
 ## MVP and verification

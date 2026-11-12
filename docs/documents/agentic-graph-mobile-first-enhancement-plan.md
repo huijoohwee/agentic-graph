@@ -167,7 +167,7 @@ Mobile fixes lose value when they only exist in one surface or are patched downs
 
 - `agentic-graph/goal.md`
 - `agentic-graph/docs/documents/agentic-graph-cross-repo-publish-topology.md`
-- `huijoohwee.github.io/schema/AgenticRAG/README.md`
+- `huijoohwee.github.io/schema/agentic-rag/README.md`
 
 **Acceptance target**
 
