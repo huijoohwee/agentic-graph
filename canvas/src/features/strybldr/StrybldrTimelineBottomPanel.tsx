@@ -9,7 +9,6 @@ import { Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL } from '@/lib/ui/zIndex'
 import { UI_SELECTORS } from '@/lib/config'
 import { WORKSPACE_LEFT_PANE_SELECTOR } from '@/lib/canvas/viewportMeasureElement'
 import { beginRichMediaPanelResizeDrag, RichMediaPanelResizeHandle } from '@/components/RichMediaPanel'
-import { getIconSizeClass } from '@/lib/ui'
 import { UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { clampOverlayTopLeftToViewport } from '@/lib/ui/overlayClamp'
@@ -22,7 +21,7 @@ import { StrybldrTimelinePanel } from './StrybldrTimelinePanel'
 import {
   TIMELINE_BOTTOM_PANEL_FALLBACK_SIZE, TIMELINE_BOTTOM_PANEL_MAX_HEIGHT_RATIO,
   TIMELINE_BOTTOM_PANEL_MIN_RESIZE_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_MIN_RESIZE_WIDTH_PX,
-  TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_UNPINNED_WIDTH_PX, TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
+  TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX, TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
   clampTimelineBottomPanelHeightRatio,
   resolveWorkspaceCanvasLayerInsetLeft,
 } from './strybldrTimelineBottomPanelLayout'
@@ -40,6 +39,11 @@ type TimelineBottomPanelView =
   | 'gantt'
   | 'architecture'
   | 'eventModeling'
+const TIMELINE_BOTTOM_PANEL_VIEW_LABEL: Record<TimelineBottomPanelView, string> = {
+  activity: 'Activity', timeline: 'Timeline', designTimeline: 'Design Timeline', strybldrTimeline: 'Storyboard',
+  documentVersionGraph: 'Version Graph', flowchart: 'Flowchart', gitGraph: 'GitGraph', gantt: 'Gantt-Timeline',
+  architecture: 'Architecture', eventModeling: 'Event Model',
+}
 const WorkspaceActivityPanelLazy = React.lazy(() => import('@/features/agent-ready/WorkspaceActivityPanel'))
 const GitGraphBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphBottomPanelView').then(mod => ({ default: mod.GitGraphBottomPanelView })))
 const FlowchartBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartBottomPanelView').then(mod => ({ default: mod.FlowchartBottomPanelView })))
@@ -86,9 +90,6 @@ export function StrybldrTimelineBottomPanel({
   const setTimelineEnabled = useGraphStore(s => s.setTimelineEnabled)
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const resolvedThemeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
-  const uiIconScale = useGraphStore(s => s.uiIconScale)
-  const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
-  const iconSizeClass = getIconSizeClass(uiIconScale)
   const dragSchedulerRef = React.useRef(createRafValueScheduler((next: TimelineBottomPanelPosition) => setPosition(next)))
 
   React.useEffect(() => {
@@ -332,16 +333,16 @@ export function StrybldrTimelineBottomPanel({
   const resolvedBottomSurfaceHeightRatio = clampTimelineBottomPanelHeightRatio(bottomSurfaceHeightRatio)
   const expandedPinnedHeightStyle = {
     width: panelSizePx ? `${panelSizePx.width}px` : undefined,
-    height: panelSizePx ? `${panelSizePx.height}px` : `clamp(9rem, ${Math.round(resolvedBottomSurfaceHeightRatio * 10000) / 100}dvh, 24rem)`,
+    height: panelSizePx ? `${panelSizePx.height}px` : `max(var(--agentic-panel-bottom-height), clamp(9rem, ${Math.round(resolvedBottomSurfaceHeightRatio * 10000) / 100}dvh, 24rem))`,
     maxHeight: 'min(62dvh, 24rem)',
   }
   const expandedUnpinnedHeightStyle = {
-    width: panelSizePx ? `${panelSizePx.width}px` : `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_WIDTH_PX}px, calc(100% - 1.5rem - var(--kg-safe-left) - var(--kg-safe-right)))`,
-    height: panelSizePx ? `${panelSizePx.height}px` : `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX}px, 44dvh)`,
+    width: panelSizePx ? `${panelSizePx.width}px` : 'var(--agentic-panel-width)',
+    height: panelSizePx ? `${panelSizePx.height}px` : 'var(--agentic-panel-bottom-height)',
     maxHeight: 'min(62dvh, 24rem)',
   }
   const panelHeightStyle = minimized
-    ? { height: 'auto' }
+    ? {}
     : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
@@ -381,7 +382,8 @@ export function StrybldrTimelineBottomPanel({
           ariaLabel="Strybldr Timeline"
           ariaExpanded={!minimized}
           className={cn(
-            'agentic-base-floating-panel flex-col',
+            'agentic-base-floating-panel agentic-panel-bottom flex-col',
+            minimized && 'agentic-panel-bottom--collapsed',
             UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME,
             pinned && 'kg-canvas-bottom-panel--pinned',
           )}
@@ -389,6 +391,7 @@ export function StrybldrTimelineBottomPanel({
           data-kg-canvas-pointer-ignore="true"
           data-kg-canvas-wheel-ignore="true"
           data-kg-floating-panel-root="true"
+          data-agentic-panel-kind="bottom"
           data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-panel="1"
           data-kg-panel-minimized={minimized ? 'true' : undefined}
@@ -398,77 +401,85 @@ export function StrybldrTimelineBottomPanel({
         >
           <header
             className={cn(
-              'agentic-base-floating-panel-header px-2',
+              'agentic-panel-header',
               !pinned && 'agentic-base-floating-panel-draggable',
             )}
             onPointerDown={handleHeaderPointerDown}
           >
-            <PanelViewTabs activeKey={view} aria-label="Bottom panel views">
-              <span className="min-w-0 truncate text-xs font-semibold">{view === 'activity' ? 'Activity' : 'Timeline'}</span>
-              <PanelViewTab title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} /></PanelViewTab>
+            <PanelViewTabs activeKey={view} label="Bottom panel views" minimized={minimized}>
+              <span className="min-w-0 truncate text-xs font-semibold">{TIMELINE_BOTTOM_PANEL_VIEW_LABEL[view]}</span>
+              <PanelViewTab tabKey="activity" title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity /></PanelViewTab>
               <PanelViewTab
+                tabKey="timeline"
                 title="Timeline"
                 aria-pressed={view === 'timeline' || view === 'designTimeline'}
                 onClick={showTimelineView}
                 data-kg-strybldr-bottom-timeline-timeline-toggle="1"
               >
-                <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <History />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="strybldrTimeline"
                 title="Storyboard"
                 aria-pressed={view === 'strybldrTimeline'}
                 onClick={showStrybldrTimelineView}
                 data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
               >
-                <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <MonitorPlay />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="documentVersionGraph"
                 title="Version Graph"
                 aria-pressed={view === 'documentVersionGraph'}
                 onClick={showDocumentVersionGraphView}
                 data-kg-strybldr-bottom-timeline-document-version-graph-toggle="1"
               >
-                <FileDiff className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <FileDiff />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="flowchart"
                 title="Flowchart"
                 aria-pressed={view === 'flowchart'}
                 onClick={showFlowchartView}
                 data-kg-strybldr-bottom-timeline-flowchart-toggle="1"
               >
-                <Columns2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <Columns2 />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="gitGraph"
                 title="GitGraph"
                 aria-pressed={view === 'gitGraph'}
                 onClick={showGitGraphView}
                 data-kg-strybldr-bottom-timeline-gitgraph-toggle="1"
               >
-                <GitGraph className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <GitGraph />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="gantt"
                 title="Gantt-Timeline"
                 aria-pressed={view === 'gantt'}
                 onClick={showGanttView}
                 data-kg-strybldr-bottom-timeline-gantt-toggle="1"
               >
-                <ChartGantt className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <ChartGantt />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="architecture"
                 title="Architecture"
                 aria-pressed={view === 'architecture'}
                 onClick={showArchitectureView}
                 data-kg-strybldr-bottom-timeline-architecture-toggle="1"
               >
-                <Network className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <Network />
               </PanelViewTab>
               <PanelViewTab
+                tabKey="eventModeling"
                 title="Event Model"
                 aria-pressed={view === 'eventModeling'}
                 onClick={showEventModelingView}
                 data-kg-strybldr-bottom-timeline-event-modeling-toggle="1"
               >
-                <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                <Workflow />
               </PanelViewTab>
             </PanelViewTabs>
             <HeaderActions

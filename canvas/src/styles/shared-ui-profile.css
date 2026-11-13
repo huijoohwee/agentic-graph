@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@267cdb31047b02d4f54ea6708fb2518a8a2a57f4; profile sha256 6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5. Do not edit. */
+/* Generated from agentic-design-system@6b25583a60c5f57c66e0d8fd25e726c0e8ad4595; profile sha256 01e7b88286247b17c186fadf9517852e46807bc01035d7f07f6d8947ab9c59b9. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -12,8 +12,22 @@
   --agentic-ktv-columns: minmax(10.5rem,11rem) 2rem minmax(8.75rem,1fr);
   --agentic-ktv-columns-narrow: minmax(0,1fr) 2rem;
   --agentic-ktv-stack-breakpoint: 22.25rem;
-  --agentic-ktv-panel-width: 26.25rem;
-  --agentic-floating-panel-radius: 8px;
+  --agentic-panel-width: 26.25rem;
+  --agentic-panel-main-width: 80vw;
+  --agentic-panel-main-width-mobile: 96vw;
+  --agentic-panel-main-max-width: 75rem;
+  --agentic-panel-main-height: 80vh;
+  --agentic-panel-main-height-mobile: 85vh;
+  --agentic-panel-main-max-height: 50rem;
+  --agentic-panel-bottom-height: 17.5rem;
+  --agentic-panel-gap: 0.75rem;
+  --agentic-toolbar-overlay-layer: 6000;
+  --agentic-panel-background: light-dark(oklch(100% 0 0), oklch(20% 0.012 260));
+  --agentic-panel-foreground: light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260));
+  --agentic-panel-border-color: light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260));
+  --agentic-panel-border: 1px solid var(--agentic-panel-border-color);
+  --agentic-panel-radius: 8px;
+  --agentic-panel-shadow: 0 16px 40px oklch(0% 0 0 / 0.2);
   --agentic-control-height: 28px;
   --agentic-control-height-touch: 48px;
   --agentic-control-padding-inline: 0.5rem;
@@ -27,6 +41,7 @@
   --agentic-menu-padding: 0.25rem;
   --agentic-menu-gap: 0.25rem;
   --agentic-control-selected-foreground: light-dark(oklch(48.8% 0.243 264.376), oklch(70.7% 0.165 254.624));
+  --agentic-control-hover-background: light-dark(#fffbeb, rgb(251 191 36 / 0.16));
   --agentic-control-selected-background: light-dark(oklch(97% 0.014 254.604), oklch(37.9% 0.146 265.522 / 0.3));
   --agentic-dashboard-card-gap: 12px;
   --agentic-dashboard-section-gap: 1rem;
@@ -39,6 +54,8 @@
   --agentic-dashboard-primary: light-dark(oklch(48% 0.12 237), oklch(77% 0.14 237));
   --agentic-dashboard-secondary: light-dark(oklch(49% 0.22 293), oklch(78% 0.15 293));
   --agentic-dashboard-success: light-dark(oklch(45% 0.1 165), oklch(76% 0.16 165));
+  --agentic-ktv-panel-width: var(--agentic-panel-width);
+  --agentic-floating-panel-radius: var(--agentic-panel-radius);
 }
 .agentic-toggle-group {
   box-sizing: border-box; display: inline-flex; align-items: stretch;
@@ -53,7 +70,7 @@
   margin: 0; padding: 0 var(--agentic-control-padding-inline); border: 0; border-radius: 0;
   background: transparent; color: inherit; font: inherit; white-space: nowrap; cursor: pointer;
 }
-.agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, currentColor 6%, transparent))); }
+.agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-control-hover-background); }
 :is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: var(--agentic-control-selected-foreground); background-color: var(--agentic-control-selected-background); }
 .agentic-toggle-group > button:focus-visible { outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: calc(-1 * var(--agentic-control-focus-width)); }
 .agentic-toggle-group > button:disabled { opacity: .5; cursor: not-allowed; }
@@ -94,7 +111,7 @@
 .agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); stroke-width: var(--agentic-icon-stroke-width); }
 .agentic-icon-compact { inline-size: var(--agentic-icon-size-compact); block-size: var(--agentic-icon-size-compact); }
 .agentic-icon-color { color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText)); }
-.agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, Canvas)); }
+.agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-control-hover-background); }
 .agentic-icon-padding { padding: var(--agentic-control-padding-block); }
 .agentic-icon-pill, .agentic-icon-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; min-block-size: var(--agentic-control-height); padding: 0 var(--agentic-control-padding-inline); border: var(--agentic-control-border); border-radius: var(--agentic-control-radius); white-space: nowrap; }
 .agentic-icon-text, .agentic-icon-pill, .agentic-icon-badge { font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
@@ -134,7 +151,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   inline-size: 100%; text-align: start; cursor: pointer;
   border: 1px solid transparent; color: inherit; background: transparent;
 }
-.agentic-menu-option:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, Highlight 8%, Canvas))); }
+.agentic-menu-option:is(:hover, :focus-visible) { background: var(--agentic-control-hover-background); }
 .agentic-menu-option:is([aria-checked="true"], [aria-selected="true"], [data-selected="true"], .agentic-menu-selected) {
   color: var(--kg-accent, LinkText); background: var(--agentic-base-selected, var(--kg-accent-soft-bg, color-mix(in srgb, Highlight 12%, Canvas)));
   border-color: var(--agentic-base-focus, var(--kg-accent, Highlight));

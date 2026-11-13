@@ -45,8 +45,8 @@
     background: var(--kg-panel-action-bg-hover) !important;
   }
   .kg-panel-icon-btn svg {
-    width: 16px;
-    height: 16px;
+    width: var(--agentic-icon-size-default);
+    height: var(--agentic-icon-size-default);
   }
   .kg-panel-action-btn {
     background: var(--kg-panel-action-bg);

@@ -26,7 +26,7 @@ const MAX_INPUTS = 128, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 80000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
   .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
-const browserExports = ['mountDataView', 'mountSequenceGuide']
+const browserExports = ['mountDataView', 'mountSequenceGuide', 'mountSequenceGuideContent']
 const args = process.argv.slice(2)
 assert(args.length === 2 && args[0] === '--out-dir' && path.isAbsolute(args[1]), 'Expected --out-dir <absolute external directory>')
 const output = path.resolve(args[1])

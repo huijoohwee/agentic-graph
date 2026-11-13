@@ -4,7 +4,6 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import { summarizePropertySpec, getNodePropSpec, getEdgePropSpec, buildEdgeSchemaBadges } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import IconButton from '@/components/IconButton'
-import { PinToggleIconButton } from '@/components/PinToggleIconButton'
 import { getBadgeChipClass, getIconSizeClass } from '@/lib/ui'
 import {
   UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME,
@@ -24,7 +23,7 @@ import { getEdgeLabelForDisplay } from '@/components/GraphCanvas/edgeDisplay'
 import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
-import { X as CloseIcon } from 'lucide-react'
+import { PanelControlButton } from '@agentic-base/views-react/controls'
 import { extractVoxelScores, VOXEL_SCORE_DIMENSIONS } from '@/features/three/voxelStyle'
 import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
 import {
@@ -694,23 +693,8 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
           <section className="flex items-start justify-between gap-2">
             <section className="min-w-0 flex-1">{content}</section>
             <section className="flex flex-col gap-1 flex-none">
-              <PinToggleIconButton
-                title={tooltipPinned ? UI_COPY.floatingPanelUnpin : UI_COPY.floatingPanelPin}
-                pinned={tooltipPinned}
-                onClick={handleTogglePinned}
-                showTooltip
-                ariaPressed={tooltipPinned}
-                iconClassName={iconSizeClass}
-                strokeWidth={uiIconStrokeWidth}
-              />
-              <IconButton
-                className="App-toolbar__btn"
-                title={UI_LABELS.close}
-                onClick={handleClose}
-                showTooltip
-              >
-                <CloseIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-              </IconButton>
+              <PanelControlButton control="pin" onAction={handleTogglePinned} pressed={tooltipPinned} />
+              <PanelControlButton control="close" onAction={handleClose} />
             </section>
           </section>
           {tooltipPinned ? (

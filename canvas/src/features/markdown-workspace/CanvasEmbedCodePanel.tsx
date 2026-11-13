@@ -20,7 +20,6 @@ export function CanvasEmbedCodePanel(props: CanvasEmbedCodePanelProps) {
       sourceName={props.sourceName}
       badge={props.language}
       headerActions={<ClipboardCopyButton text={props.code} />}
-      closeAriaLabel="Close share code panel"
       onClose={props.onClose}
     >
       <section className={`min-h-0 overflow-auto ${UI_THEME_TOKENS.code.bg} ${UI_THEME_TOKENS.code.text}`}>

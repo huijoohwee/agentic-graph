@@ -1,5 +1,6 @@
 import React from 'react'
-import { Focus, Maximize, Pin, Scan, ZoomIn, ZoomOut } from 'lucide-react'
+import { Focus, Maximize, Scan, ZoomIn, ZoomOut } from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -110,7 +111,7 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth }: ZoomModeSelec
           key: 'mode:pin' as const,
           label: UI_LABELS.pinToView,
           tooltip: UI_COPY.pinToViewTooltip,
-          Icon: Pin,
+          Icon: DESIGN_ICONS.Pin,
           dividerBefore: true,
         },
         {

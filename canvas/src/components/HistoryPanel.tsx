@@ -2,7 +2,8 @@ import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import MainPanelFrame from '@/features/panels/ui/MainPanelFrame'
 import IconButton from '@/components/IconButton'
-import { Search as SearchIcon, Save as SaveIcon, RotateCcw as ResetIcon, RotateCcw as RestoreIcon, X as CloseIcon } from 'lucide-react'
+import { FloatingPanelCloseButton } from '@/components/ui/FloatingPanel'
+import { DESIGN_ICONS, PanelControlButton } from '@agentic-base/views-react/controls'
 import { useDebouncedValue } from '@/features/hooks/useDebouncedValue'
 import { formatTimestamp } from '@/features/panels/utils/time'
 import { normalized as normalizeText } from '@/features/panels/utils/json'
@@ -38,28 +39,20 @@ export default function HistoryPanel({ onClose }: { onClose?: () => void }) {
       onSearchChange={setSearch}
       rightSlot={(
         <section className="Stack Stack_horizontal items-center">
-          <IconButton className="App-toolbar__btn" title={UI_LABELS.search} onClick={() => setSearchOpen(v => !v)} showTooltip>
-            <SearchIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-          </IconButton>
-          <IconButton className="App-toolbar__btn" title={UI_LABELS.apply} onClick={applySnapshot} showTooltip>
-            <SaveIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-          </IconButton>
-          <IconButton className="App-toolbar__btn" title={UI_LABELS.reset} onClick={reset} showTooltip>
-            <ResetIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-          </IconButton>
-          <IconButton className="App-toolbar__btn" title={UI_LABELS.close} onClick={onClose} showTooltip>
-            <CloseIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-          </IconButton>
+          <PanelControlButton control="search" onAction={() => setSearchOpen(v => !v)} />
+          <PanelControlButton control="apply" onAction={applySnapshot} />
+          <PanelControlButton control="reset" onAction={reset} />
+          <FloatingPanelCloseButton onClose={() => onClose?.()} />
         </section>
       )}
     >
       <section className="px-3">
         <section className="mb-2 flex items-center gap-2">
           <IconButton className="App-toolbar__btn" title={UI_LABELS.undo} onClick={() => undoHistory()} showTooltip>
-            <ResetIcon className={`${iconSizeClass} rotate-180`} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
+            <DESIGN_ICONS.RotateCcw className={`${iconSizeClass} rotate-180`} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
           </IconButton>
           <IconButton className="App-toolbar__btn" title={UI_LABELS.redo} onClick={() => redoHistory()} showTooltip>
-            <ResetIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
+            <DESIGN_ICONS.RotateCcw className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
           </IconButton>
         </section>
       </section>
@@ -74,9 +67,7 @@ export default function HistoryPanel({ onClose }: { onClose?: () => void }) {
                   <section className={UI_THEME_TOKENS.text.primary}>{h.label}</section>
                   <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{formatTimestamp(h.timestamp)}</section>
                 </section>
-                <IconButton className="App-toolbar__btn" title={UI_LABELS.restore} onClick={() => restoreHistory(history.findIndex(x => x.id === h.id))} showTooltip>
-                  <RestoreIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                </IconButton>
+                <PanelControlButton control="restore" onAction={() => restoreHistory(history.findIndex(x => x.id === h.id))} />
               </section>
             ))}
           </section>

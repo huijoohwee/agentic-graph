@@ -91,7 +91,7 @@ export const UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME = 'absolute inset-0 po
 export const UI_RESPONSIVE_PASSIVE_BASE_LAYER_SURFACE_CLASSNAME =
   `${UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} z-0`
 
-export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock absolute z-[240] flex min-w-0 bg-transparent pointer-events-none'
+export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock agentic-toolbar-overlay-layer absolute flex min-w-0 bg-transparent pointer-events-none'
 
 export const UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME = 'kg-workspace-overlay-canvas-toolbar absolute z-[200] flex min-w-0 bg-transparent'
 
@@ -323,10 +323,6 @@ export const UI_RESPONSIVE_PREVIEW_GALLERY_DRAG_CARD_CLASSNAME = 'kg-preview-gal
 export const UI_RESPONSIVE_WIDE_DIALOG_PANEL_CLASSNAME = 'kg-responsive-wide-dialog-panel'
 
 export const UI_RESPONSIVE_WIDE_DIALOG_MESSAGE_CLASSNAME = 'kg-responsive-wide-dialog-message'
-
-export const UI_RESPONSIVE_MAIN_PANEL_OPEN_CARD_CLASSNAME = 'kg-main-panel-card kg-main-panel-card--open'
-
-export const UI_RESPONSIVE_MAIN_PANEL_COLLAPSED_CARD_CLASSNAME = 'kg-main-panel-card kg-main-panel-card--collapsed'
 
 export const UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME = 'kg-main-panel-mobile-sheet absolute pointer-events-auto'
 

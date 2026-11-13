@@ -18,7 +18,7 @@ export default function MainPanelContainer({
   ariaLabel: string
   minimized?: boolean
 }) {
-  const base = 'MainPanelContainer agentic-base-floating-panel flex-col'
+  const base = `MainPanelContainer agentic-base-floating-panel agentic-panel-main ${minimized ? 'agentic-panel-main--collapsed' : 'agentic-panel-main--open'} flex-col`
   return (
     <FloatingPanel
       as="aside"

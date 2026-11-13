@@ -29,9 +29,7 @@ import { setRunAllLayoutMutationLock } from '@/components/StoryboardWidgetCanvas
 import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'
 import { requestStartEdgeFromNodeId } from '@/features/edge-creation'
 import {
-  UI_RESPONSIVE_MAIN_PANEL_COLLAPSED_CARD_CLASSNAME,
   UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME,
-  UI_RESPONSIVE_MAIN_PANEL_OPEN_CARD_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
 import { ZoomModeSelect } from '@/components/toolbar/ZoomModeSelect';
@@ -83,7 +81,6 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     mainPanelRequestedWorkflowManagerEntryLabel,
     openMainPanel,
     setIsMainPanelOpen,
-    setMainPanelCollapsed,
     setMainPanelPinned,
     themeMode,
     toggleFitToScreenMode,
@@ -321,7 +318,6 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                     requestedWorkflowManagerEntryLabel={mainPanelRequestedWorkflowManagerEntryLabel}
                     collapsed={false}
                     pinned={true}
-                    onMinimize={undefined}
                     onRestore={undefined}
                     onPinToggle={undefined}
                   />
@@ -331,12 +327,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
           ) : (
             <section
               ref={mainPanelCardRef}
-              className={[
-                'pointer-events-auto',
-                effectiveMainPanelCollapsed
-                  ? UI_RESPONSIVE_MAIN_PANEL_COLLAPSED_CARD_CLASSNAME
-                  : UI_RESPONSIVE_MAIN_PANEL_OPEN_CARD_CLASSNAME,
-              ].join(' ')}
+              className="pointer-events-auto"
               style={{
                 position: 'absolute',
                 top: clampedMainPanelPos?.top ?? '50%',
@@ -356,7 +347,6 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                   requestedWorkflowManagerEntryLabel={mainPanelRequestedWorkflowManagerEntryLabel}
                   collapsed={effectiveMainPanelCollapsed}
                   pinned={effectiveMainPanelPinned}
-                  onMinimize={!effectiveMainPanelCollapsed ? () => setMainPanelCollapsed(true) : undefined}
                   onRestore={handleMainPanelRestore}
                   onPinToggle={() => setMainPanelPinned(v => !v)}
                 />
