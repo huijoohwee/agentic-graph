@@ -2,7 +2,7 @@
 
 ## Agentic GraphRAG/Knowledge Graph Pipeline Guidelines
 
-Canonical guidelines: `agentic-graph/docs/documents/agentic-graph-pipeline-document.md` and `huijoohwee.github.io/schema/AgenticRAG/README.md`.
+Canonical guidelines: `agentic-graph/docs/documents/agentic-graph-pipeline-document.md` and `huijoohwee.github.io/schema/agentic-rag/README.md`.
 
 Export HTML Canvas specifics: `agentic-graph/docs/documents/agentic-graph-html-canvas-export-document.md`.
 

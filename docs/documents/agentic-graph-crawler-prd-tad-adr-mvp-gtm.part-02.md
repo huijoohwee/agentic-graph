@@ -109,7 +109,7 @@ Metadata plus doc-view links gives crawlers freshness evidence and direct conten
 | Type safety | `npm --prefix canvas exec tsc -- -p canvas/tsconfig.json --noEmit --pretty false` | No TypeScript errors |
 | Static artifact | `npm run pages:build` | Built `llms.txt` includes Source Files and access policy |
 | MainPanel MCP readiness | Focused MainPanel MCP crawler/payment render test | MCP hub surfaces crawler routes, Pay Per Crawl boundary, Stripe MCP payment readiness, MainPanel Commerce handoff, and no app-local crawler price |
-| Docs map | `python3 ../huijoohwee.github.io/schema/AgenticRAG/sync_map.py --mode check` | Documentation map remains synchronized or is regenerated from canonical docs |
+| Docs map | `python3 ../huijoohwee.github.io/schema/agentic-rag/sync_map.py --mode check` | Documentation map remains synchronized or is regenerated from canonical docs |
 | Production smoke | Direct Cloudflare route probes after deploy | HTML route, storage crawler route, payment Worker route, and hashed static assets are reachable |
 
 ---

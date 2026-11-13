@@ -1,5 +1,5 @@
 {
-  "@context": "https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld",
+  "@context": "https://huijoohwee.github.io/schema/agentic-rag/v1/context.jsonld",
   "@graph": [
     {
       "@id": "kg:stage/import",

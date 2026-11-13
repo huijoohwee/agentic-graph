@@ -269,7 +269,7 @@ graph_metrics_config:
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
 | Parser Dependencies  | Use neutral NLP libraries       | - [ ] Import standard tokenizers; avoid domain-specific models; forbid proprietary extractors|
-| Schema Dependencies  | Align with AgenticRAG contracts | - [ ] Reference `/schema/AgenticRAG/*.jsonld`; forbid undocumented schema extensions       |
+| Schema Dependencies  | Align with AgenticRAG contracts | - [ ] Reference `/schema/agentic-rag/*.jsonld`; forbid undocumented schema extensions       |
 | Canvas Dependencies  | Leverage GraphData models       | - [ ] Use typed GraphData, GraphSchema; forbid ad-hoc semantic structures                  |
 
 **Integration Contracts**
@@ -308,7 +308,7 @@ agentic-graph/
 ├── data/config/schema/
 │   ├── agentic-graph-schema-config-template.jsonld
 │   └── agentic-graph-universal-schema-config.jsonld
-├── schema/AgenticRAG/
+├── schema/agentic-rag/
 │   ├── graph-schema.jsonld
 │   ├── node-schema.jsonld
 │   ├── edge-schema.jsonld
@@ -498,7 +498,7 @@ agentic-graph/
 | Undocumented Features| Enable understanding            | - [ ] Document all sentence features; forbid ad-hoc feature extraction without docs         |
 | Unbounded Similarity | Prevent non-comparable scores   | - [ ] Clamp similarities to [0,1]; forbid unbounded PPMI or confidence scores               |
 | Missing Provenance   | Enable traceability             | - [ ] Record blockId, charStart, charEnd on all mentions; forbid detached semantic nodes    |
-| Schema Misalignment  | Maintain AgenticRAG compliance  | - [ ] Align with `/schema/AgenticRAG`; forbid custom node/edge types without schema updates |
+| Schema Misalignment  | Maintain AgenticRAG compliance  | - [ ] Align with `/schema/agentic-rag`; forbid custom node/edge types without schema updates |
 | Canvas Code in Parser| Maintain layer boundaries       | - [ ] Keep extraction in parser; rendering in canvas; forbid UI logic in semantic_processor |
 
 ---
@@ -539,7 +539,7 @@ agentic-graph/
 
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Schema Versioning    | Track semantic contracts        | - [ ] Version `/schema/AgenticRAG` schemas; document breaking changes; forbid silent schema updates|
+| Schema Versioning    | Track semantic contracts        | - [ ] Version `/schema/agentic-rag` schemas; document breaking changes; forbid silent schema updates|
 | Parser Versioning    | Track extraction changes        | - [ ] Maintain CHANGELOG for semantic_processor; document algorithm updates; forbid undocumented changes|
 | Config Versioning    | Track threshold changes         | - [ ] Version schema-config templates; document preset updates; forbid breaking config changes without migration|
 
@@ -547,8 +547,8 @@ agentic-graph/
 
 ## Validation Checklist (Semantics)
 
-- [ ] All semantic nodes match `/schema/AgenticRAG` node-schema.jsonld definitions.
-- [ ] All semantic edges match `/schema/AgenticRAG` edge-schema.jsonld definitions.
+- [ ] All semantic nodes match `/schema/agentic-rag` node-schema.jsonld definitions.
+- [ ] All semantic edges match `/schema/agentic-rag` edge-schema.jsonld definitions.
 - [ ] No extraction algorithm depends on a specific dataset, project, or repository name.
 - [ ] All extraction thresholds are configured via `sem_defaults` or frontmatter, not hardcoded.
 - [ ] All mentions include provenance: `blockId`, `charStart`, `charEnd`, `tokenStart`, `tokenEnd`.

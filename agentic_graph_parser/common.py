@@ -5,10 +5,10 @@ import re
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-DEFAULT_AGENTIC_RAG_SCHEMA_URL = os.getenv("AG_AGENTIC_RAG_SCHEMA_URL", "https://huijoohwee.github.io/schema/AgenticRAG")
+DEFAULT_AGENTIC_RAG_SCHEMA_URL = os.getenv("AG_AGENTIC_RAG_SCHEMA_URL", "https://huijoohwee.github.io/schema/agentic-rag")
 DEFAULT_AGENTIC_RAG_CONTEXT_URL = os.getenv(
     "AG_AGENTIC_RAG_CONTEXT_URL",
-    "https://huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld",
+    "https://huijoohwee.github.io/schema/agentic-rag/v1/context.jsonld",
 )
 DEFAULT_TERM_IRI_BASE = os.getenv("AG_TERM_IRI_BASE", "https://huijoohwee.github.io/agentic-graph#")
 
