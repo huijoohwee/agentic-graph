@@ -53,21 +53,6 @@
   padding-block-start: 0;
 }
 
-.kg-canvas-bottom-panel {
-  --base-control-height: var(--kg-toolbar-compact-surface-height);
-  width: min(calc(100% - 1.5rem - var(--kg-safe-left) - var(--kg-safe-right)), 72rem);
-}
-
-/* Minimized panel chrome uses the same dimensions as the native compact toolbar. */
-[data-kg-panel-minimized="true"] {
-  min-block-size: var(--kg-toolbar-compact-surface-height);
-}
-
-.MainPanelContainer .kg-main-panel-header[data-kg-panel-header-minimized="true"] {
-  padding: var(--kg-toolbar-compact-padding);
-  border-bottom: 0;
-}
-
 .kg-main-panel-header[data-kg-panel-header-minimized="true"] > .kg-panel-tabs-nav {
   flex: 1 1 auto;
   width: auto;
@@ -101,6 +86,8 @@
 @media (pointer: coarse), (max-width: 768px) {
   /* Mobile floating panels use safe-area edge insets instead of centering. */
   .kg-canvas-bottom-panel--pinned {
+    inset-inline-start: auto;
+    inset-inline-end: calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap));
     transform: none;
   }
 

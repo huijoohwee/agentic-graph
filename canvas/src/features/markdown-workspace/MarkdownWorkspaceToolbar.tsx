@@ -3,7 +3,6 @@ import {
   FileDiff,
   LayoutPanelTop,
   Maximize2,
-  X,
 } from 'lucide-react'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -11,7 +10,7 @@ import { WorkspaceHeaderRow } from '@/components/ui/WorkspaceHeader'
 import { CollapsibleToolbar } from '@/components/ui/CollapsibleToolbar'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
-import { ToggleButtonGroup, ToggleButton } from '@agentic-base/views-react/controls'
+import { ToggleButtonGroup, ToggleButton, PanelControlButton } from '@agentic-base/views-react/controls'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
@@ -376,11 +375,7 @@ export function MarkdownWorkspaceToolbar({
             </button>
           </li>
           <li className="list-none">
-            <button
-              type="button"
-              className={TOOLBAR_BUTTON_CLASSNAME}
-              title={UI_LABELS.close}
-              onClick={() => {
+            <PanelControlButton control="close" onAction={() => {
                 closeWorkspaceView({
                   workspaceViewMode: workspaceViewMode === 'editor' ? 'editor' : 'canvas',
                   workspaceCanvasPaneOpen: canvasOpen,
@@ -388,10 +383,7 @@ export function MarkdownWorkspaceToolbar({
                   setWorkspaceViewState,
                   setWorkspaceCanvasPaneOpen: setCanvasOpen,
                 })
-              }}
-            >
-              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
-            </button>
+              }} />
           </li>
         </menu>
         </CollapsibleToolbar>

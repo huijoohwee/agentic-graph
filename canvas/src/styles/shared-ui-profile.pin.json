@@ -3,12 +3,12 @@
   "profile": {
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
-    "sourceRevision": "267cdb31047b02d4f54ea6708fb2518a8a2a57f4",
-    "registryRevision": "f9e058d7b3be3acc411634ad84695d6d642f1cd2",
+    "sourceRevision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
+    "registryRevision": "85ad931bf4cb9808765ed0a20fde56976a0aa7ae",
     "sourcePath": "site/tokens/shared-ui-profile.json",
-    "sourceSha256": "sha256:6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5",
+    "sourceSha256": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
     "projectionPath": "site/vendor/shared-ui-profile.css",
-    "projectionSha256": "sha256:e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0"
+    "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
   },
   "metrics": {
     "rowHeight": 38,
@@ -19,6 +19,12 @@
     "controlHeight": 28,
     "controlHeightTouch": 48,
     "dashboardCardGap": 12,
-    "floatingPanelRadius": 8
+    "floatingPanelRadius": 8,
+    "panelBottomHeight": 280,
+    "panelGap": 12,
+    "panelMainWidth": 80,
+    "panelMainWidthMobile": 96,
+    "panelMainHeight": 80,
+    "panelMainHeightMobile": 85
   }
 }

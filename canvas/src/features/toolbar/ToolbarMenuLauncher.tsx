@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Rocket } from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
 import IconButton from '@/components/IconButton'
 import { useToolMenuShortcuts } from '@/features/toolbar/useToolMenuShortcuts'
 import { useToolMenuState } from '@/features/toolbar/useToolMenuState'
@@ -189,7 +189,7 @@ export function ToolbarMenuLauncher({
       <MotionControlXrLifecycleGuard />
       <IconButton
         ref={toolMenuButtonRef}
-        icon={Rocket}
+        icon={DESIGN_ICONS.Rocket}
         aria-expanded={launchOpen}
         title="Launch"
         tooltipContent="Launch"

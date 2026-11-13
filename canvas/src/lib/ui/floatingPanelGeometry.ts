@@ -1,10 +1,8 @@
 import sharedUiPin from '@/styles/shared-ui-profile.pin.json'
 
 export const FLOATING_PANEL_CANVAS_INSET_PX = 8
-export const FLOATING_PANEL_CANVAS_TOP_INSET_CSS = 'calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap))'
 export const FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap))'
 export const FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS = 'calc(var(--kg-safe-left) + var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap) + var(--kg-canvas-viewport-edge-gap))'
-export const FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS = 'calc(100% - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-canvas-viewport-edge-gap) - var(--kg-canvas-viewport-edge-gap))'
 export const FLOATING_PANEL_DEFAULT_WIDTH_RATIO = 0.3
 export const FLOATING_PANEL_DEFAULT_WIDTH_PX = sharedUiPin.metrics.ktvPanelWidth
 export const FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS = '21.6rem'
@@ -15,7 +13,7 @@ export function resolveFloatingPanelWidthCss(widthRatio: number): string {
   const finiteRatio = Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO
   const safeRatio = Math.max(0.15, Math.min(0.6, finiteRatio))
   const width = safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO
-    ? 'var(--agentic-ktv-panel-width)'
+    ? 'var(--agentic-panel-width)'
     : `max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)`
   return `min(calc(100vw - ${FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS}), ${width})`
 }

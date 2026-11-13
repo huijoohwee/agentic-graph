@@ -1,6 +1,5 @@
 import React from 'react';
 import { getIconButtonProps } from '@agentic-base/views-react/toolbar-icons';
-import type { LucideIcon } from 'lucide-react';
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass';
 import { cn } from '@/lib/utils';
 import Tooltip from '@/features/panels/ui/Tooltip';
@@ -16,6 +15,8 @@ type BaseButtonProps = Omit<
   'title' | 'aria-label' | 'children' | 'type' | 'style'
 >;
 
+type ToolbarGlyph = React.ElementType<React.SVGProps<SVGSVGElement>>;
+
 type IconButtonProps = BaseButtonProps & {
   title: string;
   showTooltip?: boolean;
@@ -23,11 +24,11 @@ type IconButtonProps = BaseButtonProps & {
   ariaLabel?: string;
   suppressTitleAttribute?: boolean;
 } & (
-  | { icon: LucideIcon; children?: never; className?: never; style?: Pick<React.CSSProperties, 'opacity'> }
+  | { icon: ToolbarGlyph; children?: never; className?: never; style?: Pick<React.CSSProperties, 'opacity'> }
   | { icon?: never; children: React.ReactNode; style?: React.CSSProperties }
 );
 
-function ButtonGlyph({ icon: Glyph }: { icon: LucideIcon }) {
+function ButtonGlyph({ icon: Glyph }: { icon: ToolbarGlyph }) {
   const className = useToolbarIconClass();
   return <Glyph className={className} aria-hidden="true" />;
 }

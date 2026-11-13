@@ -65,13 +65,13 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     }
 
     const readTabs = () => Array.from(container.querySelectorAll('nav[aria-label="Floating panel views"] button')) as HTMLButtonElement[]
-    const assertTabs = () => {
+    const assertTabs = (expectedLabels = labels) => {
       const tabs = readTabs()
-      if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(labels)
-        || tabs.some(button => button.disabled || button.getAttribute('aria-pressed') == null)
-        || tabs.filter(button => button.getAttribute('aria-pressed') === 'true').length !== 1
-        || !tabs.every(button => button.querySelector('svg[role="img"][aria-label]'))) {
-        throw new Error('expected one stable, selectable tab strip with named icons across sources and shell states')
+      if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(expectedLabels)
+        || tabs.some(button => button.disabled || button.getAttribute('aria-selected') == null)
+        || tabs.filter(button => button.getAttribute('aria-selected') === 'true').length !== 1
+        || !tabs.every(button => button.querySelector('svg'))) {
+        throw new Error(`expected one stable, selectable tab strip with named icons across sources and shell states; expected=${JSON.stringify(expectedLabels)} actual=${JSON.stringify(tabs.map(button => ({ label: button.getAttribute('aria-label'), selected: button.getAttribute('aria-selected'), disabled: button.disabled, icon: Boolean(button.querySelector('svg')) })))}`)
       }
     }
     assertTabs()
@@ -88,17 +88,23 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     }
     await act(async () => {
       useGraphStore.setState({ graphData: previousGraph, canvasRenderMode: previousRender, canvas2dRenderer: 'design', canvas3dMode: previous3d })
-      container.querySelector<HTMLButtonElement>('button[aria-label="Minimize floating panel"]')?.click()
+      container.querySelector<HTMLButtonElement>('button[aria-label="Minimize"]')?.click()
+      await waitForNextTask()
+    })
+    assertTabs([UI_LABELS.propsPanel])
+    const restoreButton = container.querySelector<HTMLButtonElement>('button[aria-label="Restore"]')
+    if (!restoreButton) throw new Error('expected minimized shell restore control')
+    await act(async () => {
+      restoreButton.click()
       await waitForNextTask()
     })
     assertTabs()
-    if (!container.querySelector('button[aria-label="Restore floating panel"]')) throw new Error('expected minimized shell restore control')
     await act(async () => {
       readTabs().find(button => button.getAttribute('aria-label') === 'Sequence Diagram')?.click()
       await waitForNextTask()
     })
     assertTabs()
-    if (!container.querySelector('button[aria-label="Minimize floating panel"]') || readTabs()[0]?.getAttribute('aria-pressed') !== 'true') throw new Error('expected selecting a different tab to restore the shared body')
+    if (!container.querySelector('button[aria-label="Minimize"]') || readTabs()[0]?.getAttribute('aria-selected') !== 'true') throw new Error('expected selecting a different tab to restore the shared body')
 
     let designLayers: HTMLElement | null = null
     for (let i = 0; i < 30; i++) {
@@ -121,9 +127,9 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     const assertMainTabs = () => {
       const tabs = readMainTabs()
       if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(mainLabels)
-        || tabs.some(button => button.disabled || !button.querySelector('svg[role="img"][aria-label]'))
+        || tabs.some(button => button.disabled || !button.querySelector('svg[aria-hidden="true"]') || button.className !== 'agentic-floating-panel-tab')
         || tabs.filter(button => button.getAttribute('aria-selected') === 'true').length !== 1
-        || !tabs.every(button => button.style.minHeight === 'var(--kg-control-height, 28px)')) throw new Error('expected MainPanel to reuse named, selectable shared controls')
+        || !tabs.every(button => button.getAttribute('role') === 'tab' && button.getAttribute('aria-label') && !button.hasAttribute('style'))) throw new Error('expected MainPanel to reuse named, selectable shared controls')
     }
     assertMainTabs()
     await act(async () => { readMainTabs()[0]?.click(); await waitForNextTask() })

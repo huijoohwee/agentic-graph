@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { Pin } from 'lucide-react';
 import IconButton from '@/components/IconButton';
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
 import { getIconSizeClass } from '@/lib/ui';
 import { UI_COPY, UI_LABELS } from '@/lib/config';
 import { useToolbarState } from '@/features/toolbar/hooks/useToolbarState';
@@ -31,7 +31,7 @@ export const PinToViewButton = () => {
       onClick={handleTogglePinned}
       showTooltip
     >
-      <Pin className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+      <DESIGN_ICONS.Pin className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
     </IconButton>
   );
 };

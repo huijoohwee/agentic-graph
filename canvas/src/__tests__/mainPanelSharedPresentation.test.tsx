@@ -35,10 +35,21 @@ export async function testMainPanelPendingLoadCanCloseWithoutLateReopen() {
   let activations = 0
   function PendingPanel() {
     const [open, setOpen] = React.useState(true)
+    const [collapsed, setCollapsed] = React.useState(false)
+    const [pinned, setPinned] = React.useState(false)
     return <>
       <button onClick={() => activations++}>Workspace action</button>
       {open && <MainPanelLayer data-kg-main-panel-shell="true" className="fixed inset-0 pointer-events-none">
-        <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setOpen(false)} />}>
+        <React.Suspense fallback={(
+          <MainPanelLoadingFallback
+            onClose={() => setOpen(false)}
+            collapsed={collapsed}
+            pinned={pinned}
+            onMinimize={() => setCollapsed(true)}
+            onRestore={() => setCollapsed(false)}
+            onPinToggle={() => setPinned(value => !value)}
+          />
+        )}>
           <LazyPanel />
         </React.Suspense>
       </MainPanelLayer>}
@@ -60,8 +71,18 @@ export async function testMainPanelPendingLoadCanCloseWithoutLateReopen() {
     }
     assert.equal(layer.querySelector('[role="status"]')?.textContent, 'Loading panel…')
     assert(layer.querySelector('aside[aria-label="Main panel loading"]'), 'loading uses the shared panel frame')
+    const panelControl = (role: string) => layer.querySelector<HTMLButtonElement>(`[data-agentic-panel-control="${role}"]`)
+    assert.equal(panelControl('pin')?.getAttribute('aria-label'), 'Pin', 'the loading panel uses the shared Pin control')
+    assert.equal(panelControl('minimize')?.getAttribute('aria-label'), 'Minimize panel', 'the loading panel uses the shared Minimize control')
     const close = layer.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!
     assert(close && !close.disabled, 'a pending panel has a native Close control')
+    await act(async () => panelControl('pin')!.click())
+    assert.equal(panelControl('pin')?.getAttribute('aria-pressed'), 'true', 'Pin works while panel content is pending')
+    await act(async () => panelControl('minimize')!.click())
+    assert.equal(layer.querySelector('aside')?.getAttribute('data-kg-panel-minimized'), 'true', 'Minimize keeps the pending panel shell available')
+    assert.equal(panelControl('restore')?.getAttribute('aria-label'), 'Restore panel', 'the minimized shell uses the shared Restore control')
+    await act(async () => panelControl('restore')!.click())
+    assert.equal(panelControl('minimize')?.getAttribute('aria-label'), 'Minimize panel', 'Restore returns to the expanded controls')
     await act(async () => close.focus())
     assert.ok(Object.is(document.activeElement, close), 'Close remains reachable by keyboard focus')
     await act(async () => close.click())

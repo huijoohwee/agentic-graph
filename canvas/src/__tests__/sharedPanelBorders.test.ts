@@ -74,11 +74,16 @@ export function testSharedPanelBordersForbidLegacyVariants() {
   const panelChrome = read('index.css')
   const responsivePanelChrome = read('styles/responsive-canvas-toolbar.css')
   assert.match(mainPanel, /agentic-base-floating-panel/)
+  assert.match(mainPanel, /agentic-panel-main/)
   assert.match(bottomPanel, /agentic-base-floating-panel/)
+  assert.match(bottomPanel, /agentic-panel-bottom/)
   assert.doesNotMatch(mainPanel, /UI_THEME_TOKENS\.(?:border\.outline|shadow\.overlay)|backgroundColor|borderRadius|boxShadow/)
   assert.doesNotMatch(bottomPanel, /ModalContainer|UI_THEME_TOKENS\.panel\.bg|UI_THEME_TOKENS\.text\.primary/)
   assert.doesNotMatch(panelChrome, /\.MainPanelContainer\s*\{[^}]*\b(?:background-color|border|border-radius|box-shadow)\s*:/s)
   assert.doesNotMatch(responsivePanelChrome, /border-radius:\s*var\(--island-radius\)/)
+  assert.doesNotMatch(responsive, /\.kg-main-panel-card\s*\{|\.MainPanelContainer\s*\{/)
+  assert.doesNotMatch(responsivePanelChrome, /\.kg-canvas-bottom-panel\s*\{[^}]*\b(?:width|height|border|box-shadow)\s*:/s)
+  assert.doesNotMatch(responsivePanelChrome, /--base-control-height\s*:/)
 }
 
 export function testResizeSeparatorKeyboardUsesBoundedDragOwner() {

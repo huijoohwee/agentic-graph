@@ -310,8 +310,8 @@ export default function MainPanel({
       tabIdBase="main-panel"
       rightSlot={
         <HeaderActions
-          onRestore={collapsed ? onRestore : undefined}
           onMinimize={!collapsed ? onMinimize : undefined}
+          onRestore={collapsed ? onRestore : undefined}
           onPinToggle={onPinToggle}
           pinned={pinned}
           onSearchToggle={

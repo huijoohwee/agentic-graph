@@ -1,5 +1,4 @@
 import React from 'react'
-import { readFloatingPanelThemeStyle } from '../../lib/ui/floatingPanelTheme'
 import {
   FloatingPanelShell as BaseFloatingPanelShell,
   type FloatingPanelShellProps as BaseFloatingPanelShellProps,
@@ -50,8 +49,7 @@ export const FloatingPanel = React.memo(
 
 export type FloatingPanelShellProps = BaseFloatingPanelShellProps
 
-/** Graph supplies placement and theme tokens; Base renders the Design System’s pinned FloatingPanel shell. */
+/** Graph supplies placement and state; Base renders the Design System’s pinned FloatingPanel shell. */
 export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell(props, ref) {
-  const rootStyle = readFloatingPanelThemeStyle(props.rootStyle, props.minimized)
-  return <BaseFloatingPanelShell {...props} ref={ref} rootStyle={rootStyle} />
+  return <BaseFloatingPanelShell {...props} ref={ref} />
 })

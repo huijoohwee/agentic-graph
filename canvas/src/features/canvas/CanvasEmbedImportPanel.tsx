@@ -25,7 +25,6 @@ export function CanvasEmbedImportPanel(props: { onClose: () => void }) {
       title="Import canvas embed"
       sourceName="Paste iframe HTML or a agentic-graph postMessage v1 payload."
       badge="iframe + postMessage"
-      closeAriaLabel="Close canvas embed import panel"
       widthClassName="w-[min(42rem,100%)]"
       onClose={props.onClose}
     >
