@@ -298,6 +298,7 @@ export function ToolbarToolMenu({
     <FloatingPanelShell
       ref={toolMenuCardRef}
       rootPlacement="viewport-overlay"
+      avoidBottomPanel
       rootStyle={{ zIndex: panelStack.zIndex }}
       panelLayer="floating"
       onPointerDownCapture={panelStack.onPointerDownCapture}
@@ -312,6 +313,7 @@ export function ToolbarToolMenu({
             <FloatingPanelViewTabs
               view={floatingPanelView}
               onSelect={handleSelectView}
+              minimized={floatingPanelMinimized}
             >
               <FloatingPanelHeaderStatus
                 pipelineStatus={pipelineStatus}

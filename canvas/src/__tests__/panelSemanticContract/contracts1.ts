@@ -3,13 +3,13 @@ import { fs, path, readUtf8 } from './sourceFixture'
 
 export const testPanelHeaderUsesAriaTablist = () => {
   const root = process.cwd()
-  const tabHeaderPath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'TabHeader.tsx')
-  const text = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
-  if (!text.includes('role="tablist"') && !text.includes("role='tablist'")) {
-    throw new Error('Expected TabHeader to render a tablist role')
+  const adapter = readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
+  const baseTabs = readUtf8(path.resolve(root, '..', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelTabs.tsx'))
+  if (!adapter.includes('FloatingPanelTabs') || !baseTabs.includes('role="tablist"')) {
+    throw new Error('Expected MainPanel to use the Design System owned tablist')
   }
-  if (!text.includes('role="tab"') && !text.includes("role='tab'")) {
-    throw new Error('Expected TabHeader to render tab roles')
+  if (!adapter.includes('FloatingPanelTab') || !baseTabs.includes('role="tab"')) {
+    throw new Error('Expected MainPanel tabs to use the Design System owned tab roles')
   }
 }
 
@@ -37,23 +37,31 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveElementClassesPath = path.resolve(root, 'src', 'lib', 'ui', 'responsiveElementClasses.ts')
   const toolbarStylesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ui', 'toolbarStyles.ts')
 
-  const tabHeader = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
+  const panelTabsAdapterPath = path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx')
+  const tabHeader = readUtf8(tabHeaderPath) + readUtf8(panelTabsAdapterPath)
   if (!tabHeader.includes('uiToolbarRowScrollClassName') || !tabHeader.includes('uiToolbarRowScrollJustifyEndClassName')) {
     throw new Error('Expected TabHeader shell to use the toolbar row-scroll SSOT')
   }
   if (!tabHeader.includes('basis-full w-full sm:basis-auto sm:w-72')) {
     throw new Error('Expected TabHeader search shell to expand full-width on narrow widths')
   }
-  if (!tabHeader.includes('kg-panel-tabs-nav') || !tabHeader.includes('basis-full w-full')) {
-    throw new Error('Expected TabHeader tab nav to preserve its bounded mobile lane before panel tools')
+  const basePanelRoot = path.resolve(root, '..', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels')
+  const basePanelTabs = readUtf8(path.resolve(basePanelRoot, 'FloatingPanelTabs.tsx'))
+  const basePanelStyles = readUtf8(path.resolve(basePanelRoot, 'floatingPanelShell.css'))
+  if (!tabHeader.includes('FloatingPanelTabs') || tabHeader.includes('kg-panel-tabs-nav')) {
+    throw new Error('Expected MainPanel to use one Design System tab rail without a duplicate Graph wrapper')
   }
-  if (!tabHeader.includes('kg-panel-tablist') || !tabHeader.includes('uiToolbarRowScrollClassName')) {
-    throw new Error('Expected TabHeader tabs to scroll from the shared toolbar row helper')
+  if (!basePanelTabs.includes('agentic-floating-panel-tabs')
+    || !basePanelStyles.includes('.agentic-floating-panel-tabs {')
+    || !basePanelStyles.includes('overflow-x: auto')) {
+    throw new Error('Expected the Design System tab rail to own horizontal tab scrolling')
   }
 
   const headerActions = readUtf8(headerActionsPath)
-  if (!headerActions.includes('uiToolbarRowScrollJustifyEndClassName')) {
-    throw new Error('Expected HeaderActions to scroll from the shared toolbar row helper')
+  if (!headerActions.includes('PanelControlGroup')
+    || headerActions.includes('uiToolbarRowScroll')
+    || headerActions.includes('className=')) {
+    throw new Error('Expected HeaderActions to delegate panel control visuals and layout to the shared Design System')
   }
 
   const floatingPanelController = readUtf8(floatingPanelPath)
@@ -66,7 +74,7 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveCss = readUtf8(responsiveCssPath)
   const responsiveElementClasses = readUtf8(responsiveElementClassesPath)
   const iconHelpers = readUtf8(iconHelpersPath)
-  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || panelPin.revision !== 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9' || panelPin.path !== 'site/floating-panel.css' || panelPin.sha256 !== 'cdc28cad89e9e3b0a474e638f40d981d295e4058f2df878a72643776581a2427' || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
+  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || panelPin.owner !== 'github.com/huijoohwee/agentic-design-system' || !/^[a-f0-9]{40}$/.test(panelPin.revision) || panelPin.path !== 'site/floating-panel.css' || !/^[a-f0-9]{64}$/.test(panelPin.sha256) || createHash('sha256').update(baseFloatingPanelStyles).digest('hex') !== panelPin.sha256) {
     throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the Design System shell through Base')
   }
   if (

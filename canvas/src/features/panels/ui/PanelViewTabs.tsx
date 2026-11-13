@@ -1,30 +1,78 @@
 import React from 'react'
-import IconButton from '@/components/IconButton'
-import { uiPrimaryPillActiveClassName, uiPrimaryIconInactiveClassName, uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { FloatingPanelTab, FloatingPanelTabs } from '@agentic-base/views-react/panels'
 
-// Shell mechanics have no document, renderer, capability, or content dependency.
-export function PanelViewTabs({ activeKey, children, className = '', ...props }: React.HTMLAttributes<HTMLElement> & {
-  activeKey: string
-}) {
-  const navRef = React.useRef<HTMLElement>(null)
-  const { fontClass } = usePanelTypography()
-  React.useEffect(() => {
-    const nav = navRef.current
-    const selected = nav?.querySelector<HTMLElement>('button[aria-selected="true"], button[aria-pressed="true"]')
-    if (!nav || !selected) return
-    const rail = nav.getBoundingClientRect()
-    const tab = selected.getBoundingClientRect()
-    if (tab.left < rail.left) nav.scrollLeft -= rail.left - tab.left
-    else if (tab.right > rail.right) nav.scrollLeft += tab.right - rail.right
-  }, [activeKey])
-  return <nav {...props} ref={navRef} className={`${uiToolbarRowScrollClassName} min-w-0 flex-1 flex-nowrap gap-1 [&>span]:shrink-0 overflow-x-auto overflow-y-hidden overscroll-x-contain ${fontClass} ${className}`} data-kg-panel-view-tabs="true">{children}</nav>
+type PanelViewTabProps = {
+  tabKey?: string
+  title: string
+  children: React.ReactNode
+  iconOnly?: boolean
+  onClick?: () => void
+  id?: string
+  'aria-controls'?: string
+  'aria-selected'?: boolean
+  'aria-pressed'?: boolean
+  [attribute: `data-${string}`]: string | undefined
 }
 
-export function PanelViewTab({ title, children, ...props }: Omit<React.ComponentProps<typeof IconButton>, 'className' | 'style' | 'showTooltip' | 'icon'>) {
-  const selected = props['aria-selected'] === true || props['aria-pressed'] === true
-  const icon = React.isValidElement<React.SVGProps<SVGSVGElement>>(children)
-    ? React.cloneElement(children, { role: 'img', 'aria-label': title, 'aria-hidden': undefined })
-    : children
-  return <IconButton {...props} title={title} showTooltip className={`App-toolbar__btn shrink-0 ${selected ? uiPrimaryPillActiveClassName : uiPrimaryIconInactiveClassName}`} style={{ minWidth: 'var(--kg-control-height, 28px)', minHeight: 'var(--kg-control-height, 28px)' }}>{icon}</IconButton>
+/** Descriptor retained for Graph call sites; the Design System renders the tab. */
+export function PanelViewTab(_props: PanelViewTabProps) {
+  return null
+}
+
+type PanelViewTabsProps = {
+  activeKey: string
+  label?: string
+  minimized?: boolean
+  children: React.ReactNode
+}
+
+function readIcon(child: React.ReactNode): React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined {
+  if (!React.isValidElement(child)) return undefined
+  return child.type as React.ComponentType<React.SVGProps<SVGSVGElement>>
+}
+
+/** Graph supplies tab meaning and callbacks; shared markup, state, and keyboard behavior come from Base. */
+export function PanelViewTabs({ activeKey, label = 'Panel views', minimized = false, children }: PanelViewTabsProps) {
+  const items = React.Children.toArray(children)
+  const tabItems = items.filter((item): item is React.ReactElement<PanelViewTabProps> =>
+    React.isValidElement<PanelViewTabProps>(item) && item.type === PanelViewTab,
+  )
+  const labels = items.filter(item => !React.isValidElement(item) || item.type !== PanelViewTab)
+  if (minimized) return <>{labels}</>
+
+  const selectedItem = tabItems.find(item =>
+    item.props['aria-selected'] === true || item.props['aria-pressed'] === true,
+  )
+  const selectedKey = selectedItem?.props.tabKey ?? activeKey
+  const keyFor = (item: React.ReactElement<PanelViewTabProps>, index: number) =>
+    item.props.tabKey ?? item.props.id ?? `${item.props.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index}`
+  const handleSelect = (key: string) => {
+    const selected = tabItems.find((item, index) => keyFor(item, index) === key)
+    selected?.props.onClick?.()
+  }
+
+  return (
+    <>
+      {labels}
+      <FloatingPanelTabs label={label} activeKey={selectedKey} onSelect={handleSelect}>
+        {tabItems.map((item, index) => {
+          const { title, id, onClick: _onClick, children: iconElement, tabKey: _tabKey, iconOnly,
+            'aria-controls': ariaControls, 'aria-selected': _ariaSelected, 'aria-pressed': _ariaPressed,
+            ...dataAttributes } = item.props
+          return (
+            <FloatingPanelTab
+              key={item.key ?? keyFor(item, index)}
+              tabKey={keyFor(item, index)}
+              label={title}
+              iconOnly={iconOnly ?? true}
+              id={id}
+              ariaControls={ariaControls}
+              icon={readIcon(iconElement)}
+              dataAttributes={dataAttributes}
+            />
+          )
+        })}
+      </FloatingPanelTabs>
+    </>
+  )
 }

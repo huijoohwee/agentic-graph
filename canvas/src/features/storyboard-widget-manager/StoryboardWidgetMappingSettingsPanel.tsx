@@ -1,4 +1,5 @@
-import { Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
+import { Plus, RotateCcw, Save, Trash2 } from 'lucide-react'
+import { PanelControlButton } from '@agentic-base/views-react/controls'
 
 import { UI_LABELS } from '@/lib/config'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -173,15 +174,7 @@ export function StoryboardWidgetMappingSettingsPanel(props: {
           aria-label="Editor footer"
         >
           <section className={UI_RESPONSIVE_FLOW_MANAGER_ACTION_GROUP_CLASSNAME} aria-label="Left actions">
-            <button
-              type="button"
-              className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-              onClick={onClose}
-              aria-label={UI_LABELS.close}
-              title={UI_LABELS.close}
-            >
-              <X className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-            </button>
+            <PanelControlButton control="close" onAction={onClose} />
             {mode === 'edit' ? (
               <button
                 type="button"

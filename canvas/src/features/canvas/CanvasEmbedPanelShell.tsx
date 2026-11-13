@@ -1,5 +1,5 @@
 import React from 'react'
-import { X } from 'lucide-react'
+import { PanelControlButton } from '@agentic-base/views-react/controls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 type CanvasEmbedPanelShellProps = {
@@ -10,7 +10,6 @@ type CanvasEmbedPanelShellProps = {
   headerActions?: React.ReactNode
   children: React.ReactNode
   onClose: () => void
-  closeAriaLabel: string
   widthClassName?: string
 }
 
@@ -40,14 +39,7 @@ export function CanvasEmbedPanelShell(props: CanvasEmbedPanelShellProps) {
           </section>
           {props.badge ? <span className={`font-mono text-xs ${UI_THEME_TOKENS.text.secondary}`}>{props.badge}</span> : null}
           {props.headerActions}
-          <button
-            type="button"
-            aria-label={props.closeAriaLabel}
-            className={`rounded-md p-1.5 transition-colors ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.secondary}`}
-            onClick={props.onClose}
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
+          <PanelControlButton control="close" onAction={props.onClose} />
         </header>
         {props.children}
       </article>

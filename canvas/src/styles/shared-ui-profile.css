@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@60fc0c71de7a1fffa5f00957c78cdd9a28c5656c; profile sha256 13974bff2d509be4af80e607c91bbe3a31a76ad292f4813d0ac75b7e98045be8. Do not edit. */
+/* Generated from agentic-design-system@3a1bce56673bdc3256cef861717bf64f846e15eb; profile sha256 81ea83f837f417d2e7492821f1c7e466a34cbcc24c50d32304365a2c9219ce7d. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -40,6 +40,7 @@
   --agentic-menu-padding: 0.25rem;
   --agentic-menu-gap: 0.25rem;
   --agentic-control-selected-foreground: light-dark(oklch(48.8% 0.243 264.376), oklch(70.7% 0.165 254.624));
+  --agentic-control-hover-background: light-dark(#fffbeb, rgb(251 191 36 / 0.16));
   --agentic-control-selected-background: light-dark(oklch(97% 0.014 254.604), oklch(37.9% 0.146 265.522 / 0.3));
   --agentic-dashboard-card-gap: 12px;
   --agentic-dashboard-section-gap: 1rem;
@@ -68,7 +69,7 @@
   margin: 0; padding: 0 var(--agentic-control-padding-inline); border: 0; border-radius: 0;
   background: transparent; color: inherit; font: inherit; white-space: nowrap; cursor: pointer;
 }
-.agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, currentColor 6%, transparent))); }
+.agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-control-hover-background); }
 :is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: var(--agentic-control-selected-foreground); background-color: var(--agentic-control-selected-background); }
 .agentic-toggle-group > button:focus-visible { outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: calc(-1 * var(--agentic-control-focus-width)); }
 .agentic-toggle-group > button:disabled { opacity: .5; cursor: not-allowed; }
@@ -109,7 +110,7 @@
 .agentic-icon { display: block; flex: 0 0 auto; inline-size: var(--agentic-icon-size-default); block-size: var(--agentic-icon-size-default); stroke-width: var(--agentic-icon-stroke-width); }
 .agentic-icon-compact { inline-size: var(--agentic-icon-size-compact); block-size: var(--agentic-icon-size-compact); }
 .agentic-icon-color { color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText)); }
-.agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, Canvas)); }
+.agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-control-hover-background); }
 .agentic-icon-padding { padding: var(--agentic-control-padding-block); }
 .agentic-icon-pill, .agentic-icon-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; min-block-size: var(--agentic-control-height); padding: 0 var(--agentic-control-padding-inline); border: var(--agentic-control-border); border-radius: var(--agentic-control-radius); white-space: nowrap; }
 .agentic-icon-text, .agentic-icon-pill, .agentic-icon-badge { font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
@@ -149,7 +150,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   inline-size: 100%; text-align: start; cursor: pointer;
   border: 1px solid transparent; color: inherit; background: transparent;
 }
-.agentic-menu-option:is(:hover, :focus-visible) { background: var(--agentic-base-hover, var(--kg-panel-action-bg-hover, color-mix(in srgb, Highlight 8%, Canvas))); }
+.agentic-menu-option:is(:hover, :focus-visible) { background: var(--agentic-control-hover-background); }
 .agentic-menu-option:is([aria-checked="true"], [aria-selected="true"], [data-selected="true"], .agentic-menu-selected) {
   color: var(--kg-accent, LinkText); background: var(--agentic-base-selected, var(--kg-accent-soft-bg, color-mix(in srgb, Highlight 12%, Canvas)));
   border-color: var(--agentic-base-focus, var(--kg-accent, Highlight));

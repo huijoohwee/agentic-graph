@@ -40,9 +40,6 @@ export const UI_COPY = {
   selectionClearedOnModeSwitchToast: SELECTION_CLEARED_MODE_TOAST,
   openSettingsUiDensityIconsButton: 'Open Settings: UI Density icons',
   openSettingsUiDensityIconsButtonCompact: 'Open Settings · UI Density: Icons',
-  floatingPanelMinimize: 'Minimize floating panel',
-  floatingPanelRestore: 'Restore floating panel',
-  floatingPanelClose: 'Close floating panel',
   floatingPanelPin: 'Pin floating panel',
   floatingPanelUnpin: 'Unpin floating panel',
 

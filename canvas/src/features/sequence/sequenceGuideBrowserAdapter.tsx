@@ -78,7 +78,7 @@ function snapshot(input: SequenceGuideBrowserState): SequenceGuideBrowserState {
 }
 
 /** A plain-data, store-free boundary; the consumer owns effects, persistence and return focus. */
-export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBrowserState): SequenceGuideBrowserHandle {
+function mountSequenceGuideView(target: HTMLElement, initial: SequenceGuideBrowserState, embedded: boolean): SequenceGuideBrowserHandle {
   let state = snapshot(initial)
   const ElementClass = target?.ownerDocument?.defaultView?.HTMLElement
   if (!ElementClass || !(target instanceof ElementClass)) throw new TypeError('Sequence guide target must be an HTML element.')
@@ -99,18 +99,19 @@ export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBr
   }
   const render = () => {
     const selected = state.items.find(item => item.id === state.selectedId)!
-    flushSync(() => root.render(<FloatingPanelShell ariaLabel={state.title} rootPlacement="viewport-overlay"
+    const content = <section className="mt-1 flex-1 min-h-0 overflow-hidden" aria-label="Guide steps">
+      <SequenceInspectorView title={state.title} summary={state.summary} status={state.status}
+        items={state.items} selectedId={state.selectedId} onSelect={select} disabled={state.busy}
+        ariaLabel={`${state.title} steps`} textClassName={coercePanelTypography(null).panelTextClass} headingRef={heading}
+        selectedAction={<button type="button" data-sequence-guide-action="true" disabled={state.busy || selected.actionDisabled} onClick={action}>{selected.actionLabel}</button>}
+        footer={state.notice ? <p>{state.notice}</p> : undefined} />
+    </section>
+    flushSync(() => root.render(embedded ? content : <FloatingPanelShell ariaLabel={state.title} rootPlacement="viewport-overlay"
       rootStyle={{ zIndex: 1000 }}
       panelStyle={{ position: 'absolute', top: FLOATING_PANEL_CANVAS_TOP_INSET_CSS, right: FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
         width: resolveFloatingPanelWidthCss(FLOATING_PANEL_DEFAULT_WIDTH_RATIO) }}
-      header={<><span aria-hidden="true" /><FloatingPanelCloseButton label={state.closeLabel!} onClose={close} /></>}>
-      <section className="mt-1 flex-1 min-h-0 overflow-hidden" aria-label="Guide steps">
-        <SequenceInspectorView title={state.title} summary={state.summary} status={state.status}
-          items={state.items} selectedId={state.selectedId} onSelect={select} disabled={state.busy}
-          ariaLabel={`${state.title} steps`} textClassName={coercePanelTypography(null).panelTextClass} headingRef={heading}
-          selectedAction={<button type="button" data-sequence-guide-action="true" disabled={state.busy || selected.actionDisabled} onClick={action}>{selected.actionLabel}</button>}
-          footer={state.notice ? <p>{state.notice}</p> : undefined} />
-      </section>
+      header={<><span aria-hidden="true" /><FloatingPanelCloseButton onClose={close} /></>}>
+      {content}
     </FloatingPanelShell>))
   }
   target.addEventListener('keydown', keydown)
@@ -130,4 +131,14 @@ export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBr
       mountedTargets.delete(target)
     },
   }
+}
+
+/** Mounts the same Graph-owned guide view inside a host panel that owns its shell and close control. */
+export function mountSequenceGuideContent(target: HTMLElement, initial: SequenceGuideBrowserState): SequenceGuideBrowserHandle {
+  return mountSequenceGuideView(target, initial, true)
+}
+
+/** Mounts the Graph-owned guide with its standalone shared FloatingPanel shell. */
+export function mountSequenceGuide(target: HTMLElement, initial: SequenceGuideBrowserState): SequenceGuideBrowserHandle {
+  return mountSequenceGuideView(target, initial, false)
 }

@@ -1,5 +1,5 @@
 import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
-const { Check, CircleCheck, CircleX, Download, FileDown, FileInput, Link, LogIn, Play, RotateCcw, Save, Unplug, X } = DESIGN_ICONS
+const { Check, CircleCheck, CircleX, Download, FileDown, FileInput, History, Link, LogIn, Play, Save, Unplug, X } = DESIGN_ICONS
 
 // Actions are registered in the Help icon library, alongside type and tab icons.
 export const MAIN_PANEL_ACTION_ICON_META_BY_KEY = {
@@ -8,7 +8,7 @@ export const MAIN_PANEL_ACTION_ICON_META_BY_KEY = {
   'action.connect': { category: 'Action', label: 'Connect', Icon: LogIn },
   'action.disconnect': { category: 'Action', label: 'Disconnect', Icon: Unplug },
   'action.save': { category: 'Action', label: 'Save snapshot', Icon: Save },
-  'action.restore': { category: 'Action', label: 'Restore', Icon: RotateCcw },
+  'action.restore': { category: 'Action', label: 'Restore', Icon: History },
   'action.export': { category: 'Action', label: 'Export', Icon: FileDown },
   'action.import': { category: 'Action', label: 'Import selected', Icon: Download },
   'action.cancel': { category: 'Action', label: 'Cancel', Icon: X },

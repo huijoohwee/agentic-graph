@@ -1,7 +1,5 @@
 import React from 'react'
-import { useGraphStore } from '@/hooks/useGraphStore'
 import { PanelViewTabs, PanelViewTab } from './PanelViewTabs'
-import { getIconSizeClass } from '@/lib/ui'
 import { UI_SELECTORS } from '@/lib/config'
 import {
   uiToolbarRowScrollClassName,
@@ -51,9 +49,6 @@ function TabHeaderImpl({
   tabIconByKey,
 }: TabHeaderProps) {
   const clickTimeoutRef = React.useRef<number | null>(null)
-  const uiIconScale = useGraphStore(s => s.uiIconScale)
-  const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
-  const iconSizeClass = getIconSizeClass(uiIconScale)
 
   React.useEffect(() => {
     return () => {
@@ -122,37 +117,29 @@ function TabHeaderImpl({
       aria-expanded={typeof collapsed === 'boolean' ? !collapsed : undefined}
       data-kg-panel-header-minimized={collapsed ? 'true' : undefined}
     >
-	      <nav className={`kg-panel-tabs-nav ${uiToolbarRowScrollClassName} ${collapsed ? 'basis-auto w-auto flex-1' : 'basis-full w-full sm:basis-auto sm:w-auto sm:flex-1'}`} aria-label="Panel tabs">
-        {tabs.length > 0 && (
-          <PanelViewTabs
-            activeKey={activeTab || ''}
-            role="tablist"
-            aria-label="Tabs"
-            aria-orientation="horizontal"
-            className={`kg-panel-tablist w-full ${collapsed ? '' : 'pb-[1px]'} sm:w-auto`}
-          >
-            {tabs.map(t => {
-              const TabIcon = tabIconByKey?.[t.key]
-              if (!TabIcon) throw new Error(`Missing panel tab icon: ${t.key}`)
-              return (
-                <PanelViewTab
-                  key={t.key}
-                  data-kg-spotlight-tab={t.key}
-                  title={t.label}
-                  onClick={() => onTabChange?.(t.key)}
-                  role="tab"
-                  id={`${base}-${t.key}-tab`}
-                  aria-selected={activeTab === t.key}
-                  aria-controls={`${base}-${t.key}-panel`}
-                >
-                  <TabIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
-                </PanelViewTab>
-              )
-            })}
-          </PanelViewTabs>
-        )}
-      </nav>
-	      <section className={`${uiToolbarRowScrollJustifyEndClassName} ${collapsed ? 'w-auto shrink-0' : 'w-full sm:w-auto sm:shrink-0'} gap-1 sm:gap-2`} aria-label="Panel tools">
+      {tabs.length > 0 && (
+        <PanelViewTabs activeKey={activeTab || ''} label="Main panel tabs">
+          {tabs.map(t => {
+            const TabIcon = tabIconByKey?.[t.key]
+            if (!TabIcon) throw new Error(`Missing panel tab icon: ${t.key}`)
+            return (
+              <PanelViewTab
+                key={t.key}
+                tabKey={t.key}
+                data-kg-spotlight-tab={t.key}
+                title={t.label}
+                onClick={() => onTabChange?.(t.key)}
+                id={`${base}-${t.key}-tab`}
+                aria-selected={activeTab === t.key}
+                aria-controls={`${base}-${t.key}-panel`}
+              >
+                <TabIcon />
+              </PanelViewTab>
+            )
+          })}
+        </PanelViewTabs>
+      )}
+      <section className={`${uiToolbarRowScrollJustifyEndClassName} ${collapsed ? 'w-auto shrink-0' : 'w-full sm:w-auto sm:shrink-0'} gap-1 sm:gap-2`} aria-label="Panel tools">
         {onSearchChange && (
           <section
             className={`overflow-hidden transition-[width,flex-basis,opacity] duration-200 ease-out ${

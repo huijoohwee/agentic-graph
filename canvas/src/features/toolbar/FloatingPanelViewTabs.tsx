@@ -1,5 +1,5 @@
 import React from 'react'
-import { ListOrdered } from 'lucide-react'
+import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
 import { FloatingPanelTab, FloatingPanelTabs } from '@agentic-base/views-react/panels'
 import { FLOATING_PANEL_TYPE_ICON_BY_VIEW } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
@@ -13,7 +13,7 @@ type FloatingPanelViewTab = Readonly<{
 
 // Tab availability and order belong to the shell; documents supply only view content.
 export const FLOATING_PANEL_VIEW_TABS: readonly FloatingPanelViewTab[] = [
-  { view: 'sequence', title: 'Sequence Diagram', icon: ListOrdered },
+  { view: 'sequence', title: 'Sequence Diagram', icon: DESIGN_ICONS.ListChecks },
   { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
   { view: 'skillsCommands', title: UI_LABELS.skillsCommands, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.skillsCommands },
   { view: 'blockLibrary', title: UI_LABELS.blockLibrary, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.blockLibrary },
@@ -42,10 +42,11 @@ export const FLOATING_PANEL_VIEW_TABS: readonly FloatingPanelViewTab[] = [
   { view: 'graphTraversal', title: UI_LABELS.graphTraversal, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.graphTraversal },
 ]
 
-export function FloatingPanelViewTabs({ view, onSelect, children }: {
+export function FloatingPanelViewTabs({ view, onSelect, children, minimized = false }: {
   view: FloatingPanelView
   onSelect: (view: FloatingPanelView) => void
   children?: React.ReactNode
+  minimized?: boolean
 }) {
   const selectView = (key: string) => {
     const selected = FLOATING_PANEL_VIEW_TABS.find(tab => tab.view === key)?.view
@@ -54,19 +55,19 @@ export function FloatingPanelViewTabs({ view, onSelect, children }: {
 
   return (
     <FloatingPanelTabs label="Floating panel views" activeKey={view} onSelect={selectView}>
-      {FLOATING_PANEL_VIEW_TABS.map(spec => {
+      {FLOATING_PANEL_VIEW_TABS.filter(spec => !minimized || spec.view === view).map(spec => {
         return (
           <FloatingPanelTab
             key={spec.view}
             tabKey={spec.view}
             label={spec.title}
             icon={spec.icon}
-            iconOnly
+            iconOnly={!minimized}
             dataAttributes={{ 'data-kg-floating-panel-view-trigger': spec.view }}
           />
         )
       })}
-      {children}
+      {!minimized && children}
     </FloatingPanelTabs>
   )
 }
