@@ -1,4 +1,4 @@
-import { staleContentStartUtility, staleMarkdownGutterContentStartAlias, staleDataViewSmallActionSizingClass, staleDataViewSmallIconSizingClass, staleGraphDataTableHeaderHeightClass, staleGraphDataTableInputSizingClass, staleGraphDataTableBodyCellPaddingClass, staleGraphDataTableIndexWidthClass, staleGraphDataTableIndexColStyle, type SourceFixture } from './sourceFixture'
+import { path, readUtf8, staleContentStartUtility, staleMarkdownGutterContentStartAlias, staleDataViewSmallActionSizingClass, staleDataViewSmallIconSizingClass, staleGraphDataTableHeaderHeightClass, staleGraphDataTableInputSizingClass, staleGraphDataTableBodyCellPaddingClass, staleGraphDataTableIndexWidthClass, staleGraphDataTableIndexColStyle, type SourceFixture } from './sourceFixture'
 
 export function assertPhase5(fixture: SourceFixture) {
   const { canvasText, toolbarText, collapsibleToolbarText, detailsMenuText, explorerSearchControlText, explorerHeaderActionsText, markdownWorkspaceToolbarText, markdownWorkspaceToolbarInlineMenusText, workspaceModeSelectText, markdownWorkspaceLayoutText, markdownEditorPaneText, monacoTextEditorText, workspaceWidthDefaultsText, workspacePaneRuntimeText, graphTableToolbarText, workspaceActionsPanelText, graphTableDomTableText, graphTableKanbanViewText, graphDataTableFieldsPanelText, graphDataTableFilterPanelText, graphDataTableSortPanelText, graphDataTableGroupPanelText, graphDataTableUiPrimitivesText, graphDataTableToolbarStylesText, graphDataTableTableText, graphDataTableBodyText, graphDataTableRowsText, markdownBlockGutterText, markdownBlockquoteText, markdownCalloutText, markdownInlineMenusText, markdownInlineSelectionToolbarText, markdownSelectionToolbarText, markdownDataViewKanbanGroupText, settingsUiText, anchorOverlayText, anchoredPopoverText, overlayPlacementText, cssText, responsiveToolbarCssText, responsiveCanvasToolbarCssText, strybldrTimelineBottomPanelText, explorerPaneToggleIdx, binPaneToggleIdx, jsonPaneToggleIdx, markdownPaneToggleIdx, viewerPaneToggleIdx, htmlPaneToggleIdx, canvasPaneToggleIdx, kanbanShortcutCopyText, panelConfigText, kanbanDropPreviewText, kanbanDragHookText } = fixture
@@ -176,7 +176,8 @@ export function assertPhase5(fixture: SourceFixture) {
     throw new Error('expected Explorer/editor divider to stay visible on desktop and reset to a horizontal separator on stacked mobile')
   }
 
-  if (responsiveToolbarCssText.includes('.MainPanelContainer') || !readUtf8(path.resolve(root, 'src/features/panels/ui/MainPanelContainer.tsx')).includes('agentic-panel-main')) {
+  const mainPanelContainerText = readUtf8(path.resolve(fixture.root, 'src/features/panels/ui/MainPanelContainer.tsx'))
+  if (responsiveToolbarCssText.includes('.MainPanelContainer') || !mainPanelContainerText.includes('agentic-panel-main')) {
     throw new Error('expected main panel viewport bounds to come from the shared panel profile')
   }
 
