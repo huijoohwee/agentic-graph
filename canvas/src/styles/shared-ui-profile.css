@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@6b25583a60c5f57c66e0d8fd25e726c0e8ad4595; profile sha256 01e7b88286247b17c186fadf9517852e46807bc01035d7f07f6d8947ab9c59b9. Do not edit. */
+/* Generated from agentic-design-system@9862a2f89b47be3496c72ed9ca28576c992873f4; profile sha256 cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -22,12 +22,12 @@
   --agentic-panel-bottom-height: 17.5rem;
   --agentic-panel-gap: 0.75rem;
   --agentic-toolbar-overlay-layer: 6000;
+  --agentic-toolbar-shadow: 0 1px 2px rgb(0 0 0 / .04);
   --agentic-panel-background: light-dark(oklch(100% 0 0), oklch(20% 0.012 260));
   --agentic-panel-foreground: light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260));
   --agentic-panel-border-color: light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260));
   --agentic-panel-border: 1px solid var(--agentic-panel-border-color);
   --agentic-panel-radius: 8px;
-  --agentic-panel-shadow: 0 16px 40px oklch(0% 0 0 / 0.2);
   --agentic-control-height: 28px;
   --agentic-control-height-touch: 48px;
   --agentic-control-padding-inline: 0.5rem;

@@ -64,6 +64,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     ensureBaselineUnlocked,
     geospatialEnabled,
     handleMainPanelHeaderDragStart,
+    handleMainPanelMinimize,
     handleMainPanelRestore,
     iconSizeClass,
     iconStrokeWidth,
@@ -347,6 +348,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                   requestedWorkflowManagerEntryLabel={mainPanelRequestedWorkflowManagerEntryLabel}
                   collapsed={effectiveMainPanelCollapsed}
                   pinned={effectiveMainPanelPinned}
+                  onMinimize={handleMainPanelMinimize}
                   onRestore={handleMainPanelRestore}
                   onPinToggle={() => setMainPanelPinned(v => !v)}
                 />

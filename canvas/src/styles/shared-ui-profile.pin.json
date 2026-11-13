@@ -3,12 +3,12 @@
   "profile": {
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
-    "sourceRevision": "6b25583a60c5f57c66e0d8fd25e726c0e8ad4595",
-    "registryRevision": "9ee9ea9cffa3bf4b67c2dc96ca682033eeb60843",
+    "sourceRevision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
+    "registryRevision": "85ad931bf4cb9808765ed0a20fde56976a0aa7ae",
     "sourcePath": "site/tokens/shared-ui-profile.json",
-    "sourceSha256": "sha256:01e7b88286247b17c186fadf9517852e46807bc01035d7f07f6d8947ab9c59b9",
+    "sourceSha256": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
     "projectionPath": "site/vendor/shared-ui-profile.css",
-    "projectionSha256": "sha256:43cd72a2a4dc6d25099dd0cdcb37906a0a82aa4f5d81e720434c161fc6998015"
+    "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
   },
   "metrics": {
     "rowHeight": 38,
@@ -20,6 +20,11 @@
     "controlHeightTouch": 48,
     "dashboardCardGap": 12,
     "floatingPanelRadius": 8,
-    "toolbarOverlayLayer": 6000
+    "panelBottomHeight": 280,
+    "panelGap": 12,
+    "panelMainWidth": 80,
+    "panelMainWidthMobile": 96,
+    "panelMainHeight": 80,
+    "panelMainHeightMobile": 85
   }
 }

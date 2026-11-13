@@ -18,6 +18,7 @@ export const testMainPanelContainerUsesKgPanelBg = () => {
   const filePath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelContainer.tsx')
   const text = readUtf8(filePath)
   if (!text.includes('agentic-base-floating-panel') || !text.includes('agentic-panel-main')) throw new Error('Expected MainPanelContainer to consume the pinned Design System panel')
+  if (text.includes('style?:') || text.includes('style={')) throw new Error('Expected MainPanel dimensions to come from the pinned Design System profile')
   if (/UI_THEME_TOKENS\.(?:border\.outline|shadow\.overlay)|backgroundColor|borderRadius|boxShadow/u.test(text)) {
     throw new Error('Expected MainPanelContainer to leave shell visuals to the shared Design System class')
   }

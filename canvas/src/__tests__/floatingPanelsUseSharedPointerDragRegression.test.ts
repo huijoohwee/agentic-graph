@@ -37,17 +37,17 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   ) {
     throw new Error('expected FloatingPanel default width to consume the Design System width without changing custom sizing')
   }
-  if (
-    !geometryText.includes("FLOATING_PANEL_CANVAS_TOP_INSET_CSS = 'calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap))'") ||
-    !geometryText.includes("FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap))'")
-  ) {
-    throw new Error('expected FloatingPanel inset CSS to reuse the toolbar canvas edge-gap token')
+  if (!geometryText.includes("FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap))'")) {
+    throw new Error('expected FloatingPanel width calculation to reuse the toolbar canvas edge-gap token')
   }
-  if (!toolMenuStateText.includes('right: FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS') || toolMenuStateText.includes('getToolbarBottomPx')) {
-    throw new Error('expected FloatingPanel default position to use the shared right-edge canvas geometry, not toolbar-bottom or width-estimated placement')
+  if (!toolMenuStateText.includes('if (!toolMenuDragPos)') || !toolMenuStateText.includes("right: 'auto'") || toolMenuStateText.includes('FLOATING_PANEL_CANVAS_TOP_INSET_CSS') || toolMenuStateText.includes('getToolbarBottomPx')) {
+    throw new Error('expected FloatingPanel default inset to come from the shared shell and only manual drag position to be consumer-owned')
   }
-  if (!toolbarToolMenuText.includes('height: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS') || !toolbarToolMenuText.includes('maxHeight: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS')) {
-    throw new Error('expected FloatingPanel shell height to use the shared canvas panel height')
+  if (toolbarToolMenuText.includes('avoidBottomPanel')) {
+    throw new Error('expected FloatingPanel to retain its shared size when BottomPanel is open')
+  }
+  if (toolbarToolMenuText.includes('height:') || toolbarToolMenuText.includes('maxHeight:') || geometryText.includes('FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS')) {
+    throw new Error('expected FloatingPanel block size to come from the pinned Design System profile without consumer overrides')
   }
   if (toolbarToolMenuText.includes('bottomSurfaceHeightRatio') || toolbarToolMenuText.includes('safeBottomRatio')) {
     throw new Error('expected FloatingPanel shell height not to shrink against stale bottom-surface ratio state')

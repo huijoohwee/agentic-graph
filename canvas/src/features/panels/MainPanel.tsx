@@ -118,6 +118,7 @@ export default function MainPanel({
   requestedWorkflowManagerEntryLabel,
   collapsed,
   pinned,
+  onMinimize,
   onRestore,
   onPinToggle,
 }: {
@@ -131,6 +132,7 @@ export default function MainPanel({
   requestedWorkflowManagerEntryLabel?: string
   collapsed?: boolean
   pinned?: boolean
+  onMinimize?: () => void
   onRestore?: () => void
   onPinToggle?: () => void
 }) {
@@ -308,6 +310,7 @@ export default function MainPanel({
       tabIdBase="main-panel"
       rightSlot={
         <HeaderActions
+          onMinimize={!collapsed ? onMinimize : undefined}
           onRestore={collapsed ? onRestore : undefined}
           onPinToggle={onPinToggle}
           pinned={pinned}
