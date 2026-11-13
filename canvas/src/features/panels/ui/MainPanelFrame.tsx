@@ -23,9 +23,37 @@ export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutR
   return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
 }
 
-export function MainPanelLoadingFallback({ onClose }: { onClose: () => void }) {
+interface MainPanelLoadingFallbackProps {
+  onClose: () => void
+  collapsed?: boolean
+  pinned?: boolean
+  onMinimize?: () => void
+  onRestore?: () => void
+  onPinToggle?: () => void
+}
+
+export function MainPanelLoadingFallback({
+  onClose,
+  collapsed = false,
+  pinned = false,
+  onMinimize,
+  onRestore,
+  onPinToggle,
+}: MainPanelLoadingFallbackProps) {
   return (
-    <MainPanelFrame ariaLabel="Main panel loading" rightSlot={<HeaderActions onClose={onClose} />}>
+    <MainPanelFrame
+      ariaLabel="Main panel loading"
+      collapsed={collapsed}
+      rightSlot={(
+        <HeaderActions
+          onMinimize={!collapsed ? onMinimize : undefined}
+          onRestore={collapsed ? onRestore : undefined}
+          onPinToggle={onPinToggle}
+          pinned={pinned}
+          onClose={onClose}
+        />
+      )}
+    >
       <p role="status" data-kg-main-panel-loading="1" className="p-3">Loading panel…</p>
     </MainPanelFrame>
   )

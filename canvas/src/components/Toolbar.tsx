@@ -336,7 +336,16 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
+              <React.Suspense fallback={(
+                <MainPanelLoadingFallback
+                  onClose={() => setIsMainPanelOpen(false)}
+                  collapsed={effectiveMainPanelCollapsed}
+                  pinned={effectiveMainPanelPinned}
+                  onMinimize={handleMainPanelMinimize}
+                  onRestore={handleMainPanelRestore}
+                  onPinToggle={() => setMainPanelPinned(v => !v)}
+                />
+              )}>
                 <MainPanelLazy
                   onClose={() => setIsMainPanelOpen(false)}
                   onHeaderDragStart={!effectiveMainPanelPinned ? handleMainPanelHeaderDragStart : undefined}
