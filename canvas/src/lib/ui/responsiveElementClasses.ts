@@ -91,7 +91,7 @@ export const UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME = 'absolute inset-0 po
 export const UI_RESPONSIVE_PASSIVE_BASE_LAYER_SURFACE_CLASSNAME =
   `${UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} z-0`
 
-export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock absolute z-[240] flex min-w-0 bg-transparent pointer-events-none'
+export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock agentic-toolbar-overlay-layer absolute flex min-w-0 bg-transparent pointer-events-none'
 
 export const UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME = 'kg-workspace-overlay-canvas-toolbar absolute z-[200] flex min-w-0 bg-transparent'
 

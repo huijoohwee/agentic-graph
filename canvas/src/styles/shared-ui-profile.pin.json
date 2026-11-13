@@ -3,12 +3,12 @@
   "profile": {
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
-    "sourceRevision": "3a1bce56673bdc3256cef861717bf64f846e15eb",
-    "registryRevision": "3a1bce56673bdc3256cef861717bf64f846e15eb",
+    "sourceRevision": "6b25583a60c5f57c66e0d8fd25e726c0e8ad4595",
+    "registryRevision": "9ee9ea9cffa3bf4b67c2dc96ca682033eeb60843",
     "sourcePath": "site/tokens/shared-ui-profile.json",
-    "sourceSha256": "sha256:81ea83f837f417d2e7492821f1c7e466a34cbcc24c50d32304365a2c9219ce7d",
+    "sourceSha256": "sha256:01e7b88286247b17c186fadf9517852e46807bc01035d7f07f6d8947ab9c59b9",
     "projectionPath": "site/vendor/shared-ui-profile.css",
-    "projectionSha256": "sha256:9cff9a5969cfdf4f459d0e223868cf0fbc163bbc350e55c92efca43b4b48583c"
+    "projectionSha256": "sha256:43cd72a2a4dc6d25099dd0cdcb37906a0a82aa4f5d81e720434c161fc6998015"
   },
   "metrics": {
     "rowHeight": 38,
@@ -19,6 +19,7 @@
     "controlHeight": 28,
     "controlHeightTouch": 48,
     "dashboardCardGap": 12,
-    "floatingPanelRadius": 8
+    "floatingPanelRadius": 8,
+    "toolbarOverlayLayer": 6000
   }
 }
