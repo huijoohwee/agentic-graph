@@ -3,12 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { coercePanelTypography } from 'grph-shared/ui/panelTypography'
 import { FloatingPanelShell, FloatingPanelCloseButton } from '@agentic-base/views-react/panels'
-import {
-  FLOATING_PANEL_CANVAS_TOP_INSET_CSS,
-  FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
-  FLOATING_PANEL_DEFAULT_WIDTH_RATIO,
-  resolveFloatingPanelWidthCss,
-} from '../../lib/ui/floatingPanelGeometry'
 import { SequenceInspectorView } from './SequenceInspectorView'
 
 export const SEQUENCE_GUIDE_BROWSER_LIMITS = Object.freeze({
@@ -107,9 +101,7 @@ function mountSequenceGuideView(target: HTMLElement, initial: SequenceGuideBrows
         footer={state.notice ? <p>{state.notice}</p> : undefined} />
     </section>
     flushSync(() => root.render(embedded ? content : <FloatingPanelShell ariaLabel={state.title} rootPlacement="viewport-overlay"
-      rootStyle={{ zIndex: 1000 }}
-      panelStyle={{ position: 'absolute', top: FLOATING_PANEL_CANVAS_TOP_INSET_CSS, right: FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
-        width: resolveFloatingPanelWidthCss(FLOATING_PANEL_DEFAULT_WIDTH_RATIO) }}
+      panelLayer="floating"
       header={<><span aria-hidden="true" /><FloatingPanelCloseButton onClose={close} /></>}>
       {content}
     </FloatingPanelShell>))

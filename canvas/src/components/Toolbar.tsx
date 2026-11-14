@@ -81,6 +81,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     mainPanelRequestedWorkflowManagerEntryLabel,
     openMainPanel,
     setIsMainPanelOpen,
+    setMainPanelCollapsed,
     setMainPanelPinned,
     themeMode,
     toggleFitToScreenMode,
@@ -347,6 +348,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                   requestedWorkflowManagerEntryLabel={mainPanelRequestedWorkflowManagerEntryLabel}
                   collapsed={effectiveMainPanelCollapsed}
                   pinned={effectiveMainPanelPinned}
+                  onMinimize={() => setMainPanelCollapsed(true)}
                   onRestore={handleMainPanelRestore}
                   onPinToggle={() => setMainPanelPinned(v => !v)}
                 />

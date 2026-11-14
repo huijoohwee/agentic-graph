@@ -10,6 +10,8 @@ import { UI_LABELS } from '@/lib/config'
 import { LS_KEYS } from '@/lib/config.ls.keys'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForNextTask } from '@/tests/lib/reactRootHarness'
+import { PanelViewTab, PanelViewTabs } from '@/features/panels/ui/PanelViewTabs'
+import { Activity, Columns2 } from 'lucide-react'
 
 export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
   const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
@@ -70,8 +72,8 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(expectedLabels)
         || tabs.some(button => button.disabled || button.getAttribute('aria-selected') == null)
         || tabs.filter(button => button.getAttribute('aria-selected') === 'true').length !== 1
-        || !tabs.every(button => button.querySelector('svg'))) {
-        throw new Error(`expected one stable, selectable tab strip with named icons across sources and shell states; expected=${JSON.stringify(expectedLabels)} actual=${JSON.stringify(tabs.map(button => ({ label: button.getAttribute('aria-label'), selected: button.getAttribute('aria-selected'), disabled: button.disabled, icon: Boolean(button.querySelector('svg')) })))}`)
+        || !tabs.every(button => button.querySelector('svg') && !button.querySelector('span'))) {
+        throw new Error(`expected one stable, selectable icon-only tab strip with accessible names across sources and shell states; expected=${JSON.stringify(expectedLabels)} actual=${JSON.stringify(tabs.map(button => ({ label: button.getAttribute('aria-label'), selected: button.getAttribute('aria-selected'), disabled: button.disabled, icon: Boolean(button.querySelector('svg')), visibleLabel: button.querySelector('span')?.textContent ?? null })))}`)
       }
     }
     assertTabs()
@@ -88,11 +90,11 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     }
     await act(async () => {
       useGraphStore.setState({ graphData: previousGraph, canvasRenderMode: previousRender, canvas2dRenderer: 'design', canvas3dMode: previous3d })
-      container.querySelector<HTMLButtonElement>('button[aria-label="Minimize"]')?.click()
+      container.querySelector<HTMLButtonElement>('button[aria-label="Minimize panel"]')?.click()
       await waitForNextTask()
     })
-    assertTabs([UI_LABELS.propsPanel])
-    const restoreButton = container.querySelector<HTMLButtonElement>('button[aria-label="Restore"]')
+    assertTabs()
+    const restoreButton = container.querySelector<HTMLButtonElement>('button[aria-label="Restore panel"]')
     if (!restoreButton) throw new Error('expected minimized shell restore control')
     await act(async () => {
       restoreButton.click()
@@ -104,7 +106,7 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       await waitForNextTask()
     })
     assertTabs()
-    if (!container.querySelector('button[aria-label="Minimize"]') || readTabs()[0]?.getAttribute('aria-selected') !== 'true') throw new Error('expected selecting a different tab to restore the shared body')
+    if (!container.querySelector('button[aria-label="Minimize panel"]') || readTabs()[0]?.getAttribute('aria-selected') !== 'true') throw new Error('expected selecting a different tab to restore the shared body')
 
     let designLayers: HTMLElement | null = null
     for (let i = 0; i < 30; i++) {
@@ -136,6 +138,32 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     if (selected !== MAIN_PANEL_TABS[0].key) throw new Error('expected shared tab activation to commit MainPanel selection')
     assertMainTabs()
     await unmountReactRoot(mainRoot, { tasks: 1 })
+
+    const bottomRoot = createRoot(container)
+    function BottomTabsFixture() {
+      const [active, setActive] = React.useState('flowchart')
+      return (
+        <PanelViewTabs activeKey={active} label="Bottom panel views">
+          <PanelViewTab tabKey="activity" title="Activity" aria-pressed={active === 'activity'} onClick={() => setActive('activity')}><Activity /></PanelViewTab>
+          <PanelViewTab tabKey="flowchart" title="Flowchart" aria-pressed={active === 'flowchart'} onClick={() => setActive('flowchart')}><Columns2 /></PanelViewTab>
+        </PanelViewTabs>
+      )
+    }
+    await mountReactRoot(bottomRoot, <BottomTabsFixture />, { tasks: 2 })
+    const readBottomTabs = () => Array.from(container.querySelectorAll('nav[aria-label="Bottom panel views"] button')) as HTMLButtonElement[]
+    const assertSelectedLabel = (label: string) => {
+      const tabs = readBottomTabs()
+      const selected = tabs.find(button => button.getAttribute('aria-selected') === 'true')
+      if (tabs.length !== 2 || !selected || selected.getAttribute('aria-label') !== label
+        || selected.querySelector('span')?.textContent !== label || selected.firstElementChild?.tagName.toLowerCase() !== 'svg'
+        || tabs.some(button => button !== selected && button.querySelector('span'))) {
+        throw new Error('expected the selected BottomPanel tab to place its label after the icon while other views stay icon-only')
+      }
+    }
+    assertSelectedLabel('Flowchart')
+    await act(async () => { readBottomTabs()[0]?.click(); await waitForNextTask() })
+    assertSelectedLabel('Activity')
+    await unmountReactRoot(bottomRoot, { tasks: 1 })
   } finally {
     restore()
   }

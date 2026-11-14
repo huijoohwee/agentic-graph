@@ -55,14 +55,13 @@ export function FloatingPanelViewTabs({ view, onSelect, children, minimized = fa
 
   return (
     <FloatingPanelTabs label="Floating panel views" activeKey={view} onSelect={selectView}>
-      {FLOATING_PANEL_VIEW_TABS.filter(spec => !minimized || spec.view === view).map(spec => {
+      {FLOATING_PANEL_VIEW_TABS.map(spec => {
         return (
           <FloatingPanelTab
             key={spec.view}
             tabKey={spec.view}
             label={spec.title}
             icon={spec.icon}
-            iconOnly={!minimized}
             dataAttributes={{ 'data-kg-floating-panel-view-trigger': spec.view }}
           />
         )

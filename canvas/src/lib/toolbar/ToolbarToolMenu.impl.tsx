@@ -20,9 +20,6 @@ import { uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName 
 import { cn } from '@/lib/utils'
 import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
 import { usePanelStack } from '@/lib/ui/usePanelStack'
-import {
-  resolveFloatingPanelWidthCss,
-} from '@/lib/ui/floatingPanelGeometry'
 import { LS_KEYS, UI_LABELS, UI_SELECTORS } from '@/lib/config'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
 import { FloatingPanelViewTabs } from '@/features/toolbar/FloatingPanelViewTabs'
@@ -100,7 +97,6 @@ export function ToolbarToolMenu({
   const [geospatialEnableError, setGeospatialEnableError] = React.useState<string | null>(null)
 
   const {
-    floatingPanelWidthRatio,
     floatingPanelZIndex,
     uiIconScale,
     uiIconStrokeWidth,
@@ -110,7 +106,6 @@ export function ToolbarToolMenu({
     canvas2dRenderer,
   } = useGraphStore(
     useShallow(state => ({
-      floatingPanelWidthRatio: state.floatingPanelWidthRatio,
       floatingPanelZIndex: state.floatingPanelZIndex,
       uiIconScale: state.uiIconScale,
       uiIconStrokeWidth: state.uiIconStrokeWidth,
@@ -225,11 +220,6 @@ export function ToolbarToolMenu({
     setManagedHeaderActions(actions)
   }, [])
   const panelStack = usePanelStack('floating', resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen))
-  const floatingPanelSizeStyle = React.useMemo(() => {
-    return {
-      width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio),
-    }
-  }, [floatingPanelWidthRatio])
 
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const designPanelsAvailable =
@@ -298,12 +288,11 @@ export function ToolbarToolMenu({
     <FloatingPanelShell
       ref={toolMenuCardRef}
       rootPlacement="viewport-overlay"
-      avoidBottomPanel
       rootStyle={{ zIndex: panelStack.zIndex }}
       panelLayer="floating"
       onPointerDownCapture={panelStack.onPointerDownCapture}
       onFocusCapture={panelStack.onFocusCapture}
-      panelStyle={{ ...toolMenuCardStyle, ...(floatingPanelMinimized ? {} : floatingPanelSizeStyle) }}
+      panelStyle={toolMenuCardStyle}
       minimized={floatingPanelMinimized}
       pinned={floatingPanelPinned}
       rowHeight={panelFormDensity.rowHeightPreset}

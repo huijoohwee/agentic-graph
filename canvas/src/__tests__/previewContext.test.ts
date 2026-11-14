@@ -63,6 +63,8 @@ export async function testPreviewContextModeIsolation() {
     setMediaCatalogMode('voice-studio')
     await mountReactRoot(root, React.createElement(PreviewModes), { window: dom.window as unknown as Window })
     const xr = container.querySelector<HTMLButtonElement>('[aria-label="Preview 3D for XR"]')!
+    assert.equal(xr.querySelector(':scope > span')?.textContent, '3D for XR')
+    assert.equal(xr.firstElementChild?.tagName.toLowerCase(), 'svg', 'the shared toggle keeps its label to the right of its icon')
     await act(async () => xr.click())
     assert.equal(xr.getAttribute('aria-pressed'), 'true')
     assert.equal(readMediaCatalogMode(), 'voice-studio')
