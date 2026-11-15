@@ -1,12 +1,4 @@
 import React from 'react'
-import {
-  FloatingPanelShell as BaseFloatingPanelShell,
-  type FloatingPanelShellProps as BaseFloatingPanelShellProps,
-} from '@agentic-base/views-react/panels'
-
-export { FloatingPanelCloseButton } from '@agentic-base/views-react/panels'
-export type { FloatingPanelCloseButtonProps } from '@agentic-base/views-react/panels'
-
 type FloatingPanelTag = 'div' | 'section' | 'aside' | 'nav' | 'article'
 
 export type FloatingPanelProps = {
@@ -46,10 +38,3 @@ export const FloatingPanel = React.memo(
     )
   }),
 )
-
-export type FloatingPanelShellProps = BaseFloatingPanelShellProps
-
-/** Graph supplies placement and state; Base renders the Design System’s pinned FloatingPanel shell. */
-export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell(props, ref) {
-  return <BaseFloatingPanelShell {...props} ref={ref} />
-})

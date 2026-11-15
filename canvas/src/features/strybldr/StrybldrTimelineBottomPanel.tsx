@@ -39,11 +39,6 @@ type TimelineBottomPanelView =
   | 'gantt'
   | 'architecture'
   | 'eventModeling'
-const TIMELINE_BOTTOM_PANEL_VIEW_LABEL: Record<TimelineBottomPanelView, string> = {
-  activity: 'Activity', timeline: 'Timeline', designTimeline: 'Design Timeline', strybldrTimeline: 'Storyboard',
-  documentVersionGraph: 'Version Graph', flowchart: 'Flowchart', gitGraph: 'GitGraph', gantt: 'Gantt-Timeline',
-  architecture: 'Architecture', eventModeling: 'Event Model',
-}
 const WorkspaceActivityPanelLazy = React.lazy(() => import('@/features/agent-ready/WorkspaceActivityPanel'))
 const GitGraphBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphBottomPanelView').then(mod => ({ default: mod.GitGraphBottomPanelView })))
 const FlowchartBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartBottomPanelView').then(mod => ({ default: mod.FlowchartBottomPanelView })))
@@ -394,7 +389,7 @@ export function StrybldrTimelineBottomPanel({
           data-agentic-panel-kind="bottom"
           data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-panel="1"
-          data-kg-panel-minimized={minimized ? 'true' : undefined}
+          data-agentic-base-panel-minimized={minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-minimized={minimized ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-pinned={pinned ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-drag-enabled={!pinned && !minimized ? 'true' : 'false'}
@@ -406,8 +401,7 @@ export function StrybldrTimelineBottomPanel({
             )}
             onPointerDown={handleHeaderPointerDown}
           >
-            <PanelViewTabs activeKey={view} label="Bottom panel views" minimized={minimized}>
-              <span className="min-w-0 truncate text-xs font-semibold">{TIMELINE_BOTTOM_PANEL_VIEW_LABEL[view]}</span>
+            <PanelViewTabs activeKey={view} label="Bottom panel views">
               <PanelViewTab tabKey="activity" title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity /></PanelViewTab>
               <PanelViewTab
                 tabKey="timeline"

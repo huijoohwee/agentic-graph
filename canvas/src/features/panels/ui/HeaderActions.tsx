@@ -1,4 +1,4 @@
-import { PanelControlGroup } from '@agentic-base/views-react/controls'
+import { PanelControlGroup } from 'agentic-design-system/react/panels'
 
 interface HeaderActionsProps {
   onSearchToggle?: () => void

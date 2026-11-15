@@ -149,10 +149,6 @@ export function useMainPanelDrag() {
     centerMainPanel();
   }, [centerMainPanel]);
 
-  const handleMainPanelMinimize = useCallback(() => {
-    setMainPanelCollapsed(true);
-  }, []);
-
   return {
     isMainPanelOpen,
     setIsMainPanelOpen,
@@ -171,7 +167,6 @@ export function useMainPanelDrag() {
     mainPanelDragPos,
     openMainPanel,
     handleMainPanelHeaderDragStart,
-    handleMainPanelMinimize,
     handleMainPanelRestore,
     clampMainPanelPos,
   };

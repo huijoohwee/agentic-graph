@@ -1,5 +1,5 @@
 import { Plus, RotateCcw, Save, Trash2 } from 'lucide-react'
-import { PanelControlButton } from '@agentic-base/views-react/controls'
+import { PanelControlButton } from 'agentic-design-system/react/panels'
 
 import { UI_LABELS } from '@/lib/config'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'

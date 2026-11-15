@@ -64,7 +64,6 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     ensureBaselineUnlocked,
     geospatialEnabled,
     handleMainPanelHeaderDragStart,
-    handleMainPanelMinimize,
     handleMainPanelRestore,
     iconSizeClass,
     iconStrokeWidth,
@@ -82,6 +81,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     mainPanelRequestedWorkflowManagerEntryLabel,
     openMainPanel,
     setIsMainPanelOpen,
+    setMainPanelCollapsed,
     setMainPanelPinned,
     themeMode,
     toggleFitToScreenMode,
@@ -336,16 +336,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <React.Suspense fallback={(
-                <MainPanelLoadingFallback
-                  onClose={() => setIsMainPanelOpen(false)}
-                  collapsed={effectiveMainPanelCollapsed}
-                  pinned={effectiveMainPanelPinned}
-                  onMinimize={handleMainPanelMinimize}
-                  onRestore={handleMainPanelRestore}
-                  onPinToggle={() => setMainPanelPinned(v => !v)}
-                />
-              )}>
+              <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                 <MainPanelLazy
                   onClose={() => setIsMainPanelOpen(false)}
                   onHeaderDragStart={!effectiveMainPanelPinned ? handleMainPanelHeaderDragStart : undefined}
@@ -357,7 +348,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                   requestedWorkflowManagerEntryLabel={mainPanelRequestedWorkflowManagerEntryLabel}
                   collapsed={effectiveMainPanelCollapsed}
                   pinned={effectiveMainPanelPinned}
-                  onMinimize={handleMainPanelMinimize}
+                  onMinimize={() => setMainPanelCollapsed(true)}
                   onRestore={handleMainPanelRestore}
                   onPinToggle={() => setMainPanelPinned(v => !v)}
                 />

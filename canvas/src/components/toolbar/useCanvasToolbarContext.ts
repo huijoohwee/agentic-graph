@@ -128,7 +128,6 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
     mainPanelDragPos,
     openMainPanel,
     handleMainPanelHeaderDragStart,
-    handleMainPanelMinimize,
     handleMainPanelRestore,
     clampMainPanelPos,
   } = useMainPanelDrag()
@@ -297,7 +296,6 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
     graphData,
     groupShapeMode,
     handleMainPanelHeaderDragStart,
-    handleMainPanelMinimize,
     handleMainPanelRestore,
     iconSizeClass,
     iconStrokeWidth,

@@ -23,6 +23,7 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   const geometryText = readFileSync(resolve(root, 'lib', 'ui', 'floatingPanelGeometry.ts'), 'utf8')
   const toolMenuStateText = readFileSync(resolve(root, 'features', 'toolbar', 'useToolMenuState.ts'), 'utf8')
   const toolbarToolMenuText = readFileSync(resolve(root, 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx'), 'utf8')
+  const sequenceGuideAdapterText = readFileSync(resolve(root, 'features', 'sequence', 'sequenceGuideBrowserAdapter.tsx'), 'utf8')
   const gitGraphCanvasText = readFileSync(resolve(root, 'components', 'MermaidGitGraphCanvas.tsx'), 'utf8')
   const gitGraphFloatingPanelText = readFileSync(resolve(root, 'features', 'gitgraph', 'GitGraphFloatingPanelView.tsx'), 'utf8')
 
@@ -37,23 +38,33 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   ) {
     throw new Error('expected FloatingPanel default width to consume the Design System width without changing custom sizing')
   }
-  if (!geometryText.includes("FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap))'")) {
-    throw new Error('expected FloatingPanel width calculation to reuse the toolbar canvas edge-gap token')
+  if (
+    !geometryText.includes("FLOATING_PANEL_CANVAS_TOP_INSET_CSS = 'calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap))'") ||
+    !geometryText.includes("FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap))'")
+  ) {
+    throw new Error('expected the canvas HUD clearance helpers to retain the shared viewport edge-gap token')
   }
-  if (!toolMenuStateText.includes('if (!toolMenuDragPos)') || !toolMenuStateText.includes("right: 'auto'") || toolMenuStateText.includes('FLOATING_PANEL_CANVAS_TOP_INSET_CSS') || toolMenuStateText.includes('getToolbarBottomPx')) {
-    throw new Error('expected FloatingPanel default inset to come from the shared shell and only manual drag position to be consumer-owned')
+  if (!toolMenuStateText.includes('if (!toolMenuDragPos)') || !toolMenuStateText.includes('return {}')
+    || toolMenuStateText.includes('FLOATING_PANEL_CANVAS_TOP_INSET_CSS') || toolMenuStateText.includes('FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS')
+    || toolMenuStateText.includes('getToolbarBottomPx')) {
+    throw new Error('expected FloatingPanel default position to come from the Design System shell; only a user drag may set geometry')
   }
-  if (toolbarToolMenuText.includes('avoidBottomPanel')) {
-    throw new Error('expected FloatingPanel to retain its shared size when BottomPanel is open')
+  if (!toolbarToolMenuText.includes('panelStyle={toolMenuCardStyle}')
+    || toolbarToolMenuText.includes('resolveFloatingPanelWidthCss')
+    || toolbarToolMenuText.includes('floatingPanelSizeStyle')) {
+    throw new Error('expected FloatingPanel size and default placement to come only from the Design System shell')
   }
-  if (toolbarToolMenuText.includes('height:') || toolbarToolMenuText.includes('maxHeight:') || geometryText.includes('FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS')) {
-    throw new Error('expected FloatingPanel block size to come from the pinned Design System profile without consumer overrides')
+  if (!sequenceGuideAdapterText.includes('rootPlacement="viewport-overlay"')
+    || !sequenceGuideAdapterText.includes('panelLayer="floating"')
+    || sequenceGuideAdapterText.includes('panelStyle=')
+    || sequenceGuideAdapterText.includes('rootStyle=')) {
+    throw new Error('expected Sequence Guide FloatingPanel to use the shared shell geometry and stacking token')
   }
   if (toolbarToolMenuText.includes('bottomSurfaceHeightRatio') || toolbarToolMenuText.includes('safeBottomRatio')) {
     throw new Error('expected FloatingPanel shell height not to shrink against stale bottom-surface ratio state')
   }
-  if (!toolbarToolMenuText.includes('width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio)') || !geometryText.includes('Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)')) {
-    throw new Error('expected FloatingPanel shell width to use shared default and responsive geometry constants')
+  if (!geometryText.includes('Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)')) {
+    throw new Error('expected canvas HUD clearance geometry to retain the shared Design System width metric')
   }
   if (gitGraphCanvasText.includes('data-kg-gitgraph-crud-panel') || gitGraphCanvasText.includes('CardInlineTextEditor')) {
     throw new Error('expected GitGraph canvas to avoid a duplicate canvas-local command panel')

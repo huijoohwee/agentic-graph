@@ -8,11 +8,7 @@ import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { createRafOnceScheduler } from '@/lib/react/rafOnceScheduler'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { recordFloatingPanelPresetDismissal } from '@/features/parsers/floatingPanelPresetDismissal'
-import {
-  FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
-  FLOATING_PANEL_DEFAULT_HEIGHT_FALLBACK_PX,
-  FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX,
-} from '@/lib/ui/floatingPanelGeometry'
+import { FLOATING_PANEL_DEFAULT_HEIGHT_FALLBACK_PX, FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX } from '@/lib/ui/floatingPanelGeometry'
 
 type ToolMenuDragPosition = {
   top: number
@@ -92,10 +88,9 @@ export function useToolMenuState() {
       return {}
     }
     return {
-      position: 'absolute' as const,
       top: toolMenuDragPos.top,
       left: toolMenuDragPos.left,
-      right: 'auto',
+      insetInlineEnd: 'auto',
     }
   }, [toolMenuDragPos])
 

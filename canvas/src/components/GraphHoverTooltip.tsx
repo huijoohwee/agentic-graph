@@ -23,7 +23,7 @@ import { getEdgeLabelForDisplay } from '@/components/GraphCanvas/edgeDisplay'
 import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
-import { PanelControlButton } from '@agentic-base/views-react/controls'
+import { PanelControlButton } from 'agentic-design-system/react/panels'
 import { extractVoxelScores, VOXEL_SCORE_DIMENSIONS } from '@/features/three/voxelStyle'
 import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
 import {
