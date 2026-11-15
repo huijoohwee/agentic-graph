@@ -119,7 +119,7 @@ assert.equal(iconLibrary.panelControls?.restore?.label, 'Restore panel')
 const consumerPackage = JSON.parse(await read('canvas/package.json'))
 const lockfile = JSON.parse(await read('package-lock.json'))
 const designSystemDependency = consumerPackage.dependencies?.['agentic-design-system']
-const lockedDesignSystem = lockfile.packages?.['node_modules/agentic-design-system']?.resolved
+const lockedDesignSystem = lockfile.packages?.[installedDesignSystem]?.resolved
 assert.match(designSystemDependency ?? '', /^github:huijoohwee\/agentic-design-system#[a-f0-9]{40}$/)
 assert(lockedDesignSystem?.endsWith(designSystemDependency.slice(-40)), 'Artifact must consume the exact locked Design System source')
 const designSystemProfile = await read(`${designSystemPrefix}/site/vendor/shared-ui-profile.css`)
