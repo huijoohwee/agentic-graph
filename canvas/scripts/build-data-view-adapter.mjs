@@ -13,12 +13,20 @@ import { deriveDesignRuntimeProfile } from '../../grph-shared/src/ui/fontStacks.
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const basePrefix = 'node_modules/@agentic-base/views-react'
+const designSystemPrefix = 'node_modules/agentic-design-system'
 const baseCssExport = createRequire(path.join(root, 'canvas/package.json')).resolve('@agentic-base/views-react/browser.css')
 const basePackageRoot = path.resolve(path.dirname(baseCssExport), '../../..')
 const installedBase = path.relative(root, basePackageRoot)
 assert(installedBase && !installedBase.startsWith('..') && !path.isAbsolute(installedBase), 'Base dependency must be installed inside this checkout')
+const designSystemEntry = fileURLToPath(import.meta.resolve('agentic-design-system/react/panels'))
+const designSystemPackageRoot = path.resolve(path.dirname(designSystemEntry), '../../..')
+const installedDesignSystem = path.relative(root, designSystemPackageRoot)
+assert(installedDesignSystem && !installedDesignSystem.startsWith('..') && !path.isAbsolute(installedDesignSystem), 'Design System dependency must be installed inside this checkout')
 const sourcePath = file => file.startsWith(basePrefix + '/')
-  ? path.join(basePackageRoot, file.slice(basePrefix.length + 1)) : path.resolve(root, file)
+  ? path.join(basePackageRoot, file.slice(basePrefix.length + 1))
+  : file.startsWith(designSystemPrefix + '/')
+    ? path.join(designSystemPackageRoot, file.slice(designSystemPrefix.length + 1))
+    : path.resolve(root, file)
 const startedAt = Date.now()
 const entry = 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx'
 const MAX_BYTES = 500000
@@ -26,6 +34,7 @@ const MAX_INPUTS = 128, MAX_INPUT_BYTES = 2000000, MAX_TOTAL_INPUT_BYTES = 80000
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const relative = file => path.relative(root, path.resolve(root, file)).split(path.sep).join('/')
   .replace(/^canvas\/node_modules\/@agentic-base\//, 'node_modules/@agentic-base/')
+  .replace(/^canvas\/node_modules\/agentic-design-system\//, 'node_modules/agentic-design-system/')
 const browserExports = ['mountDataView', 'mountSequenceGuide', 'mountSequenceGuideContent']
 const args = process.argv.slice(2)
 assert(args.length === 2 && args[0] === '--out-dir' && path.isAbsolute(args[1]), 'Expected --out-dir <absolute external directory>')
@@ -102,24 +111,27 @@ for (const file of ['shared-borders.css', 'application-typography.css']) {
 }
 nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css')))
 // Base's browser CSS already includes the shared UI roles.
-const iconLibraryBytes = await read(`${basePrefix}/packages/views-react/src/controls/icons.json`)
-const iconLibraryPin = JSON.parse(await read(`${basePrefix}/packages/views-react/src/controls/icons.pin.json`))
-assert.equal(iconLibraryPin.owner, 'github.com/huijoohwee/agentic-design-system')
-assert.match(iconLibraryPin.revision, /^[a-f0-9]{40}$/)
-assert.equal(iconLibraryPin.sha256, sha256(iconLibraryBytes), 'Central icon library drift')
+const iconLibrary = JSON.parse(await read(`${designSystemPrefix}/site/icons.json`))
+const designSystemManifest = JSON.parse(await read(`${designSystemPrefix}/package.json`))
+assert.equal(designSystemManifest.name, 'agentic-design-system')
+assert.equal(iconLibrary.owner, 'github.com/huijoohwee/agentic-design-system')
+assert.equal(iconLibrary.panelControls?.restore?.label, 'Restore panel')
+const consumerPackage = JSON.parse(await read('canvas/package.json'))
+const lockfile = JSON.parse(await read('package-lock.json'))
+const designSystemDependency = consumerPackage.dependencies?.['agentic-design-system']
+const lockedDesignSystem = lockfile.packages?.['node_modules/agentic-design-system']?.resolved
+assert.match(designSystemDependency ?? '', /^github:huijoohwee\/agentic-design-system#[a-f0-9]{40}$/)
+assert(lockedDesignSystem?.endsWith(designSystemDependency.slice(-40)), 'Artifact must consume the exact locked Design System source')
+const designSystemProfile = await read(`${designSystemPrefix}/site/vendor/shared-ui-profile.css`)
 const baseProfile = await read('node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.css')
+assert.equal(designSystemProfile, baseProfile, 'Base data-view projection must match its pinned Design System source')
 assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'), 'Base and Graph must use one shared UI projection')
 for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '.agentic-panel-section-body']) {
   assert(baseProfile.includes(`${role} {`), `Central panel layout owner missing: ${role}`)
 }
-const panelRoot = `${basePrefix}/packages/views-react/src/panels`
-const panelCss = await read(`${panelRoot}/floatingPanelShell.css`)
-const panelPin = JSON.parse(await read(`${panelRoot}/floatingPanelShell.pin.json`))
-assert.equal(panelPin.owner, iconLibraryPin.owner)
-assert.equal(panelPin.path, 'site/floating-panel.css')
-assert.match(panelPin.revision, /^[a-f0-9]{40}$/)
-assert.equal(sha256(panelCss), panelPin.sha256, 'FloatingPanel must match its Design System source')
-nativeStyles.push(shadowScope(panelCss))
+const toolbarCss = await read(`${designSystemPrefix}/site/toolbar.css`)
+const panelCss = await read(`${designSystemPrefix}/site/floating-panel.css`)
+nativeStyles.push(shadowScope(toolbarCss), shadowScope(panelCss))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()
@@ -176,7 +188,7 @@ for (const [name, bytes] of Object.entries(files)) assert(bytes.length > 0 && by
 const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
 const sourceDirty = Boolean(execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd: root, encoding: 'utf8' }).trim())
 const dependencies = {}
-for (const name of ['esbuild', 'tailwindcss', '@tailwindcss/node', '@tailwindcss/oxide', 'postcss', 'react', 'react-dom', 'scheduler', 'lucide-react', '@agentic-base/views-react']) {
+for (const name of ['esbuild', 'tailwindcss', '@tailwindcss/node', '@tailwindcss/oxide', 'postcss', 'react', 'react-dom', 'scheduler', 'lucide-react', '@agentic-base/views-react', 'agentic-design-system']) {
   const directory = runtimePackages[name] || (name === '@agentic-base/views-react' ? 'node_modules/@agentic-base/views-react' : 'node_modules/' + name)
   dependencies[name] = JSON.parse(await read(directory + '/package.json')).version
 }

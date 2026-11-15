@@ -1,5 +1,5 @@
 import React from 'react'
-import { PanelControlButton } from '@agentic-base/views-react/controls'
+import { PanelControlButton } from 'agentic-design-system/react/panels'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 type CanvasEmbedPanelShellProps = {

@@ -2,7 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { coercePanelTypography } from 'grph-shared/ui/panelTypography'
-import { FloatingPanelShell, FloatingPanelCloseButton } from '@agentic-base/views-react/panels'
+import { FloatingPanelShell, FloatingPanelCloseButton } from 'agentic-design-system/react/panels'
 import { SequenceInspectorView } from './SequenceInspectorView'
 
 export const SEQUENCE_GUIDE_BROWSER_LIMITS = Object.freeze({

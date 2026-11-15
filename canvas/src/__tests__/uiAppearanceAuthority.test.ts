@@ -54,10 +54,18 @@ export function testUiAppearanceSharedAuthority() {
   }
   assert.equal(UI_THEME_TOKENS.button.selectedIcon, 'agentic-control-selected')
   const panel = read('components/ui/FloatingPanel.tsx')
-  assert.match(panel, /FloatingPanelShell as BaseFloatingPanelShell/)
-  assert.match(panel, /export \{ FloatingPanelCloseButton \} from '@agentic-base\/views-react\/panels'/)
-  assert.match(panel, /export type \{ FloatingPanelCloseButtonProps \} from '@agentic-base\/views-react\/panels'/)
+  assert.doesNotMatch(panel, /FloatingPanelShell|FloatingPanelCloseButton|@agentic-base\/views-react\/panels/)
   assert.doesNotMatch(panel, /iconClassName|strokeWidth|IconButton|LucideX/)
+  for (const file of [
+    'features/panels/ui/HeaderActions.tsx',
+    'features/panels/ui/PanelViewTabs.tsx',
+    'features/toolbar/FloatingPanelViewTabs.tsx',
+    'features/sequence/sequenceGuideBrowserAdapter.tsx',
+    'lib/toolbar/ToolbarToolMenu.impl.tsx',
+  ]) {
+    assert.match(read(file), /from 'agentic-design-system\/react\/panels'/, `${file} must consume the pinned Design System directly`)
+    assert.doesNotMatch(read(file), /@agentic-base\/views-react\/panels/)
+  }
   assert.match(read('features/panels/ui/HeaderActions.tsx'), /<PanelControlGroup/)
   const panelActions = read('features/panels/ui/HeaderActions.tsx')
   assert.match(panelActions, /actions=\{\{ search: onSearchToggle, pin: onPinToggle, apply: onApply, reset: onReset,/)
@@ -91,7 +99,6 @@ export function testUiAppearanceSharedAuthority() {
   assert.match(floatingPanelTabs, /FLOATING_PANEL_VIEW_TABS\.map\(spec =>/)
   assert.doesNotMatch(floatingPanelTabs, /iconOnly/)
   assert.match(read('lib/toolbar/ToolbarToolMenu.impl.tsx'), /minimized=\{floatingPanelMinimized\}/)
-  assert.match(read('components/ui/FloatingPanel.tsx'), /FloatingPanelCloseButton \} from '@agentic-base\/views-react\/panels'/)
   for (const file of ['features/canvas/CanvasEmbedPanelShell.tsx', 'features/markdown-workspace/MarkdownWorkspaceToolbar.tsx', 'features/storyboard-widget-manager/StoryboardWidgetMappingSettingsPanel.tsx']) {
     assert.match(read(file), /PanelControlButton control="close"/)
     assert.doesNotMatch(read(file), /PANEL_CONTROL_ICONS\.close/)

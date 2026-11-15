@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 const styles = new URL('../styles/', import.meta.url)
@@ -39,41 +39,41 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.doesNotMatch(toolbarCss, /var\(--kg-(?:compact|default)-glyph-size,\s*(?:0\.75rem|1rem)\)/)
 })
 
-test('Graph FloatingPanel consumes the exact Base shell without a local theme bridge', () => {
-  const require = createRequire(import.meta.url)
-  const baseCssExport = require.resolve('@agentic-base/views-react/browser.css')
-  const basePackage = process.env.AGENTIC_BASE_PACKAGE
-    ? path.resolve(process.env.AGENTIC_BASE_PACKAGE)
-    : path.resolve(path.dirname(baseCssExport), '..')
-  const panelCss = fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.css'), 'utf8')
-  const panelPin = JSON.parse(fs.readFileSync(path.join(basePackage, 'src/panels/floatingPanelShell.pin.json'), 'utf8'))
-  assert.match(panelPin.revision, /^[a-f0-9]{40}$/u)
-  assert.equal(sha256(panelCss), `sha256:${panelPin.sha256}`)
+test('Graph FloatingPanel consumes the pinned Design System shell without a local theme bridge', () => {
+  const designSystemEntry = fileURLToPath(import.meta.resolve('agentic-design-system/react/panels'))
+  const designSystemPackage = path.resolve(path.dirname(designSystemEntry), '../../..')
+  const panelCss = fs.readFileSync(path.join(designSystemPackage, 'site/floating-panel.css'), 'utf8')
+  const designSystem = JSON.parse(fs.readFileSync(path.join(designSystemPackage, 'package.json'), 'utf8'))
+  const appManifest = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
+  const lock = JSON.parse(fs.readFileSync(new URL('../../../package-lock.json', import.meta.url), 'utf8'))
+  const dependency = appManifest.dependencies['agentic-design-system']
+  assert.match(dependency, /^github:huijoohwee\/agentic-design-system#[a-f0-9]{40}$/u)
+  assert.ok(lock.packages?.['node_modules/agentic-design-system']?.resolved?.endsWith(dependency.slice(-40)))
+  assert.match(panelCss, /\.agentic-base-floating-panel-header/)
   assert.match(panelCss, /border-radius:\s*var\(--agentic-panel-radius\)/)
   assert.match(panelCss, /:is\(\.agentic-floating-panel-tab, \.agentic-base-floating-panel-close\):has\(> \.agentic-icon:only-child\)/)
   assert.match(panelCss, /\.agentic-base-floating-panel-close:hover \{ background: var\(--agentic-control-hover-background\); \}/)
-  const toolbarCss = fs.readFileSync(path.join(basePackage, 'src/controls/toolbar.css'), 'utf8')
+  const toolbarCss = fs.readFileSync(path.join(designSystemPackage, 'site/toolbar.css'), 'utf8')
   assert.match(toolbarCss, /\.agentic-toolbar-item\[data-icon-only\][\s\S]*inline-size: var\(--agentic-control-height\)/)
   assert.match(toolbarCss, /\.agentic-toolbar-item:is\(\[aria-current\], \[aria-expanded=true\], \[aria-pressed=true\]\)/)
-  assert.match(panelCss, /inline-size:\s*var\(--agentic-control-height\);[^}]*block-size:\s*var\(--agentic-control-height\)/s)
-  assert.match(panelCss, /inline-size:\s*var\(--agentic-control-height-touch\);[^}]*block-size:\s*var\(--agentic-control-height-touch\)/s)
+  assert.match(panelCss, /inline-size: max\(var\(--agentic-control-height\), var\(--agentic-icon-size-default\)\)/)
+  assert.match(panelCss, /inline-size: max\(var\(--agentic-control-height-touch\), var\(--agentic-icon-size-default\)\)/)
   assert.doesNotMatch(panelCss, /(?:inline-size|block-size|width|height):\s*(?:16|28|38|48)px\b/)
-  const sharedControl = fs.readFileSync(path.join(basePackage, 'src/controls/PanelControlButton.tsx'), 'utf8')
+  const sharedControl = fs.readFileSync(path.join(designSystemPackage, 'packages/react-panels/src/PanelControlButton.tsx'), 'utf8')
   assert.match(sharedControl, /updatePanelControlButton\(buttonRef\.current, control/)
   assert.doesNotMatch(sharedControl, /PANEL_CONTROL_(?:ICONS|LABELS|ORDER)/)
-  const sharedGroup = fs.readFileSync(path.join(basePackage, 'src/controls/PanelControlGroup.tsx'), 'utf8')
+  const sharedGroup = fs.readFileSync(path.join(designSystemPackage, 'packages/react-panels/src/PanelControlGroup.tsx'), 'utf8')
   assert.match(sharedGroup, /updatePanelControlGroup\(groupRef\.current/)
   assert.doesNotMatch(sharedGroup, /PANEL_CONTROL_ORDER|control === 'minimize'|control === 'restore'/)
   assert.doesNotMatch(sharedGroup, /className\?: string/)
-  const toolbarPin = JSON.parse(fs.readFileSync(path.join(basePackage, 'src/controls/toolbar.pin.json'), 'utf8'))
-  const controlRuntime = fs.readFileSync(path.join(basePackage, 'src/controls/toolbar-icons.js'))
-  assert.equal(sha256(controlRuntime), `sha256:${toolbarPin.iconsSha256}`)
+  const controlRuntime = fs.readFileSync(path.join(designSystemPackage, 'site/toolbar-icons.js'))
   assert.match(controlRuntime.toString('utf8'), /const roles = Object\.keys\(definitions\)/)
   assert.match(controlRuntime.toString('utf8'), /return roles\.filter\(control =>/)
   assert.match(controlRuntime.toString('utf8'), /if \(typeof actions\[control\] !== 'function'\) return false/)
   assert.match(controlRuntime.toString('utf8'), /cannot apply consumer visual overrides/)
   const adapter = fs.readFileSync(new URL('../components/ui/FloatingPanel.tsx', import.meta.url), 'utf8')
-  assert.match(adapter, /FloatingPanelShell as BaseFloatingPanelShell/)
+  assert.doesNotMatch(adapter, /FloatingPanelShell|FloatingPanelCloseButton|@agentic-base\/views-react\/panels/)
+  assert.equal(designSystem.name, 'agentic-design-system')
   assert.equal(fs.existsSync(new URL('../lib/ui/floatingPanelTheme.ts', import.meta.url)), false)
   assert.doesNotMatch(adapter, /readFloatingPanelThemeStyle|--base-(?:accent|text-primary|text-secondary|border|panel|shadow-overlay|toolbar-compact-padding)/)
   const sourceDirectory = new URL('../styles/', import.meta.url)

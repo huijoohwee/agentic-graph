@@ -1,6 +1,6 @@
 import React from 'react'
 import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
-import { FloatingPanelTab, FloatingPanelTabs } from '@agentic-base/views-react/panels'
+import { FloatingPanelTab, FloatingPanelTabs } from 'agentic-design-system/react/panels'
 import { FLOATING_PANEL_TYPE_ICON_BY_VIEW } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
 import { UI_LABELS } from '@/lib/config'

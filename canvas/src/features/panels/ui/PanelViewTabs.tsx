@@ -1,5 +1,5 @@
 import React from 'react'
-import { FloatingPanelTab, FloatingPanelTabs } from '@agentic-base/views-react/panels'
+import { FloatingPanelTab, FloatingPanelTabs } from 'agentic-design-system/react/panels'
 
 type PanelViewTabProps = {
   tabKey?: string
@@ -29,7 +29,7 @@ function readIcon(child: React.ReactNode): React.ComponentType<React.SVGProps<SV
   return child.type as React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
-/** Graph supplies tab meaning and callbacks; shared markup, state, and keyboard behavior come from Base. */
+/** Graph supplies tab meaning and callbacks; shared markup, state, and keyboard behavior come from Design System. */
 export function PanelViewTabs({ activeKey, label = 'Panel views', children }: PanelViewTabsProps) {
   const items = React.Children.toArray(children)
   const tabItems = items.filter((item): item is React.ReactElement<PanelViewTabProps> =>

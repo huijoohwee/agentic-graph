@@ -1,5 +1,5 @@
 import React from 'react'
-import { FloatingPanelShell } from '@/components/ui/FloatingPanel'
+import { FloatingPanelShell } from 'agentic-design-system/react/panels'
 import { useShallow } from 'zustand/react/shallow'
 import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import { useOrchestratorPanelState } from '@/features/panels/hooks/useOrchestratorPanelState'

@@ -2,7 +2,7 @@ import { type SourceFixture } from './sourceFixture'
 
 export function assertPhase1(fixture: SourceFixture) {
   const { toolbarText, toolbarStylesText, toolMenuController, responsiveElementClassesText, cssText, responsiveToolbarCssText, toolbarAreaCssOwners, toolbarAreaContracts, staleToolbarAreaLayoutStrings } = fixture
-  if (!toolMenuController.includes('<FloatingPanelShell') || !toolMenuController.includes("from '@/components/ui/FloatingPanel'")) throw new Error('Expected native tool menu to delegate to the shared floating shell')
+  if (!toolMenuController.includes('<FloatingPanelShell') || !toolMenuController.includes("from 'agentic-design-system/react/panels'")) throw new Error('Expected tool menu to import the shared floating shell directly')
 
   if (!responsiveToolbarCssText.includes('touch-action: pan-x') || responsiveToolbarCssText.includes('touch-action: pan-x manipulation') || toolbarText.includes("touchAction: 'pan-x manipulation'")) {
     throw new Error('expected toolbar touch scrolling behavior to live in shared CSS with a valid pan-x touch-action instead of Toolbar inline style')
