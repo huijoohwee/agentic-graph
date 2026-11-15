@@ -72,8 +72,11 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(expectedLabels)
         || tabs.some(button => button.disabled || button.getAttribute('aria-selected') == null)
         || tabs.filter(button => button.getAttribute('aria-selected') === 'true').length !== 1
-        || !tabs.every(button => button.querySelector('svg') && !button.querySelector('span'))) {
-        throw new Error(`expected one stable, selectable icon-only tab strip with accessible names across sources and shell states; expected=${JSON.stringify(expectedLabels)} actual=${JSON.stringify(tabs.map(button => ({ label: button.getAttribute('aria-label'), selected: button.getAttribute('aria-selected'), disabled: button.disabled, icon: Boolean(button.querySelector('svg')), visibleLabel: button.querySelector('span')?.textContent ?? null })))}`)
+        || !tabs.every(button => button.firstElementChild?.tagName.toLowerCase() === 'svg'
+          && button.firstElementChild.getAttribute('aria-hidden') === 'true'
+          && button.lastElementChild?.tagName.toLowerCase() === 'span'
+          && button.lastElementChild.textContent === button.getAttribute('aria-label'))) {
+        throw new Error(`expected one stable, selectable icon-and-label tab strip across sources and shell states; expected=${JSON.stringify(expectedLabels)} actual=${JSON.stringify(tabs.map(button => ({ label: button.getAttribute('aria-label'), selected: button.getAttribute('aria-selected'), disabled: button.disabled, icon: button.firstElementChild?.tagName.toLowerCase() ?? null, text: button.lastElementChild?.textContent ?? null })))}`)
       }
     }
     assertTabs()
@@ -94,6 +97,9 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       await waitForNextTask()
     })
     assertTabs()
+    if (container.querySelector('.agentic-base-floating-panel')?.getAttribute('data-agentic-base-panel-minimized') !== 'true') {
+      throw new Error('expected FloatingPanel minimize state to use the shared Design System contract')
+    }
     const restoreButton = container.querySelector<HTMLButtonElement>('button[aria-label="Restore panel"]')
     if (!restoreButton) throw new Error('expected minimized shell restore control')
     await act(async () => {
@@ -101,6 +107,9 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       await waitForNextTask()
     })
     assertTabs()
+    if (container.querySelector('.agentic-base-floating-panel')?.hasAttribute('data-agentic-base-panel-minimized')) {
+      throw new Error('expected FloatingPanel restore to clear the shared minimized state')
+    }
     await act(async () => {
       readTabs().find(button => button.getAttribute('aria-label') === 'Sequence Diagram')?.click()
       await waitForNextTask()
@@ -155,9 +164,9 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
       const tabs = readBottomTabs()
       const selected = tabs.find(button => button.getAttribute('aria-selected') === 'true')
       if (tabs.length !== 2 || !selected || selected.getAttribute('aria-label') !== label
-        || selected.querySelector('span')?.textContent !== label || selected.firstElementChild?.tagName.toLowerCase() !== 'svg'
-        || tabs.some(button => button !== selected && button.querySelector('span'))) {
-        throw new Error('expected the selected BottomPanel tab to place its label after the icon while other views stay icon-only')
+        || selected.lastElementChild?.textContent !== label || selected.firstElementChild?.tagName.toLowerCase() !== 'svg'
+        || tabs.some(button => button.lastElementChild?.textContent !== button.getAttribute('aria-label'))) {
+        throw new Error('expected BottomPanel tabs to share icon-before-label markup and selected state')
       }
     }
     assertSelectedLabel('Flowchart')

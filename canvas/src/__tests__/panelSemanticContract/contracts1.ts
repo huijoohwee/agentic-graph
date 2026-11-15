@@ -24,6 +24,12 @@ export const testMainPanelContainerUsesKgPanelBg = () => {
   if (text.includes('headerBarHeightPx') || text.includes('--kg-header-bar-height')) {
     throw new Error('Expected MainPanelContainer to avoid parsing header-height utility classes')
   }
+  const bottomPanel = readUtf8(path.resolve(root, 'src', 'features', 'strybldr', 'StrybldrTimelineBottomPanel.tsx'))
+  const minimizedState = "data-agentic-base-panel-minimized={minimized ? 'true' : undefined}"
+  if (!text.includes(minimizedState) || !bottomPanel.includes(minimizedState)
+    || text.includes('data-kg-panel-minimized') || bottomPanel.includes('data-kg-panel-minimized')) {
+    throw new Error('Expected MainPanel and BottomPanel to expose minimized state through the Design System contract')
+  }
 }
 
 export const testPanelShellUsesResponsiveRowScrolling = () => {
@@ -53,8 +59,10 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   }
   if (!basePanelTabs.includes('agentic-floating-panel-tabs')
     || !basePanelStyles.includes('.agentic-floating-panel-tabs {')
-    || !basePanelStyles.includes('overflow-x: auto')) {
-    throw new Error('Expected the Design System tab rail to own horizontal tab scrolling')
+    || !basePanelStyles.includes('overflow-x: auto')
+    || !basePanelStyles.includes('.agentic-floating-panel-tab:not([aria-selected="true"]):not(:hover):not(:focus-visible)')
+    || !basePanelStyles.includes('> span { font-size: 0; line-height: 0; }')) {
+    throw new Error('Expected the pinned Design System to own tab scrolling and hover/selected label visibility')
   }
 
   const headerActions = readUtf8(headerActionsPath)

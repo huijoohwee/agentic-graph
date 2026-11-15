@@ -389,7 +389,7 @@ export function StrybldrTimelineBottomPanel({
           data-agentic-panel-kind="bottom"
           data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-panel="1"
-          data-kg-panel-minimized={minimized ? 'true' : undefined}
+          data-agentic-base-panel-minimized={minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-minimized={minimized ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-pinned={pinned ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-drag-enabled={!pinned && !minimized ? 'true' : 'false'}

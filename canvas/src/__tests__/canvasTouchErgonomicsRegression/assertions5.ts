@@ -96,7 +96,7 @@ export function assertPhase5(fixture: SourceFixture) {
   if (
     !cssText.includes('--kg-toolbar-compact-surface-height') ||
     !cssText.includes('--toolbar-padding: var(--kg-toolbar-compact-padding)') ||
-    !strybldrTimelineBottomPanelText.includes("data-kg-panel-minimized={minimized ? 'true' : undefined}") ||
+    !strybldrTimelineBottomPanelText.includes("data-agentic-base-panel-minimized={minimized ? 'true' : undefined}") ||
     !strybldrTimelineBottomPanelText.includes('agentic-panel-header') ||
     strybldrTimelineBottomPanelText.includes('agentic-base-floating-panel-header px-2') ||
     responsiveCanvasToolbarCssText.includes('--base-control-height: var(--kg-toolbar-compact-surface-height)') ||

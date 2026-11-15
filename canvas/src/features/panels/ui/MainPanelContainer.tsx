@@ -23,7 +23,7 @@ export default function MainPanelContainer({
     <FloatingPanel
       as="aside"
       ariaLabel={ariaLabel}
-      data-kg-panel-minimized={minimized ? 'true' : undefined}
+      data-agentic-base-panel-minimized={minimized ? 'true' : undefined}
       className={`${base} ${className || 'h-full'}`}
       style={style}
     >
