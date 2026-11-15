@@ -357,12 +357,12 @@
     "spatial-workspace:full-app": "node canvas/scripts/run_spatial_workspace_full_app_smoke.mjs --build"
   },
   "dependencies": {
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#67a31bdc121793408becbcd84427d5f7c0b651d0",
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#5f5a76d8d1cb955c8d1ce2a6277bd21ed7dd065f",
     "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/34db363320aa34f47bde836304c0c553af9aa1c2",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/c74b10289c71acdd61d1c9217b0a745d99a50bd0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
