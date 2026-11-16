@@ -1,9 +1,12 @@
 import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
+import {
   flightGeoOverlayFeatureCollection,
   hasExactFlightGeoOverlayFeatureCollection,
   type FlightGeoOverlaySnapshot,
 } from './flightGeoOverlay.js'
-import { deriveRegionalPoiLongitudeSpan } from 'grph-shared/geospatial/regionalPoiGeo'
+
 import {
   hasExactGeoJsonStyleSource,
   isMapLibreStyleReady,

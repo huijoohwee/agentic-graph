@@ -1,17 +1,13 @@
 import {
-  assertValidRegionalPoiPolygon,
   deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
+import {
+  assertValidRegionalPoiPolygon,
   deriveRegionalPoiRepresentativePoint,
 } from './regionalPoiGeometry.js'
 
 export {
-  deriveRegionalPoiLongitudeSpan,
   deriveRegionalPoiRepresentativePoint,
-  normalizeRegionalPoiLongitude,
-  unwrapRegionalPoiLongitude,
-} from './regionalPoiGeometry.js'
-export type {
-  RegionalPoiLongitudeSpan,
 } from './regionalPoiGeometry.js'
 
 export type RegionalPoiCoordinate = readonly [
