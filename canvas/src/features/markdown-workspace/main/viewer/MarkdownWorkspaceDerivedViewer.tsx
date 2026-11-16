@@ -278,7 +278,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     })
     props.onChangeViewerMode?.('geospatial')
     if (!props.dataViewSource) void setGeospatialModeEnabled(true).catch(() => void 0)
-  }, [props])
+  }, [props.dataViewSource, props.onChangeViewerMode, setViewConfig])
 
   const viewSettingsBinding = React.useMemo<WorkspaceDataViewFloatingBinding | null>(() => {
     if (!selected || !viewConfig) return null
@@ -332,6 +332,8 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     }
   }, [
     canMutate,
+    commitViewConfig,
+    effectiveViewerMode,
     handleSelectGeospatialView,
     onAddColumn,
     onDeleteColumn,
@@ -339,11 +341,13 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     onNewRecord,
     onResetDataView,
     onRenameColumn,
-    props,
+    props.activeDocumentPath,
+    props.canvasDataViewSurface,
+    props.dataViewSource,
+    props.onChangeViewerMode,
+    selected,
     settingsPanel,
-    commitViewConfig,
     viewConfig,
-    effectiveViewerMode,
   ])
 
   const activateViewSettings = useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)

@@ -114,6 +114,25 @@ test('stream limits use received bytes even without Content-Length and preserve 
   } finally { globalThis.fetch = originalFetch; clearWebpageIframeSrcdocCaches() }
 })
 
+test('proxy 413 falls back to a direct bounded fetch', async () => {
+  clearWebpageIframeSrcdocCaches()
+  const signal = new AbortController().signal
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/__webpage_proxy?')) return new Response('proxy limit', { status: 413 })
+    if (url === 'https://example.invalid/inline-shell') {
+      return new Response('<!doctype html><html><body><main>Recovered directly</main></body></html>', {
+        headers: { 'Content-Type': 'text/html' },
+      })
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`)
+  }
+  assert.equal(
+    await fetchWebpageHtmlViaProxy({ url: 'https://example.invalid/inline-shell', signal, fetchImpl }),
+    '<!doctype html><html><body><main>Recovered directly</main></body></html>',
+  )
+})
+
 test('the headless crawler reports oversized HTML instead of returning a truncated successful capture', async () => {
   const server = createServer((request, response) => {
     response.setHeader('Content-Type', 'text/html')

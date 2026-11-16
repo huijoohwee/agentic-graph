@@ -80,9 +80,52 @@ const readBindingDensity = (binding: WorkspaceDataViewFloatingBinding): Workspac
   fieldLineMode: coerceDataViewFieldLineMode(binding.viewConfig.fieldLineMode),
 })
 
+const areFloatingBindingScopesEqual = (
+  left: WorkspaceDataViewFloatingBinding['viewScope'],
+  right: WorkspaceDataViewFloatingBinding['viewScope'],
+) => (
+  left?.activeDocumentPath === right?.activeDocumentPath
+  && left?.tableId === right?.tableId
+  && !!left?.ephemeral === !!right?.ephemeral
+)
+
+const areFloatingBindingsEquivalent = (
+  left: WorkspaceDataViewFloatingBinding | null,
+  right: WorkspaceDataViewFloatingBinding | null,
+) => {
+  if (left === right) return true
+  if (!left || !right) return false
+  return (
+    left.registrationId === right.registrationId
+    && left.contextLabel === right.contextLabel
+    && left.activePanel === right.activePanel
+    && left.canMutate === right.canMutate
+    && left.viewerLayout === right.viewerLayout
+    && left.viewerMode === right.viewerMode
+    && !!left.allowMultiDimLayout === !!right.allowMultiDimLayout
+    && left.sourceView === right.sourceView
+    && areFloatingBindingScopesEqual(left.viewScope, right.viewScope)
+    && left.columns === right.columns
+    && left.groupByColumnId === right.groupByColumnId
+    && left.viewConfig === right.viewConfig
+    && left.setViewConfig === right.setViewConfig
+    && left.onSelectSavedView === right.onSelectSavedView
+    && left.onChangeLayout === right.onChangeLayout
+    && left.onChangeLayoutMode === right.onChangeLayoutMode
+    && left.onSelectGeospatialView === right.onSelectGeospatialView
+    && left.onReset === right.onReset
+    && left.onNewRecord === right.onNewRecord
+    && left.onAddColumn === right.onAddColumn
+    && left.onDuplicateColumn === right.onDuplicateColumn
+    && left.onDeleteColumn === right.onDeleteColumn
+    && left.onRenameColumn === right.onRenameColumn
+  )
+}
+
 export function setWorkspaceDataViewFloatingBinding(
   binding: WorkspaceDataViewFloatingBinding | null,
 ) {
+  if (areFloatingBindingsEquivalent(currentBinding, binding)) return
   const previousRegistrationId = currentBinding?.registrationId || null
   const previousBindingDensity = currentBinding ? readBindingDensity(currentBinding) : null
   currentBinding = binding

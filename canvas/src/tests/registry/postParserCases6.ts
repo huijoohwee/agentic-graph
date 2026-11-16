@@ -328,6 +328,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["agentReady.webMcpRuntime.toolbarActionControl","@/__tests__/toolbarActionWebMcpTools.test","testMainToolbarActionsUseSourceBackedWebMcpInvocation"],
   ["graph.data.preserveLayout.probeTreeOutputContentCommit","@/__tests__/graphDataPreservingLayoutSync.test","testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTopologyChange"],
   ["harness.cleanup.mediaRendererIsolation","@/__tests__/canvasTestRuntimeMediaIsolation.test","testCanvasRuntimeCleanupRestoresMediaAndRendererSelection"],
+  ["remoteFetch.webpageProxy.htmlBudget","@/__tests__/remoteFetchBackpressure.test","testRemoteFetchUsesLargerBudgetForHtmlIframeProxy"],
   ["remoteFetch.backpressure.abort","@/__tests__/remoteFetchBackpressure.test","testRemoteFetchAbortReleasesBackpressure"],
   ["remoteFetch.backpressure.disconnect","@/__tests__/remoteFetchBackpressure.test","testRemoteFetchDisconnectReleasesBackpressure"],
 ]

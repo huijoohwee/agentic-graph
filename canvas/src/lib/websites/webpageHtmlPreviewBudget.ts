@@ -1,5 +1,8 @@
 // A preview budget, not a capture/export limit. Check before parsing or hashing HTML.
 export const WEBPAGE_HTML_PREVIEW_MAX_BYTES = 500_000
+// Raw HTML source can be larger than the in-app preview because imports and
+// live iframe playback need enough bytes to preserve page fidelity.
+export const WEBPAGE_HTML_SOURCE_MAX_BYTES = 48_000_000
 export const WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE =
   'HTML preview exceeds the 500 KB limit. Use Markdown to read this page. The saved source is unchanged.'
 

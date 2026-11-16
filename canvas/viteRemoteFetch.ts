@@ -2,6 +2,7 @@ import { once } from 'node:events'
 import type { ServerResponse } from 'node:http'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from './src/lib/websites/webpageHtmlPreviewBudget'
 
 async function waitForResponseDrain(res: ServerResponse, signal: AbortSignal): Promise<void> {
   const waiting = new AbortController()
@@ -198,6 +199,12 @@ export function createRemoteFetchHandler({ repoRoot, injectWebpageProxyHtml }: {
         if (!Number.isFinite(parsed)) return 250 * 1024 * 1024
         return Math.max(512 * 1024, Math.min(1024 * 1024 * 1024, Math.floor(parsed)))
       })()
+      const maxHtmlBytes = (() => {
+        const raw = String(process.env.AGENTIC_OS_REMOTE_FETCH_MAX_BYTES_HTML || '').trim()
+        const parsed = raw ? Number(raw) : NaN
+        if (!Number.isFinite(parsed)) return WEBPAGE_HTML_SOURCE_MAX_BYTES
+        return Math.max(512 * 1024, Math.min(WEBPAGE_HTML_SOURCE_MAX_BYTES, Math.floor(parsed)))
+      })()
       const ctrl = new AbortController()
       controller = ctrl
       const abort = () => {
@@ -269,6 +276,7 @@ export function createRemoteFetchHandler({ repoRoot, injectWebpageProxyHtml }: {
         const ct = String(contentType || '').toLowerCase()
         if (rangeHeader) return maxBinaryBytes
         if (ct.startsWith('video/') || ct.startsWith('audio/')) return maxBinaryBytes
+        if (/\b(?:text\/html|application\/xhtml\+xml)\b/.test(ct)) return maxHtmlBytes
         return maxBytes
       })()
       const reader = upstream.body?.getReader()
@@ -348,4 +356,3 @@ export function createRemoteFetchHandler({ repoRoot, injectWebpageProxyHtml }: {
     }
   }
 }
-

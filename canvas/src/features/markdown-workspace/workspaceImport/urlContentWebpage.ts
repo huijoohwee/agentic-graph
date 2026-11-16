@@ -1,7 +1,8 @@
 import { deriveFilenameFromUrl } from '@/lib/url'
 import { fetchWebpageMarkdown } from '@/lib/net/remoteMarkdownConversions'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { fetchWebpageHtmlAuto, WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageIframeSrcdoc'
+import { fetchWebpageHtmlAuto } from '@/lib/websites/webpageIframeSrcdoc'
+import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageHtmlPreviewBudget'
 import { looksLowFidelityWebpageMarkdown } from '@/lib/websites/webpageClientConvert'
 import { convertHtmlToMarkdownUnified } from '@/lib/markdown/htmlToMarkdownUnified'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
@@ -371,8 +372,9 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
         throw new Error('WEBPAGE_HTML_FETCH_FAILED')
       }
       ctrl.signal.throwIfAborted()
-      const boundedHtml = await import('./urlContentHtml').then(({ prepareWorkspaceImportHtml }) => prepareWorkspaceImportHtml(rawHtml))
-      const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(boundedHtml)
+      const fetchedHtml = String(rawHtml || '')
+      const boundedHtml = await import('./urlContentHtml').then(({ prepareWorkspaceImportHtml }) => prepareWorkspaceImportHtml(fetchedHtml))
+      const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(fetchedHtml)
       const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
       const fetchedHtmlLooksLikeAuthenticationShell = mode === 'import' && looksLikeAuthenticationPageShell(boundedHtml)
       const fetchedHtmlLooksLikeLowFidelityShell = mode === 'import' && (
@@ -381,7 +383,7 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
         || looksLikeIncompleteWebpageHtml(boundedHtml)
       )
       lastFetchedHtml = boundedHtml
-      if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(boundedHtml)
+      if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(fetchedHtml)
       const tuned = autoTuneFromHtml({
         html: lastFetchedHtml,
         includeImages,
@@ -442,11 +444,19 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
             }
             try {
               inlineSlideDeckMarkdown = await runInIdle(async () => normalizeFallbackWebpageMarkdown(await recoverInlineSlideDeckMarkdown({
-                html: boundedHtml, url: normalizedUrl, includeImages, fidelityLevel,
+                html: fetchedHtml, url: normalizedUrl, includeImages, fidelityLevel,
               })), { timeoutMs: 1200 })
             } catch {
               inlineSlideDeckMarkdown = ''
             }
+          }
+        }
+        if (inlineSlideDeckMarkdown.trim()) {
+          return {
+            markdown: inlineSlideDeckMarkdown,
+            source: 'fallback' as const,
+            convertedScore: convertedMarkdown.length,
+            fallbackScore: inlineSlideDeckMarkdown.length,
           }
         }
         return chooseWebpageMarkdownByContentCoverage({
