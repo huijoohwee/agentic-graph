@@ -107,6 +107,7 @@ async function saveCurrentCopies(outputRoot: string, selectedPath: string, entri
 async function publishCurrentCopies(root: string, selectedPath: string, entries: FolderEntry[], direct: boolean): Promise<string> {
   const replaced = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was replaced; it was preserved')
   const edited = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was edited; it was preserved')
+  const moved = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was moved; its directory was preserved')
   if (await fs.realpath(root) !== root) throw replaced()
   const lockPath = path.join(root, direct ? '.website-lock' : '.current-lock')
   const lock = await fs.open(lockPath, 'wx', 0o600).catch(error => {
@@ -149,6 +150,7 @@ async function publishCurrentCopies(root: string, selectedPath: string, entries:
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
           present = false
+          if (last) throw moved()
           return false
         }
       }
