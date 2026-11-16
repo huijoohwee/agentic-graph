@@ -1,13 +1,15 @@
 import {
-  createRegionalPoiProfile,
   deriveRegionalPoiLongitudeSpan,
+  type RegionalPoiLongitudeSpan,
+  unwrapRegionalPoiLongitude,
+} from 'agentic-geo/core'
+import {
+  createRegionalPoiProfile,
   type RegionalPoiCoordinate,
   type RegionalPoiAccuracy,
-  type RegionalPoiLongitudeSpan,
   type RegionalPoiProfile,
   type RegionalPoiProvenance,
   type RegionalPoiSurface,
-  unwrapRegionalPoiLongitude,
 } from 'grph-shared/geospatial/regionalPoiGeo'
 import type {
   RegionalPoiPresentationStyle,

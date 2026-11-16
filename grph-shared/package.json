@@ -541,9 +541,9 @@
     "README.md"
   ],
   "peerDependencies": {
+    "@agentic-base/views-react": "0.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@agentic-base/views-react": "0.1.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
@@ -553,6 +553,7 @@
     "typescript": "~5.8.3"
   },
   "dependencies": {
+    "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "fflate": "^0.8.3",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31"

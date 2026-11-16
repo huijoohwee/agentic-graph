@@ -1,7 +1,9 @@
+import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
 import type { Feature, FeatureCollection, Point } from 'geojson'
 import {
   deriveRegionalPoiLocators,
-  deriveRegionalPoiLongitudeSpan,
   type RegionalPoiProfile,
 } from 'grph-shared/geospatial/regionalPoiGeo'
 import { findNearestMapLibreWalkablePoint } from './features/geospatial/mapLibreWalkableSurface.js'

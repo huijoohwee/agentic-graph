@@ -1,9 +1,11 @@
+import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import {
   createRegionalPoiProfile,
-  deriveRegionalPoiLongitudeSpan,
   deriveRegionalPoiLocators,
   deriveRegionalPoiRepresentativePoint,
 } from '../dist/geospatial/regionalPoiGeo.js'

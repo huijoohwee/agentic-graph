@@ -1,7 +1,9 @@
+import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
 import type { FitBoundsOptions, LngLatBoundsLike } from 'maplibre-gl'
 import {
   deriveRegionalPoiLocators,
-  deriveRegionalPoiLongitudeSpan,
 } from 'grph-shared/geospatial/regionalPoiGeo'
 import {
   readCityGeoOverlay,
