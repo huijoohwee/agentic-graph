@@ -1,8 +1,10 @@
+import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   deriveRegionalPoiLocators,
-  deriveRegionalPoiLongitudeSpan,
 } from 'grph-shared/geospatial/regionalPoiGeo'
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {

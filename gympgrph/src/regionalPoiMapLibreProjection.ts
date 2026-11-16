@@ -1,3 +1,6 @@
+import {
+  deriveRegionalPoiLongitudeSpan,
+} from 'agentic-geo/core'
 import type {
   Feature,
   FeatureCollection,
@@ -6,7 +9,6 @@ import type {
 } from 'geojson'
 import {
   createRegionalPoiProfile,
-  deriveRegionalPoiLongitudeSpan,
   deriveRegionalPoiLocators,
   type RegionalPoiProfile,
   type RegionalPoiSourceReference,
