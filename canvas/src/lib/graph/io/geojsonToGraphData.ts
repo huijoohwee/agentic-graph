@@ -83,13 +83,18 @@ export function buildGraphDataFromFeatureCollection(args: {
   if (!Array.isArray(featuresRaw) || featuresRaw.length === 0) return null
 
   const nodes: GraphNode[] = []
+  const areaFeatures: JSONValue[] = []
   for (let i = 0; i < featuresRaw.length; i += 1) {
     const f = readPlainObject(featuresRaw[i]) as GeoJsonFeature | null
     if (!f) continue
     if (String(f.type || 'Feature') !== 'Feature') continue
     const props = readPlainObject(f.properties) || {}
     const geom = f.geometry
-    const lngLat = computeLngLatFromGeometry(geom)
+    const geometry = readPlainObject(geom)
+    const isCoarseRegion = props.role === 'region' && props.precision === 'coarse'
+      && (geometry?.type === 'Polygon' || geometry?.type === 'MultiPolygon')
+    const lngLat = isCoarseRegion ? null : computeLngLatFromGeometry(geom)
+    if (isCoarseRegion && isJsonValue(f)) areaFeatures.push(f)
 
     const baseId = (() => {
       const fid = f.id
@@ -105,6 +110,7 @@ export function buildGraphDataFromFeatureCollection(args: {
 
     const nextProps: Record<string, JSONValue> = toJsonProps(props)
     nextProps.kgSourceFeatureId = baseId
+    if (isCoarseRegion) delete nextProps.geo
     if (lngLat) {
       const existingGeo = readPlainObject(nextProps.geo) as Record<string, JSONValue> | null
       nextProps.geo = {
@@ -137,6 +143,9 @@ export function buildGraphDataFromFeatureCollection(args: {
       kind: 'workspace',
       source: args.sourcePath,
       graphId: `workspace:${args.sourcePath}`,
+      ...(areaFeatures.length ? {
+        kgGeospatialAreaFeatures: { type: 'FeatureCollection', features: areaFeatures },
+      } : {}),
     },
     nodes,
     edges: [],

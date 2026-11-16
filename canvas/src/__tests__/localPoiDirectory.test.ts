@@ -213,8 +213,17 @@ export function testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures() {
   }
   const sourcePath = 'docs/workspace-seeds/agentic-graph-maps-places.md'
   const markdown = readFileSync(resolve(canvasRoot, '../', sourcePath), 'utf8')
-  if (buildActiveGeoStackPlacesPreview(sourcePath, markdown) !== null) {
-    throw new Error('Expected the historical place report to stay out of the synthetic preview')
+  const preview = buildActiveGeoStackPlacesPreview(sourcePath, markdown)
+  if (!preview || preview.features.length !== 7
+    || preview.features.filter(feature => feature.properties.localPoiRole === 'place').length !== 6
+    || preview.features.filter(feature => feature.properties.localPoiRole === 'region').length !== 1) {
+    throw new Error('Expected the canonical synthetic fixture to expose six places and one region')
+  }
+  if (buildActiveGeoStackPlacesPreview(sourcePath, '# Historical place report\nNo approved synthetic dataset.')) {
+    throw new Error('Expected a historical report without the approved fixture to stay out of the preview')
+  }
+  if (buildActiveGeoStackPlacesPreview(sourcePath, markdown.replaceAll('geostack-synthetic-demo', 'unapproved-source'))) {
+    throw new Error('Expected the synthetic preview to reject changed source provenance')
   }
   if (buildActiveGeoStackPlacesPreview('docs/workspace-seeds/unapproved-places.md', markdown)) {
     throw new Error('Expected the preview to reject data outside the canonical synthetic fixture')

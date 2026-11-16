@@ -3,10 +3,9 @@ title: "Cafe Location Methodology — Historical Fixture and Runtime Readiness"
 doc_type: "Place Intelligence and Runtime Readiness Reference"
 date: "2026-10-29"
 source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-maps-places.md", "sha256": "9e867949c5b0579c9b7a66499f1487e5b6c45c6b7e71a31ba48fcd6828839f91", "restoration": "Recovered April 2026 source; historical observations and scores are unverified."}
-readiness_provenance: {"repository": "github.com/huijoohwee/joohwee","revision": "4d9e20f669817603034f65d585fb4609680ff647","path": "undocumented-draft/prd-tad-adr-mvp-gtm-geostack.md","sha256": "e5beb85c4de4fca4b168030cf134937db29f74b492827796db30fdcae9c7644d","state": "untracked draft in joohwee-geostack-prd-scratch; this digest is current, while the immutable sequence-3 START snapshot remains earlier and unchanged"}
-start_provenance: {"workflow": "workflow-5c9aed04dbb28e5a6ab268d422827b07", "sequence": 3, "manifest_digest": "b727b74e957b0a4906add3fb7b91372b5a46129c72adc533b432db765c1f33f6", "planning_sha256": "384d78022c9f9487a78e9c581fad76d48f0eef9ed26a1e326b2ff9b5b7be6f8f", "protected_base": "4d9e20f669817603034f65d585fb4609680ff647", "lane": "agent/device-0232231d4a19/geostack", "authority": false, "status": "created"}
-runtime_readiness: {"status": "blocked", "local_rung": "undocumented", "delivered_rung": "undocumented", "production_effect_attempted": false, "evidence_scope": "synthetic local browser and document/map preview"}
 ---
+
+> Historical reference only. Current contracts and recorded delivery belong to the [Local POI Directory plan](../documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md). This file supplies no current provider, scoring, pricing, or readiness evidence.
 
 # Cafe location methodology and runtime readiness reference
 
@@ -37,7 +36,7 @@ For a future recommendation, ask the operator to approve whether each factor mat
 
 Keep this rubric separate from the archived TOPSIS matrix below. If a future operator-approved matrix adds logistics, document source quality, missingness, uncertainty, weight sensitivity, and stop conditions before ranking. Do not treat multi-modal context as an automatic site score.
 
-**Readiness remains blocked:** VCC-01/03/07/10/11, the strict 500 KiB chunk cap, provider/data rights and cost evidence, protected integration, production authorization, live readback, rollback, and telemetry are open. VCC-12 passes only for the local synthetic supply-chain view, shared event Timeline, and source separation; it does not establish route service or a cafe recommendation. See the linked audit for the measured local demo and exact blockers. No production effect was attempted.
+**Historical audit blockers (2026-10-28, not current readiness):** VCC-01/03/07/10/11, the strict 500 KiB chunk cap, provider/data rights and cost evidence, protected integration, production authorization, live readback, rollback, and telemetry are open. VCC-12 passes only for the local synthetic supply-chain view, shared event Timeline, and source separation; it does not establish route service or a cafe recommendation. See the linked audit for the measured local demo and exact blockers. No production effect was attempted.
 
 **Path/routing boundary:** the logistics overview is an existing, separate local scenario. Its road, rail, air, and sea lines connect modeled facilities and journeys; they are schematic network legs, not navigable paths. Candidate-to-supplier/distributor routing, walking/driving ETA, network optimization, live schedules, and a cafe distribution score are not implemented or verified. Historical direction/navigation templates later in this file are archived reference material only and were not run.
 
