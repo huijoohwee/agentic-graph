@@ -2,8 +2,8 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.10"
-date: "2026-10-31"
+version: "1.0.11"
+date: "2026-11-16"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
 status: "active"
@@ -13,19 +13,19 @@ continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
 deploy_boundary: "Production application-code activation through the existing protected core release; keep POI inputs and outputs local and create no hosted POI service"
-worktree_id: "device-0232231d4a19--local-poi-adlc-closeout"
-agent_id: "codex:local_poi_adlc_closeout"
+worktree_id: "device-0232231d4a19--geo-map-stack-grounding"
+agent_id: "codex:geo_map_stack_grounding"
 action: "/change"
-lane_scope: "#local-poi-adlc-closeout"
+lane_scope: "#geo-map-stack-grounding"
 actor: "@huijoohwee"
-base_sha: "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c"
-prd_revision: "1.0.10"
-tad_revision: "1.0.1"
-adr_revision: "1.0.2"
-mvp_revision: "1.0.1"
+base_sha: "72f71647ea3d2ada52278996d9c1bb8c887e1da9"
+prd_revision: "1.0.11"
+tad_revision: "1.0.2"
+adr_revision: "1.0.3"
+mvp_revision: "1.0.2"
 gtm_revision: "1.0.0"
 local_rung: "dev-proven"
-delivered_rung: "production-verified"
+delivered_rung: "undocumented"
 lane: "authoring"
 ---
 # Local POI Directory
@@ -38,7 +38,7 @@ A byte-for-byte comparison with retained head `77fc84f0721d3594ef6a7d2fc4e88c0e4
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.9`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.11`, ADR revision `1.0.3`, TAD revision `1.0.2`, MVP revision `1.0.2`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -166,3 +166,13 @@ PR [#1875](https://github.com/huijoohwee/agentic-graph/pull/1875) is integrated 
 - For the exact quarantined `geostack-poi-directory-mvp-ci-repair` lane, current AOS reports source integrated by the 71-path exact-tree projection, delivery deployed by run #41021713269, cleanup verified, and ADLC complete. The original checkout path is absent; the 12,084-entry projection and 19-entry registration remain in the quarantine. Its old dirty state is unobserved; 2,538 ignored files and four symlinks remain preserved without an authorship or discard disposition. The similarly named `geostack-poi-directory-mvp` lane is separate and still continuable.
 
 Next action: retain the quarantine projection, registration, and refs. The exact `geostack-poi-directory-mvp-ci-repair` lane has AOS closeout complete; this does not authorize deleting recovered bytes or retiring refs. Resolve the separate `geostack-poi-directory-mvp` lane under its own current evidence before any cleanup or retirement effect.
+
+## Geo stack consolidation — 2026-11-16
+
+The Joohwee `geostack@0.4.0` integration plan consumes this owner; it creates no competing POI schema, validator, map, delivery controller, or readiness claim. Its `geomaps` file is an evidence companion only. The Maps Places seed owns synthetic fixture bytes; its reference companion retains dated historical analysis. Both now link here instead of advertising an obsolete scratch-draft digest as current readiness.
+
+Captured source baseline: `675d0ad10eea5d57fe101c1fb5d4318a804a7ff5`; native disjoint alignment now includes protected core source `72f71647ea3d2ada52278996d9c1bb8c887e1da9` without changing the seven authored paths. `/fix #geo-map-stack-grounding @huijoohwee` removes three duplicate POI checks from the older active-GeoJSON regression file and registry; the canonical `localPoiDirectory.test.ts` retains validator, projection, selection, and local-builder coverage. The source-authority replacement regression stays in its original file. The canonical synthetic-preview check now expects the actual six-place/one-region fixture and rejects an unrelated report, an unapproved source path, and changed provenance. The existing GeoJSON graph builder now preserves explicit coarse region Polygon/MultiPolygon features in the map host’s existing area metadata and removes their point/centroid projection, including a supplied `geo` marker. Other geometry keeps its prior behavior. This is a display projection change, not privacy normalization or a second validator. No dependency or new module is added.
+
+Baseline check: `npm -C canvas run test:ci:unit -- geospatial.localPoi` failed 2 of 7 checks: a stale fixture expectation and a duplicate check tied to removed variable names. Validation: `npm -C canvas run test:ci:unit -- geospatial.localPoi geospatial.markdown.activeGeoJsonReplacesStaleMapFeatures geojson` passed 28/28, including Polygon/MultiPolygon area retention, stale feature/edge replacement and supplied-centroid removal. `npm run check` passed (linked package builds, Canvas typecheck, three smoke-runner contract checks); conflict-compliance and whitespace checks passed; workspace-seed authority passed 104/104 and the final incremental Canvas typecheck passed. Live test-preview observations at 1280×800/light showed one directory, one map canvas, six place controls, the coarse region fill and Central selection. At 360×800/dark, category filtering and loaded-directory search/selection worked offline without page overflow; the existing touch-device `Load map view` opt-in then mounted one map canvas/six point controls; clicking Central set shared source `canvas` and its map highlight persisted offline. SVG fallback, offline reload and screen-reader proof remain open. The page used an isolated browser context and the canonical synthetic seed selected through the existing document action; this is local test-harness evidence. Broader product CI and protected integration remain separate. The Joohwee companion retains screenshots and limitations. Historical release run #41021713269 remains evidence only for its exact candidate; this repair records no new release, provider effect, or deployment. Demand, real-data rights, physical-phone performance, and offline reload remain unproved.
+
+**TAD-04 / ADR-09 — coarse region display projection.** Context: the active-source regression exposed a synthetic area centroid as a fourth point and lost the area payload. Intent: display coarse context without a fabricated point. Decision: fix `geojsonToGraphData.ts`, the existing GeoJSON projection owner, to retain explicitly tagged coarse region polygons in `kgGeospatialAreaFeatures`, keep stable source IDs and omit their `geo` marker. Reuse `GeospatialHost` area rendering and existing overlay merge/source-replacement behavior. The local POI validator remains the only approval/normalization owner; generic Markdown ingestion grants no publication or precision approval. Revisit if a different geometry/role contract is admitted. Recovery is a reviewed revert of this owner change; no data migration or provider action is needed. Current revision 1.0.11 has no deployment receipt; the production evidence above belongs to the earlier exact released candidate.

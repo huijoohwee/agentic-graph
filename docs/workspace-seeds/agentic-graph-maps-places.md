@@ -1,9 +1,11 @@
 ---
-title: "GeoStack Production Runtime Readiness — Places and Logistics Context (Blocked)"
+title: "GeoStack Synthetic Places Fixture and Historical Audit"
 graphId: "md:geostack-production-runtime-readiness-local-demo"
 doc_type: "Production Runtime Readiness Audit"
 date: "2026-10-29"
 lang: "en-US"
+readiness_owner: "../documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+load_policy: "on-demand"
 kgCanvasSurfaceMode: "geospatial"
 kgCanvas2dRenderer: "storyboard"
 kgDocumentSemanticMode: "document"
@@ -12,9 +14,6 @@ kgMultiDimTableModeEnabled: true
 kgDocumentStructureBaselineLock: false
 kgSharedRendererContract: {"version": "shared-renderer-contract/v1", "semanticIdentity": "buildScopedGraphSemanticKey", "cardPreview": "CardMediaPreview + CardMarkdownPreview", "widgetCard": "canvas:widgetCard", "richMediaPanel": "RichMediaPanel", "storyboardDisplay": "2D Renderer: Storyboard Card (default) and Widget variants", "storyboardSurfaces": ["Cards", "Widgets", "Rich Media Panels"], "edgeModel": "active graph edges from the selected source graph", "timelineSurface": "TimelineTransportControls + shared bottom-panel surface", "rendererPolicy": "frontmatter and source payloads own data; renderers project view state only"}
 source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-maps-places.md", "sha256": "9e867949c5b0579c9b7a66499f1487e5b6c45c6b7e71a31ba48fcd6828839f91", "restoration": "Recovered historical map fixture; not current provider evidence."}
-readiness_provenance: {"repository": "github.com/huijoohwee/joohwee","revision": "4d9e20f669817603034f65d585fb4609680ff647","path": "undocumented-draft/prd-tad-adr-mvp-gtm-geostack.md","sha256": "e5beb85c4de4fca4b168030cf134937db29f74b492827796db30fdcae9c7644d","state": "untracked draft in joohwee-geostack-prd-scratch; this digest is current, while the immutable sequence-3 START snapshot remains earlier and unchanged"}
-start_provenance: {"workflow": "workflow-5c9aed04dbb28e5a6ab268d422827b07", "sequence": 3, "manifest_digest": "b727b74e957b0a4906add3fb7b91372b5a46129c72adc533b432db765c1f33f6", "planning_sha256": "384d78022c9f9487a78e9c581fad76d48f0eef9ed26a1e326b2ff9b5b7be6f8f", "protected_base": "4d9e20f669817603034f65d585fb4609680ff647", "lane": "agent/device-0232231d4a19/geostack", "authority": false, "status": "created"}
-runtime_readiness: {"status": "blocked", "local_rung": "undocumented", "delivered_rung": "undocumented", "production_effect_attempted": false, "evidence_scope": "synthetic local browser and document/map preview"}
 logistics_context:
   companion_seed: "agentic-graph-logistics-supply-chain-overview.md"
   runtime_entry: "canvas/src/features/supply-chain/SupplyChainOverview.tsx"
@@ -23,15 +22,15 @@ logistics_context:
   path_semantics: "synthetic schematic legs; no road routing, distance, ETA, or site reachability"
 ---
 
-# GeoStack Production Runtime Readiness — Places and Logistics Context
+# GeoStack Synthetic Places Fixture and Historical Audit
 
-> **Status: BLOCKED.** This seed demonstrates a narrow synthetic, local-data flow. It proves no production readiness, deployment, provider rights, zero cost, customer demand, or release authority.
+> This synthetic fixture owns demo data only. Current implementation and delivery status belong to the [Local POI Directory plan](../documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md). The dated audit below is historical evidence for its recorded source, not current readiness. Synthetic data proves no provider rights, customer demand, or release authority.
 
-## Audit snapshot
+## Historical audit snapshot — 2026-10-29
 
 | Field | Evidence |
 |---|---|
-| PRD | Local untracked draft at `undocumented-draft/prd-tad-adr-mvp-gtm-geostack.md`; SHA-256 is in `readiness_provenance`. |
+| PRD | Historical discovery draft, superseded for implementation and delivery by the [Local POI Directory plan](../documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md). |
 | Graph source | Base `7723d9ebe3a6d1b75a7dfb2addd2f0fe0738fdf2`; branch `agent/device-0232231d4a19/geostack-poi-directory-mvp`. |
 | Historical browser check (superseded placement) | On 2026-10-28, the live Vite UI at `127.0.0.1:4176` used an isolated local store with this canonical seed selected. The then-current Main Toolbar → Settings → Maps placement loaded the embedded 4,397-byte fixture. With exact-point approval off, the panel showed 0 points, 1 region, and 6 withheld; after local exact-point approval and reselecting the file, it showed 6 points, 1 region, and 0 withheld. Search returned the Central result, selection highlighted `synthetic:demo-central` in the SVG, and all five category filters returned results (2 `f&b`, 1 each for the other categories). This old placement is superseded by the FloatingPanel Geo placement below. No production readback. |
 | Latest browser verification | On 2026-10-28, the live Vite UI at `127.0.0.1:5173` used the canonical `/docs/workspace-seeds/agentic-graph-maps-places.md` source. FloatingPanel → Geo → Nearby Places → Local POI Directory showed six synthetic place records and metadata for 6 places / 1 coarse region immediately, without selecting a file or creating operator attestations. Searching `Central` returned `Synthetic Demo Place Central`; the `f&b` filter returned two records. Selecting Central from the map, then South from the directory, and East from the map kept the directory result, shared-map feature, and existing Rich Media widget aligned; the page retained exactly one MapLibre canvas. Map affordances are native buttons in one named `section[role=group]`; points occluded by the source editor are excluded from hit testing. Main Toolbar, FloatingPanel header, Rich Media widget header, and Timeline header each measured 38 px. The 360 × 203 px Rich Media default keeps a 16:9 ratio. On 2026-10-29, FloatingPanel’s fixed 360 px default width measured 360 px at both 1113 × 952 and 1280 × 720 viewports. The directory contains no separate map or attribution badge; the Maps Hub retains its settings with no duplicate directory. The default embedded preview creates no provenance manifest. Local browser evidence only; no production readback. |
