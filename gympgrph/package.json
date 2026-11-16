@@ -170,11 +170,11 @@
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "d3": "^7.9.0",
     "grph-shared": "file:../grph-shared",
-    "maplibre-gl": "^5.7.3",
+    "maplibre-gl": "6.4.1",
     "zustand": "^5.0.3"
   },
   "peerDependencies": {
-    "maplibre-gl": "^5.7.3",
+    "maplibre-gl": "6.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
