@@ -9,6 +9,7 @@ import { restoreWebpageMarkdownSyntaxFidelity } from '@/lib/markdown/webpageMark
 import { createProgressSession } from '@/lib/progress/progressTicker'
 import { runInIdle } from '@/features/panels/utils/idle'
 import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
+import { recoverInlineSlideDeckMarkdown } from '@/lib/websites/webpageInlineSlideDeck'
 import { looksLikeConnectionFailureWebpageShellText } from '@/lib/websites/webpageShellHeuristics'
 import { htmlFallbackToMarkdownAllText } from './htmlTextFallback'
 import { buildWebpageWorkspaceEntryStubText, buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from './webpageEntryText'
@@ -405,6 +406,7 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
       const markdownSelection = await (async () => {
         let convertedMarkdown = ''
         let fallbackMarkdown = ''
+        let inlineSlideDeckMarkdown = ''
         if (forceConvertToMarkdown && shouldSkipUnifiedMarkdownConversion(boundedHtml)) {
           try {
             fallbackMarkdown = normalizeFallbackWebpageMarkdown(htmlFallbackToMarkdownAllText(boundedHtml))
@@ -438,12 +440,19 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
             } catch {
               fallbackMarkdown = ''
             }
+            try {
+              inlineSlideDeckMarkdown = await runInIdle(async () => normalizeFallbackWebpageMarkdown(await recoverInlineSlideDeckMarkdown({
+                html: boundedHtml, url: normalizedUrl, includeImages, fidelityLevel,
+              })), { timeoutMs: 1200 })
+            } catch {
+              inlineSlideDeckMarkdown = ''
+            }
           }
         }
         return chooseWebpageMarkdownByContentCoverage({
           mode,
           convertedMarkdown,
-          fallbackMarkdown,
+          fallbackMarkdown: inlineSlideDeckMarkdown || fallbackMarkdown,
         })
       })()
       const markdownSelectionText = markdownSelection.markdown.trim()
