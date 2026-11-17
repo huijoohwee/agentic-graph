@@ -459,31 +459,7 @@ fallback_commands:
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
-An exact-path CI scope may narrow only its own composite command when the complete
-normalized change set consists exclusively of declared repository-relative file
-paths. Other matching scopes still run normally. Any mixed, unknown, directory,
-configuration, or source path falls back to the ordinary affected-scope plan.
-An exact test mapping may explicitly select `scope_local: true` when its command
-executes the complete named test and no runtime source changes are exempted.
-Every changed path within that scope must then have an exact mapping; changes in
-other scopes keep their own checks. Unmatched paths restore the broader matching
-scope commands as well as the ordinary fallback.
-Launch Copilot uses this boundary for its native UI and contract test files. Any
-additional Canvas or runtime source change restores that scope's broader checks.
-The default whole-change-set boundary remains in force for all other mappings.
-Generated Worker binding declarations use this closed mapping to validate only
-their repository-owned generator output and matching consumer typecheck. The
-runtime scope still runs normally, and `ci:integration` retains its common
-prechecks before affected-command selection. The runner uses a complete,
-rename-disabled, NUL-delimited committed diff, includes local untracked paths,
-and rejects malformed/noncanonical path inventories. Git inventory failure is a
-blocking error rather than an empty successful plan. Native pull-request runs
-derive that inventory from `GITHUB_BASE_REF`. Protected-refresh
-`workflow_dispatch` runs use the workflow-validated
-`AGENTIC_OS_PR_BASE_REF` when the native base is empty, and reject differing
-nonempty native and canonical bases. This keeps refreshed merge candidates
-scoped to the pull request versus its current base rather than the imported
-first-parent `main` delta.
+An exact-path CI scope may narrow only its own composite command when the complete normalized change set consists exclusively of declared repository-relative file paths. Other matching scopes still run normally. Any mixed, unknown, directory, configuration, or source path falls back to the ordinary affected-scope plan. An exact test mapping may explicitly select `scope_local: true` when its command executes the complete named test and no runtime source changes are exempted. Every changed path within that scope must then have an exact mapping; changes in other scopes keep their own checks. Unmatched paths restore the broader matching scope commands as well as the ordinary fallback. Launch Copilot uses this boundary for its native UI and contract test files. Any additional Canvas or runtime source change restores that scope's broader checks. The default whole-change-set boundary remains in force for all other mappings. Generated Worker binding declarations use this closed mapping to validate only their repository-owned generator output and matching consumer typecheck. The runtime scope still runs normally, and `ci:integration` retains its common prechecks before affected-command selection. The runner uses a complete, rename-disabled, NUL-delimited committed diff, includes local untracked paths, and rejects malformed/noncanonical path inventories. Git inventory failure is a blocking error rather than an empty successful plan. Native pull-request runs derive that inventory from `GITHUB_BASE_REF`. Protected-refresh `workflow_dispatch` runs use the workflow-validated `AGENTIC_OS_PR_BASE_REF` when the native base is empty, and reject differing nonempty native and canonical bases. This keeps refreshed merge candidates scoped to the pull request versus its current base rather than the imported first-parent `main` delta.
 
 ## Invocation Grammar
 
