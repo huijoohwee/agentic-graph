@@ -6268,7 +6268,7 @@ export default defineConfig(({ command, mode }) => {
   esbuild: {
     sourcemap: false,
   },
-  optimizeDeps: {
+  optimizeDeps: { extensions: ['.tsx'],
     include: [
       'highlight.js',
       'highlight.js/lib/core',
@@ -6287,7 +6287,7 @@ export default defineConfig(({ command, mode }) => {
       'maplibre-gl', 'maplibre-gl/dist/maplibre-gl.js',
       'dagre',
       '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/src/renderers/webgpu/WebGPURenderer.js',
-      'yjs', 'agentic-design-system/ktv',
+      'yjs', 'agentic-design-system/ktv', 'agentic-design-system/react/hover', 'agentic-design-system/hover', 'agentic-design-system/hover/text',
     ],
     exclude: ['gympgrph', 'grph-shared', 'entities'],
     esbuildOptions: {

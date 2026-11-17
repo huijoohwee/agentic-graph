@@ -1,6 +1,6 @@
 import React, { useId } from 'react'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { PanelRangeInput, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'

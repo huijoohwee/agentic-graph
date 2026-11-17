@@ -470,7 +470,7 @@ export function testRichMediaPanelAndStoryboardReuseSharedCardMediaSurface() {
   const storyboardWidgetPanelChromeClassName = getStoryboardWidgetPanelChromeClassName()
   const flowCanvasOverlayText = readSource('components', 'FlowCanvas', 'FlowCanvasMediaOverlays.tsx')
   const graphCanvasOverlayText = readSource('components', 'GraphCanvasRoot', 'components', 'RichMediaOverlayLayer2d.tsx')
-  const graphHoverTooltipText = readSource('components', 'GraphHoverTooltip.tsx')
+  const graphHoverTooltipText = readSource('components', 'GraphHoverTooltip.tsx'), graphHoverContentText = readSource('components', 'GraphHoverTooltip.data.tsx')
   const staticPreviewText = readSource('components', 'StaticRichMediaPanelPreview.tsx')
   const designFrameText = readSource('components', 'DesignCanvas', 'FrameShellLayer.tsx')
   const designMediaOverlayText = readSource('components', 'DesignCanvas', 'MediaOverlay.tsx')
@@ -554,7 +554,7 @@ export function testRichMediaPanelAndStoryboardReuseSharedCardMediaSurface() {
   ) {
     throw new Error('expected RichMediaPanel text mode inline edits to reuse the shared Storyboard Card inline editor')
   }
-  if (!sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_COLUMN_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('rounded border bg-[color:var(--kg-panel-bg)]/70 p-1.5') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_SCROLL_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('overflow-y-auto overflow-x-hidden') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_VIEW_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_EDIT_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_TEXT_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('text-[10px] font-medium leading-4 text-[color:var(--kg-text-secondary)]')) {
+  if (!sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_COLUMN_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('rounded border bg-[color:var(--kg-panel-bg)]/70 p-1.5') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_SCROLL_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('overflow-y-auto overflow-x-hidden') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_VIEW_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_EDIT_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('CARD_TEXT_SURFACE_TEXT_CLASS_NAME') || !sharedCardTextSurfaceFrameText.includes('text-xs font-medium leading-4 text-[color:var(--kg-text-secondary)]')) {
     throw new Error('expected shared Card text surface frame owner to align Rich Media text panel and Storyboard Card text chrome')
   }
   if (
@@ -666,12 +666,12 @@ export function testRichMediaPanelAndStoryboardReuseSharedCardMediaSurface() {
   if (!graphCanvasOverlayText.includes("import RichMediaPanel from '@/components/RichMediaPanel'") || !graphCanvasOverlayText.includes('panelChrome="storyboardWidget"')) {
     throw new Error('expected D3 graph and Flowchart rich media overlays to reuse Storyboard Widget RichMediaPanel chrome')
   }
-  if (!graphHoverTooltipText.includes("import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'") || graphHoverTooltipText.includes('<img')) {
+  if (!graphHoverContentText.includes("import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'") || graphHoverContentText.includes('<img')) {
     throw new Error('expected D3 graph hover thumbnails to reuse the shared card media surface')
   }
   if (
-    !graphHoverTooltipText.includes("from '@/lib/ui/panelFrame'")
-    || !graphHoverTooltipText.includes('PANEL_FRAME_FLOATING_ROOT_STYLE')
+    !graphHoverTooltipText.includes("from 'agentic-design-system/react/hover'")
+    || graphHoverTooltipText.includes('PANEL_FRAME_FLOATING_ROOT_STYLE')
     || !graphHoverTooltipText.includes('data-kg-hover-panel-root')
     || graphHoverTooltipText.includes('contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text} shadow-md max-w-xs text-xs`}')
   ) {
@@ -766,7 +766,7 @@ export function testRichMediaPanelAndStoryboardReuseSharedCardMediaSurface() {
     || !sharedCardMarkdownChipStyleText.includes('align-baseline')
     || !sharedCardMarkdownChipStyleText.includes('[font-size:inherit]')
     || !sharedCardMarkdownChipStyleText.includes('[line-height:inherit]')
-    || !sharedCardMarkdownChipStyleText.includes('mr-1')
+    || !sharedCardMarkdownChipStyleText.includes('gap-0.5')
     || !sharedCardMarkdownChipStyleText.includes('kg-inline-chip-label-15ch')
     || !sharedCardMarkdownChipStyleText.includes('kg-inline-media-chip-shell-15ch')
     || !sharedCardMarkdownChipStyleText.includes('border-[color:var(--kg-border)]')

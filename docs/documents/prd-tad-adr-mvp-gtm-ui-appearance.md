@@ -2,12 +2,12 @@
 title: "Global UI appearance alignment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "ui-appearance"
-version: "1.0.2"
-prd_revision: "1.0.2"
-tad_revision: "1.0.2"
-adr_revision: "1.0.2"
-mvp_revision: "1.0.2"
-gtm_revision: "1.0.2"
+version: "1.0.3"
+prd_revision: "1.0.3"
+tad_revision: "1.0.3"
+adr_revision: "1.0.3"
+mvp_revision: "1.0.3"
+gtm_revision: "1.0.3"
 date: "2026-10-02"
 owner: "Application UI function"
 frontmatter_contract: "required"
@@ -22,7 +22,7 @@ worktree_id: "agent/device-0232231d4a19/dev-catalog-source-anchor"
 
 # Global UI appearance alignment
 
-`ui-appearance@1.0.2` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
+`ui-appearance@1.0.3` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
 [UI/UX design guide](./agentic-graph-ui-ux-design-document.md#global-appearance-authority).
 This increment continues [workspace-data-views@1.3.4](./prd-tad-adr-mvp-gtm-workspace-data-views.md).
 
@@ -198,7 +198,7 @@ zero new runtime modules/dependencies/services, one bounded startup/offline obse
 30 active minutes initially; provider wait is reported with its next receipt, not an ETA.
 
 
-Detached fixture acceptance repair (1.0.2): PRD/MVP require the same native trust check
+Detached fixture acceptance repair (1.0.3): PRD/MVP require the same native trust check
 in local and Actions checkouts. Protected run 37004064322 attempt 2 rejected a fixture
 whose clone of the detached pinned source omitted `origin/main`; the runtime check was
 correct. TAD makes the fixture detached with that anchor absent, then fetches the actual
@@ -214,3 +214,7 @@ added content, 10 active minutes, no new module, dependency, runtime behavior or
 Design System at `fd9884ce292e0e08997063b27762173a64d0122c` owns the native and React KTV row APIs and their shared cell descriptor. Graph binds product metadata, selection, help, typed icons and value controls to `agentic-design-system/react/ktv`. Geospatial and panel-form rows remove their separate row markup and layout; form labels preserve association with the existing controls. Base no longer supplies a row renderer or re-export. Canvas OS uses this same Graph UI; source docs must not introduce another renderer. Exact dependency pins, focused interaction checks, duplicate-owner source checks and local browser evidence are required before a cross-consumer adoption claim. Rollback restores the previous exact dependency locks and adapters together. Source integration remains separate from canonical runtime readiness and Production activation.
 
 Shared row projection follow-up: pin Design System `eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e` and Base `ff889d87a380f1e6f46575eb977448390f5c51d0` together. The central generator resets definition-list margins for native and React consumers. Graph owns no row geometry replacement.
+
+## Shared hover ownership · 2026-11-17
+
+PRD: operators require one hover panel, inverse palette, label/text and key/value help syntax across Graph, Base, Commerce and Canvas. TAD: direct Design System `b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d` native/React entrypoints own geometry, events, ARIA, title delegation and generic formatters. Graph retains graph content, state, pin/drag/resize and application dropdown dismissal. Both the main application and standalone observability entry used by Canvas install the same native title delegate; standalone prebundling warms the shared native/React entries before interaction. ADR: remove the three local generic hover implementations and formatter definitions; keep no forwarding API. The former oversized content module is split by product responsibility. MVP: local typing and live Settings focus/Escape checks pass, including one black/white tooltip with exact value syntax contained at 320px. Dynamic title/associated-label, pin/resize/bridge and profile-export regressions are checked. The legacy token adapter resolves only identical finite hex branches of light-dark before strict literal validation; it adds no palette. The Canvas native launcher also shows one black/white Index manifest hover label and dismisses it with Escape, with no console errors. Affected and protected checks remain separate release evidence. GTM: no parity, adoption savings or production claim beyond observed checks. Rollback restores the prior exact Design System/Base pins and generated artifacts together, retaining user data; no provider deployment is selected.

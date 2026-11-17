@@ -1,7 +1,7 @@
 import React from 'react'
 import type { AgenticRagContextComparison, AgenticRagIgnoreFiltersSummary } from '@/lib/graph/jsonld/index'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { RENDER_PANEL_SECTION_COPY } from '@/features/panels/config'
 import { AgenticRagIgnoreFiltersSummaryView } from '@/features/panels/views/AgenticRagContextSection'
 import { useGraphStore } from '@/hooks/useGraphStore'

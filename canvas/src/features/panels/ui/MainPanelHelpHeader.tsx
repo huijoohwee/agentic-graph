@@ -1,7 +1,7 @@
 import React from 'react'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import MainPanelSectionHeader from '@/features/panels/ui/MainPanelSectionHeader'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { HELP_TAB_HEADER_TOOLTIP, UI_LABELS } from '@/lib/config'
 
 type MainPanelHelpHeaderProps = {

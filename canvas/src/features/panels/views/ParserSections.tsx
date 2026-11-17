@@ -1,6 +1,6 @@
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { ORCHESTRATOR_AGENTIC_COPY, PARSER_STEP_COPY, PIPELINE_STAGE_COPY } from '@/features/panels/config'
 import { noParserMatchMessage, firstWarningText } from '@/features/parsers/uiUtils'
 import { useGraphStore } from '@/hooks/useGraphStore'

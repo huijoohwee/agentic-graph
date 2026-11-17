@@ -2,7 +2,7 @@ import type * as d3 from 'd3'
 import type { GraphEdge } from '@/lib/graph/types'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { emitPropsPanelOpen } from '@/features/canvas/utils'
-import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
+import { isTooltipRelatedTarget } from 'agentic-design-system/hover/text'
 
 export const attachEdgeInteractionHandlers = (
   sel: d3.Selection<SVGElement, GraphEdge, SVGGElement, unknown>,

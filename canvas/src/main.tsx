@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
-import NativeTitleTooltip from '@/features/panels/ui/NativeTitleTooltip'
+import { NativeTitleTooltip } from 'agentic-design-system/react/hover'; import { dismissHoverPanels } from 'agentic-design-system/hover'; import { subscribeToolbarDropdownOpen } from '@/components/toolbar/dropdownOpenEvents'
 import './index.css'
 import { installPwaRuntime } from '@/lib/pwa/runtime'
 import { installAgenticGraphWebMcpRuntime } from '@/features/agent-ready/webMcpRuntime'
@@ -60,6 +60,8 @@ if (!sharedLearningCanvas && import.meta.env.PROD) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-    <NativeTitleTooltip />
+    <NativeTitleTooltip fallbackAttribute="data-kg-inline-invocation-markdown" />
   </StrictMode>,
 )
+
+subscribeToolbarDropdownOpen(() => dismissHoverPanels(document))

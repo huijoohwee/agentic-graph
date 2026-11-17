@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system Graph profile; origin agentic-graph@be87de5c3dcc66f58d2cd1b4d96e5920dd284a46; profile sha256 aae4fd536724e9f81783e3f580f2613f447e2fad25c09dfa60a01c5cc995674c. Do not edit. */
+/* Generated from agentic-design-system Graph profile; origin agentic-graph@be87de5c3dcc66f58d2cd1b4d96e5920dd284a46; profile sha256 eaa4c5c04aca787a7b6910464f32491f01f6bee9fcd5355ab90183cf04dcdd17. Do not edit. */
 :root {
   --kg-font-sans: var(--agentic-font-sans);
   --kg-font-mono: var(--agentic-font-mono);
@@ -29,8 +29,8 @@
   --kg-text-primary: #111827;
   --kg-text-secondary: #4b5563;
   --kg-text-tertiary: #6b7280;
-  --kg-tooltip-bg: #000000;
-  --kg-tooltip-text: #ffffff;
+  --kg-tooltip-bg: var(--agentic-hover-panel-background);
+  --kg-tooltip-text: var(--agentic-hover-text-color);
   --kg-code-bg: #f8fafc;
   --kg-code-border: #e2e8f0;
   --kg-code-text: #0f172a;
@@ -137,6 +137,12 @@
   --kg-surface-border: var(--kg-surface-border-width) solid var(--kg-border);
   --kg-resize-separator-thickness: 8px;
   --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem);
+}
+.agentic-hover-panel {
+  --kg-panel-bg: var(--agentic-hover-panel-background);
+  --kg-text-primary: var(--agentic-hover-text-color);
+  --kg-text-secondary: var(--agentic-hover-label-color);
+  --kg-text-tertiary: var(--agentic-hover-label-color);
 }
 :root[data-theme='dark'] {
   --kg-panel-bg-hover: rgba(11, 18, 32, 0.85);

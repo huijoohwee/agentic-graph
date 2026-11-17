@@ -1,5 +1,5 @@
 import React from 'react'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import {
   AGENTIC_RAG_CONTEXT_URL,
   AGENTIC_RAG_SCHEMA_URL,

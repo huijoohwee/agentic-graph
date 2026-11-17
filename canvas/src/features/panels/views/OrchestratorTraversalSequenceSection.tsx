@@ -11,7 +11,7 @@ import {
   AddHopInputs,
 } from '@/features/panels/views/TraversalSequenceGraphRagEditors'
 import IconButton from '@/components/IconButton'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui/icons'
 import {

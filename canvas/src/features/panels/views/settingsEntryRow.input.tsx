@@ -1,5 +1,5 @@
 import React from 'react'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_SETTINGS_VALUE_WRAPPER_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 

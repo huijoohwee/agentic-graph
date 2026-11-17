@@ -29,9 +29,6 @@ export function FrozenAreaResizeHandle({ onPointerDown, panelTypography }: Froze
         <span className={`mx-auto h-5 w-3 rounded-full ${UI_THEME_TOKENS.button.activeBg} bg-opacity-70 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100`}>
           <span className={`h-4 border-r ${UI_THEME_TOKENS.button.activeBorder} border-opacity-60`} />
         </span>
-        <span className={`pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded ${UI_THEME_TOKENS.tooltip.bg} px-2 py-1 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.tooltip.text} opacity-0 group-hover:opacity-100`}>
-          {FROZEN_RESIZE_TOOLTIP_TEXT}
-        </span>
       </button>
     </span>
   )

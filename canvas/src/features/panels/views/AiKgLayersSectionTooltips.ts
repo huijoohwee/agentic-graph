@@ -1,4 +1,4 @@
-import { buildDefaultTooltip, buildNumericTooltip } from '@/lib/config'
+import { buildDefaultTooltip, buildNumericTooltip } from 'agentic-design-system/hover/text'
 import {
   COLLISION_RADIUS_DEFAULT,
   COLLISION_RADIUS_INTERVAL,

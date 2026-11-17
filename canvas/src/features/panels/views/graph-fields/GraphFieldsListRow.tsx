@@ -17,7 +17,7 @@ import {
   VisibilityIcon,
 } from '@/features/graph-fields/ui/graphFieldIcons'
 import { UI_RING_PRIMARY_BLUE_INDICATOR } from '@/features/toolbar/ui/toolbarStyles'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'

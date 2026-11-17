@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/graph-profile/v1",
   "id": "graph",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-graph",
@@ -76,8 +76,8 @@
     {"key":"text-primary","cssVar":"--kg-text-primary","type":"typography","values":{"light":"#111827","dark":"#f3f4f6","black":"#f3f4f6"}},
     {"key":"text-secondary","cssVar":"--kg-text-secondary","type":"typography","values":{"light":"#4b5563","dark":"#9ca3af","black":"#9ca3af"}},
     {"key":"text-tertiary","cssVar":"--kg-text-tertiary","type":"typography","values":{"light":"#6b7280","dark":"#6b7280","black":"#8a8a8a"}},
-    {"key":"tooltip-bg","cssVar":"--kg-tooltip-bg","type":"color","values":{"light":"#000000","dark":"#000000","black":"#000000"}},
-    {"key":"tooltip-text","cssVar":"--kg-tooltip-text","type":"color","values":{"light":"#ffffff","dark":"#ffffff","black":"#ffffff"}},
+    {"key":"tooltip-bg","cssVar":"--kg-tooltip-bg","type":"color","values":{"light":"var(--agentic-hover-panel-background)","dark":"var(--agentic-hover-panel-background)","black":"var(--agentic-hover-panel-background)"}},
+    {"key":"tooltip-text","cssVar":"--kg-tooltip-text","type":"color","values":{"light":"var(--agentic-hover-text-color)","dark":"var(--agentic-hover-text-color)","black":"var(--agentic-hover-text-color)"}},
     {"key":"code-bg","cssVar":"--kg-code-bg","type":"color","values":{"light":"#f8fafc","dark":"rgba(2, 6, 23, 0.6)","black":"#0d0d0d"}},
     {"key":"code-border","cssVar":"--kg-code-border","type":"color","values":{"light":"#e2e8f0","dark":"#1e293b","black":"#343434"}},
     {"key":"code-text","cssVar":"--kg-code-text","type":"color","values":{"light":"#0f172a","dark":"#e2e8f0","black":"#e5e7eb"}},

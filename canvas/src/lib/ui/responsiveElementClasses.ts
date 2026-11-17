@@ -428,9 +428,7 @@ export const UI_RESPONSIVE_INLINE_STATUS_CHIP_CLASSNAME = 'kg-inline-status-chip
 
 export const UI_RESPONSIVE_PANEL_STICKY_OVERLAP_CLASSNAME = 'kg-panel-sticky-overlap'
 
-export const UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME = 'kg-responsive-tooltip-expanded-body'
 
-export const UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME = 'kg-responsive-tooltip-key-label'
 
 export const UI_RESPONSIVE_STATUS_BADGE_CLASSNAME = 'kg-responsive-status-badge'
 

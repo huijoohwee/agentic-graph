@@ -1,4 +1,4 @@
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { PanelKeyTypeRangeValueRow } from '@/features/panels/ui/PanelKeyTypeRangeValueRow'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { ResponsiveControlRow, ResponsiveControlInput } from '@/lib/ui/responsiveControlRows'
@@ -91,10 +91,10 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
   const root = createRoot(host), previous = useGraphStore.getState()
   const originalBounds = HTMLElement.prototype.getBoundingClientRect
   HTMLElement.prototype.getBoundingClientRect = function () {
-    if (this.hasAttribute('data-kg-tooltip-root')) {
+    if (this.hasAttribute('data-agentic-hover-root')) {
       return new window.DOMRect(Number.parseFloat(this.style.left) - 180, Number.parseFloat(this.style.top), 360, 40)
     }
-    if (this.hasAttribute('data-kg-tooltip-anchor')) return new window.DOMRect(100, 200, 80, 20)
+    if (this.hasAttribute('data-agentic-hover-anchor')) return new window.DOMRect(100, 200, 80, 20)
     return originalBounds.call(this)
   }
   const previousPlacement = workspaceTablePreferencesStore.getSnapshot().workspaceCellSelectPanelPlacement
@@ -178,12 +178,12 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
     const rows = Array.from(host.querySelectorAll('dl'))
     assert.equal(rows.length, 4)
     const headless = rows.splice(1, 1)[0]
-    assert.equal(headless.querySelectorAll('[data-kg-tooltip-anchor]').length, 0, 'headless consumers without a presenter retain plain cells')
+    assert.equal(headless.querySelectorAll('[data-agentic-hover-anchor]').length, 0, 'headless consumers without a presenter retain plain cells')
     assert.equal(headless.querySelector('dt')?.textContent, 'Headless')
     for (const row of rows) {
-      assert.equal(row.querySelectorAll('dt [data-kg-tooltip-anchor]').length, 1, 'one key help owner')
-      assert.equal(row.querySelectorAll('dd:last-child [data-kg-tooltip-anchor]').length, 1, 'one value help owner')
-      assert(row.querySelectorAll('dd:nth-child(2) [data-kg-tooltip-anchor]').length <= 1, 'Type icon has at most one independent help owner')
+      assert.equal(row.querySelectorAll('dt [data-agentic-hover-anchor]').length, 1, 'one key help owner')
+      assert.equal(row.querySelectorAll('dd:last-child [data-agentic-hover-anchor]').length, 1, 'one value help owner')
+      assert(row.querySelectorAll('dd:nth-child(2) [data-agentic-hover-anchor]').length <= 1, 'Type icon has at most one independent help owner')
       assert(row.querySelector('dt [aria-description]')?.getAttribute('aria-description')?.includes('→'), 'same key help grammar')
     }
     assert.equal(rows[0].querySelector('dt [aria-description]')?.getAttribute('aria-description'), 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph')
@@ -199,7 +199,7 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
     await act(async () => key.focus())
     assert.equal(document.querySelectorAll('[role="tooltip"]').length, 1)
     assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph')
-    await act(async () => { key.blur(); key.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true })) })
+    await act(async () => { key.blur(); key.closest('[data-agentic-hover-anchor]')!.dispatchEvent(new window.MouseEvent('mouseenter')) })
     assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph', 'hover and keyboard share content')
     assert.equal(changes, 0, 'inspection never edits a field')
     const palette = rows[0].querySelector<HTMLInputElement>('input')!

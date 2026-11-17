@@ -1,7 +1,7 @@
 import React from 'react'
 import { runMarkdownPipelineWithStatus } from '@/features/panels/hooks/markdownPipelineActions'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
 import { ResponsiveControlInput, ResponsiveControlRow, ResponsiveSelectRow } from '@/lib/ui/responsiveControlRows'
 import { useGraphStore } from '@/hooks/useGraphStore'

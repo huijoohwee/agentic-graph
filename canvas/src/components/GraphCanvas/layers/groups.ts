@@ -7,7 +7,7 @@ import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsType
 import { getMarkdownBodyFontSizePx, getMarkdownHeadingFontSizePx } from '@/features/markdown/ui/markdownTypography'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { estimateLabelCharWidthPx, estimateMaxCharsForWidthPx, truncateTextWithEllipsis, truncateTextWithWordEllipsis } from '@/components/GraphCanvas/layout/utils'
-import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
+import { isTooltipRelatedTarget } from 'agentic-design-system/hover/text'
 import { isDisplayNode } from '@/components/GraphCanvas/displayFilter'
 import { collapsedGroupNodeIdFor } from '@/components/GraphCanvas/viewDerivation'
 import { UI_THEME_COLORS_CSS } from '@/lib/ui/theme-tokens'

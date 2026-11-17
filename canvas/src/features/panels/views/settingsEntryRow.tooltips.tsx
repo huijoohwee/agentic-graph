@@ -1,4 +1,4 @@
-import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from '@/lib/config'
+import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from 'agentic-design-system/hover/text'
 import type { SettingsEntry } from './useSettingsView.helpers'
 
 type BuildSettingsEntryTooltipsArgs = {

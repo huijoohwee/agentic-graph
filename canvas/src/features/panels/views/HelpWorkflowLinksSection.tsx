@@ -1,7 +1,7 @@
 import React from 'react';
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection';
 import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows';
-import Tooltip from '@/features/panels/ui/Tooltip';
+import Tooltip from 'agentic-design-system/react/hover';
 import { HELP_STEP_COPY, PIPELINE_STAGE_COPY, RENDER_PANEL_SECTION_COPY } from '@/features/panels/config';
 import {
   loadMainPanelWorkflowLinkTexts,

@@ -46,7 +46,7 @@ export function testGraphCanvasRootDeclaresHoverTooltipInteractivity() {
 }
 
 export function testGraphHoverTooltipUsesCanonicalImageKeysOnly() {
-  const p = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.tsx')
+  const p = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.data.tsx')
   const text = readFileSync(p, 'utf8')
   const requiredSnippets = [
     "getNodeImagePreviewUrls } from '@/components/GraphCanvas/helpers'",
@@ -80,72 +80,20 @@ export function testGraphHoverTooltipUsesCanonicalImageKeysOnly() {
 }
 
 export function testGraphHoverTooltipReusesSharedPanelFrameSurface() {
-  const tooltipPath = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.tsx')
-  const tooltipText = readFileSync(tooltipPath, 'utf8')
-  const tooltipUiPath = resolve(process.cwd(), 'src', 'features', 'panels', 'ui', 'Tooltip.tsx')
-  const tooltipUiText = readFileSync(tooltipUiPath, 'utf8')
-  const panelFramePath = resolve(process.cwd(), 'src', 'lib', 'ui', 'panelFrame.ts')
-  const panelFrameText = readFileSync(panelFramePath, 'utf8')
-  const responsiveClassesPath = resolve(process.cwd(), 'src', 'lib', 'ui', 'responsiveElementClasses.ts')
-  const responsiveClassesText = readFileSync(responsiveClassesPath, 'utf8')
-  const responsiveCssPath = resolve(process.cwd(), 'src', 'styles', 'responsive-toolbar.css')
-  const responsiveCssText = readFileSync(responsiveCssPath, 'utf8')
-  const requiredTooltipSnippets = [
-    "from '@/lib/ui/panelFrame'",
-    "from '@/lib/ui/responsiveElementClasses'",
-    'PANEL_FRAME_FLOATING_ROOT_STYLE',
-    'PANEL_FRAME_FLOATING_BODY_STYLE',
-    'UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME',
-    'UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME',
-    'contentStyle={hoverPanelRootStyle}',
-    'contentRef={hoverPanelRootRef}',
-    'contentOffset={tooltipPinned ? hoverPanelOffset : null}',
-    'contentSize={tooltipPinned ? hoverPanelSize : null}',
-    'data-kg-hover-panel-root',
-    'data-kg-panel-frame',
-  ]
-  for (const snippet of requiredTooltipSnippets) {
-    if (!tooltipText.includes(snippet)) {
-      throw new Error(`expected GraphHoverTooltip to reuse shared panel-frame surface snippet: ${snippet}`)
-    }
-  }
-  for (const snippet of ['contentStyle?: React.CSSProperties', 'contentRef?: React.Ref<HTMLElement>', 'contentOffset?: { x: number; y: number } | null', 'contentSize?: { width: number; height?: number } | null', 'contentDataAttrs?: Record<string, string | undefined>']) {
-    if (!tooltipUiText.includes(snippet)) {
-      throw new Error(`expected shared Tooltip to expose neutral panel-frame extension: ${snippet}`)
-    }
-  }
-  if (!tooltipUiText.includes('onContentMouseEnter?: () => void')) {
-    throw new Error('expected shared Tooltip to expose a neutral content mouse-enter bridge hook')
-  }
-  for (const snippet of ['PANEL_FRAME_FLOATING_ROOT_STYLE', 'PANEL_FRAME_FLOATING_BODY_STYLE']) {
-    if (!panelFrameText.includes(snippet)) {
-      throw new Error(`expected panelFrame owner to expose shared floating panel style: ${snippet}`)
-    }
-  }
-  if (tooltipText.includes('contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text} shadow-md max-w-xs text-xs`}')) {
-    throw new Error('expected GraphHoverTooltip to stop owning duplicate tooltip-local panel chrome')
-  }
-  for (const snippet of ['max-h-[220px]', 'max-w-[80px]']) {
-    if (tooltipText.includes(snippet)) {
-      throw new Error(`expected GraphHoverTooltip responsive content sizing to live in shared CSS, found local snippet: ${snippet}`)
-    }
-  }
-  for (const snippet of ['UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME', 'UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME']) {
-    if (!responsiveClassesText.includes(snippet)) {
-      throw new Error(`expected responsiveElementClasses to expose tooltip sizing class: ${snippet}`)
-    }
-  }
-  for (const snippet of ['.kg-responsive-tooltip-expanded-body', '.kg-responsive-tooltip-key-label', '--kg-responsive-tooltip-expanded-body-max-height', '--kg-responsive-tooltip-key-label-max-width']) {
-    if (!responsiveCssText.includes(snippet)) {
-      throw new Error(`expected responsive toolbar CSS to own tooltip sizing snippet: ${snippet}`)
-    }
-  }
+  const tooltipText = readFileSync(resolve(process.cwd(), 'src/components/GraphHoverTooltip.tsx'), 'utf8')
+  const contentText = readFileSync(resolve(process.cwd(), 'src/components/GraphHoverTooltip.data.tsx'), 'utf8')
+  if (!tooltipText.includes("from 'agentic-design-system/react/hover'") || tooltipText.includes('PANEL_FRAME_FLOATING_ROOT_STYLE'))
+    throw new Error('Graph must consume the shared hover panel without local presentation overrides')
+  for (const name of ['HOVER_PARTS.expanded', 'HOVER_PARTS.key', 'formatHoverValue'])
+    if (!contentText.includes(name)) throw new Error('Graph content must consume shared hover text semantics: ' + name)
+  const css = readFileSync(resolve(process.cwd(), 'src/styles/responsive-toolbar.css'), 'utf8')
+  if (css.includes('.kg-responsive-tooltip-')) throw new Error('Retired local hover classes remain')
 }
 
 export function testGraphHoverTooltipReusesSharedDragResizeInteraction() {
   const tooltipPath = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.tsx')
   const tooltipText = readFileSync(tooltipPath, 'utf8')
-  const tooltipUiPath = resolve(process.cwd(), 'src', 'features', 'panels', 'ui', 'Tooltip.tsx')
+  const tooltipUiPath = resolve(process.cwd(), '../node_modules/agentic-design-system/packages/react-hover/src/index.tsx')
   const tooltipUiText = readFileSync(tooltipUiPath, 'utf8')
   for (const snippet of [
     "from 'grph-shared/dom/pointerDrag'",
@@ -171,7 +119,7 @@ export function testGraphHoverTooltipReusesSharedDragResizeInteraction() {
 export function testGraphHoverTooltipUsesSharedSemanticKey() {
   const tooltipPath = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.tsx')
   const tooltipText = readFileSync(tooltipPath, 'utf8')
-  const dataPath = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.data.ts')
+  const dataPath = resolve(process.cwd(), 'src', 'components', 'GraphHoverTooltip.data.tsx')
   const dataText = readFileSync(dataPath, 'utf8')
   if (!tooltipText.includes('buildGraphHoverSemanticKey') || !dataText.includes('buildScopedGraphSemanticKey')) {
     throw new Error('expected GraphHoverTooltip pin/expand state to reuse the shared semantic-key helper')
@@ -224,13 +172,13 @@ export async function testGraphHoverTooltipRendersSharedPanelFrameSurface() {
     if (rootEl.getAttribute('data-kg-panel-frame') !== '1') {
       throw new Error('expected GraphHoverTooltip root to expose the shared panel-frame marker')
     }
-    if (!String(rootEl.getAttribute('style') || '').includes('var(--kg-media-panel-radius')) {
-      throw new Error('expected GraphHoverTooltip root to reuse shared panel-frame radius CSS vars')
+    if (!rootEl.classList.contains('agentic-hover-panel') || rootEl.style.borderRadius) {
+      throw new Error('expected GraphHoverTooltip root to use the central hover presentation')
     }
     const bodyEl = doc.querySelector('[data-kg-hover-panel="1"]') as HTMLElement | null
     if (!bodyEl) throw new Error('expected GraphHoverTooltip to render the shared hover panel body')
-    if (!String(bodyEl.getAttribute('style') || '').includes('var(--kg-media-panel-padding')) {
-      throw new Error('expected GraphHoverTooltip body to reuse shared panel-frame padding CSS vars')
+    if (bodyEl.style.padding) {
+      throw new Error('expected GraphHoverTooltip body to defer padding to its central hover surface')
     }
 
     await unmountReactRoot(root, { window: dom.window })
@@ -293,8 +241,8 @@ export async function testGraphHoverTooltipPinnedPanelCanDragAndResize() {
       await waitForNextFrame(dom.window)
     })
 
-    const draggedTransform = String(rootEl.style.transform || '')
-    if (!draggedTransform.includes('+ 30px') || !draggedTransform.includes('45px')) {
+    const draggedTransform = `${rootEl.style.left}, ${rootEl.style.top}`
+    if (Number.parseFloat(rootEl.style.left) < 30 || Number.parseFloat(rootEl.style.top) < 45) {
       throw new Error(`expected pinned hover panel drag to update Tooltip offset transform, got ${draggedTransform}`)
     }
 
@@ -320,8 +268,8 @@ export async function testGraphHoverTooltipPinnedPanelCanDragAndResize() {
       await waitForNextFrame(dom.window)
     })
 
-    const widthPx = Number.parseFloat(rootEl.style.width || '')
-    const heightPx = Number.parseFloat(rootEl.style.height || '')
+    const widthPx = Number.parseFloat(rootEl.style.inlineSize || '')
+    const heightPx = Number.parseFloat(rootEl.style.blockSize || '')
     if (!Number.isFinite(widthPx) || widthPx <= 260 || !Number.isFinite(heightPx) || heightPx <= 160) {
       throw new Error(`expected pinned hover panel resize to apply shared 16:9 frame size, got width=${rootEl.style.width} height=${rootEl.style.height}`)
     }
@@ -380,7 +328,7 @@ export async function testGraphHoverTooltipBridgesPointerGapToPanel() {
     }
 
     await act(async () => {
-      bridgedRoot.dispatchEvent(new dom.window.MouseEvent('mouseover', {
+      bridgedRoot.dispatchEvent(new dom.window.MouseEvent('mouseenter', {
         bubbles: true,
         cancelable: true,
         relatedTarget: graphSurface,
@@ -395,7 +343,7 @@ export async function testGraphHoverTooltipBridgesPointerGapToPanel() {
     }
 
     await act(async () => {
-      hoveredRoot.dispatchEvent(new dom.window.MouseEvent('mouseout', {
+      hoveredRoot.dispatchEvent(new dom.window.MouseEvent('mouseleave', {
         bubbles: true,
         cancelable: true,
         relatedTarget: graphSurface,
