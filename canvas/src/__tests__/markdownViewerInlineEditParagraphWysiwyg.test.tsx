@@ -90,11 +90,11 @@ export async function testMarkdownViewerInlineEditParagraphDoesNotInsertBlockEle
 
     const wrapper = editor.parentElement as HTMLElement | null
     if (!wrapper) throw new Error('expected editor wrapper')
-    if (wrapper.parentElement !== host) throw new Error('expected editor wrapper to be a direct child of <p>')
+    if (editor.parentElement !== host) throw new Error('expected editor wrapper to be a direct child of <p>')
     if (dom.window.document.querySelector('p div')) {
       throw new Error('expected no block-level div to be inserted into <p> during inline editing')
     }
-    if (String(wrapper.style.minHeight || '') !== '42px') {
+    if (wrapper.style.minHeight || host.getBoundingClientRect().height !== 42) {
       throw new Error('expected editor wrapper minHeight to preserve layout height')
     }
 

@@ -19,6 +19,7 @@ export const useMarkdownBlockContainerEdgeTrim = (args: {
     if (!editTrimEmptyBlockEdges) return false
     const root = editorRef.current
     if (!root) return false
+    if (root.hasAttribute('data-agentic-viewer-surface') && !root.hasAttribute('data-agentic-viewer-dirty')) return false
     const isWhitespaceText = (n: Node | null): boolean => {
       if (!n || n.nodeType !== Node.TEXT_NODE) return false
       const v = String((n as Text).nodeValue || '')

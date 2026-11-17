@@ -1,4 +1,5 @@
 import React from 'react'
+import { ViewerSurface } from 'agentic-design-system/react/viewer'
 import { DashboardCanvasLayout, DashboardCardGrid, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
 import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
@@ -183,12 +184,12 @@ export default function AgentMissionDashboardView({ retained, retainedSpanId, on
         {sourceDocument && <details data-dashboard-primitive="disclosure">
           <summary>{sourceDocument.path}</summary>
           <DashboardPrimitive kind="text">Mission source · read only · no execution or release authority.</DashboardPrimitive>
-          <pre data-dashboard-primitive="text" aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all">{sourceDocument.text}</pre>
+          <ViewerSurface as="pre" editable={false} data-dashboard-primitive="text" aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all">{sourceDocument.text}</ViewerSurface>
         </details>}
         {provenance && <details data-dashboard-primitive="disclosure">
           <summary>Source identity</summary>
           <DashboardPrimitive kind="text">Workflow receipts and the codebase snapshot keep their own identities. Static relationships do not prove execution.</DashboardPrimitive>
-          <pre data-dashboard-primitive="text" className="max-h-56 overflow-auto whitespace-pre-wrap break-all">{JSON.stringify(provenance, null, 2)}</pre>
+          <ViewerSurface as="pre" editable={false} data-dashboard-primitive="text" className="max-h-56 overflow-auto whitespace-pre-wrap break-all">{JSON.stringify(provenance, null, 2)}</ViewerSurface>
         </details>}
       </section>}
     </> : undefined} />

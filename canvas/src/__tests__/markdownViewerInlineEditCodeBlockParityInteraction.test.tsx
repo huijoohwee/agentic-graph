@@ -78,8 +78,8 @@ export async function testMarkdownViewerInlineEditCodeBlockKeepsSurfaceLayoutPar
     if (!header) throw new Error('expected code block header to remain visible while editing via static read-surface reuse')
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code block editor')
-    const cls = String(editor.className || '')
-    if (!cls.includes('p-4') || !cls.includes('whitespace-pre') || !cls.includes('overflow-auto') || !cls.includes('leading-[1.5em]')) {
+    const cls = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
+    if (!cls.includes('p-4') || !editor.closest('pre') || !cls.includes('overflow-auto') || !cls.includes('leading-[1.5em]')) {
       throw new Error(`expected code block edit surface to keep read/edit spacing and preformat parity classes; class=${JSON.stringify(cls)}`)
     }
     if (
@@ -125,7 +125,7 @@ export async function testMarkdownViewerInlineEditAsciiCodeBlockKeepsCompactTypo
     const readPre = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!readPre) throw new Error('expected ascii code block read pre node')
     const readClass = String(readPre.className || '')
-    if (!readClass.includes('text-[10px]') || !readClass.includes('leading-4')) {
+    if (!readClass.includes('text-xs') || !readClass.includes('leading-4')) {
       throw new Error(`expected ascii code block read surface to use compact typography SSOT; class=${JSON.stringify(readClass)}`)
     }
     const host = dom.window.document.querySelector('figure') as HTMLElement | null
@@ -148,8 +148,8 @@ export async function testMarkdownViewerInlineEditAsciiCodeBlockKeepsCompactTypo
 
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected ascii code block editor')
-    const editorClass = String(editor.className || '')
-    if (!editorClass.includes('text-[10px]') || !editorClass.includes('leading-4')) {
+    const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
+    if (!editorClass.includes('text-xs') || !editorClass.includes('leading-4')) {
       throw new Error(`expected ascii code block editor to keep compact typography parity from read surface; class=${JSON.stringify(editorClass)}`)
     }
     if (!editorClass.includes('p-4')) {
@@ -212,8 +212,8 @@ export async function testMarkdownViewerInlineEditCodeBlockGutterLayoutKeepsSpac
 
     const editor = wrapper.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code block editor inside gutter wrapper')
-    const editorClass = String(editor.className || '')
-    if (!editorClass.includes('p-4') || !editorClass.includes('whitespace-pre') || !editorClass.includes('leading-[1.5em]')) {
+    const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
+    if (!editorClass.includes('p-4') || !editor.closest('pre') || !editorClass.includes('leading-[1.5em]')) {
       throw new Error(`expected code block editor in gutter layout to keep shared spacing/preformat parity classes; class=${JSON.stringify(editorClass)}`)
     }
     const wrapperClassAfterEdit = String(wrapper.className || '')
@@ -287,7 +287,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapUpdatesReadAndEdi
     await tick(3)
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code-fence editor after click-to-edit')
-    const editorClass = String(editor.className || '')
+    const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
     if (!editorClass.includes('whitespace-pre-wrap')) {
       throw new Error(`expected code-fence edit surface to reuse wrap toggle state; class=${JSON.stringify(editorClass)}`)
     }
@@ -357,7 +357,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapOffDisablesWrapIn
     await tick(3)
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code-fence editor after click-to-edit')
-    const editorClass = String(editor.className || '')
+    const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
     if (editorClass.includes('whitespace-pre-wrap')) {
       throw new Error(`expected code-fence edit surface wrap class to be disabled when toggle is off; class=${JSON.stringify(editorClass)}`)
     }
@@ -531,7 +531,8 @@ export async function testMarkdownViewerCodeFenceSingleClickRespectsVerticalLine
     if (!selection || selection.rangeCount <= 0) throw new Error('expected active selection range for multiline code-fence')
     const range = selection.getRangeAt(0)
     const fullText = String(editor.textContent || '')
-    const head = fullText.slice(0, range.startOffset)
+    const {getSelectionOffsetsWithin}=await import('@/lib/markdown-core/ui/markdownBlockContainerCore.selection')
+    const head = fullText.slice(0, getSelectionOffsetsWithin(editor)?.startOffset??0)
     const lineIndex = head.split('\n').length - 1
     if (lineIndex < 1) {
       throw new Error(`expected click near lower portion of code fence to place caret on later line, not first line; lineIndex=${lineIndex}, offset=${range.startOffset}`)

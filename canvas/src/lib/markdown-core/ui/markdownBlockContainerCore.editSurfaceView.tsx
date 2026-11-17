@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import {
   FLOATING_MENU_BUTTON_CLASSNAME,
   FLOATING_MENU_BUTTON_DANGER_CLASSNAME,
@@ -9,38 +10,16 @@ import {
   FLOATING_POPOVER_INPUT_CLASSNAME,
   FLOATING_MENU_LEFT_W220_CLASSNAME,
 } from '@/features/markdown-workspace/main/viewer/floatingMenuStyles'
-import { MARKDOWN_INLINE_CODE_EDIT_DESCENDANT_CLASSES } from '@/features/markdown/ui/markdownInlineCodeParity'
-import {
-  MARKDOWN_HTML_EDIT_BLOCK_FLOW_CLASS,
-  MARKDOWN_HTML_EDIT_NORMALIZE_CLASS,
-  MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS,
-  MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_MIN_LINE_CLASS,
-} from '@/features/markdown/ui/markdownEditSurfaceLayout'
 import { MarkdownInlineSelectionToolbar } from './MarkdownInlineSelectionToolbar'
 import { MarkdownBlockContainerCommentPreviewOverlay } from './markdownBlockContainerCore.commentPreviewOverlay'
 import { MarkdownBlockContainerInlineMenusOverlay } from './markdownBlockContainerCore.inlineMenusOverlay'
-import { MarkdownContentEditableCore } from './MarkdownContentEditableCore'
 import type { InlineMediaCommandCandidate } from '@/lib/command-menu/inlineCommandMenuCatalog'
 import type { SlashMenuState } from './markdownBlockContainerCore.menuState'
-import { computeFloatingMenuPosition } from './markdownBlockContainerCore.interaction'
-
-const MARKDOWN_EDIT_SURFACE_MOBILE_GRAMMAR_QUICK_BAR_TOKENS = [
-  { id: 'slash', label: '/', description: 'Open slash commands' },
-  { id: 'semantic', label: '#', description: 'Open semantic commands' },
-  { id: 'variable', label: '@', description: 'Open variable commands' },
-] as const
 
 export const MarkdownBlockContainerEditSurfaceView = (props: {
   editing: boolean
   editable: boolean
   children: React.ReactNode
-  hostTag: React.ElementType
-  editInlineFlow: boolean
-  editPreserveBlockHeight: boolean
-  editMinHeightPx: number
-  editStaticChildren?: React.ReactNode
-  editStaticChildrenMode?: 'flow' | 'overlay' | 'passthrough'
-  editLeftRailClassName?: string
   inlineSelectionToolbar: { show: boolean; leftPx: number; topPx: number }
   slashMenu: SlashMenuState
   variableMenu: { show: boolean; leftPx: number; topPx: number; query: string; keyInput: string; valueInput: string; fallbackInput: string; mode: 'ref' | 'create' | 'update' | 'fallback' | 'delete' }
@@ -97,120 +76,9 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
   onLinkInputKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void
   onLinkCancel: () => void
   editorRef: React.RefObject<HTMLElement | null>
-  editorClassName?: string
-  editTypographyMode: 'inherit' | 'none'
-  editTypographySnapshot?: React.CSSProperties | null
-  editSpacingSnapshot?: React.CSSProperties | null
-  editListMode?: 'ordered' | 'unordered'
-  editPresentation: 'markdown' | 'html'
-  editHtmlRender: 'inline' | 'block'
-  editHtmlDisableDefaultBlockFlow: boolean
-  onInput: () => void
-  onCopy: (event: React.ClipboardEvent<HTMLElement>) => void
-  onCut: (event: React.ClipboardEvent<HTMLElement>) => void
-  onMouseOverCapture?: (event: React.MouseEvent<HTMLElement>) => void
-  onMouseOutCapture?: (event: React.MouseEvent<HTMLElement>) => void
-  onFocusCapture?: (event: React.FocusEvent<HTMLElement>) => void
-  onBlurCapture?: (event: React.FocusEvent<HTMLElement>) => void
-  onBlur: (event: React.FocusEvent<HTMLElement>) => void
-  onFocus: () => void
-  onMouseDown: (event: React.MouseEvent<HTMLElement>) => void
-  onMouseUp: (event: React.MouseEvent<HTMLElement>) => void
-  onDoubleClick: (event: React.MouseEvent<HTMLElement>) => void
-  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void
 }) => {
-  if (!(props.editing && props.editable)) return <>{props.children}</>
-  const hostInlineFlow = props.hostTag === 'p' || props.hostTag === 'li' || props.hostTag === 'th' || props.hostTag === 'td'
-  const hostParagraphFlow = props.hostTag === 'p'
-  const hostHeadingFlow =
-    props.hostTag === 'h1'
-    || props.hostTag === 'h2'
-    || props.hostTag === 'h3'
-    || props.hostTag === 'h4'
-    || props.hostTag === 'h5'
-    || props.hostTag === 'h6'
-  const hostNormalTextFlow = hostParagraphFlow || hostHeadingFlow
-  const effectiveInlineFlow = props.editInlineFlow || hostInlineFlow
-  const htmlBlockEditing = props.editPresentation === 'html' && props.editHtmlRender === 'block'
-  const htmlInlineEditing = props.editPresentation === 'html' && props.editHtmlRender === 'inline'
-  const EditorTag = (
-    htmlBlockEditing
-      ? 'div'
-      : htmlInlineEditing
-        ? 'span'
-        : ((!effectiveInlineFlow && !hostInlineFlow) ? 'div' : 'span')
-  ) as 'div' | 'span'
-  const htmlEditNormalizeClassName =
-    props.editPresentation === 'html'
-      ? [
-          MARKDOWN_HTML_EDIT_NORMALIZE_CLASS,
-          ...MARKDOWN_INLINE_CODE_EDIT_DESCENDANT_CLASSES,
-        ].join(' ')
-      : ''
-  const htmlEditBlockFlowClassName =
-    props.editPresentation === 'html' && props.editHtmlRender === 'block' && !props.editHtmlDisableDefaultBlockFlow
-      ? MARKDOWN_HTML_EDIT_BLOCK_FLOW_CLASS
-      : ''
-  const editPreserveMinHeightStyle =
-    props.editPreserveBlockHeight && props.editMinHeightPx > 0 ? { minHeight: `${props.editMinHeightPx}px` } : undefined
-  const skipEditWrapper = props.editStaticChildrenMode === 'passthrough' && hostHeadingFlow
-  const openMobileGrammarQuickBarMenu = (
-    kind: 'slash' | 'semantic' | 'variable',
-    anchorElement: HTMLElement,
-  ) => {
-    const editorRoot = props.editorRef.current
-    if (!editorRoot) return
-    const { leftPx, topPx } = computeFloatingMenuPosition({
-      rangeRect: anchorElement.getBoundingClientRect(),
-      root: editorRoot,
-      gapPx: 8,
-    })
-    if (kind === 'variable') {
-      props.setSlashMenuStable({ show: false, leftPx: 0, topPx: 0, kind: 'slash', query: '', triggerRange: null })
-      props.setVariableMenu(prev => ({
-        ...prev,
-        show: true,
-        leftPx,
-        topPx,
-        query: '',
-        keyInput: '',
-        mode: 'ref',
-      }))
-      return
-    }
-    props.setVariableMenu(prev => ({
-      ...prev,
-      show: false,
-      leftPx: 0,
-      topPx: 0,
-      query: '',
-      keyInput: '',
-    }))
-    props.setSlashMenuStable({
-      show: true,
-      leftPx,
-      topPx,
-      kind,
-      query: '',
-      triggerRange: null,
-    })
-  }
   const surfaceChildren = (
     <>
-      {props.editStaticChildren
-        ? (props.editStaticChildrenMode === 'passthrough'
-          ? props.editStaticChildren
-          : (
-              <span
-                className={props.editStaticChildrenMode === 'overlay'
-                  ? 'absolute inset-0 z-20 select-none pointer-events-none'
-                  : `pointer-events-none select-none ${effectiveInlineFlow ? 'inline align-baseline' : 'block'}`}
-              >
-                {props.editStaticChildren}
-              </span>
-            ))
-        : null}
-      {props.editLeftRailClassName ? <span aria-hidden className={`pointer-events-none absolute left-0 top-0 bottom-0 w-1 z-20 ${props.editLeftRailClassName}`} /> : null}
       <span ref={props.inlineSelectionToolbarAnchorRef} className="absolute w-px h-px" style={{ left: `${props.inlineSelectionToolbar.leftPx}px`, top: `${props.inlineSelectionToolbar.topPx}px` }} />
       <span ref={props.slashAnchorRef} className="absolute w-px h-px" style={{ left: `${props.slashMenu.leftPx}px`, top: `${props.slashMenu.topPx}px` }} />
       <span ref={props.variableAnchorRef} className="absolute w-px h-px" style={{ left: `${props.variableMenu.leftPx}px`, top: `${props.variableMenu.topPx}px` }} />
@@ -261,74 +129,6 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
         onClose={props.closeCommentPreview}
       />
 
-      <MarkdownContentEditableCore
-        as={EditorTag}
-        editorRef={props.editorRef}
-        ariaLabel="Edit markdown block"
-        spellCheck={false}
-        className={[
-          props.editorClassName || `${MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS} ${MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_MIN_LINE_CLASS}`,
-          htmlBlockEditing ? 'block' : '',
-          htmlEditNormalizeClassName,
-          htmlEditBlockFlowClassName,
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        style={{
-          ...(props.editTypographyMode === 'inherit'
-            ? { font: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', color: 'inherit', ...(props.editTypographySnapshot || null) }
-            : {}),
-          ...(props.editSpacingSnapshot || null),
-          ...(props.editListMode
-            ? { marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }
-            : {}),
-          ...(skipEditWrapper ? editPreserveMinHeightStyle : {}),
-        }}
-        onInput={props.onInput}
-        onCopy={props.onCopy}
-        onCut={props.onCut}
-        onMouseOverCapture={props.onMouseOverCapture}
-        onMouseOutCapture={props.onMouseOutCapture}
-        onFocusCapture={props.onFocusCapture}
-        onBlurCapture={props.onBlurCapture}
-        onBlur={props.onBlur}
-        onFocus={props.onFocus}
-        onMouseDown={props.onMouseDown}
-        onMouseUp={props.onMouseUp}
-        onDoubleClick={props.onDoubleClick}
-        onKeyDown={props.onKeyDown}
-      />
-
-      {!props.editDisableRichUi ? (
-        <span
-          className="mt-2 flex items-center gap-1 border-t pt-2 sm:hidden"
-          role="toolbar"
-          aria-label="Mobile grammar quick bar"
-          data-kg-markdown-mobile-grammar-quick-bar="true"
-        >
-          {MARKDOWN_EDIT_SURFACE_MOBILE_GRAMMAR_QUICK_BAR_TOKENS.map(entry => (
-            <button
-              key={entry.id}
-              type="button"
-              className={`${FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME} min-w-[2.5rem] justify-center`}
-              data-kg-markdown-mobile-grammar-quick-bar-token={entry.label}
-              aria-label={entry.description}
-              title={entry.description}
-              onMouseDown={event => {
-                event.preventDefault()
-                props.holdToolbarInteraction()
-                if (entry.id === 'variable') props.onVariableMenuMouseDownCapture()
-              }}
-              onClick={event => {
-                openMobileGrammarQuickBarMenu(entry.id, event.currentTarget)
-              }}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </span>
-      ) : null}
-
       <MarkdownBlockContainerInlineMenusOverlay
         editDisableRichUi={props.editDisableRichUi}
         slashMenu={props.slashMenu}
@@ -366,21 +166,7 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
     </>
   )
 
-  if (skipEditWrapper) return surfaceChildren
-  return (
-    <span
-      className={effectiveInlineFlow
-        ? (hostInlineFlow
-          ? (hostParagraphFlow
-            ? (hostHeadingFlow ? 'block w-full min-w-0' : 'relative block w-full min-w-0')
-            : (hostHeadingFlow ? 'inline-block w-full min-w-0 align-baseline' : 'relative inline-block w-full min-w-0 align-baseline'))
-          : (hostHeadingFlow ? 'inline min-w-0 align-baseline' : 'relative inline min-w-0 align-baseline'))
-        : (hostNormalTextFlow
-          ? (hostHeadingFlow ? 'block w-full min-w-0' : 'relative block w-full min-w-0')
-          : 'relative w-full block min-w-0 flex-1')}
-      style={editPreserveMinHeightStyle}
-    >
-      {surfaceChildren}
-    </span>
-  )
+  const root=props.editorRef.current, rect=root?.getBoundingClientRect()
+  return <>{props.children}{props.editing&&props.editable&&root&&rect?createPortal(
+    <span style={{position:'fixed',left:rect.left,top:rect.top,width:0,height:0}} data-kg-viewer-tools="true">{surfaceChildren}</span>,root.ownerDocument.body):null}</>
 }

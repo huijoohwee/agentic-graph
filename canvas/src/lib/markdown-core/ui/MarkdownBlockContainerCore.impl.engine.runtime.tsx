@@ -1,3 +1,4 @@
+import { ViewerSurface } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import { areReplacementLinesNoop } from '@/features/markdown/ui/markdownEditParitySsot'
 import { captureInlineSelectionForToolbarAction } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
@@ -255,8 +256,8 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
     editEndLine,
     initialText,
     editorPresentation,
-    htmlRenderMode,
     normalizeRenderedBlockHtmlForEditor,
+    htmlRenderMode,
     editDefaultLinePrefix,
     hasEditStripLinePrefix: !!editStripLinePrefix,
     editLinePrefixesRef,
@@ -665,7 +666,6 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
     editSigilRenderMode,
     editorPresentation,
     htmlRenderMode,
-    normalizeRenderedBlockHtmlForEditor,
     placeCaretFromClientPoint,
     runSelectionSyncBurst,
     syncSelectionToolbarState,
@@ -763,9 +763,20 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
     emitLiveDraftTextFromDom: emitHtmlDraftTextChangeFromEditorDom,
     editorRef,
   })
-  return (
-    <Tag
-      ref={setHostNodeRef}
+  return (<>
+    <ViewerSurface as={Tag} editing={editing} editable={editable} activation="manual"
+      surfaceRef={setHostNodeRef} editorRef={editorRef} editLabel="Edit markdown block"
+      resolveEditRoot={node=>[':scope > [data-kg-paragraph-content]', ':scope > bdi', ':scope > blockquote', ':scope > pre code', ':scope > div > pre code', ':scope > section > pre code', ':scope > pre', ':scope > section > pre', ':scope > span:only-child', ':scope > div:only-child', ':scope > section:last-child'].map(selector=>node.querySelector<HTMLElement>(selector)).find(Boolean)??node}
+      aria-label={editing?'Edit markdown block':undefined}
+      onInput={editing?handleEditorInput:undefined}
+      onCopy={editing?handleEditorCopy:undefined} onCut={editing?handleEditorCut:undefined}
+      onMouseOverCapture={editing?handleCommentIndicatorMouseOverCapture:undefined}
+      onMouseOutCapture={editing?handleCommentIndicatorMouseOutCapture:undefined}
+      onFocusCapture={editing?handleCommentIndicatorFocusCapture:undefined}
+      onBlurCapture={editing?handleCommentIndicatorBlurCapture:undefined}
+      onBlur={editing?handleEditorBlur:undefined} onFocus={editing?handleEditorFocus:undefined}
+      onMouseDown={editing?handleEditorMouseDown:undefined} onMouseUp={editing?handleEditorMouseUp:undefined}
+      onKeyDown={editing?handleEditorKeyDown:undefined}
       {...(rest as unknown as Record<string, unknown>)}
       id={id}
       className={cls}
@@ -775,17 +786,12 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
       onClick={onHostClick}
       onDoubleClick={onHostDoubleClick}
     >
+      {children}
+    </ViewerSurface>
       <MarkdownBlockContainerEditSurfaceView
         editing={editing}
         editable={editable}
-        children={children}
-        hostTag={Tag}
-        editInlineFlow={editInlineFlow}
-        editPreserveBlockHeight={editPreserveBlockHeight}
-        editMinHeightPx={editMinHeightPxRef.current}
-        editStaticChildren={editStaticChildren}
-        editStaticChildrenMode={editStaticChildrenMode}
-        editLeftRailClassName={editLeftRailClassName}
+        children={null}
         inlineSelectionToolbar={inlineSelectionToolbar}
         slashMenu={slashMenu}
         variableMenu={variableMenu}
@@ -851,28 +857,7 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
         onLinkInputKeyDown={handleLinkInputKeyDown}
         onLinkCancel={handleLinkCancel}
         editorRef={editorRef}
-        editorClassName={editorClassName}
-        editTypographyMode={editTypographyMode}
-        editTypographySnapshot={editTypographySnapshotRef.current}
-        editSpacingSnapshot={editSpacingSnapshotRef.current}
-        editListMode={editListMode}
-        editPresentation={editorPresentation}
-        editHtmlRender={htmlRenderMode}
-        editHtmlDisableDefaultBlockFlow={editHtmlDisableDefaultBlockFlow}
-        onInput={handleEditorInput}
-        onCopy={handleEditorCopy}
-        onCut={handleEditorCut}
-        onMouseOverCapture={handleCommentIndicatorMouseOverCapture}
-        onMouseOutCapture={handleCommentIndicatorMouseOutCapture}
-        onFocusCapture={handleCommentIndicatorFocusCapture}
-        onBlurCapture={handleCommentIndicatorBlurCapture}
-        onBlur={handleEditorBlur}
-        onFocus={handleEditorFocus}
-        onMouseDown={handleEditorMouseDown}
-        onMouseUp={handleEditorMouseUp}
-        onDoubleClick={handleEditorDoubleClick}
-        onKeyDown={handleEditorKeyDown}
       />
-    </Tag>
+    </>
   )
 })

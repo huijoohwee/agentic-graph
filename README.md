@@ -464,3 +464,7 @@ are pure contract exports; no competing renderer or keyboard handler remains.
 The Canvas observability entry consumes these same shared headers and scrolling.
 
 Markdown semantic commands, source transforms, parser configuration, the selection toolbar and palette controls consume exact Design System exports. Graph retains document selection/commit state, product slash/variable catalogs, graph swatches and overlay placement. Generic source/DOM renderers are not retained locally. Canvas uses this native entry at an exact Graph pin.
+
+Viewer read/edit hosts consume the exact Design System surface directly. Activation preserves rendered content nodes and style inheritance, including heading rails and code controls. Graph retains source ranges, parsing, serialization, validation and product tool portals; it removes the replacement editor and edit-open HTML reconstruction. Untouched blur/cancel never writes source.
+
+The native Mission source-document and identity previews also bind the shared ViewerSurface as read-only preformatted content. Canvas consumes this same Graph owner through its exact build revision.

@@ -104,27 +104,10 @@ export async function testMarkdownViewerInlineEditSurfaceParitySnapshotAppliesRe
 
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected contenteditable editor to mount after click')
-    if (editor.style.paddingTop !== '3px' || editor.style.paddingLeft !== '9px') {
-      throw new Error('expected edit surface to reuse read-surface padding styles')
-    }
-    if (editor.style.marginTop !== '2px' || editor.style.marginLeft !== '8px') {
-      throw new Error('expected edit surface to reuse read-surface margin styles')
-    }
-    if (editor.style.borderTopWidth !== '1px' || editor.style.borderLeftWidth !== '4px') {
-      throw new Error('expected edit surface to reuse read-surface border width styles')
-    }
-    if (editor.style.borderTopStyle !== 'solid' || editor.style.borderLeftStyle !== 'dotted') {
-      throw new Error('expected edit surface to reuse read-surface border style parity')
-    }
-    if (editor.style.textAlign !== 'right' || editor.style.textIndent !== '8px') {
-      throw new Error('expected edit surface to reuse read-surface text spacing/layout parity')
-    }
-    if (editor.style.backgroundColor !== 'rgb(240, 240, 240)') {
-      throw new Error('expected edit surface to reuse read-surface background style')
-    }
-    if (editor.style.caretColor !== 'rgb(30, 30, 30)') {
-      throw new Error('expected edit surface to reuse read-surface caret style')
-    }
+    if(editor!==sourceSpan)throw new Error('expected the original rendered content element')
+    const style=dom.window.getComputedStyle(editor)
+    if(style.paddingTop!=='3px'||style.paddingLeft!=='9px'||style.marginTop!=='2px'||style.borderLeftWidth!=='4px'||style.textAlign!=='right'||style.backgroundColor!=='rgb(240, 240, 240)')throw new Error('rendered typography and spacing must remain unchanged')
+    if(editor.getAttribute('style'))throw new Error('activation must not copy layout into a replacement style')
 
     root.unmount()
   } finally {

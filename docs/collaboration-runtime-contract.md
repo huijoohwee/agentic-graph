@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 88
+contract_version: 89
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -78,6 +78,10 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-production-release\\.mjs\\s+(?:prepare|dry-run|deploy)(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-catalog-publish\\.mjs\\s+publish(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-d1-restore-rehearsal\\.mjs\\s+run(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  viewer_surface:
+    roots: ["canvas/src/lib/markdown-core/ui/MarkdownBlockContainerCore.impl.engine.runtime.tsx", "canvas/src/lib/markdown-core/ui/markdownBlockContainerCore.editInitialization.ts", "canvas/src/__tests__/viewerSurface.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--import", "./canvas/src/tests/lib/registerCssLoader.ts", "--test", "canvas/src/__tests__/viewerSurface.test.tsx"]
   production_runtime_readiness_local_browser:
     roots: ["docs/TESTING.md", "canvas/scripts/run_production_runtime_readiness_e2e.mjs", "scripts/__tests__/production-runtime-ready-demo.test.mjs", "canvas/src/features/observability-workspace/ObservabilityWorkspace.tsx", "canvas/src/features/observability-workspace/host.mjs", "canvas/src/components/LiveCanvasHero.tsx", "canvas/src/features/agentic-os/LiveCanvasHeroPromptPresetPicker.tsx", "canvas/src/features/agentic-os/activateLiveCanvasHeroDemo.ts", "canvas/src/features/agentic-os/liveCanvasHeroDemoSource.ts", "docs/workspace-seeds/demo.md", "scripts/run-runtime-readiness-demo.mjs"]
     commands:
@@ -455,31 +459,7 @@ fallback_commands:
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
-An exact-path CI scope may narrow only its own composite command when the complete
-normalized change set consists exclusively of declared repository-relative file
-paths. Other matching scopes still run normally. Any mixed, unknown, directory,
-configuration, or source path falls back to the ordinary affected-scope plan.
-An exact test mapping may explicitly select `scope_local: true` when its command
-executes the complete named test and no runtime source changes are exempted.
-Every changed path within that scope must then have an exact mapping; changes in
-other scopes keep their own checks. Unmatched paths restore the broader matching
-scope commands as well as the ordinary fallback.
-Launch Copilot uses this boundary for its native UI and contract test files. Any
-additional Canvas or runtime source change restores that scope's broader checks.
-The default whole-change-set boundary remains in force for all other mappings.
-Generated Worker binding declarations use this closed mapping to validate only
-their repository-owned generator output and matching consumer typecheck. The
-runtime scope still runs normally, and `ci:integration` retains its common
-prechecks before affected-command selection. The runner uses a complete,
-rename-disabled, NUL-delimited committed diff, includes local untracked paths,
-and rejects malformed/noncanonical path inventories. Git inventory failure is a
-blocking error rather than an empty successful plan. Native pull-request runs
-derive that inventory from `GITHUB_BASE_REF`. Protected-refresh
-`workflow_dispatch` runs use the workflow-validated
-`AGENTIC_OS_PR_BASE_REF` when the native base is empty, and reject differing
-nonempty native and canonical bases. This keeps refreshed merge candidates
-scoped to the pull request versus its current base rather than the imported
-first-parent `main` delta.
+An exact-path CI scope may narrow only its own composite command when the complete normalized change set consists exclusively of declared repository-relative file paths. Other matching scopes still run normally. Any mixed, unknown, directory, configuration, or source path falls back to the ordinary affected-scope plan. An exact test mapping may explicitly select `scope_local: true` when its command executes the complete named test and no runtime source changes are exempted. Every changed path within that scope must then have an exact mapping; changes in other scopes keep their own checks. Unmatched paths restore the broader matching scope commands as well as the ordinary fallback. Launch Copilot uses this boundary for its native UI and contract test files. Any additional Canvas or runtime source change restores that scope's broader checks. The default whole-change-set boundary remains in force for all other mappings. Generated Worker binding declarations use this closed mapping to validate only their repository-owned generator output and matching consumer typecheck. The runtime scope still runs normally, and `ci:integration` retains its common prechecks before affected-command selection. The runner uses a complete, rename-disabled, NUL-delimited committed diff, includes local untracked paths, and rejects malformed/noncanonical path inventories. Git inventory failure is a blocking error rather than an empty successful plan. Native pull-request runs derive that inventory from `GITHUB_BASE_REF`. Protected-refresh `workflow_dispatch` runs use the workflow-validated `AGENTIC_OS_PR_BASE_REF` when the native base is empty, and reject differing nonempty native and canonical bases. This keeps refreshed merge candidates scoped to the pull request versus its current base rather than the imported first-parent `main` delta.
 
 ## Invocation Grammar
 
