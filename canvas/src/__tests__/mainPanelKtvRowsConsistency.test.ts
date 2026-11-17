@@ -381,9 +381,9 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected the dedicated canvas simple-row compatibility owner to delegate to the shared KTV row helper')
   }
   if (
-    !sharedKtvRows.includes('self-stretch px-2')
+    !sharedKtvRows.includes('KTV_ROW_VALUE_CELL_CLASS_NAME = KTV_ROW_PARTS[2].className')
     || sharedKtvRows.includes('border-x ${UI_THEME_TOKENS.panel.border}')
-    || !sharedKtvLayout.includes('${KTV_ROW_VALUE_CELL_CLASS_NAME} items-center ${KTV_HEADER_LABEL_CLASS_NAME}')
+    || !sharedKtvLayout.includes('valueClassName={KTV_HEADER_LABEL_CLASS_NAME}')
   ) {
     throw new Error('Expected shared KTV Value cells to preserve header/body left-right alignment without grid border lines')
   }
@@ -701,7 +701,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected KTV sticky headers to own the shared bottom divider')
   }
   if (
-    !sharedKtvLayout.includes('${KTV_ROW_VALUE_CELL_CLASS_NAME} items-center ${KTV_HEADER_LABEL_CLASS_NAME}')
+    !sharedKtvLayout.includes('valueClassName={KTV_HEADER_LABEL_CLASS_NAME}')
     || !sharedKtvLayout.includes('sm:justify-end')
   ) {
     throw new Error('Expected the shared KTV header Value cell to preserve responsive value alignment')

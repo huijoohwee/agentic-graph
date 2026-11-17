@@ -58,7 +58,7 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
     assert.equal(host.querySelector('[data-role-help-code]')?.textContent, 'WASD', 'help forwards semantic attributes')
     for (const caption of host.querySelectorAll('small')) assert(caption.classList.contains('font-serif') && caption.classList.contains('text-xs'), 'supporting help and schema hints share the caption role')
     const rows = Array.from(host.querySelectorAll<HTMLElement>('[data-panel-field-row]'))
-    assert.equal(rows.length, 10)
+    assert.equal(rows.length, 11, 'header and ten fields share the exact central row')
     for (const row of rows) {
       assert(row.classList.contains('agentic-ktv-row'), row.className)
       assert.equal(row.children.length, 3, 'every field preserves key/type/value columns')

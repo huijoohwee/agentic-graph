@@ -14,3 +14,7 @@ for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(re
 console.log('PASS direct Design System KTV ownership; no Base, form or geospatial row variant')
 
 assert(read('canvas/src/features/panels/views/graph-fields/GraphFieldsPanelControls.tsx').includes("from '@/lib/ui/panelFormControls'"))
+
+const header=read('grph-shared/src/react/keyTypeValueLayout.tsx'),contract=read('grph-shared/src/ui/keyTypeValueRows.ts')
+assert(header.includes("from 'agentic-design-system/react/ktv'"));assert(header.includes('<KeyTypeValueRow'));assert(!header.includes('KTV_FIELD_GRID_CLASS_NAME'))
+assert(contract.includes('KTV_FIELD_GRID_CLASS_NAME = KTV_ROW_CLASS'));assert(!contract.includes('grid-cols-['))

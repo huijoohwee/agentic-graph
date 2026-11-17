@@ -1,11 +1,8 @@
-import { KeyTypeValueContainer } from './keyTypeValueRow.js'
+import { KeyTypeValueRow } from 'agentic-design-system/react/ktv'
 import type { HTMLAttributes, ReactNode } from 'react'
 import {
   KTV_DEFAULT_HEADER_LABELS,
   KTV_HEADER_LABEL_CLASS_NAME,
-  KTV_FIELD_GRID_CLASS_NAME,
-  KTV_ROW_LABEL_CELL_CLASS_NAME,
-  KTV_ROW_VALUE_CELL_CLASS_NAME,
   KTV_SECTION_STACK_CLASS_NAME,
 } from '../ui/keyTypeValueRows.js'
 import { UI_THEME_TOKENS } from '../ui/themeTokens.js'
@@ -43,22 +40,12 @@ export function KeyTypeValueHeader({
 
   return (
     <header className={rootClassName}>
-      <KeyTypeValueContainer>
-      <section className={`${KTV_FIELD_GRID_CLASS_NAME} min-h-8 items-center py-0`}>
-        <section className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${KTV_HEADER_LABEL_CLASS_NAME}`}>
-          {keyLabel}
-        </section>
-        <section className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center justify-start gap-1 sm:justify-end ${KTV_HEADER_LABEL_CLASS_NAME}`}>
-          {typeLabel}
-        </section>
-        <section className={`${KTV_ROW_VALUE_CELL_CLASS_NAME} items-center ${KTV_HEADER_LABEL_CLASS_NAME}`}>
-          <section className="flex w-full min-w-0 items-center justify-start gap-1 overflow-hidden sm:justify-end">
-            <span className="min-w-0 truncate">{valueLabel}</span>
-            {actions ? <span className="flex shrink-0 items-center">{actions}</span> : null}
-          </section>
-        </section>
-      </section>
-      </KeyTypeValueContainer>
+      <KeyTypeValueRow keyNode={keyLabel} typeNode={typeLabel}
+        keyClassName={KTV_HEADER_LABEL_CLASS_NAME} typeClassName={KTV_HEADER_LABEL_CLASS_NAME} valueClassName={KTV_HEADER_LABEL_CLASS_NAME}
+        valueNode={<section className="flex w-full min-w-0 items-center justify-start gap-1 overflow-hidden sm:justify-end">
+          <span className="min-w-0 truncate">{valueLabel}</span>
+          {actions ? <span className="flex shrink-0 items-center">{actions}</span> : null}
+        </section>} />
     </header>
   )
 }

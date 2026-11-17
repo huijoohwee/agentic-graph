@@ -1,3 +1,4 @@
+import { KTV_ROW_CLASS, KTV_ROW_PARTS } from 'agentic-design-system/ktv'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from './panelTypography.js'
 import { UI_THEME_TOKENS } from './themeTokens.js'
 
@@ -29,18 +30,17 @@ export const KTV_VALUE_ROW_SCROLL_CLASS_NAME = `${KTV_VALUE_CELL_ROW_SCROLL_CLAS
 export const KTV_VALUE_ROW_SCROLL_SPACIOUS_CLASS_NAME = KTV_VALUE_ROW_SCROLL_CLASS_NAME
 export const KTV_VALUE_ROW_STATUS_SHELL_CLASS_NAME = 'min-w-0 max-w-full overflow-hidden'
 
-export const KTV_ROW_TEXT_CELL_CLASS_NAME = 'flex min-w-0 max-w-full overflow-hidden'
-export const KTV_ROW_LABEL_CELL_CLASS_NAME = `${KTV_ROW_TEXT_CELL_CLASS_NAME} px-2 text-ellipsis whitespace-nowrap`
-export const KTV_ROW_VALUE_CELL_CLASS_NAME = `${KTV_ROW_TEXT_CELL_CLASS_NAME} self-stretch px-2 gap-2 justify-start sm:justify-end ${UI_THEME_TOKENS.text.secondary}`
-
-export const KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = 'grid-cols-[var(--agentic-ktv-columns)]'
+// Contract-only aliases retained for existing callers; Design System owns every row/cell class.
+export const KTV_ROW_TEXT_CELL_CLASS_NAME = KTV_ROW_PARTS[0].className
+export const KTV_ROW_LABEL_CELL_CLASS_NAME = KTV_ROW_PARTS[0].className
+export const KTV_ROW_VALUE_CELL_CLASS_NAME = KTV_ROW_PARTS[2].className
+export const KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = KTV_ROW_CLASS
+export const KTV_FIELD_GRID_CLASS_NAME = KTV_ROW_CLASS
 
 export function shouldFlushKeyTypeValueSectionTop(index: number): boolean {
   return index === 0
 }
 
-// Shared by labeled forms, inspectors, headers, and all panel surfaces.
-export const KTV_FIELD_GRID_CLASS_NAME = `agentic-ktv-row grid w-full min-w-0 max-w-full ${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME} gap-x-2 gap-y-0`
 export const KTV_FIELD_CONTROL_GROUP_CLASS_NAME = 'flex w-full min-w-0 items-center gap-1'
 
 // Presentation belongs to the shared owner. Callers may add color, borders,

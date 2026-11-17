@@ -27,20 +27,20 @@ export const testTailwindScansSharedKtvClassOwners = () => {
   }
   if (
     !sharedKtvRows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvRows.includes('grid-cols-[var(--agentic-ktv-columns)]')
+    || !sharedKtvRows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = KTV_ROW_CLASS')
     || sharedKtvRows.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
   ) {
     throw new Error(
-      'Expected the scanned shared package to remain the source owner for KTV grid-column utilities',
+      'Expected the scanned shared package to delegate all grid-column geometry to Design System',
     )
   }
   if (
     !sharedKtvRow.includes('<DesignSystemKeyTypeValueRow')
     || sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvLayout.includes('${KTV_FIELD_GRID_CLASS_NAME}')
+    || !sharedKtvLayout.includes('<KeyTypeValueRow keyNode={keyLabel}')
   ) {
     throw new Error(
-      'Expected shared MainPanel and FloatingPanel KTV React owners to consume the scanned grid-column utilities',
+      'Expected shared MainPanel and FloatingPanel KTV React owners to consume the central Design System row',
     )
   }
 }
