@@ -2,27 +2,27 @@
 title: "Global UI appearance alignment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "ui-appearance"
-version: "1.0.3"
-prd_revision: "1.0.3"
-tad_revision: "1.0.3"
-adr_revision: "1.0.3"
-mvp_revision: "1.0.3"
-gtm_revision: "1.0.3"
+version: "1.0.4"
+prd_revision: "1.0.4"
+tad_revision: "1.0.4"
+adr_revision: "1.0.4"
+mvp_revision: "1.0.4"
+gtm_revision: "1.0.4"
 date: "2026-10-02"
 owner: "Application UI function"
 frontmatter_contract: "required"
-local_rung: "implemented-local"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "verification"
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/dev-catalog-source-anchor"
+worktree_id: "device-0232231d4a19--atomic-ktv-rows"
 ---
 
 # Global UI appearance alignment
 
-`ui-appearance@1.0.3` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
+`ui-appearance@1.0.4` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
 [UI/UX design guide](./agentic-graph-ui-ux-design-document.md#global-appearance-authority).
 This increment continues [workspace-data-views@1.3.4](./prd-tad-adr-mvp-gtm-workspace-data-views.md).
 
@@ -218,3 +218,9 @@ Shared row projection follow-up: pin Design System `eab0dcaad86c3d2cfd0c6eebf600
 ## Shared hover ownership · 2026-11-17
 
 PRD: operators require one hover panel, inverse palette, label/text and key/value help syntax across Graph, Base, Commerce and Canvas. TAD: direct Design System `b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d` native/React entrypoints own geometry, events, ARIA, title delegation and generic formatters. Graph retains graph content, state, pin/drag/resize and application dropdown dismissal. Both the main application and standalone observability entry used by Canvas install the same native title delegate; standalone prebundling warms the shared native/React entries before interaction. ADR: remove the three local generic hover implementations and formatter definitions; keep no forwarding API. The former oversized content module is split by product responsibility. MVP: local typing and live Settings focus/Escape checks pass, including one black/white tooltip with exact value syntax contained at 320px. Dynamic title/associated-label, pin/resize/bridge and profile-export regressions are checked. The legacy token adapter resolves only identical finite hex branches of light-dark before strict literal validation; it adds no palette. The Canvas native launcher also shows one black/white Index manifest hover label and dismisses it with Escape, with no console errors. Affected and protected checks remain separate release evidence. GTM: no parity, adoption savings or production claim beyond observed checks. Rollback restores the prior exact Design System/Base pins and generated artifacts together, retaining user data; no provider deployment is selected.
+
+## One independent value per shared KTV row — 1.0.4
+
+PRD: independently editable values, including amount minimum and maximum, each occupy their own key/type/value row. TAD/ADR: retain direct Design System native/React KTV ownership, pin integrated owner `98807b856ab35bac53c54987d4340cd37982d3ec` (PR #58), and integrate Base `887d2cfa7f1dc3b76fa0a33694f76336e7aacbcf` (PR #83). The shared row-group API composes existing rows with stable IDs; it does not create another renderer. Graph's product help, state and callbacks remain local. A slider and numeric input for the same setting represent one value. Existing semantic row imports remain direct owner consumption.
+
+MVP acceptance: the owner native tests, Base full check and live one-value-per-row/state-preservation proof pass; Graph's direct-owner conformance and required Integration Gate remain exact-candidate release checks. Canvas's existing Graph build pin must advance after this source integrates. No additional module/dependency, token or CSS override, new storage, network service or Production activation. GTM: remove ambiguity in the existing free/local inspector; WTP remains unmeasured. Restore prior exact owner/Base pins and generated metadata together for rollback.

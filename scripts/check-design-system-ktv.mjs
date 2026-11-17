@@ -10,7 +10,7 @@ assert(geo.includes("from 'agentic-design-system/react/ktv'"));assert(!geo.inclu
 assert(!form.includes('KTV_FIELD_GRID_CLASS_NAME'),'form fields must use the same renderer')
 const base=read('node_modules/@agentic-base/views-react/packages/views-react/src/controls/MenuControls.tsx')
 assert(!base.includes('function KeyTypeValueRow'),'the installed Base source cannot retain the row renderer')
-for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d')
+for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#98807b856ab35bac53c54987d4340cd37982d3ec')
 console.log('PASS direct Design System KTV ownership; no Base, form or geospatial row variant')
 
 assert(read('canvas/src/features/panels/views/graph-fields/GraphFieldsPanelControls.tsx').includes("from '@/lib/ui/panelFormControls'"))
@@ -29,3 +29,6 @@ for (const p of ['canvas/src/features/panels/ui/Tooltip.tsx','canvas/src/feature
 assert(read('canvas/src/main.tsx').includes("from 'agentic-design-system/react/hover'"))
 assert(!/export function build(?:Numeric|SettingsValue|SettingsKey|RoleActionOutcome|Default)Tooltip/.test(read('canvas/src/lib/config-copy/tooltips.ts')))
 console.log('PASS direct Design System hover ownership; no local panel, title delegate or generic syntax variant')
+
+assert(read('node_modules/agentic-design-system/site/key-type-value.js').includes('export function createKeyTypeValueRows'))
+assert(read('node_modules/agentic-design-system/packages/react-ktv/src/index.tsx').includes('key={row.id}'))
