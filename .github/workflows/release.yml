@@ -26,6 +26,8 @@ jobs:
       - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - { name: Resolve pinned Base demo source, id: base_demo_source, working-directory: agentic-graph, run: "node --input-type=module -e 'import { readFileSync } from \"node:fs\"; const pin = JSON.parse(readFileSync(\"scripts/agentic-base-demo-source.json\", \"utf8\")); if (pin.schema !== \"agentic-graph/base-demo-source/v1\" || !/^[0-9a-f]{40}$/.test(pin.revision)) throw Error(\"Base demo source pin is invalid\"); console.log(\"revision=\" + pin.revision);' >> \"$GITHUB_OUTPUT\"" }
       - { name: Checkout exact Base demo source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/agentic-base, ref: '${{ steps.base_demo_source.outputs.revision }}', path: agentic-base, ssh-key: '${{ secrets.AGENTIC_BASE_READ_KEY }}', ssh-known-hosts: 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl', persist-credentials: false } }
+      - { name: Resolve pinned Sheets source, id: sheets_source, working-directory: agentic-graph, run: "node --input-type=module -e 'import { readFileSync } from \"node:fs\"; const pin = JSON.parse(readFileSync(\"scripts/agentic-sheets-source.json\", \"utf8\")); if (pin.schema !== \"agentic-graph/sheets-source/v1\" || !/^[0-9a-f]{40}$/.test(pin.revision)) throw Error(\"Sheets source pin is invalid\"); console.log(\"revision=\" + pin.revision);' >> \"$GITHUB_OUTPUT\"" }
+      - { name: Checkout exact Sheets source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/agentic-base, ref: '${{ steps.sheets_source.outputs.revision }}', path: agentic-sheets-source, ssh-key: '${{ secrets.AGENTIC_BASE_READ_KEY }}', ssh-known-hosts: 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl', persist-credentials: false } }
       - name: Verify checked-out commit
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}', GH_TOKEN: '${{ github.token }}' }
@@ -48,10 +50,7 @@ jobs:
         run: |
           node ./scripts/travel-mesh-release.mjs validate
           node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs ./scripts/__tests__/travel-mesh-release-provider-proof.test.mjs ./scripts/__tests__/production-browser-preflight.test.mjs
-      - name: Resolve Agentic Canvas OS docs dependency
-        id: agentic_canvas_os_docs
-        working-directory: agentic-graph
-        run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
+      - { name: Resolve Agentic Canvas OS docs dependency, id: agentic_canvas_os_docs, working-directory: agentic-graph, run: 'npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"' }
       - name: Checkout Agentic Canvas OS docs SSOT
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

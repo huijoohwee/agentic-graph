@@ -62,6 +62,7 @@ const createBaseMirror = async root => {
     writeFile(root, 'content/agentic-graph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/gamexr/index.html', 'old gamexr\n'),
     writeFile(root, 'content/agentic-base/index.html', '<h1>old Base demo</h1>\n'),
+    writeFile(root, 'content/agentic-sheets/index.html', '<h1>old Sheets fixture</h1>\n'),
     writeFile(root, 'content/agentic-graph/assets/old/entry.js', 'old content asset\n'),
     writeFile(root, 'agentic-graph/assets/old/entry.js', 'old public asset\n'),
     writeFile(root, '81rv10/index.html', '<main id="root"></main>\n'),

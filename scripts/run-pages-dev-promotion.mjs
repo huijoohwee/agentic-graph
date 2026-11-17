@@ -9,6 +9,8 @@ import { AGENTIC_GRAPH_CSP } from './pages-mirror-headers.mjs'
 import { prepareDevArtifact, runPagesProductionDeployment } from './pages-production-deployment.mjs'
 import { verifyDataViewsDev } from './verify-data-views-dev.mjs'
 
+import { verifySheetsRoute, verifySheetsBrowser } from './production-sheets.mjs'
+
 export const DEV_UI_CONVERGENCE_ATTEMPTS = 2
 export const DEV_UI_CONVERGENCE_RETRY_DELAY_MS = 15_000
 
@@ -92,6 +94,11 @@ export async function runPagesDevPromotion(env = process.env) {
     const cspVerification = await verifyDevGraphCsp({ deployment, artifact })
     await writeReceipt(path.join(evidenceDir, 'csp-verification.json'), cspVerification)
 
+    stage = 'dev-sheets-verification'
+    const sheets = await verifySheetsRoute({ artifactRoot: path.join(artifactDir, 'content/agentic-sheets'), origins: [deployment.deploymentUrl] })
+    sheets.browser = await verifySheetsBrowser({ origin: deployment.deploymentUrl, artifactDigest: sheets.artifactDigest })
+    await writeReceipt(path.join(evidenceDir, 'sheets-verification.json'), sheets)
+
     stage = 'dev-browser-verification'
     const { attempts: uiVerificationAttempts, verification: ui } = await verifyDevUiWithConvergenceRetry({
       origin: deployment.deploymentUrl,
@@ -112,6 +119,7 @@ export async function runPagesDevPromotion(env = process.env) {
       providerDeploymentUrl: deployment.providerDeploymentUrl,
       runIdentity,
       staticArtifactDigest: artifact.artifactDigest,
+      sheetsVerificationDigest: createHash('sha256').update(JSON.stringify(sheets)).digest('hex'),
       cspVerificationDigest: createHash('sha256').update(cspReceiptBytes).digest('hex'),
       uiVerificationDigest: createHash('sha256').update(uiReceiptBytes).digest('hex'),
       uiVerificationAttempts,

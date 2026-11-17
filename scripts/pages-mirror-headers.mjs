@@ -1,5 +1,7 @@
 import { AGENTIC_GRAPH_CSP } from '../cloudflare/pages/agentic-graph-security-headers.mjs'
 
+import { sheetsHeaders } from './production-sheets.mjs'
+
 const GENERATED_AGENT_HEADERS_START = '# BEGIN agentic-graph generated agent-ready headers'
 const GENERATED_AGENT_HEADERS_END = '# END agentic-graph generated agent-ready headers'
 const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN agentic-graph generated app-shell cache headers'
@@ -94,6 +96,7 @@ export const buildAgentReadyHeaders = ({
   const appShellHeaderBlock = [
     GENERATED_APP_SHELL_HEADERS_START,
     ...productionRuntimeReadinessHeaderLines,
+    ...sheetsHeaders,
     '/pitch/agentic-drone-as-a-service/*',
     '  Cache-Control: public, max-age=0, must-revalidate',
     '  X-Content-Type-Options: nosniff',
