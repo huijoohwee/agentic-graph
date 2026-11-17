@@ -6287,7 +6287,7 @@ export default defineConfig(({ command, mode }) => {
       'maplibre-gl', 'maplibre-gl/dist/maplibre-gl.js',
       'dagre',
       '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/src/renderers/webgpu/WebGPURenderer.js',
-      'yjs',
+      'yjs', 'agentic-design-system/ktv',
     ],
     exclude: ['gympgrph', 'grph-shared', 'entities'],
     esbuildOptions: {

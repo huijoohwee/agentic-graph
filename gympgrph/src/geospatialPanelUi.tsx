@@ -1,11 +1,7 @@
 import React from 'react'
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import type { PanelTypography } from 'grph-shared/ui/panelTypography'
-import {
-  KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME,
-  KTV_ROW_LABEL_CELL_CLASS_NAME,
-  KTV_ROW_VALUE_CELL_CLASS_NAME,
-} from 'grph-shared/ui/keyTypeValueRows'
+import { KeyTypeValueRow } from 'agentic-design-system/react/ktv'
 
 export type GeoPanelTypeIconRenderer = (args: { typeLabel: string }) => React.ReactNode
 
@@ -67,7 +63,6 @@ export function GeoPanelKtvRow(props: GeoPanelKtvRowProps): React.ReactElement {
     align = 'center',
   } = props
   const renderTypeIcon = React.useContext(GeoPanelTypeIconRenderContext)
-  const alignClass = align === 'start' ? 'items-start' : 'items-center'
   const activeClass = header
     ? ''
     : isActive
@@ -79,36 +74,10 @@ export function GeoPanelKtvRow(props: GeoPanelKtvRowProps): React.ReactElement {
     if (!typeLabel) return typeNode
     return renderTypeIcon({ typeLabel }) ?? typeNode
   }, [header, renderTypeIcon, typeNode])
-  const rootClassName = [
-    `grid w-full ${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME} gap-x-2 gap-y-0 rounded`,
-    panelTypography.panelTextClass,
-    header ? 'h-9 py-0' : 'py-0.5',
-    alignClass,
-    activeClass,
-  ].filter(Boolean).join(' ')
-  const labelClassName = [
-    KTV_ROW_LABEL_CELL_CLASS_NAME,
-    'items-center gap-1 whitespace-nowrap',
-    header ? `font-semibold ${UI_THEME_TOKENS.text.secondary}` : UI_THEME_TOKENS.text.primary,
-  ].join(' ')
-  const typeClassName = [
-    KTV_ROW_LABEL_CELL_CLASS_NAME,
-    'items-center justify-start sm:justify-end whitespace-nowrap',
-    header ? `font-semibold ${UI_THEME_TOKENS.text.secondary}` : UI_THEME_TOKENS.text.secondary,
-  ].join(' ')
-  const valueClassName = [
-    KTV_ROW_VALUE_CELL_CLASS_NAME,
-    'items-center',
-    header ? `font-semibold ${UI_THEME_TOKENS.text.secondary}` : '',
-  ].filter(Boolean).join(' ')
-
-  return (
-    <dl className={rootClassName}>
-      <dt className={labelClassName}>{keyNode}</dt>
-      <dd className={typeClassName}>{renderedTypeNode}</dd>
-      <dd className={valueClassName}>{valueNode}</dd>
-    </dl>
-  )
+  return <KeyTypeValueRow keyNode={keyNode} typeNode={renderedTypeNode} valueNode={valueNode} align={align}
+    className={activeClass}
+    keyClassName={header ? UI_THEME_TOKENS.text.secondary + ' font-semibold' : UI_THEME_TOKENS.text.primary}
+    typeClassName={UI_THEME_TOKENS.text.secondary} valueClassName={UI_THEME_TOKENS.text.secondary} />
 }
 
 export function GeoPanelSection(props: GeoPanelSectionProps): React.ReactElement {

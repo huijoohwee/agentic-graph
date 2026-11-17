@@ -1,4 +1,5 @@
-import { KeyTypeValueRow as BaseKeyTypeValueRow, DesignIcon } from '@agentic-base/views-react/controls'
+import { KeyTypeValueRow as DesignSystemKeyTypeValueRow, KeyTypeValueContainer as DesignSystemKeyTypeValueContainer } from 'agentic-design-system/react/ktv'
+import { DesignIcon } from '@agentic-base/views-react/controls'
 import type { ReactNode } from 'react'
 import {
   KTV_FIELD_CONTROL_GROUP_CLASS_NAME,
@@ -51,9 +52,7 @@ export interface SimpleKeyValueRowProps {
   onClick?: () => void
 }
 
-export function KeyTypeValueContainer({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`agentic-ktv-container ${className}`.trim()}>{children}</section>
-}
+export const KeyTypeValueContainer = DesignSystemKeyTypeValueContainer
 
 export function KeyTypeValueStaticRow({
   keyNode,
@@ -73,9 +72,9 @@ export function KeyTypeValueStaticRow({
 }: KeyTypeValueStaticRowProps) {
   const cells = presentCells ? presentCells({ keyNode, typeNode, valueNode }) : { keyNode, typeNode, valueNode }
   const sliderLayout = layout === 'keyIconSliderInput'
-  return <BaseKeyTypeValueRow id={id} dataKgAnchor={dataKgAnchor} align={align} onClick={onClick}
+  return <DesignSystemKeyTypeValueRow id={id} dataKgAnchor={dataKgAnchor} align={align} onClick={onClick}
     keyNode={cells.keyNode}
-    typeNode={sliderLayout ? <DesignIcon name="Hash" label="Number" /> : cells.typeNode}
+    typeNode={sliderLayout ? <DesignIcon name="Hash" label="Number" /> : cells.typeNode ?? <DesignIcon name="Type" label="Text" />}
     valueNode={sliderLayout ? <section className={KTV_FIELD_CONTROL_GROUP_CLASS_NAME}>{cells.typeNode}{cells.valueNode}</section> : cells.valueNode}
     className={[activeClassName, onClick ? 'cursor-pointer' : '', panelFieldDecorationClassName(className)].filter(Boolean).join(' ')}
     keyClassName={UI_THEME_TOKENS.text.primary} typeClassName={UI_THEME_TOKENS.text.secondary} valueClassName={UI_THEME_TOKENS.text.secondary} />

@@ -2,8 +2,8 @@ import { SemanticSelect, type SemanticSelectProps } from '@/lib/ui/SemanticSelec
 import React from 'react'
 import { usePanelTypography } from './panelTypography'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import { KeyTypeValueContainer, KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
-import { KTV_FIELD_GRID_CLASS_NAME, KTV_ROW_LABEL_CELL_CLASS_NAME, KTV_ROW_VALUE_CELL_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
+import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 import { UI_THEME_TOKENS, normalizeSingleLineControlClassName } from '@/lib/ui/theme-tokens'
 import {
   readDataViewControlPaddingClassName,
@@ -220,20 +220,16 @@ export const PanelRangeInput = React.forwardRef<HTMLInputElement, PanelRangeInpu
 // variant/layout are accepted for older callers only; there is one field presentation.
 export function PanelField({ label, children, className, labelClassName }: PanelFieldProps) {
   const row = useCanvasKeyTypeValueStaticRowProps()
-  const rawCells = { keyNode: label, valueNode: children }
-  const cells = row.presentCells ? row.presentCells(rawCells) : rawCells
-  return (
-    <KeyTypeValueContainer className="col-span-full">
-    <label data-panel-field-row="true" className={cn(
-      panelFieldDecorationClassName(className), KTV_FIELD_GRID_CLASS_NAME,
-      'col-span-full items-center', row.fontClassName, row.textSizeClassName, row.densityClassName,
-    )}>
-      <span className={cn(KTV_ROW_LABEL_CELL_CLASS_NAME, panelFieldDecorationClassName(labelClassName))}>{cells.keyNode}</span>
-      <span />
-      <span className={cn(KTV_ROW_VALUE_CELL_CLASS_NAME, 'items-center')}>{cells.valueNode}</span>
-    </label>
-    </KeyTypeValueContainer>
-  )
+  const controlId = React.useId(), labelRef = React.useRef<HTMLLabelElement>(null), valueRef = React.useRef<HTMLSpanElement>(null)
+  const child = React.isValidElement<{ id?: string }>(children) && children.type !== React.Fragment
+    ? React.cloneElement(children, { id: children.props.id || controlId }) : children
+  React.useLayoutEffect(() => {
+    const control = valueRef.current?.querySelector<HTMLElement>('input:not([type="hidden"]),select,textarea,button')
+    if (control && labelRef.current) { if (!control.id) control.id = controlId; labelRef.current.htmlFor = control.id }
+  }, [controlId, children])
+  return <KeyTypeValueStaticRow {...row} className={cn('col-span-full', panelFieldDecorationClassName(className))}
+    keyNode={<label ref={labelRef} htmlFor={controlId} className={panelFieldDecorationClassName(labelClassName)}>{label}</label>}
+    valueNode={<span ref={valueRef} className="w-full min-w-0">{child}</span>} />
 }
 
 export function PanelReadOnlyField({ label, value, className, labelClassName, valueClassName }: PanelReadOnlyFieldProps) {

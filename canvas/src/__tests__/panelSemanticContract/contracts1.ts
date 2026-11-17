@@ -481,8 +481,8 @@ export const testKeyValueRowsKeepMobileGridConsistency = () => {
     throw new Error('Expected the upstream shared KTV row runtime to preserve grid columns on narrow widths instead of introducing ad hoc breakpoint overrides')
   }
   if (
-    !sharedKtvRow.includes('<BaseKeyTypeValueRow')
-    || !sharedKtvRows.includes('grid-cols-[var(--agentic-ktv-columns)]')
+    !sharedKtvRow.includes('<DesignSystemKeyTypeValueRow')
+    || !sharedKtvRows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = KTV_ROW_CLASS')
   ) {
     throw new Error('Expected the upstream shared KTV row runtime to keep the shared default Key/Type/Value grid with a wider bounded Value column')
   }
@@ -495,16 +495,16 @@ export const testKeyValueRowsKeepMobileGridConsistency = () => {
   if (!sharedKtvRow.includes('sliderLayout ? <DesignIcon name="Hash" label="Number" /> : cells.typeNode')) {
     throw new Error('Expected the upstream shared KTV row runtime to preserve icon spacer cells in the mobile grid instead of hiding them')
   }
-  if (!sharedKtvRow.includes('BaseKeyTypeValueRow')) {
+  if (!sharedKtvRow.includes('DesignSystemKeyTypeValueRow')) {
     throw new Error('Expected the upstream shared KTV row runtime to preserve right-aligned value cells that relax to start alignment on narrow widths')
   }
-  if (!sharedKtvRows.includes('export const KTV_ROW_TEXT_CELL_CLASS_NAME') || !sharedKtvRows.includes('overflow-hidden')) {
+  if (!sharedKtvRows.includes('export const KTV_ROW_TEXT_CELL_CLASS_NAME') || !sharedKtvRows.includes("from 'agentic-design-system/ktv'")) {
     throw new Error('Expected upstream shared KTV cells to clip instead of allowing messy mobile overflow')
   }
-  if (!sharedKtvRows.includes('self-stretch px-2') || sharedKtvRows.includes('border-x ${UI_THEME_TOKENS.panel.border}')) {
+  if (!sharedKtvRows.includes('KTV_ROW_VALUE_CELL_CLASS_NAME = KTV_ROW_PARTS[2].className') || sharedKtvRows.includes('border-x ${UI_THEME_TOKENS.panel.border}')) {
     throw new Error('Expected KTV Value cells to keep shared left/right alignment without grid border lines')
   }
-  if (!sharedKtvRows.includes('export const KTV_ROW_LABEL_CELL_CLASS_NAME') || !sharedKtvRows.includes('text-ellipsis whitespace-nowrap')) {
+  if (!sharedKtvRows.includes('export const KTV_ROW_LABEL_CELL_CLASS_NAME') || !sharedKtvRows.includes('KTV_ROW_LABEL_CELL_CLASS_NAME = KTV_ROW_PARTS[0].className')) {
     throw new Error('Expected upstream shared KTV labels to use ellipsis on narrow widths')
   }
   if (sharedKtvRow.includes('break-words')) {
