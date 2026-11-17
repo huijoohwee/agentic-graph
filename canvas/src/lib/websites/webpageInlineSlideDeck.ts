@@ -7,6 +7,37 @@ type InlineSlideDeckMarkdown = {
 }
 
 const INLINE_SLIDES_ASSIGNMENT_RE = /\b(?:const|let|var)\s+slides\s*=\s*\[/i
+const IFRAME_TAG_RE = /<iframe\b[\s\S]*?>/gi
+
+function decodeInlineSlideHtmlEntities(value: string): string {
+  let next = String(value || '')
+  for (let pass = 0; pass < 2; pass += 1) {
+    const decoded = next
+      .replace(/&#x([0-9a-f]{1,6});?/gi, (_match, hex: string) => {
+        try {
+          return String.fromCodePoint(Number.parseInt(hex, 16))
+        } catch {
+          return _match
+        }
+      })
+      .replace(/&#([0-9]{1,7});?/g, (_match, dec: string) => {
+        try {
+          return String.fromCodePoint(Number.parseInt(dec, 10))
+        } catch {
+          return _match
+        }
+      })
+      .replace(/&nbsp;?/gi, ' ')
+      .replace(/&quot;?/gi, '"')
+      .replace(/&apos;?/gi, "'")
+      .replace(/&lt;?/gi, '<')
+      .replace(/&gt;?/gi, '>')
+      .replace(/&amp;?/gi, '&')
+    if (decoded === next) break
+    next = decoded
+  }
+  return next.trim()
+}
 
 function extractHtmlTitle(html: string): string {
   const match = String(html || '').match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)
@@ -70,8 +101,56 @@ function parseInlineSlideDeckItems(html: string): string[] {
   }
 }
 
+function readTagAttribute(tag: string, name: string): string {
+  const escapedName = String(name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = String(tag || '').match(new RegExp(`\\b${escapedName}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'i'))
+  return String(match?.[2] || '').trim()
+}
+
+function looksLikeInlineSlideIframe(tag: string, srcdocHtml: string): boolean {
+  const decoded = String(srcdocHtml || '').trim()
+  if (!decoded) return false
+  if (/<!--\s*ai-slides:/i.test(decoded)) return true
+  const title = readTagAttribute(tag, 'title').toLowerCase()
+  if (title === 'presentation slide') return true
+  const id = readTagAttribute(tag, 'id').toLowerCase()
+  return id === 'slide' && /<(?:main|section|article|h1)\b/i.test(decoded)
+}
+
+function parseInlineSlideDeckSrcdocItems(html: string): string[] {
+  const source = String(html || '')
+  if (!source.includes('<iframe')) return []
+  const slides: string[] = []
+  for (const match of source.matchAll(IFRAME_TAG_RE)) {
+    const tag = String(match[0] || '')
+    const rawSrcdoc = readTagAttribute(tag, 'srcdoc')
+    const decodedSrcdoc = decodeInlineSlideHtmlEntities(rawSrcdoc)
+    if (!looksLikeInlineSlideIframe(tag, decodedSrcdoc)) continue
+    slides.push(decodedSrcdoc)
+  }
+  return slides
+}
+
+function chooseInlineSlideDeckItems(html: string): string[] {
+  const arraySlides = parseInlineSlideDeckItems(html)
+  const iframeSlides = parseInlineSlideDeckSrcdocItems(html)
+  if (iframeSlides.length === 0) return arraySlides
+  if (arraySlides.length === 0) return iframeSlides
+  if (iframeSlides.length > arraySlides.length) return iframeSlides
+  if (iframeSlides.length < arraySlides.length) return arraySlides
+  const iframeChars = iframeSlides.reduce((sum, slide) => sum + slide.length, 0)
+  const arrayChars = arraySlides.reduce((sum, slide) => sum + slide.length, 0)
+  return iframeChars >= arrayChars ? iframeSlides : arraySlides
+}
+
 function stripLeadingSlideComments(html: string): string {
   return String(html || '').replace(/^\s*(?:<!--[\s\S]*?-->\s*)+/u, '').trim()
+}
+
+function stripInlineSlideEditorBridge(html: string): string {
+  return String(html || '')
+    .replace(/<script\b[^>]*\bid\s*=\s*["']__qw_sel_bridge["'][^>]*>[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<script\b[^>]*>\s*\/\*\s*ai-slides-present-keyforward-v\d+\s*\*\/[\s\S]*?<\/script\s*>/gi, '')
 }
 
 function firstMarkdownHeading(markdown: string): string {
@@ -92,7 +171,7 @@ function stripMatchingLeadingHeading(markdown: string, heading: string): string 
 
 export function looksLikeInlineSlideDeckShell(html: string): boolean {
   const source = String(html || '')
-  return source.includes('<iframe') && INLINE_SLIDES_ASSIGNMENT_RE.test(source)
+  return INLINE_SLIDES_ASSIGNMENT_RE.test(source) || parseInlineSlideDeckSrcdocItems(source).length > 0
 }
 
 async function convertInlineSlideToMarkdown(args: {
@@ -101,7 +180,7 @@ async function convertInlineSlideToMarkdown(args: {
   includeImages: boolean
   fidelityLevel: 1 | 2 | 3 | 4
 }): Promise<{ title: string; markdown: string } | null> {
-  const cleanedHtml = stripLeadingSlideComments(args.html)
+  const cleanedHtml = stripInlineSlideEditorBridge(stripLeadingSlideComments(args.html))
   if (!cleanedHtml) return null
   const converted = await convertHtmlToMarkdownUnified({
     html: cleanedHtml,
@@ -124,7 +203,7 @@ export async function extractInlineSlideDeckMarkdown(args: {
   fidelityLevel?: 1 | 2 | 3 | 4
 }): Promise<InlineSlideDeckMarkdown | null> {
   if (!looksLikeInlineSlideDeckShell(args.html)) return null
-  const slides = parseInlineSlideDeckItems(args.html)
+  const slides = chooseInlineSlideDeckItems(args.html)
   if (slides.length === 0) return null
 
   const includeImages = args.includeImages !== false

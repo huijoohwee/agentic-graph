@@ -1,7 +1,8 @@
 import { deriveFilenameFromUrl } from '@/lib/url'
 import { fetchWebpageMarkdown } from '@/lib/net/remoteMarkdownConversions'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { fetchWebpageHtmlAuto, WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageIframeSrcdoc'
+import { fetchWebpageHtmlAuto } from '@/lib/websites/webpageIframeSrcdoc'
+import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageHtmlPreviewBudget'
 import { looksLowFidelityWebpageMarkdown } from '@/lib/websites/webpageClientConvert'
 import { convertHtmlToMarkdownUnified } from '@/lib/markdown/htmlToMarkdownUnified'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
@@ -24,14 +25,12 @@ import {
 } from './importSideTask'
 import { extractHtmlTextForShellProbe, extractWorkspaceWebpageHtmlTitle, looksLikeHydrationShellHtml } from './urlContentShell'
 import {
-  WORKSPACE_WEBPAGE_MARKDOWN_IMPORT_MAX_CHARS, WORKSPACE_WEBPAGE_MARKDOWN_REFRESH_MAX_CHARS,
-  chooseDomRecoveredMarkdown, chooseWebpageMarkdownByContentCoverage, clipLargeWebpageMarkdown,
-  hasRunOfEmptyMarkdownSections, looksLikeIncompleteWebpageCapture, looksLikeIncompleteWebpageHtml,
-  looksLikeMostlyTitleOnlyMarkdown, shouldAcceptConvertedDomRecoveredMarkdown,
+  WORKSPACE_WEBPAGE_MARKDOWN_IMPORT_MAX_CHARS, WORKSPACE_WEBPAGE_MARKDOWN_REFRESH_MAX_CHARS, chooseDomRecoveredMarkdown,
+  chooseWebpageMarkdownByContentCoverage, clipLargeWebpageMarkdown, hasRunOfEmptyMarkdownSections, looksLikeIncompleteWebpageCapture,
+  looksLikeIncompleteWebpageHtml, looksLikeMostlyTitleOnlyMarkdown, shouldAcceptConvertedDomRecoveredMarkdown,
   exportDomPreferringScriptDisabled, readWorkspaceWebpageDomExport, SHARE_THINKING_CLICK_TEXT_HINTS,
-  WORKSPACE_IMPORT_DOM_EXPORT_TIMEOUT_MS, AUTHENTICATED_WEBPAGE_IMPORT_MESSAGE,
-  looksLikeAuthenticationPageShell, looksLikeAuthenticationPageText,
-  type WorkspaceWebpageDomExportFn,
+  WORKSPACE_IMPORT_DOM_EXPORT_TIMEOUT_MS, AUTHENTICATED_WEBPAGE_IMPORT_MESSAGE, looksLikeAuthenticationPageShell,
+  looksLikeAuthenticationPageText, type WorkspaceWebpageDomExportFn,
 } from './webpageMarkdownFidelity'
 import { shouldSkipUnifiedMarkdownConversion } from '@/lib/websites/webpageMarkdownConversionBudget'
 import { isShareUrlArtifactEligible } from '@/features/chat/shareUrlArtifacts'
@@ -60,8 +59,7 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
 
   const mode: FetchMode = opts?.mode === 'refresh' ? 'refresh' : 'import'
   const maxMarkdownChars = mode === 'import' ? WORKSPACE_WEBPAGE_MARKDOWN_IMPORT_MAX_CHARS : WORKSPACE_WEBPAGE_MARKDOWN_REFRESH_MAX_CHARS
-  const viewHint: WebpageViewMode | '' =
-    opts?.viewHint === 'markdown' ? 'markdown' : opts?.viewHint === 'json' ? 'json' : opts?.viewHint === 'html' ? 'html' : ''
+  const viewHint: WebpageViewMode | '' = opts?.viewHint === 'markdown' ? 'markdown' : opts?.viewHint === 'json' ? 'json' : opts?.viewHint === 'html' ? 'html' : ''
   const looksLikeSubstackUrl = shouldTreatAsSubstackUrl(normalizedUrl)
 
   const ctrl = new AbortController()
@@ -371,8 +369,9 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
         throw new Error('WEBPAGE_HTML_FETCH_FAILED')
       }
       ctrl.signal.throwIfAborted()
-      const boundedHtml = await import('./urlContentHtml').then(({ prepareWorkspaceImportHtml }) => prepareWorkspaceImportHtml(rawHtml))
-      const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(boundedHtml)
+      const fetchedHtml = String(rawHtml || '')
+      const boundedHtml = await import('./urlContentHtml').then(({ prepareWorkspaceImportHtml }) => prepareWorkspaceImportHtml(fetchedHtml))
+      const fetchedHtmlShellProbeText = extractHtmlTextForShellProbe(fetchedHtml)
       const shouldSkipDomRecoveryForConnectionShell = mode === 'import' && looksLikeConnectionFailureWebpageShellText(fetchedHtmlShellProbeText)
       const fetchedHtmlLooksLikeAuthenticationShell = mode === 'import' && looksLikeAuthenticationPageShell(boundedHtml)
       const fetchedHtmlLooksLikeLowFidelityShell = mode === 'import' && (
@@ -381,7 +380,7 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
         || looksLikeIncompleteWebpageHtml(boundedHtml)
       )
       lastFetchedHtml = boundedHtml
-      if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(boundedHtml)
+      if (!lastDomTitle) lastDomTitle = extractWorkspaceWebpageHtmlTitle(fetchedHtml)
       const tuned = autoTuneFromHtml({
         html: lastFetchedHtml,
         includeImages,
@@ -442,13 +441,14 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
             }
             try {
               inlineSlideDeckMarkdown = await runInIdle(async () => normalizeFallbackWebpageMarkdown(await recoverInlineSlideDeckMarkdown({
-                html: boundedHtml, url: normalizedUrl, includeImages, fidelityLevel,
+                html: fetchedHtml, url: normalizedUrl, includeImages, fidelityLevel,
               })), { timeoutMs: 1200 })
             } catch {
               inlineSlideDeckMarkdown = ''
             }
           }
         }
+        if (inlineSlideDeckMarkdown.trim()) return { markdown: inlineSlideDeckMarkdown, source: 'fallback' as const, convertedScore: convertedMarkdown.length, fallbackScore: inlineSlideDeckMarkdown.length }
         return chooseWebpageMarkdownByContentCoverage({
           mode,
           convertedMarkdown,
@@ -483,12 +483,10 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
         if (markdownSelection.source === 'fallback') preserveUpstreamBodyFidelity = true
         return markdownSelectionText
       }
-      if (mode === 'import' && looksLikeIncompleteWebpageCapture(boundedHtml, markdownSelectionText)) {
-        throw Object.assign(
-          new Error('The page returned only navigation or embedded shell content, so no partial document was saved. Retry with a rendered browser capture or an exported page file.'),
-          { code: 'WEBPAGE_CONTENT_INCOMPLETE' },
-        )
-      }
+      if (mode === 'import' && looksLikeIncompleteWebpageCapture(boundedHtml, markdownSelectionText)) throw Object.assign(
+        new Error('The page returned only navigation or embedded shell content, so no partial document was saved. Retry with a rendered browser capture or an exported page file.'),
+        { code: 'WEBPAGE_CONTENT_INCOMPLETE' },
+      )
       if (shouldSkipDomRecoveryForConnectionShell && (markdownSelectionLowFidelity || !markdownSelectionText)) {
         rejectLowFidelityConnectionShell = true
         throw new Error('AUTHENTICATED_BROWSER_SESSION_REQUIRED')
@@ -516,12 +514,10 @@ export async function fetchWorkspaceWebpageUrlContent(args: {
     progressSession?.finish(100)
     opts?.onProgress?.(95)
 
-  if (mode === 'import' && upstreamMarkdown.length > maxMarkdownChars) {
-    throw Object.assign(
-      new Error(`Imported webpage Markdown exceeds the ${maxMarkdownChars}-character limit; no partial document was produced`),
-      { code: 'WEBPAGE_MARKDOWN_LIMIT_EXCEEDED' },
-    )
-  }
+  if (mode === 'import' && upstreamMarkdown.length > maxMarkdownChars) throw Object.assign(
+    new Error(`Imported webpage Markdown exceeds the ${maxMarkdownChars}-character limit; no partial document was produced`),
+    { code: 'WEBPAGE_MARKDOWN_LIMIT_EXCEEDED' },
+  )
   const clipped = clipLargeWebpageMarkdown(upstreamMarkdown, maxMarkdownChars)
     const text = await runInIdle(
       () =>

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRemoteFetchHandler } from '../../viteRemoteFetch'
+import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageHtmlPreviewBudget'
 
 class ResponseProbe extends EventEmitter {
   statusCode = 200
@@ -80,3 +81,87 @@ async function runBackpressureScenario(action: 'request-close' | 'abort' | 'disc
 export const testRemoteFetchNormalRequestClosePreservesBody = () => runBackpressureScenario('request-close')
 export const testRemoteFetchAbortReleasesBackpressure = () => runBackpressureScenario('abort')
 export const testRemoteFetchDisconnectReleasesBackpressure = () => runBackpressureScenario('disconnect')
+
+export async function testRemoteFetchUsesLargerBudgetForHtmlIframeProxy() {
+  const req = Object.assign(new EventEmitter(), {
+    method: 'GET',
+    url: '/__webpage_proxy?url=https://example.test/page',
+    headers: { host: 'localhost', origin: 'http://localhost', accept: 'text/html,*/*;q=0.9' },
+    socket: { remoteAddress: '127.0.0.1' },
+  })
+  const handler = createRemoteFetchHandler({ repoRoot: process.cwd(), injectWebpageProxyHtml: options => options.html })
+  const originalFetch = globalThis.fetch
+
+  const makeResponse = () => {
+    const state = { statusCode: 200, body: '', headers: new Map<string, string>(), writableEnded: false, destroyed: false }
+    const res = {
+      statusCode: 200,
+      headersSent: false,
+      writableEnded: false,
+      destroyed: false,
+      setHeader(key: string, value: string) {
+        state.headers.set(String(key).toLowerCase(), String(value))
+      },
+      end(chunk?: unknown) {
+        if (chunk !== undefined) state.body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)
+        state.writableEnded = true
+        this.writableEnded = true
+      },
+      write(chunk: unknown) {
+        state.body += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)
+        this.headersSent = true
+        return true
+      },
+      once() { return this },
+      removeListener() { return this },
+      destroy() { state.destroyed = true; this.destroyed = true; return this },
+    }
+    return { res, state }
+  }
+
+  try {
+    globalThis.fetch = (async (_url, _options) => ({
+      status: 200,
+      ok: true,
+      headers: new Headers({
+        'content-type': 'text/html; charset=utf-8',
+        'content-length': String(30 * 1024 * 1024),
+      }),
+      body: undefined,
+      arrayBuffer: async () => new TextEncoder().encode('<!doctype html><html><body>ok</body></html>').buffer,
+    })) as typeof fetch
+
+    {
+      const { res, state } = makeResponse()
+      await handler(req as unknown as IncomingMessage, res as unknown as ServerResponse, () => {
+        throw new Error('unexpected middleware fallthrough')
+      })
+      assert.equal(state.destroyed, false)
+      assert.equal(state.writableEnded, true)
+      assert.equal(res.statusCode, 200)
+      assert.match(state.body, /<!doctype html>/i)
+    }
+
+    globalThis.fetch = (async (_url, _options) => ({
+      status: 200,
+      ok: true,
+      headers: new Headers({
+        'content-type': 'application/json; charset=utf-8',
+        'content-length': String(Math.min(WEBPAGE_HTML_SOURCE_MAX_BYTES, 30 * 1024 * 1024)),
+      }),
+      body: undefined,
+      arrayBuffer: async () => new TextEncoder().encode('{"ok":true}').buffer,
+    })) as typeof fetch
+
+    {
+      const { res, state } = makeResponse()
+      await handler(req as unknown as IncomingMessage, res as unknown as ServerResponse, () => {
+        throw new Error('unexpected middleware fallthrough')
+      })
+      assert.equal(res.statusCode, 413)
+      assert.match(state.body, /Upstream response too large/)
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+}

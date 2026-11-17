@@ -1,6 +1,6 @@
 import { assertHtmlInputBudget } from '@/lib/markdown/htmlToMarkdownUnified'
 import { stripOversizedHydrationAttributes } from '@/lib/markdown/htmlToMarkdownHast'
-import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageIframeSrcdoc'
+import { WEBPAGE_HTML_SOURCE_MAX_BYTES } from '@/lib/websites/webpageHtmlPreviewBudget'
 
 export const WORKSPACE_IMPORT_NORMALIZED_HTML_MAX_CHARS = 10_000_000
 const CAPTURE_PARAM_PREFIX = '__ag_local_page_capture_'

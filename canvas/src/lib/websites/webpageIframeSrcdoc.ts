@@ -2,7 +2,7 @@ import { buildCodebaseFilePath, buildWebpageProxyUrl, isHttpUrl } from '@/lib/ur
 import { clearWebpageSandboxDocCaches } from './webpageSandboxDoc'
 import { clearWebpageSandboxBlobUrlCache } from './webpageSandboxBlobUrlCache'
 import { createWebpageTextRequestCache } from './webpageTextRequestCache'
-import { WEBPAGE_HTML_PREVIEW_MAX_BYTES, WebpageHtmlPreviewLimitError } from './webpageHtmlPreviewBudget'
+import { WEBPAGE_HTML_PREVIEW_MAX_BYTES, WEBPAGE_HTML_SOURCE_MAX_BYTES, WebpageHtmlPreviewLimitError } from './webpageHtmlPreviewBudget'
 
 export type WebpageIframeMode = 'html' | 'json' | 'text'
 
@@ -13,8 +13,6 @@ const CACHE_TTL_MS_REPO = 10 * 60_000
 const CACHE_TTL_MS_CONVERT = 8 * 60_000
 const CACHE_TTL_MS_ARTIFACT = 60 * 60_000
 const CACHE_TTL_MS_DEFAULT = 4 * 60_000
-export const WEBPAGE_HTML_SOURCE_MAX_BYTES = 32_000_000
-
 const sourceLimit = (requested: number | undefined, fallback: number): number => {
   if (!Number.isFinite(requested) || Number(requested) <= 0) return fallback
   return Math.min(WEBPAGE_HTML_SOURCE_MAX_BYTES, Math.floor(Number(requested)))
@@ -50,6 +48,9 @@ const readContentLength = (res: Response): number | null => {
     return null
   }
 }
+
+const createHttpStatusError = (status: number): Error & { status: number } =>
+  Object.assign(new Error(`HTTP ${status}`), { status })
 
 const fetchBoundedText = async (
   res: Response,
@@ -130,9 +131,21 @@ export async function fetchWebpageHtmlViaProxy(args: {
     key,
     async (signal) => {
       const fetchFn = typeof args.fetchImpl === 'function' ? args.fetchImpl : fetch
-      const res = await fetchFn(buildWebpageProxyUrl(u, 'strip'), { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, limit, args.onProgress, args.htmlPreview)
+      const fetchHtmlText = async (requestUrl: string): Promise<string> => {
+        const res = await fetchFn(requestUrl, { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
+        if (!res.ok) throw createHttpStatusError(res.status)
+        return await fetchBoundedText(res, limit, args.onProgress, args.htmlPreview)
+      }
+      try {
+        return await fetchHtmlText(buildWebpageProxyUrl(u, 'strip'))
+      } catch (error) {
+        if ((error as { status?: unknown })?.status !== 413) throw error
+        try {
+          return await fetchHtmlText(u)
+        } catch {
+          throw error
+        }
+      }
     },
     args.signal,
     { bypassCache: args.bypassCache },

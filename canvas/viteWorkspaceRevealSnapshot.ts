@@ -150,7 +150,7 @@ async function publishCurrentCopies(root: string, selectedPath: string, entries:
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
           present = false
-          if (last) throw moved()
+          if (last && !direct) throw moved()
           return false
         }
       }
