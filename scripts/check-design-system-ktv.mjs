@@ -22,3 +22,5 @@ assert(contract.includes('KTV_FIELD_GRID_CLASS_NAME = KTV_ROW_CLASS'));assert(!c
 const lock=JSON.parse(read('package-lock.json')),basePin=JSON.parse(read('package.json')).dependencies['@agentic-base/views-react']
 assert.equal(JSON.parse(read('canvas/package.json')).dependencies['@agentic-base/views-react'],basePin)
 for(const [name,entry] of Object.entries(lock.packages))if(name.endsWith('@agentic-base/views-react'))assert(entry.resolved?.endsWith(basePin.slice(-40)),'nested Base lock source must match the single pinned owner')
+
+assert(read('canvas/vite.config.ts').includes("'yjs', 'agentic-design-system/ktv'"),'shared native entrypoint must prebundle before lazy panels open')
