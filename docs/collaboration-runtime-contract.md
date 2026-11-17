@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 89
+contract_version: 90
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -78,6 +78,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-production-release\\.mjs\\s+(?:prepare|dry-run|deploy)(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-catalog-publish\\.mjs\\s+publish(?:\\s|$)", "node\\s+\\./scripts/miaoxyz-d1-restore-rehearsal\\.mjs\\s+run(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  sheets_release:
+    roots: ["scripts/production-sheets.mjs", "scripts/agentic-sheets-source.json", "scripts/__tests__/production-sheets.test.mjs", "scripts/pages-mirror-sync.mjs", "scripts/pages-mirror-headers.mjs", "scripts/production-pages-routing.mjs", "scripts/production-mirror-artifact-entries.mjs", "scripts/verify-agentic-base-route.mjs", "scripts/run-pages-dev-promotion.mjs", ".github/workflows/release.yml"]
+    commands:
+      - ["npm", "run", "smoke:prepare"]
+      - ["node", "--test", "scripts/__tests__/production-sheets.test.mjs"]
   viewer_surface:
     roots: ["canvas/src/lib/markdown-core/ui/MarkdownBlockContainerCore.impl.engine.runtime.tsx", "canvas/src/lib/markdown-core/ui/markdownBlockContainerCore.editInitialization.ts", "canvas/src/__tests__/viewerSurface.test.tsx"]
     commands:

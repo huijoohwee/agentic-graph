@@ -5,6 +5,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { verifySheetsRoute, verifySheetsBrowser } from './production-sheets.mjs'
+
 const HASH = /^[0-9a-f]{64}$/u
 const REVISION = /^[0-9a-f]{40}$/u
 const PUBLIC_CONVERGENCE_MS = 90_000
@@ -247,6 +249,11 @@ async function main() {
   for (const target of targets.slice(0, 2)) verified.push(await verifyOrigin(target, contents, sourceRevision))
   verified.push(await verifyPublicWithBoundedRetry(targets[2], contents, sourceRevision))
 
+  const sheets = await verifySheetsRoute({
+    artifactRoot: path.resolve(required('BASE_ROUTE_ARTIFACT_ROOT'), '..', 'agentic-sheets'),
+    origins: targets.map(target => target.origin),
+  })
+  sheets.browser = await verifySheetsBrowser({ origin: targets[2].origin, artifactDigest: sheets.artifactDigest })
   const receipt = {
     schema: 'agentic-graph-agentic-base-route-promotion/v1',
     status: 'verified',
@@ -260,6 +267,7 @@ async function main() {
     candidateDigest,
     lifecycleCandidateDigest,
     origins: verified,
+    sheets,
     verifiedAt: new Date().toISOString(),
   }
   fs.writeFileSync(evidencePath, `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' })

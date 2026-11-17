@@ -1,6 +1,8 @@
 import { CANONICAL_MIRROR_NAMESPACE, LEGACY_PRODUCT_NAMESPACES } from './mirror-namespace-contract.mjs'
 import { XR_V2_CANONICAL_REDIRECT, XR_V2_ROOT_REDIRECT } from './xr-v2/production-publish-contract.mjs'
 
+import { sheetsRedirects } from './production-sheets.mjs'
+
 const GENERATED_NAMESPACE_START = '# BEGIN agentic-graph generated namespace routes'
 const GENERATED_NAMESPACE_END = '# END agentic-graph generated namespace routes'
 const GENERATED_REDIRECTS_START = '# BEGIN agentic-graph generated top-level file routes'
@@ -15,6 +17,8 @@ const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const blockRegex = (start, end) => new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\n?`, 'g')
 const isManagedRoute = line => {
   const source = line.split(/\s/, 1)[0]
+  if (source === '/agentic-sheets' || source.startsWith('/agentic-sheets/')
+    || source === '/content/agentic-sheets' || source.startsWith('/content/agentic-sheets/')) return true
   if (source === '/GameXR' || source === '/GameXR/*') return true
   if (source === '/agentic-base' || source.startsWith('/agentic-base/')
     || source === '/content/agentic-base' || source.startsWith('/content/agentic-base/')) return true
@@ -50,6 +54,7 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
     `${canonicalBase}/vendor/* /content/agentic-graph/vendor/:splat 200`,
     `${canonicalBase}/imports/* /content/agentic-graph/imports/:splat 200`,
     '/content/agentic-graph /agentic-graph 301', '/content/agentic-graph/ /agentic-graph/ 301',
+    ...sheetsRedirects,
     '/agentic-base /agentic-base/ 301',
     '/agentic-base/ /content/agentic-base/index.html 200',
     '/agentic-base/* /content/agentic-base/:splat 200',
