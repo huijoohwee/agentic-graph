@@ -2,7 +2,7 @@ import React from 'react';
 import { getIconButtonProps } from '@agentic-base/views-react/toolbar-icons';
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass';
 import { cn } from '@/lib/utils';
-import Tooltip from '@/features/panels/ui/Tooltip';
+import Tooltip from 'agentic-design-system/react/hover';
 import { useGraphStore } from '@/hooks/useGraphStore';
 import {
   UI_RESPONSIVE_ICON_TEXT_ROW_CLASSNAME,
@@ -168,7 +168,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
 
     if (!showTooltip) return button
     return (
-      <Tooltip content={content} contentClassName={cn(UI_THEME_TOKENS.tooltip.bg, 'pointer-events-none')}>
+      <Tooltip content={content} interactive={false}>
         {button}
       </Tooltip>
     )

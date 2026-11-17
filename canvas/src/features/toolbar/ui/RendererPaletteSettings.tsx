@@ -6,7 +6,7 @@ import React from 'react';
 import {
   RightAlignedValueCell,
 } from 'grph-shared/react/keyTypeValueRow';
-import Tooltip from '@/features/panels/ui/Tooltip';
+import Tooltip from 'agentic-design-system/react/hover';
 import { useGraphStore } from '@/hooks/useGraphStore';
 import { MVP_COLOR_PALETTE } from '@/lib/graph/schema';
 import { useRendererPalette } from '@/features/toolbar/hooks/useRendererPalette';

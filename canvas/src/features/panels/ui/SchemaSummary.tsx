@@ -1,6 +1,6 @@
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { getPanelSurfaceLabel } from '@/features/panels/config'
 import { toSchemaImportFileName } from '@/features/schema-editor/utils'
 import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'

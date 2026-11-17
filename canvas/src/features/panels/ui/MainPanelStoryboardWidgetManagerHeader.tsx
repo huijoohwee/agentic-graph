@@ -1,6 +1,6 @@
 import React from 'react'
 
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { parseIntegrationConfigsJson } from '@/features/integrations/config'
 import { useGraphStore } from '@/hooks/useGraphStore'

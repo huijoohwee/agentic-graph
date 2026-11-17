@@ -3,7 +3,7 @@ import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { PanelKeyTypeColorTextValueRow } from '@/features/panels/ui/PanelKeyTypeColorTextValueRow'
 import { PanelKeyTypeCheckboxValueRow } from '@/features/panels/ui/PanelKeyTypeCheckboxValueRow'
 import { PanelKeyTypeRangeValueRow } from '@/features/panels/ui/PanelKeyTypeRangeValueRow'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import type { GraphSchema } from '@/lib/graph/schema'
 import {
   STAR_COUNT_TOOLTIP,

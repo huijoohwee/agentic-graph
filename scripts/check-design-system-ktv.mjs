@@ -10,7 +10,7 @@ assert(geo.includes("from 'agentic-design-system/react/ktv'"));assert(!geo.inclu
 assert(!form.includes('KTV_FIELD_GRID_CLASS_NAME'),'form fields must use the same renderer')
 const base=read('node_modules/@agentic-base/views-react/packages/views-react/src/controls/MenuControls.tsx')
 assert(!base.includes('function KeyTypeValueRow'),'the installed Base source cannot retain the row renderer')
-for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e')
+for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d')
 console.log('PASS direct Design System KTV ownership; no Base, form or geospatial row variant')
 
 assert(read('canvas/src/features/panels/views/graph-fields/GraphFieldsPanelControls.tsx').includes("from '@/lib/ui/panelFormControls'"))
@@ -24,3 +24,8 @@ assert.equal(JSON.parse(read('canvas/package.json')).dependencies['@agentic-base
 for(const [name,entry] of Object.entries(lock.packages))if(name.endsWith('@agentic-base/views-react'))assert(entry.resolved?.endsWith(basePin.slice(-40)),'nested Base lock source must match the single pinned owner')
 
 assert(read('canvas/vite.config.ts').includes("'yjs', 'agentic-design-system/ktv'"),'shared native entrypoint must prebundle before lazy panels open')
+
+for (const p of ['canvas/src/features/panels/ui/Tooltip.tsx','canvas/src/features/panels/ui/NativeTitleTooltip.tsx','canvas/src/features/panels/ui/tooltipUtils.ts']) assert(!fs.existsSync(path.join(root,p)),'Retired hover implementations must be absent')
+assert(read('canvas/src/main.tsx').includes("from 'agentic-design-system/react/hover'"))
+assert(!/export function build(?:Numeric|SettingsValue|SettingsKey|RoleActionOutcome|Default)Tooltip/.test(read('canvas/src/lib/config-copy/tooltips.ts')))
+console.log('PASS direct Design System hover ownership; no local panel, title delegate or generic syntax variant')

@@ -20,7 +20,7 @@ import {
   SelectOptionsSection,
   UrlProtocolSection,
 } from '@/features/panels/views/graph-fields/FieldSettingsSections'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import {
   GRAPH_FIELDS_DESCRIPTION_TOOLTIP_TEXT,
   UI_COPY,

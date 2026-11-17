@@ -29,13 +29,13 @@ export async function testToolbarIconTooltipsDoNotInterceptClicks() {
 
     const wrapper = btn.parentElement as HTMLElement | null
     if (!wrapper) throw new Error('expected IconButton wrapper')
-    wrapper.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }))
+    wrapper.dispatchEvent(new dom.window.MouseEvent('mouseenter', { bubbles: true }))
 
     await tick()
 
-    const tooltip = dom.window.document.querySelector('[data-kg-tooltip-root="1"]') as HTMLElement | null
+    const tooltip = dom.window.document.querySelector('[data-agentic-hover-root="1"]') as HTMLElement | null
     if (!tooltip) throw new Error('expected tooltip to mount on hover')
-    if (!tooltip.className.includes('pointer-events-none')) {
+    if (tooltip.dataset.interactive !== 'false') {
       throw new Error('expected tooltip to use pointer-events-none to avoid intercepting clicks')
     }
 

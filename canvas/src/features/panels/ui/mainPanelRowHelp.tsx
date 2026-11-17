@@ -1,7 +1,7 @@
 import React from 'react'
 import { RightAlignedValueCell, type KeyTypeValueCells } from 'grph-shared/react/keyTypeValueRow'
-import Tooltip from './Tooltip'
-import { buildRoleActionOutcomeTooltip, buildSettingsValueTooltip } from '@/lib/config-copy/tooltips'
+import Tooltip from 'agentic-design-system/react/hover'
+import { buildRoleActionOutcomeTooltip, buildSettingsValueTooltip } from 'agentic-design-system/hover/text'
 
 export type MainPanelFieldHelp = {
   role: string

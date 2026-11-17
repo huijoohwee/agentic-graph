@@ -5,7 +5,7 @@ import {
   KTV_SECTION_TITLE_CLASS_NAME,
   KTV_STATUS_TEXT_SIZE_CLASS_NAME,
 } from 'grph-shared/ui/keyTypeValueRows'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildNodeMediaInventory, type NodeMediaInventoryRow } from '@/components/GraphCanvas/helpers'
 import type { GraphData, GraphNode } from '@/lib/graph/types'

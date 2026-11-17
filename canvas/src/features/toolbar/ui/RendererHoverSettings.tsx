@@ -1,6 +1,6 @@
 import React from 'react';
 import { CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
-import Tooltip from '@/features/panels/ui/Tooltip';
+import Tooltip from 'agentic-design-system/react/hover';
 import { useGraphStore } from '@/hooks/useGraphStore';
 import { useShallow } from 'zustand/react/shallow';
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'

@@ -3,9 +3,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRoot } from 'react-dom/client'
-import NativeTitleTooltip from '@/features/panels/ui/NativeTitleTooltip'
-import Tooltip from '@/features/panels/ui/Tooltip'
-import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
+import { NativeTitleTooltip } from 'agentic-design-system/react/hover'
+import Tooltip from 'agentic-design-system/react/hover'
+import { existsSync } from 'node:fs'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 20))
@@ -17,7 +17,7 @@ export async function testNativeTitleTooltipDelegation() {
   document.body.append(host)
   const root = createRoot(host)
   try {
-    root.render(<NativeTitleTooltip />)
+    root.render(<NativeTitleTooltip fallbackAttribute="data-kg-inline-invocation-markdown" />)
     await tick()
     assert(!document.querySelector('[role="tooltip"]'), 'No idle tooltip should be mounted')
     const button = document.createElement('button')
@@ -33,10 +33,10 @@ export async function testNativeTitleTooltipDelegation() {
     assert(tooltip?.textContent === '/motion.control\nMotion Capture', 'Nested dynamically mounted labels should use their full title')
     assert(button.title === '', 'Suppress the browser-native popup while hovered')
     assert(button.getAttribute('aria-describedby') === tooltip?.id, 'Describe the trigger accessibly')
-    assert(tooltip?.style.backgroundColor === 'var(--kg-tooltip-bg)', 'Use the shared background token')
-    assert(tooltip?.style.color === 'var(--kg-tooltip-text)', 'Use the shared text token')
-    assert(Number(tooltip?.style.zIndex) > Z_INDEX_ANCHOR_OVERLAY, 'Shared tooltip must appear above anchored menus')
-    assert(tooltip?.className.includes('pointer-events-none'), 'Tooltip must not intercept a click')
+    assert(tooltip?.classList.contains('agentic-hover-panel'), 'Use the central panel presentation')
+    assert(!tooltip?.style.color && !tooltip?.style.backgroundColor, 'No per-instance color overrides')
+    assert(dom.window.getComputedStyle(tooltip!).zIndex === 'var(--agentic-hover-layer)', 'Use the shared hover layer')
+    assert(tooltip?.dataset.interactive === 'false', 'Tooltip must not intercept a click')
     button.click()
     assert(clicks === 1, 'Native click behavior must survive')
     button.title = '@canvas\nCanvas target'
@@ -54,6 +54,13 @@ export async function testNativeTitleTooltipDelegation() {
     await tick()
     assert(!document.querySelector('[role="tooltip"]'), 'Removing a trigger must dispose its tooltip')
     assert(button.title === '@canvas\nCanvas target' && !button.hasAttribute('aria-describedby'), 'Detached trigger attributes must be restored')
+    const label = document.createElement('label'), input = document.createElement('input')
+    label.htmlFor = input.id = 'native-labelled-capacity'; label.textContent = 'Capacity'; input.title = 'Default: 10; Min: 0; Max: 20'
+    document.body.append(label, input); hover(input)
+    input.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true })); input.focus(); await tick()
+    assert(!input.hasAttribute('aria-label') && input.labels?.[0] === label, 'Native label must remain the accessible name')
+    assert(document.querySelectorAll('[role="tooltip"]').length === 1 && input.hasAttribute('aria-describedby'), 'Pointer-to-focus restores one description')
+    input.blur(); input.dispatchEvent(new dom.window.MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
     const editChip = document.createElement('span')
     editChip.dataset.kgInlineInvocationMarkdown = '#pose'
     editChip.textContent = '#pose'
@@ -72,16 +79,18 @@ export async function testNativeTitleTooltipExplicitOwner() {
   document.body.append(host)
   const root = createRoot(host)
   try {
-    root.render(<><NativeTitleTooltip /><Tooltip content="Shared description" contentStyle={{ backgroundColor: 'grey', color: 'grey' }}><button title="Native duplicate">Command</button></Tooltip></>)
+    root.render(<><NativeTitleTooltip fallbackAttribute="data-kg-inline-invocation-markdown" /><Tooltip content="Shared description" contentStyle={{ backgroundColor: 'grey', color: 'grey' }}><button title="Native duplicate">Command</button></Tooltip></>)
     await tick()
     const button = host.querySelector('button')!
     button.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }))
+    button.closest('[data-agentic-hover-anchor]')!.dispatchEvent(new dom.window.MouseEvent('mouseenter'))
     await tick()
     const tips = document.querySelectorAll<HTMLElement>('[role="tooltip"]')
     assert(tips.length === 1 && tips[0]?.textContent === 'Shared description', 'An explicit Tooltip must remain the only popup owner')
     assert(button.title === '', 'An explicit wrapper must also suppress native duplicate tips')
-    assert(tips[0]?.style.backgroundColor === 'var(--kg-tooltip-bg)' && tips[0]?.style.color === 'var(--kg-tooltip-text)', 'Per-instance grey variants must not override shared colors')
+    assert(!tips[0]?.style.backgroundColor && !tips[0]?.style.color && tips[0]?.classList.contains('agentic-hover-panel'), 'Per-instance grey variants must not override shared colors')
     button.dispatchEvent(new dom.window.MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
+    button.closest('[data-agentic-hover-anchor]')!.dispatchEvent(new dom.window.MouseEvent('mouseleave', { relatedTarget: document.body }))
     await tick()
     assert(button.title === 'Native duplicate', 'Leaving an explicit tooltip must restore authored attributes')
   } finally { root.unmount(); restore() }
@@ -89,7 +98,7 @@ export async function testNativeTitleTooltipExplicitOwner() {
 
 export function testSharedTooltipIsTheOnlyTooltipOwner() {
   const srcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const canonicalOwner = path.join(srcRoot, 'features/panels/ui/Tooltip.tsx')
+  assert(!existsSync(path.join(srcRoot, 'features/panels/ui/Tooltip.tsx')), 'No Graph hover implementation remains')
   const stack = [srcRoot]
   const tooltipOwners: string[] = []
   while (stack.length) {
@@ -106,6 +115,6 @@ export function testSharedTooltipIsTheOnlyTooltipOwner() {
       if (/role\s*=\s*["']tooltip["']/.test(source)) tooltipOwners.push(file)
     }
   }
-  assert(tooltipOwners.length === 1 && tooltipOwners[0] === canonicalOwner,
+  assert(tooltipOwners.length === 0,
     `Only the shared Tooltip may render role=tooltip; found ${tooltipOwners.map(file => path.relative(srcRoot, file)).join(', ')}`)
 }

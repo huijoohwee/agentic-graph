@@ -1,5 +1,5 @@
 import { BYTEPLUS_SHARED_TEXT_API_REQUEST_DOC_ENTRIES } from '@/features/panels/views/byteplusSharedTextApiDocs'
-import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from '@/lib/config-copy/tooltips'
+import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from 'agentic-design-system/hover/text'
 
 export function testBytePlusEntriesExposeStructuredTooltipMetadata() {
   const missing = BYTEPLUS_SHARED_TEXT_API_REQUEST_DOC_ENTRIES

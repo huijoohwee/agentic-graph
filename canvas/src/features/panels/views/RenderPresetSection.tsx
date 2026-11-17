@@ -10,14 +10,14 @@ import {
 import { buildCleanSchema } from '@/features/schema-editor/utils'
 import { CanvasEditableKeyTypeValueRow as KeyTypeValueRow } from '@/features/panels/ui/CanvasEditableKeyTypeValueRow'
 import { RightAlignedTooltipInput } from '@/features/panels/ui/RightAlignedTooltipInput'
-import { buildNumericTooltip } from '@/lib/config'
+import { buildNumericTooltip } from 'agentic-design-system/hover/text'
 import {
   TRAVERSAL_MAX_DEPTH_DEFAULT,
   TRAVERSAL_MAX_DEPTH_MIN,
   TRAVERSAL_MAX_DEPTH_MAX,
   clampTraversalMaxDepth,
 } from '@/features/panels/utils/orchestratorTraversal'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   threePresetCatalog,

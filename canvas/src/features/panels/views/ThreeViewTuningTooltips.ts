@@ -1,4 +1,4 @@
-import { buildNumericTooltip } from '@/lib/config'
+import { buildNumericTooltip } from 'agentic-design-system/hover/text'
 
 export const ARROW_LENGTH_TOOLTIP = buildNumericTooltip({
   defaultValue: 8,

@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom'
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
 import { disposeReactRootsForDocument } from '@/tests/lib/reactRootLifecycle'
 
@@ -80,6 +81,15 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     contentType: 'text/html',
     pretendToBeVisual: true,
   })
+
+  // JSDOM does not inherit CSS custom properties. Mount the exact shared owner
+  // values on its tooltip roots; geometry fixtures still supply actual bounds.
+  const require = createRequire(import.meta.url), hoverStyle = dom.window.document.createElement('style')
+  const sharedCss = readFileSync(require.resolve('agentic-design-system/hover.css').replace(/hover\.css$/, 'vendor/shared-ui-profile.css'), 'utf8')
+  const values = sharedCss.match(/:root, :host \{([\s\S]*?)\n\}/)?.[1]
+  if (!values) throw new Error('Shared hover fixture requires the pinned profile')
+  hoverStyle.textContent = `[data-agentic-hover-root] {${values}}` + readFileSync(require.resolve('agentic-design-system/hover.css'), 'utf8')
+  dom.window.document.head.append(hoverStyle)
 
   // JSDOM has no layout hit-testing; individual tests can supply explicit hits.
   if (typeof dom.window.document.elementFromPoint !== 'function') dom.window.document.elementFromPoint = () => null

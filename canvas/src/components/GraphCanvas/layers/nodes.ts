@@ -20,7 +20,7 @@ import { bindGraphCanvasFlowPortHandleInteractions } from '@/components/GraphCan
 import { getNodeRectDimensions2d, getNodeRenderShape2d } from '@/components/GraphCanvas/nodeSizing2d';
 import { buildNodeShapePathD } from '@/components/GraphCanvas/shapePaths2d';
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
-import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
+import { isTooltipRelatedTarget } from 'agentic-design-system/hover/text'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildNodeZKeyById, compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
 import { bindNodeDraggingWithGroupContainment } from '@/components/GraphCanvas/layers/nodesDragBinding'

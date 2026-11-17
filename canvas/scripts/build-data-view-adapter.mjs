@@ -131,7 +131,7 @@ for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '
 }
 const toolbarCss = await read(`${designSystemPrefix}/site/toolbar.css`)
 const panelCss = await read(`${designSystemPrefix}/site/floating-panel.css`)
-nativeStyles.push(shadowScope(toolbarCss), shadowScope(panelCss))
+nativeStyles.push(shadowScope(toolbarCss), shadowScope(panelCss), shadowScope(await read(`${designSystemPrefix}/site/hover.css`)))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()

@@ -13,7 +13,7 @@ import { OrchestratorTraversalSectionContent } from '@/features/panels/views/Orc
 import { buildOrchestratorTraversalSectionViewModel } from '@/features/panels/views/OrchestratorTraversalSectionModel'
 import type { GraphRagPathHelper } from '@/features/panels/views/OrchestratorTraversalPanelsModel'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MonacoTextEditor } from '@/features/monaco/MonacoTextEditor'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'

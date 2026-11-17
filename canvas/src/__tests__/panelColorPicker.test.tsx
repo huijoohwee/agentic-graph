@@ -7,7 +7,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import { normalizeHexColor, hexToHsv, hsvToHex, rgbToHex } from '@/lib/ui/colorValue'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 
 // These interaction checks need native focus; the broad repository harness stubs activeElement.
 function initJsdomHarness() {

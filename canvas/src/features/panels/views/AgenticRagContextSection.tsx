@@ -1,6 +1,6 @@
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { ORCHESTRATOR_AGENTIC_COPY, RENDER_PANEL_SECTION_COPY } from '@/features/panels/config'
 import { AGENTIC_RAG_CONTEXT_URL } from '@/lib/agenticrag'
 import {

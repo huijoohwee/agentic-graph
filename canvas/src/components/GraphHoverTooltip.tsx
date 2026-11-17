@@ -1,46 +1,18 @@
 import React from 'react'
 import type { GraphNode, GraphEdge } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
-import { summarizePropertySpec, getNodePropSpec, getEdgePropSpec, buildEdgeSchemaBadges } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import IconButton from '@/components/IconButton'
-import { getBadgeChipClass, getIconSizeClass } from '@/lib/ui'
-import {
-  UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME,
-  UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME,
-} from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { getIconSizeClass } from '@/lib/ui'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
 import { LS_KEYS } from '@/lib/config.ls.keys'
-import { UI_COPY, UI_LABELS } from '@/lib/config'
-import type { GraphFieldKind } from '@/features/graph-fields/graphFields'
-import { FieldTypeBadgeIcon } from '@/features/graph-fields/ui/graphFieldIcons'
-import Tooltip from '@/features/panels/ui/Tooltip'
-import type { GraphHoverPreviewConfig } from '@/hooks/store/types'
-import { truncateTextWithEllipsis } from '@/components/GraphCanvas/layout/utils'
-import { getNodeLabelFullText2d } from '@/components/GraphCanvas/labelLayout2d'
-import { getEdgeLabelForDisplay } from '@/components/GraphCanvas/edgeDisplay'
-import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
+import Tooltip from 'agentic-design-system/react/hover'
+import { HOVER_BEHAVIOR } from 'agentic-design-system/hover/text'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
-import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
+import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import { PanelControlButton } from 'agentic-design-system/react/panels'
-import { extractVoxelScores, VOXEL_SCORE_DIMENSIONS } from '@/features/three/voxelStyle'
 import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
-import {
-  computePanelFrameResizeFromDrag16x9,
-  readRichMediaPanelFrameMetrics,
-} from '@/lib/render/mediaPanelLayout'
-import {
-  PANEL_FRAME_FLOATING_BODY_STYLE,
-  PANEL_FRAME_FLOATING_ROOT_STYLE,
-} from '@/lib/ui/panelFrame'
-import {
-  buildHoverDescription,
-  buildGraphHoverSemanticKey,
-  buildHoverImageInfo,
-  formatPropValue,
-  sortProps,
-} from './GraphHoverTooltip.data'
+import { computePanelFrameResizeFromDrag16x9, readRichMediaPanelFrameMetrics } from '@/lib/render/mediaPanelLayout'
+import { buildGraphHoverSemanticKey, buildNodeContent, buildEdgeContent, buildGroupContent } from './GraphHoverTooltip.data'
 
 export type HoverKind = 'node' | 'edge' | 'group'
 
@@ -51,7 +23,7 @@ export type HoverInfo = {
   clientY: number;
 }
 
-const HOVER_PANEL_BRIDGE_CLOSE_DELAY_MS = 420
+const HOVER_PANEL_BRIDGE_CLOSE_DELAY_MS = HOVER_BEHAVIOR.bridgeCloseDelayMs
 const HOVER_PANEL_DEFAULT_WIDTH_PX = 260
 const HOVER_PANEL_MIN_WIDTH_PX = 220
 const HOVER_PANEL_MIN_HEIGHT_PX = 140
@@ -76,286 +48,6 @@ const isHoverPanelDragExcludedTarget = (target: EventTarget | null): boolean => 
     'video',
     'audio',
   ].join(','))
-}
-
-function buildNodeContent(
-  node: GraphNode,
-  schema: GraphSchema | null | undefined,
-  iconClassName: string,
-  uiIconBadgeChipClass: string,
-  uiIconBadgeChipTextSizeClass: string,
-  uiPanelMicroLabelTextSizeClass: string,
-  config: GraphHoverPreviewConfig,
-  expanded: boolean,
-  onToggleExpanded: (() => void) | null,
-): React.ReactNode {
-  const sorted = sortProps(node.properties || {}, 'node')
-  const contentCfg = schema?.behavior?.hover?.content;
-  const showProps = contentCfg?.showProps !== false && config.showNodeProperties;
-  const showType = contentCfg?.showType !== false && config.showNodeLabel;
-  const showId = contentCfg?.showId !== false && config.showNodeId;
-  const primaryNodeText = getNodeLabelFullText2d(node)
-  const voxelScores = extractVoxelScores(node)
-  const { imageSrc, imageCount } = buildHoverImageInfo(node)
-  const descRaw = config.showNodeDescription ? buildHoverDescription(node) : ''
-  const descText = expanded ? descRaw : truncateTextWithEllipsis(descRaw, 280)
-
-  return (
-    <section>
-      <section className="font-semibold">
-        {primaryNodeText}
-        {showType && (
-          <span className={UI_THEME_TOKENS.tooltip.textSecondary}>
-            ({node.type})
-          </span>
-        )}
-      </section>
-      {showId && (
-        <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} break-all`}>
-          {node.id}
-        </section>
-      )}
-      {voxelScores ? (
-        <section className="mt-1 space-y-1">
-          {VOXEL_SCORE_DIMENSIONS.map((d) => {
-            const v = voxelScores[d.key]
-            const pct = Math.round(v * 100)
-            return (
-              <section key={d.key} className="space-y-0.5">
-                <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} flex justify-between gap-2`}>
-                  <span className="font-semibold">{d.label}</span>
-                  <span>{`${pct}%`}</span>
-                </section>
-                <section className="h-2 w-full rounded bg-black/20 overflow-hidden">
-                  <section className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: d.color }} />
-                </section>
-              </section>
-            )
-          })}
-        </section>
-      ) : null}
-      {imageSrc ? (
-        <section className="mt-1">
-          <section className="flex gap-2 items-start">
-            <CardMediaPreview
-              kind="image"
-              url={imageSrc}
-              title={primaryNodeText}
-              interactive={false}
-              fit="cover"
-              className="h-12 w-12 flex-none rounded-lg"
-              mediaClassName="h-12 w-12 flex-none rounded-lg"
-            />
-            <section className="min-w-0 flex-1">
-              {imageCount > 1 ? (
-                <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textTertiary} font-semibold`}>{`+${imageCount - 1}`}</section>
-              ) : null}
-            </section>
-          </section>
-        </section>
-      ) : null}
-      {descRaw ? (
-        <button
-          type="button"
-          className={`mt-1 text-left ${UI_THEME_TOKENS.tooltip.text} break-words leading-tight w-full`}
-          onClick={onToggleExpanded ?? undefined}
-        >
-          <section className={`${expanded ? UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME : ''} text-xs`}>
-            {descText}
-          </section>
-        </button>
-      ) : null}
-      {showProps && sorted.length > 0 && (
-        <section className="mt-1 space-y-0.5">
-          {sorted.slice(0, 4).map(([k, v]) => {
-            if (k === 'description' || k === 'chunk_text' || k === 'mdSectionMarkdown') return null
-            const spec = getNodePropSpec(schema, node.type, k)
-            const description = spec && typeof spec.description === 'string' ? spec.description.trim() : ''
-            const badges = summarizePropertySpec(spec)
-            return (
-              <section key={k} className="space-y-0.5">
-                <section className="flex gap-1 items-center">
-                  {spec ? (
-                    <FieldTypeBadgeIcon
-                      kind={spec.type as GraphFieldKind}
-                      className={iconClassName}
-                    />
-                  ) : null}
-                  <span className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} truncate ${UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME}`}>
-                    {k}:
-                  </span>
-                  <span className={`text-xs ${UI_THEME_TOKENS.tooltip.text} break-all`}>
-                    {formatPropValue(v)}
-                  </span>
-                </section>
-                {description && (
-                  <section className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.tooltip.textTertiary} leading-tight break-normal`}>
-                    {description}
-                  </section>
-                )}
-                {badges.length > 0 && (
-                  <section className="flex flex-wrap gap-1">
-                    {badges.map(badge => (
-                      <span
-                        key={badge}
-                        className={getBadgeChipClass('default', {
-                          baseClass: uiIconBadgeChipClass,
-                          textSizeClass: uiIconBadgeChipTextSizeClass,
-                        })}
-                      >
-                        {badge}
-                      </span>
-                    ))}
-                  </section>
-                )}
-              </section>
-            )
-          })}
-        </section>
-      )}
-    </section>
-  )
-}
-
-function buildEdgeContent(
-  edge: GraphEdge,
-  schema: GraphSchema | null | undefined,
-  iconClassName: string,
-  uiIconBadgeChipClass: string,
-  uiIconBadgeChipTextSizeClass: string,
-  uiPanelMicroLabelTextSizeClass: string,
-  config: GraphHoverPreviewConfig,
-  expanded: boolean,
-  onToggleExpanded: (() => void) | null,
-): React.ReactNode {
-  const edgeLabelForDisplay = getEdgeLabelForDisplay(edge)
-  const sorted = sortProps(edge.properties || {}, 'edge')
-  const schemaBadges = buildEdgeSchemaBadges(
-    schema,
-    edge.label,
-    edge.properties as Record<string, unknown> | null | undefined,
-  )
-  const contentCfg = schema?.behavior?.hover?.content;
-  const showProps = contentCfg?.showProps !== false && config.showEdgeProperties;
-  const showId = contentCfg?.showId !== false && config.showEdgeId;
-  const descRaw = typeof (edge.properties as Record<string, unknown> | null | undefined)?.description === 'string'
-    ? String((edge.properties as Record<string, unknown>).description || '')
-    : ''
-  const primaryEdgeText = edgeLabelForDisplay || String(edge.id || '').trim() || 'Edge'
-  const desc = showProps ? descRaw : ''
-  const descText = expanded ? desc : truncateTextWithEllipsis(desc, 280)
-
-  return (
-    <section>
-      <section className="font-semibold">
-        {(config.showEdgeLabel || !edgeLabelForDisplay) && (
-          <span className="block whitespace-normal break-words">
-            {primaryEdgeText}
-          </span>
-        )}
-      </section>
-      {config.showEdgeLabel && (
-        <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} break-all`}>
-          {String(edge.source)} → {String(edge.target)}
-        </section>
-      )}
-      {schemaBadges.length > 0 && (
-        <section className="mt-1 flex flex-wrap gap-1">
-          {schemaBadges.map(badge => (
-            <span
-              key={badge.badge}
-              className={getBadgeChipClass('default', {
-                baseClass: uiIconBadgeChipClass,
-                textSizeClass: uiIconBadgeChipTextSizeClass,
-              })}
-            >
-              {badge.label}
-            </span>
-          ))}
-        </section>
-      )}
-      {showId && (
-        <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} break-all`}>
-          {edge.id}
-        </section>
-      )}
-      {desc ? (
-        <button
-          type="button"
-          className={`mt-1 text-left ${UI_THEME_TOKENS.tooltip.text} break-words leading-tight w-full`}
-          onClick={onToggleExpanded ?? undefined}
-        >
-          <section className={`${expanded ? UI_RESPONSIVE_TOOLTIP_EXPANDED_BODY_CLASSNAME : ''} text-xs`}>
-            {descText}
-          </section>
-        </button>
-      ) : null}
-      {showProps && sorted.length > 0 && (
-        <section className="mt-1 space-y-0.5">
-          {sorted.slice(0, 4).map(([k, v]) => {
-            const spec = getEdgePropSpec(schema, edge.label, k)
-            const description = spec && typeof spec.description === 'string' ? spec.description.trim() : ''
-            const badges = summarizePropertySpec(spec)
-            return (
-              <section key={k} className="space-y-0.5">
-                <section className="flex gap-1 items-center">
-                  {spec ? (
-                    <FieldTypeBadgeIcon
-                      kind={spec.type as GraphFieldKind}
-                      className={iconClassName}
-                    />
-                  ) : null}
-                  <span className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} truncate ${UI_RESPONSIVE_TOOLTIP_KEY_LABEL_CLASSNAME}`}>
-                    {k}:
-                  </span>
-                  <span className={`text-xs ${UI_THEME_TOKENS.tooltip.text} break-all`}>
-                    {formatPropValue(v)}
-                  </span>
-                </section>
-                {description && (
-                  <section className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.tooltip.textTertiary} leading-tight break-normal`}>
-                    {description}
-                  </section>
-                )}
-                {badges.length > 0 && (
-                  <section className="flex flex-wrap gap-1">
-                    {badges.map(badge => (
-                      <span
-                        key={badge}
-                        className={getBadgeChipClass('default', {
-                          baseClass: uiIconBadgeChipClass,
-                          textSizeClass: uiIconBadgeChipTextSizeClass,
-                        })}
-                      >
-                        {badge}
-                      </span>
-                    ))}
-                  </section>
-                )}
-              </section>
-            )
-          })}
-        </section>
-      )}
-    </section>
-  )
-}
-
-function buildGroupContent(
-  group: GraphGroup,
-): React.ReactNode {
-  const label = String(group.label || '').trim()
-  const memberCount = Array.isArray(group.memberNodeIds) ? group.memberNodeIds.length : 0
-  const id = String(group.id || '')
-  return (
-    <section>
-      <section className="font-semibold break-words">{label || id}</section>
-      <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} break-all`}>{id}</section>
-      <section className={`mt-1 text-xs ${UI_THEME_TOKENS.tooltip.text}`}>
-        <span className="font-medium">{memberCount}</span> nodes
-      </section>
-    </section>
-  )
 }
 
 export type GraphHoverTooltipProps = {
@@ -652,7 +344,6 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
     tooltipInteractive === true || tooltipPinned
   ) && (anyPointerDragActive !== true || hoverPanelPointerDragActiveRef.current)
   const hoverPanelRootStyle = React.useMemo<React.CSSProperties>(() => ({
-    ...PANEL_FRAME_FLOATING_ROOT_STYLE,
     opacity: uiOverlayOpacity,
     pointerEvents: effectiveInteractive ? 'auto' : 'none',
   }), [effectiveInteractive, uiOverlayOpacity])
@@ -687,7 +378,6 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
           data-kg-hover-panel-pinned={tooltipPinned ? '1' : undefined}
           data-kg-hover-panel-drag-enabled={tooltipPinned ? '1' : undefined}
           data-kg-hover-panel-resize-enabled={tooltipPinned ? '1' : undefined}
-          style={PANEL_FRAME_FLOATING_BODY_STYLE}
           onPointerDown={handleHoverPanelPointerDown}
         >
           <section className="flex items-start justify-between gap-2">
@@ -738,7 +428,6 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
       className={effectiveInteractive ? 'absolute z-50 pointer-events-auto' : 'absolute z-50 pointer-events-none'}
       anchorStyle={{ left: hoverX, top: hoverY, width: 0, height: 0 }}
       maxWidthPx={hoverPanelSize?.width || HOVER_PANEL_DEFAULT_WIDTH_PX}
-      contentClassName="text-xs"
       contentStyle={hoverPanelRootStyle}
       contentRef={hoverPanelRootRef}
       contentOffset={tooltipPinned ? hoverPanelOffset : null}

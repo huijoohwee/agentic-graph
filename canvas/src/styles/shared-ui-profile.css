@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@9862a2f89b47be3496c72ed9ca28576c992873f4; profile sha256 cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098. Do not edit. */
+/* Generated from agentic-design-system@e52a52111f52b6af85f99195ec9e59a490548575; profile sha256 e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -54,6 +54,21 @@
   --agentic-dashboard-primary: light-dark(oklch(48% 0.12 237), oklch(77% 0.14 237));
   --agentic-dashboard-secondary: light-dark(oklch(49% 0.22 293), oklch(78% 0.15 293));
   --agentic-dashboard-success: light-dark(oklch(45% 0.1 165), oklch(76% 0.16 165));
+  --agentic-hover-panel-background: light-dark(#000000, #000000);
+  --agentic-hover-text-color: light-dark(#ffffff, #ffffff);
+  --agentic-hover-label-color: light-dark(rgb(255 255 255 / 0.8), rgb(255 255 255 / 0.8));
+  --agentic-hover-width-default: 250px;
+  --agentic-hover-width-label: 360px;
+  --agentic-hover-anchor-gap: 4px;
+  --agentic-hover-edge-gap: 8px;
+  --agentic-hover-padding-inline: 8px;
+  --agentic-hover-padding-block: 4px;
+  --agentic-hover-radius: 4px;
+  --agentic-hover-font-size: 0.75rem;
+  --agentic-hover-line-height: 1rem;
+  --agentic-hover-key-max-width: 5rem;
+  --agentic-hover-expanded-max-height: 13.75rem;
+  --agentic-hover-layer: 2147483647;
   --agentic-ktv-panel-width: var(--agentic-panel-width);
   --agentic-floating-panel-radius: var(--agentic-panel-radius);
 }

@@ -1152,21 +1152,6 @@
   .kg-document-version-gitgraph-viewport { min-height: var(--kg-document-version-gitgraph-viewport-min-height, 5rem); min-block-size: var(--kg-document-version-gitgraph-viewport-min-height, 5rem); max-height: min(var(--kg-document-version-gitgraph-viewport-max-height, 14rem), var(--kg-overlay-max-height)); max-block-size: min(var(--kg-document-version-gitgraph-viewport-max-height, 14rem), var(--kg-overlay-max-height)); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } .kg-document-version-gitgraph-viewport--compact { --kg-document-version-gitgraph-viewport-min-height: 4rem; --kg-document-version-gitgraph-viewport-max-height: 8rem; } .kg-document-version-gitgraph-surface { min-height: var(--kg-document-version-gitgraph-surface-min-height, 4rem); min-block-size: var(--kg-document-version-gitgraph-surface-min-height, 4rem); }
   .kg-webpage-snapshot-overlay-badge { max-width: min(var(--kg-webpage-snapshot-overlay-badge-max-width, 32.5rem), 92%); max-inline-size: min(var(--kg-webpage-snapshot-overlay-badge-max-width, 32.5rem), 92%); } .kg-webpage-snapshot-media { filter: saturate(1.05) contrast(1.02); } .kg-webpage-snapshot-media--preview { object-fit: cover; } .kg-webpage-snapshot-media--favicon, .kg-webpage-snapshot-media--host-icon { object-fit: contain; padding: 18%; } .kg-webpage-snapshot-media--favicon { opacity: 0.6; } .kg-webpage-snapshot-media--host-icon { opacity: 0.65; } .kg-webpage-snapshot-media-backdrop { background: linear-gradient(135deg, rgba(15,23,42,0.06), rgba(148,163,184,0.10)); }
   .kg-floating-chat-message-bubble { max-width: min(var(--kg-floating-chat-message-bubble-max-width, 85%), 100%); max-inline-size: min(var(--kg-floating-chat-message-bubble-max-width, 85%), 100%); min-width: 0; }
-  .kg-responsive-tooltip-expanded-body {
-    max-height: min(var(--kg-responsive-tooltip-expanded-body-max-height, 13.75rem), var(--kg-overlay-max-height));
-    max-block-size: min(var(--kg-responsive-tooltip-expanded-body-max-height, 13.75rem), var(--kg-overlay-max-height));
-    overflow: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    padding-inline-end: 0.25rem;
-  }
-
-  .kg-responsive-tooltip-key-label {
-    max-width: min(var(--kg-responsive-tooltip-key-label-max-width, 5rem), 45%);
-    max-inline-size: min(var(--kg-responsive-tooltip-key-label-max-width, 5rem), 45%);
-    min-width: 0;
-  }
-
   .kg-responsive-status-badge,
   .kg-embedded-workspace-left,
   .kg-responsive-tag-input-form {

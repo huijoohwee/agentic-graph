@@ -3,7 +3,7 @@ import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { PanelKeyTypeCheckboxValueRow } from '@/features/panels/ui/PanelKeyTypeCheckboxValueRow'
 import { PanelKeyTypeRangeValueRow } from '@/features/panels/ui/PanelKeyTypeRangeValueRow'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import type { GraphSchema } from '@/lib/graph/schema'
 import {

@@ -202,10 +202,10 @@ export const UI_THEME_TOKENS = {
     orange: 'text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20',
   },
   tooltip: {
-    bg: 'bg-[var(--kg-tooltip-bg)]',
-    text: 'text-[color:var(--kg-tooltip-text)]',
-    textSecondary: 'text-[color:var(--kg-tooltip-text)] opacity-80',
-    textTertiary: 'text-[color:var(--kg-tooltip-text)] opacity-70',
+    bg: 'agentic-hover-background',
+    text: 'agentic-hover-text',
+    textSecondary: 'agentic-hover-label',
+    textTertiary: 'agentic-hover-muted',
   },
   code: {
     bg: 'bg-[color:var(--kg-code-bg)]',

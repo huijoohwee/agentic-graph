@@ -1,5 +1,5 @@
 import type { CanvasViewOption } from './canvasViewTypes'
-import { buildRoleActionOutcomeTooltip, buildSettingsValueTooltip } from '@/lib/config-copy/tooltips'
+import { buildRoleActionOutcomeTooltip, buildSettingsValueTooltip } from 'agentic-design-system/hover/text'
 import { DEFAULT_CANVAS_2D_RENDERER, getCanvas2dRendererLabel } from '@/lib/config.render'
 
 /** Renderer metadata belongs in the shared hover/focus help, never in extra menu rows. */

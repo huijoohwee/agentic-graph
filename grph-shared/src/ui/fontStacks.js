@@ -21,6 +21,9 @@ export function centralTokenCss(variable, theme = 'light') {
 export function centralTokenValue(variable, theme = 'light', chain = []) {
   if (chain.includes(variable) || chain.length > 16) throw new Error(`Central token cycle: ${variable}`)
   const value = centralTokenCss(variable, theme)
+  // The shared profile can express an invariant color in both color-scheme branches.
+  const invariant = /^light-dark\((#[a-f0-9]{6}), \1\)$/i.exec(value)
+  if (invariant) return invariant[1]
   const reference = /^var\((--[a-z0-9-]+)\)$/.exec(value)
   return reference ? centralTokenValue(reference[1], theme, [...chain, variable]) : value
 }

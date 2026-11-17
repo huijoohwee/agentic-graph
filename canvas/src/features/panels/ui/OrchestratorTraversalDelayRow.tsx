@@ -1,5 +1,5 @@
 import React from 'react'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { PanelKeyTypeSliderNumberRow } from '@/features/panels/ui/PanelKeyTypeSliderNumberRow'
 import {
   ORCHESTRATOR_TRAVERSAL_DELAY_DEFAULT_MS,

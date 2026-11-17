@@ -1,25 +1,12 @@
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from '@/features/panels/ui/Tooltip'
+import Tooltip from 'agentic-design-system/react/hover'
 import { CanvasEditableKeyTypeValueRow as KeyTypeValueRow } from '@/features/panels/ui/CanvasEditableKeyTypeValueRow'
 import { PanelKeyTypeSliderNumberRow } from '@/features/panels/ui/PanelKeyTypeSliderNumberRow'
 import { RightAlignedTooltipInput } from '@/features/panels/ui/RightAlignedTooltipInput'
 import type { GraphRagWorkflowJsonLd } from '@/features/panels/utils/graphragConfig'
-import {
-  IGNORE_CODEBASE_PATHS_LABEL,
-  IGNORE_CODEBASE_PATHS_TOOLTIP,
-  WORKFLOW_INDEXING_PARAMETERS_TOOLTIP,
-  GRAPHRAG_DATASET_INPUT_DIR_KEY_TOOLTIP,
-  GRAPHRAG_DATASET_OUTPUT_DIR_KEY_TOOLTIP,
-  GRAPHRAG_CHUNK_METHOD_KEY_TOOLTIP,
-  GRAPHRAG_CHUNK_SIZE_KEY_TOOLTIP,
-  GRAPHRAG_MAX_HOPS_KEY_TOOLTIP,
-  GRAPHRAG_EMBEDDING_PROVIDER_KEY_TOOLTIP,
-  GRAPHRAG_EMBEDDING_MODEL_NAME_KEY_TOOLTIP,
-  buildNumericTooltip,
-  buildDefaultTooltip,
-  UI_COPY,
-} from '@/lib/config'
+import { IGNORE_CODEBASE_PATHS_LABEL, IGNORE_CODEBASE_PATHS_TOOLTIP, WORKFLOW_INDEXING_PARAMETERS_TOOLTIP, GRAPHRAG_DATASET_INPUT_DIR_KEY_TOOLTIP, GRAPHRAG_DATASET_OUTPUT_DIR_KEY_TOOLTIP, GRAPHRAG_CHUNK_METHOD_KEY_TOOLTIP, GRAPHRAG_CHUNK_SIZE_KEY_TOOLTIP, GRAPHRAG_MAX_HOPS_KEY_TOOLTIP, GRAPHRAG_EMBEDDING_PROVIDER_KEY_TOOLTIP, GRAPHRAG_EMBEDDING_MODEL_NAME_KEY_TOOLTIP, UI_COPY } from '@/lib/config'
+import { buildNumericTooltip, buildDefaultTooltip } from 'agentic-design-system/hover/text'
 import { emitGraphTraversalFloatingPanelOpen } from '@/features/panels/utils/graphTraversalFloatingPanel'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { uiToolbarButtonNeutralClassName } from '@/features/toolbar/ui/toolbarStyles'

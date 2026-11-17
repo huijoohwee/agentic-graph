@@ -13,7 +13,8 @@ import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { getThreeConfig, getThreeSelectionConfig } from '@/lib/graph/schema'
 import { lsInt } from '@/lib/persistence'
-import { LS_KEYS, buildNumericTooltip } from '@/lib/config'
+import { LS_KEYS } from '@/lib/config'
+import { buildNumericTooltip } from 'agentic-design-system/hover/text'
 import { hashScopedStringArraySignature, hashSignatureParts } from '@/lib/hash/signature'
 
 export type GraphRagTraversalSummary = {
