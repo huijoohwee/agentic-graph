@@ -31,7 +31,7 @@ export default function ThreeViewBackgroundFogSection({
       collapsed={collapsed}
       onToggle={onToggle}
       headerClassName="px-0"
-      stickyOffsetClassName="top-6"
+      stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>
         <PanelKeyTypeColorTextValueRow

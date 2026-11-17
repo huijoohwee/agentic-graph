@@ -512,8 +512,8 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected simple read-only KTV consumers to import the shared KTV simple-row owner directly')
   }
   if (
-    !(collapsibleSection.includes('KTV_SECTION_TITLE_CLASS_NAME') || collapsibleSection.includes("from '@agentic-base/views-react/settings'"))
-    || !collapsibleSection.includes("from 'grph-shared/ui/keyTypeValueRows'")
+    !collapsibleSection.includes('CollapsibleSection as default')
+    || !collapsibleSection.includes("from 'agentic-design-system/react/panels'")
     || collapsibleSection.includes("./KeyTypeValueRow")
     || collapsibleSection.includes('overflow-hidden text-xs font-semibold')
     || !collaborationView.includes('KTV_STATUS_TEXT_CLASS_NAME')
@@ -582,7 +582,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     }
   }
   if (
-    !mainPanelSectionHeader.includes("from '@agentic-base/views-react/settings'")
+    !mainPanelSectionHeader.includes("from 'agentic-design-system/react/panels'")
     || mainPanelSectionHeader.includes('uiPanelMicroLabelTextSizeClass')
     || mainPanelSectionHeader.includes('text-xs font-semibold')
     || !collapsibleSubsection.includes("export { default } from './CollapsibleSection'")
@@ -739,8 +739,8 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected MainPanel Help sections to reuse the shared KTV seam helper')
   }
-  if (!expandCollapseAllButton.includes('ChevronsDown') || !expandCollapseAllButton.includes('ChevronsUp')) {
-    throw new Error('Expected expand/collapse-all KTV header control to use explicit icon-only expand/collapse glyphs')
+  if (!expandCollapseAllButton.includes("ExpandCollapseAllButton as default } from 'agentic-design-system/react/panels'")) {
+    throw new Error('Expected expand/collapse-all KTV header control to consume the shared expansion control')
   }
   if (!mainPanelSectionHeader.includes('<SettingsSectionHeader') || mainPanelSectionHeader.includes('flex min-h-8 min-w-0 max-w-full items-center justify-between gap-1')) {
     throw new Error('Expected MainPanel section headers to share one lean shell')

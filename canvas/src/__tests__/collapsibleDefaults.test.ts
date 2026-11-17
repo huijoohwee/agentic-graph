@@ -33,6 +33,8 @@ export async function testCollapsibleDefaultsCompactAndAnchoredToLsKeys() {
     }
   }
   const harness = initJsdomHarness()
+  // This test needs native focus tracking; the iframe-oriented harness flattens it to body.
+  Reflect.deleteProperty(harness.dom.window.document, 'activeElement')
   const host = harness.dom.window.document.createElement('section')
   harness.dom.window.document.body.appendChild(host)
   const root = createRoot(host)
@@ -67,10 +69,11 @@ export async function testCollapsibleDefaultsCompactAndAnchoredToLsKeys() {
     assert.equal(child()!.textContent, '1', 'later collapse must retain local content state')
     assert.ok(child()!.parentElement!.classList.contains('hidden'))
     assert.equal(cleanups, 0, 'later collapse must not unmount previously opened content')
-    await act(async () => header().dispatchEvent(new harness.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    await click(header()) // Native button keyboard activation is verified in the real browser.
     assert.equal(header().getAttribute('aria-expanded'), 'true')
     assert.equal(child()!.textContent, '1')
     assert.equal(mounts, 1, 'reopening must reuse the mounted content')
+    child()!.focus(); await click(header()); assert.equal(document.activeElement === header(), true, 'collapse returns focus from hidden content'); await click(header())
 
     await render({ key: 'controlled', collapsed: true, defaultCollapsed: false })
     assert.equal(header().getAttribute('aria-expanded'), 'false', 'controlled state owns a conflicting default')

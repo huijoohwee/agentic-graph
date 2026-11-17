@@ -124,7 +124,7 @@ export function GraphRagWorkflowIndexingSection({
       headerClassName="px-0"
       collapsed={indexingCollapsed}
       onToggle={onToggleIndexingCollapsed}
-      stickyOffsetClassName="top-6"
+      stickyOffset="1.5rem"
     >
       <section
         className={[

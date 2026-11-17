@@ -1,23 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { createRequire, Module as NodeModule, register } from 'node:module'
+import { createRequire, Module as NodeModule } from 'node:module'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
 
 // Select the explicit compatibility backend used by legacy-storage fixtures.
 process.env.NODE_ENV = 'test'
 
-// JSDOM exercises component behavior, while browser/build checks own CSS. Cover
-// dynamic ESM imports as well as CommonJS without hiding missing asset files.
-register(`data:text/javascript,${encodeURIComponent(`
-  import { readFileSync } from 'node:fs';
-  export function load(url, context, nextLoad) {
-    if (url.startsWith('file:') && new URL(url).pathname.endsWith('.css')) {
-      readFileSync(new URL(url));
-      return { format: 'module', shortCircuit: true, source: 'export {};' };
-    }
-    return nextLoad(url, context);
-  }
-`)}`, import.meta.url)
+// Share the asset-validating Node loader with standalone React checks.
+import './lib/registerCssLoader'
 
 const ensurePeerSymlinks = () => {
   try {

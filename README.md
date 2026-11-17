@@ -456,3 +456,9 @@ Built by [airvio](https://airvio.co) · Singapore, with a SEA-first multilingual
 ---
 
 *agentic-graph is early-stage and evolving fast. `docs/documents/` and the sibling `agentic-canvas-os/docs` control surface are versioned alongside the code — check the repo for the latest.*
+
+Panel section rendering, sticky headers, expansion groups and scroll regions come
+from `agentic-design-system/react/panels`. Graph retains product decorations, saved
+expansion state and canvas/timeline interactions. The old section import paths
+are pure contract exports; no competing renderer or keyboard handler remains.
+The Canvas observability entry consumes these same shared headers and scrolling.
