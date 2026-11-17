@@ -238,7 +238,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected grph-shared to expose and compile the shared KTV React layout and row entries')
   }
-  if (!sharedKtvRow.includes('<BaseKeyTypeValueRow') || sharedKtvRow.includes('<dl')) {
+  if (!sharedKtvRow.includes('<DesignSystemKeyTypeValueRow') || sharedKtvRow.includes('<dl')) {
     throw new Error('Expected one shared KTV value cell for every caller signature')
   }
   if (!sharedKtvRow.includes('export function SimpleKeyValueRow')) {
@@ -489,7 +489,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ...graphFieldSettingSectionTexts.map(([fileName, source]) => [`Graph field ${fileName}`, source] as const),
   ] as const) {
     if (
-      !consumerSource.includes("from 'grph-shared/ui/keyTypeValueRows'")
+      !(consumerSource.includes("from 'grph-shared/ui/keyTypeValueRows'") || consumerSource.includes("from '@/features/panels/views/graph-fields/GraphFieldsPanelControls'"))
       || consumerSource.includes("from '@/features/panels/ui/KeyTypeValueRow'")
     ) {
       throw new Error(`Expected ${consumerName} to import shared KTV typography/constants directly instead of routing through the legacy KeyTypeValueRow wrapper`)
@@ -512,7 +512,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected simple read-only KTV consumers to import the shared KTV simple-row owner directly')
   }
   if (
-    !collapsibleSection.includes('KTV_SECTION_TITLE_CLASS_NAME')
+    !(collapsibleSection.includes('KTV_SECTION_TITLE_CLASS_NAME') || collapsibleSection.includes("from '@agentic-base/views-react/settings'"))
     || !collapsibleSection.includes("from 'grph-shared/ui/keyTypeValueRows'")
     || collapsibleSection.includes("./KeyTypeValueRow")
     || collapsibleSection.includes('overflow-hidden text-xs font-semibold')
@@ -582,7 +582,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     }
   }
   if (
-    !mainPanelSectionHeader.includes('KTV_SECTION_TITLE_CLASS_NAME')
+    !mainPanelSectionHeader.includes("from '@agentic-base/views-react/settings'")
     || mainPanelSectionHeader.includes('uiPanelMicroLabelTextSizeClass')
     || mainPanelSectionHeader.includes('text-xs font-semibold')
     || !collapsibleSubsection.includes("export { default } from './CollapsibleSection'")
@@ -606,7 +606,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Widget palette', widgetPalette],
     ['Floating chat', floatingPanelChat],
   ] as const) {
-    if (!consumerSource.includes('KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME')) {
+    if (!(consumerSource.includes('KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME') || consumerSource.includes("from '@/features/panels/views/graph-fields/GraphFieldsPanelControls'"))) {
       throw new Error(`Expected ${consumerName} to reuse the shared KTV row text fallback`)
     }
   }
@@ -629,7 +629,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Settings runtime', settingsViewRuntime],
     ['Default Value', graphFieldSettingSectionTexts.find(([fileName]) => fileName === 'DefaultValueSection.tsx')?.[1] || ''],
   ] as const) {
-    if (!consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass')) {
+    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && consumerSource.includes('typography.keyValueInputClass'))) {
       throw new Error(`Expected ${consumerName} editable value inputs to reuse the shared panel typography input class`)
     }
   }
@@ -659,7 +659,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Schema editor UI classes', schemaEditorUiClasses],
     ...graphFieldSharedInputClassSectionTexts.map(([fileName, text]) => [`Graph Fields ${fileName}`, text] as const),
   ] as const) {
-    if (!consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass')) {
+    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && consumerSource.includes('typography.keyValueInputClass'))) {
       throw new Error(`Expected ${consumerName} editable value inputs to reuse the shared panel typography input class`)
     }
     if (
@@ -742,10 +742,10 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   if (!expandCollapseAllButton.includes('ChevronsDown') || !expandCollapseAllButton.includes('ChevronsUp')) {
     throw new Error('Expected expand/collapse-all KTV header control to use explicit icon-only expand/collapse glyphs')
   }
-  if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ROOT_CLASS_NAME') || !mainPanelSectionHeader.includes('flex min-h-8 min-w-0 max-w-full items-center justify-between gap-1')) {
+  if (!mainPanelSectionHeader.includes('<SettingsSectionHeader') || mainPanelSectionHeader.includes('flex min-h-8 min-w-0 max-w-full items-center justify-between gap-1')) {
     throw new Error('Expected MainPanel section headers to share one lean shell')
   }
-  if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ACTIONS_CLASS_NAME') || !mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_TITLE_CLASS_NAME')) {
+  if (!mainPanelSectionHeader.includes('actionsClassName={panelFieldDecorationClassName(props.actionsClassName)}') || !mainPanelSectionHeader.includes('titleClassName={panelFieldDecorationClassName(props.titleClassName)}')) {
     throw new Error('Expected MainPanel section header title and action slots to be centralized')
   }
   if (!helpHeader.includes('MainPanelSectionHeader')) {
@@ -1134,7 +1134,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected renderer palette rows to import the shared static KTV row/value primitives directly')
   }
   if (
-    !rendererHoverSettings.includes("from 'grph-shared/react/keyTypeValueRow'")
+    !rendererHoverSettings.includes("from '@/features/panels/ui/canvasKeyTypeValueStaticRow'")
     || !rendererHoverSettings.includes('KeyTypeValueStaticRow')
   ) {
     throw new Error('Expected renderer hover rows to import the shared static KTV row owner directly')

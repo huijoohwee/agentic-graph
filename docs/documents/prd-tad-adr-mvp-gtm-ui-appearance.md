@@ -208,3 +208,9 @@ or mutating the source checkout. The local regression fails before the transfer 
 after it. GTM retains published predecessor fad830bba in PR 1502 and requires independent
 protected integration of its native successor. Repair cap: same three paths, under 2 KiB
 added content, 10 active minutes, no new module, dependency, runtime behavior or effect.
+
+## Central typed rows — reference implementation
+
+Design System at `fd9884ce292e0e08997063b27762173a64d0122c` owns the native and React KTV row APIs and their shared cell descriptor. Graph binds product metadata, selection, help, typed icons and value controls to `agentic-design-system/react/ktv`. Geospatial and panel-form rows remove their separate row markup and layout; form labels preserve association with the existing controls. Base no longer supplies a row renderer or re-export. Canvas OS uses this same Graph UI; source docs must not introduce another renderer. Exact dependency pins, focused interaction checks, duplicate-owner source checks and local browser evidence are required before a cross-consumer adoption claim. Rollback restores the previous exact dependency locks and adapters together. Source integration remains separate from canonical runtime readiness and Production activation.
+
+Shared row projection follow-up: pin Design System `eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e` and Base `ff889d87a380f1e6f46575eb977448390f5c51d0` together. The central generator resets definition-list margins for native and React consumers. Graph owns no row geometry replacement.

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -6,6 +7,7 @@ const readUtf8 = (absolutePath: string): string =>
 
 export const testTailwindScansSharedKtvClassOwners = () => {
   const canvasRoot = process.cwd()
+  execFileSync(process.execPath, [path.resolve(canvasRoot, '../scripts/check-design-system-ktv.mjs')])
   const tailwindTheme = readUtf8(path.resolve(canvasRoot, 'src', 'styles', 'tailwind-theme.css'))
   const sharedKtvRows = readUtf8(
     path.resolve(canvasRoot, '..', 'grph-shared', 'src', 'ui', 'keyTypeValueRows.ts'),
@@ -33,7 +35,7 @@ export const testTailwindScansSharedKtvClassOwners = () => {
     )
   }
   if (
-    !sharedKtvRow.includes('<BaseKeyTypeValueRow')
+    !sharedKtvRow.includes('<DesignSystemKeyTypeValueRow')
     || sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
     || !sharedKtvLayout.includes('${KTV_FIELD_GRID_CLASS_NAME}')
   ) {

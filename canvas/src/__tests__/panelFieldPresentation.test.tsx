@@ -68,6 +68,9 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
       assert(control.classList.contains('text-[15px]') && control.classList.contains('font-serif'))
       assert(!control.classList.contains('text-[10px]') && !control.classList.contains('font-mono'))
     }
+    const nameLabel = [...host.querySelectorAll<HTMLLabelElement>('dt label')].find(node => node.textContent === 'Name')!
+    assert(nameLabel.control, 'central typed rows preserve label/control association')
+    assert.equal(nameLabel.htmlFor, nameLabel.control!.id)
     const range = host.querySelector<HTMLInputElement>('input[type=range]')!
     assert.equal(host.querySelector(`label[for="${range.id}"]`)?.textContent, 'Range 0')
     await act(async () => {
@@ -102,7 +105,7 @@ export function testPanelFieldsForbidPresentationVariants() {
   assert(read('src/features/graph-inspector/ui/GraphRecordInspector.tsx').includes('<CanvasEditableKeyTypeValueRow'))
   const controls = read('src/lib/ui/panelFormControls.tsx')
   assert(!controls.includes("layout === 'compact'"), 'old form variants cannot select a different layout')
-  assert(controls.includes('KTV_FIELD_GRID_CLASS_NAME'))
+  assert(controls.includes('<KeyTypeValueStaticRow')); assert(!controls.includes('KTV_FIELD_GRID_CLASS_NAME'))
   for (const stylesheet of ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css']) {
     const css = read(`src/components/timeline/${stylesheet}`)
     for (const block of css.matchAll(/[^{}]*(?:\.time\b|\.timeline-rate-button(?:-value)?\b)[^{}]*\{([^}]*)\}/g)) {

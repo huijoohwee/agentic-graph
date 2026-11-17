@@ -24,12 +24,12 @@ export const testGeospatialPanelCompositionSplit = () => {
 
   expectSourceMarker(
     sourceByOwner.ui,
-    "from 'grph-shared/ui/keyTypeValueRows'",
+    "from 'agentic-design-system/react/ktv'",
     'Expected Geo panel primitives to reuse the shared KTV row class contract',
   )
   expectSourceMarker(
     sourceByOwner.ui,
-    'KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME',
+    '<KeyTypeValueRow',
     'Expected Geo panel rows to share the MainPanel key/type/value grid',
   )
   expectSourceMarker(
