@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { test, before } from 'node:test'
+import '../tests/lib/registerCssLoader'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import DocumentPassageInsights from '@/components/DashboardCanvas/DocumentPassageInsights'
+let DocumentPassageInsights: typeof import('@/components/DashboardCanvas/DocumentPassageInsights').default
+before(async () => { DocumentPassageInsights = (await import('@/components/DashboardCanvas/DocumentPassageInsights')).default })
 import { applyDocumentPassageLayer, registerDocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
 import type { GraphData } from '@/lib/graph/types'
 import { indexDocumentSignals } from '@/lib/websites/signalTokens'
