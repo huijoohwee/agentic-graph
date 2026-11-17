@@ -99,7 +99,7 @@
     "pretest:ci:standalone-export": "npm run check:html-viewer-runtime"
   },
   "dependencies": {
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#b36420f1e06c9d70569ac928e2b8b6ae882e7992",
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#887d2cfa7f1dc3b76fa0a33694f76336e7aacbcf",
     "@huggingface/transformers": "3.8.1",
     "@litertjs/core": "^2.5.3",
     "@react-three/fiber": "^8.17.8",
@@ -107,7 +107,7 @@
     "@turf/helpers": "^7.2.0",
     "@types/d3": "^7.4.3",
     "@vladmandic/human": "^3.3.6",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#98807b856ab35bac53c54987d4340cd37982d3ec",
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
