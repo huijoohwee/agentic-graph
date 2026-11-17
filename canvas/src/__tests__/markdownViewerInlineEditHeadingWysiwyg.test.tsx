@@ -118,18 +118,9 @@ export async function testMarkdownViewerInlineEditHeadingUsesHtmlEditingAndPrese
 
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected contenteditable editor to mount after click')
-    if (!editor.className.includes('[&_p]:m-0')) {
-      throw new Error('expected html normalize class names on html editing surface')
-    }
-    if (editor.className.includes('overflow-x-auto') || editor.className.includes('[text-overflow:clip]')) {
-      throw new Error(`expected heading edit surface not to include overflow reveal classes on edit; class=${JSON.stringify(String(editor.className || ''))}`)
-    }
-
-    const wrapper = editor.parentElement as HTMLElement | null
-    if (!wrapper) throw new Error('expected editor wrapper')
-    if (String(wrapper.style.minHeight || '') !== '42px') {
-      throw new Error('expected editor wrapper to set a minHeight to reduce layout jump')
-    }
+    if(!host.contains(editor))throw new Error('expected the retained heading content')
+    if(editor.style.minHeight||host.style.minHeight)throw new Error('activation must not add a layout wrapper or minimum height')
+    if(host.getBoundingClientRect().height!==42)throw new Error('heading height changed on activation')
 
     const copyEvent = new dom.window.Event('copy', { bubbles: true, cancelable: true })
     editor.dispatchEvent(copyEvent)

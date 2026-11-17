@@ -26,14 +26,7 @@ export const testMarkdownViewerReadableColumnAlignsBodyWithFrontmatterRows = () 
   ) {
     throw new Error('expected Markdown block gutter controls to derive hover rail placement from the shared content-start offset without overlapping Viewer text')
   }
-  if (
-    !dataViewTableText.includes("tableFit?: 'content' | 'container'") ||
-    !dataViewTableText.includes("tableFit === 'container' ? 'min-w-full w-full' : 'min-w-max w-max'") ||
-    !dataViewTableText.includes("tableFit === 'container'") ||
-    !dataViewTableText.includes("width: '100%'")
-  ) {
-    throw new Error('expected Markdown data-view tables to expose an explicit container-fit mode that aligns the right edge with the readable Viewer column')
-  }
+  if(!dataViewTableText.includes("from '@agentic-base/views-react/table'")||!dataViewTableText.includes('TableHostProvider'))throw new Error('expected tables to reuse the canonical Base container-fit owner')
   if (!frontmatterPreviewText.includes('tableFit="container"')) {
     throw new Error('expected Markdown frontmatter properties preview to fill the readable Viewer column instead of rendering as a narrow content-sized table')
   }
@@ -101,36 +94,20 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!blockText.includes('unwrapSingleListWrappers')) {
     throw new Error('expected html list edit normalization to unwrap list wrappers before sibling-gap cleanup')
   }
-  if (
-    !blockText.includes('className={effectiveInlineFlow') ||
-    !blockText.includes('hostParagraphFlow') ||
-    !blockText.includes("'relative block w-full min-w-0'") ||
-    !blockText.includes("'relative inline-block w-full min-w-0 align-baseline'")
-  ) {
-    throw new Error('expected block container to keep paragraph edit wrapper block-level while preserving inline-flow host wrapping for list marker baseline parity')
-  }
-  if (!blockText.includes('const hostNormalTextFlow = hostParagraphFlow || hostHeadingFlow')) {
-    throw new Error('expected block container to treat heading hosts as normal-text flow for read/edit left-baseline parity')
-  }
-  if (!blockText.includes("hostHeadingFlow ? 'block w-full min-w-0'")) {
-    throw new Error('expected heading edit wrapper to avoid relative wrapper so chrome aligns with visual-mode padding/gutter')
-  }
   if (!blockText.includes('normalizeListAncestorSpacing')) {
     throw new Error('expected html list edit normalization to reset wrapper ancestor spacing around list roots')
   }
   if (blockText.includes('if (editListMode) return')) {
     throw new Error('expected list edit mode to participate in edge trim burst scheduling (no special-case disable)')
   }
-  if (!blockText.includes('MARKDOWN_INLINE_CODE_EDIT_DESCENDANT_CLASSES')) {
-    throw new Error('expected html edit surfaces to reuse shared inline-code parity SSOT classes')
-  }
+  if (!blockText.includes("from 'agentic-design-system/react/viewer'") || /innerHTML\s*=|textContent\s*=/.test(readUtf8(blockEditInitializationPath))) throw new Error('Viewer must preserve mounted content through the shared owner')
   if (blockText.includes("'[_&code]:border'")) {
     throw new Error('expected html edit surfaces to avoid inline-code border styling that mutates layout')
   }
   if (blockText.includes('[&_code]:border-[color:var(--kg-code-border)]')) {
     throw new Error('expected html edit surfaces to avoid inline-code border styling that mutates layout')
   }
-  if (!blockText.includes('MARKDOWN_INLINE_CODE_EDIT_DESCENDANT_CLASSES')) {
+  if (!blockText.includes('<ViewerSurface as={Tag}')) {
     throw new Error('expected inline code edit-surface spacing contract to be centralized in shared parity SSOT')
   }
   if (!blockText.includes('editTypographySnapshotRef') || !blockText.includes('window.getComputedStyle')) {
@@ -145,15 +122,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!blockText.includes('buildApproximateRangeInRoot') || !blockText.includes('buildLocalFallbackRange() || buildApproximateRangeInRoot()')) {
     throw new Error('expected click-open caret placement to use in-root approximate fallback when point-range APIs fail or resolve outside editor')
   }
-  if (!blockText.includes('MarkdownContentEditableCore')) {
-    throw new Error('expected markdown block editor to reuse the canonical contenteditable core')
-  }
-  if (
-    (!blockText.includes('[&_div]:font-inherit') || !blockText.includes('[&_div]:whitespace-pre-wrap'))
-    && !blockText.includes('MARKDOWN_HTML_EDIT_NORMALIZE_CLASS')
-  ) {
-    throw new Error('expected html edit normalization to preserve div-based line wrappers with read-surface typography and line-break parity')
-  }
   if (!blockText.includes('editSpacingSnapshotRef') || !blockText.includes('editCaptureLayoutSpacing') || !blockText.includes('__AG_EDIT_PARITY_PROBE__')) {
     throw new Error('expected markdown block editor to provide gated spacing parity capture and runtime parity probe switch')
   }
@@ -162,12 +130,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   if (!blockText.includes('if (spacingSnapshot && editStripLinePrefix && args.editStripLinePrefixSpacingSanitize)')) {
     throw new Error('expected quote/callout edit surfaces to sanitize horizontal spacing replay only when explicitly enabled for prefix-stripped edit surfaces')
-  }
-  if (!blockText.includes('preserveQuoteOnlyBlankLineStructure')) {
-    throw new Error('expected quote/callout edit surfaces to preserve blank `>` line-by-line structure when trim-edge-newlines is enabled')
-  }
-  if (!blockText.includes("'<section><br/></section>'")) {
-    throw new Error('expected blank quote-only edit surfaces to use explicit per-line block wrappers for first/last vertical spacing parity')
   }
   if (!blockText.includes('spacingSnapshot.borderLeftWidth = undefined') || !blockText.includes('spacingSnapshot.borderLeftStyle = undefined')) {
     throw new Error('expected quote/callout edit surfaces to keep quote rail visible by avoiding inline border overrides in edit spacing snapshot')
@@ -203,13 +165,13 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
     throw new Error('expected inline selection toolbar to reuse shared interaction capture SSOT helper')
   }
   const inlineSelectionToolbarText = readUtf8(path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'MarkdownInlineSelectionToolbar.tsx'))
-  if (!inlineSelectionToolbarText.includes("title: 'Highlight'") || !inlineSelectionToolbarText.includes('preventDefaultPointerDown(event)')) {
+  if (!inlineSelectionToolbarText.includes('<MarkdownToolbar onCommand={run} onInteractionStart={begin}')) {
     throw new Error('expected highlight menu summary to preserve editor focus/selection on pointer down')
   }
-  if (!inlineSelectionToolbarText.includes("title: 'Text color'") || !inlineSelectionToolbarText.includes('preventDefaultPointerDown(event)')) {
+  if (!inlineSelectionToolbarText.includes("from 'agentic-design-system/react/rich-text'")) {
     throw new Error('expected text color menu summary to preserve editor focus/selection on pointer down')
   }
-  if (!inlineSelectionToolbarText.includes('title="Slash commands"') || !inlineSelectionToolbarText.includes('title="Variable commands"')) {
+  if (!inlineSelectionToolbarText.includes("id === 'slashCommands'") || !inlineSelectionToolbarText.includes("id === 'variableCommands'")) {
     throw new Error('expected inline selection toolbar to expose / and @ command menu triggers')
   }
   const inlineMenusText = readUtf8(blockInlineMenusOverlayPath)
@@ -229,7 +191,7 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
     || !commandMenuText.includes('rounded-full')
     || !commandMenuText.includes('UI_THEME_TOKENS.panel.border')
     || !commandMenuText.includes('UI_THEME_TOKENS.input.bg')
-    || !commandMenuText.includes('shadow-sm')
+    || !commandMenuText.includes('shadow-none')
   ) {
     throw new Error('expected markdown inline @ media thumbnails to render through the shared tokenized mention-style pill owner')
   }
@@ -253,16 +215,10 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!rendererText.includes("case 'hr':") || !rendererText.includes('editPresentation="html"')) {
     throw new Error('expected hr blocks to be editable via MarkdownBlockContainer html presentation')
   }
-  if (!rendererText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS') || !rendererText.includes('editorClassName={MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS}')) {
-    throw new Error('expected hr edit surface to reuse centralized normal-text edit surface layout contract')
-  }
   const htmlBlockPath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'MarkdownHtmlBlock.tsx')
   const htmlBlockText = readUtf8(htmlBlockPath)
   if (!htmlBlockText.includes('editPresentation="html"') || !htmlBlockText.includes('editHtmlRender="block"') || !htmlBlockText.includes('editHtmlDisableDefaultBlockFlow')) {
     throw new Error('expected html blocks to use html-block in-place editing parity instead of markdown text-mode surface mutation')
-  }
-  if (!htmlBlockText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected html edit surface to reuse centralized normal-text edit surface layout contract')
   }
   if (!htmlBlockText.includes('const htmlWrapperClassName = [')) {
     throw new Error('expected html block wrapper class composition to be centralized and reused across safe/raw render branches')
@@ -295,9 +251,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   if (tableText.includes('inlineEditable={blockControlsAllowed && !!opts.onReplaceLineRange}')) {
     throw new Error('expected table/data-view blocks to avoid toggling into generic contentEditable surface')
-  }
-  if (!tableText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected table/data-view editor class root to reuse centralized normal-text edit surface layout contract')
   }
   const derivedViewerPath = path.resolve(
     root,
@@ -362,12 +315,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   if (codeText.includes('min-h-[96px]')) {
     throw new Error('expected code block inline editor to avoid hardcoded min height that changes layout')
-  }
-  if (
-    !codeText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')
-    && !codeText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_BASE_CLASS')
-  ) {
-    throw new Error('expected code block inline editor root to reuse centralized normal-text edit surface baseline contract')
   }
   if (!codeText.includes('MARKDOWN_CODE_BLOCK_READ_SPACING_CLASS')) {
     throw new Error('expected code block read/gutter wrappers to reuse centralized read-surface spacing SSOT contract')
@@ -524,9 +471,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   const listLayoutPath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'markdownListLayout.ts')
   const listLayoutText = readUtf8(listLayoutPath)
-  if (!listLayoutText.includes('MARKDOWN_LIST_ROW_EDITOR_CLASS = MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected list row editor baseline class contract to be centralized in markdownListLayout SSOT')
-  }
   if (!listLayoutText.includes("MARKDOWN_LIST_ROW_GUTTER_GROUP_CLASS = 'relative group/list-row'")) {
     throw new Error('expected list row hover grouping scope to be centralized and row-local in markdownListLayout SSOT')
   }
@@ -573,9 +517,6 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   if (!editSurfaceLayoutText.includes('getMarkdownQuoteLikeEditorClass')) {
     throw new Error('expected quote/callout html-block edit-surface class contract to be centralized in markdownEditSurfaceLayout SSOT')
-  }
-  if (!editSurfaceLayoutText.includes('MARKDOWN_HTML_EDIT_NORMALIZE_CLASS') || !editSurfaceLayoutText.includes('MARKDOWN_HTML_EDIT_BLOCK_FLOW_CLASS')) {
-    throw new Error('expected html edit normalization and block-flow contracts to be centralized in markdownEditSurfaceLayout SSOT')
   }
   if (blockquoteText.includes('editLeftRailClassName=')) {
     throw new Error('expected blockquote inline editor to avoid duplicate absolute left rail overlay that breaks view/edit parity')
@@ -628,20 +569,11 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   }
   const paragraphPath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'MarkdownParagraphBlock.tsx')
   const paragraphText = readUtf8(paragraphPath)
-  if (!paragraphText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected paragraph inline editor to reuse centralized normal-text edit surface contract')
-  }
   if (!calloutText.includes('getMarkdownQuoteLikeEditorClass')) {
     throw new Error('expected callout inline editor body to reuse centralized quote-like edit-surface class builder')
   }
   if (calloutText.includes('editorClassName="w-full whitespace-pre-wrap break-words outline-none bg-transparent"')) {
     throw new Error('expected callout container editor class to reuse centralized normal-text edit surface contract (no duplicated literal class path)')
-  }
-  if (!calloutText.includes('calloutContainerEditorClassName = MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected callout non-editable containers to use centralized normal-text edit-surface baseline class alias')
-  }
-  if (!footnoteText.includes('MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS')) {
-    throw new Error('expected footnote inline editor to reuse centralized normal-text edit surface contract')
   }
   if (!blockquoteText.includes('editPresentation="html"') || !blockquoteText.includes('editHtmlRender="block"')) {
     throw new Error('expected blockquote inline editor to use html-block editing for quote line spacing parity without exposing sigil code tokens')

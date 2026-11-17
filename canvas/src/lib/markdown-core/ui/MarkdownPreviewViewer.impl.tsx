@@ -1,3 +1,4 @@
+import { ViewerSurface } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import MarkdownTokenRenderer from '@/features/markdown/ui/MarkdownTokenRenderer'
 import type { HighlightedLineRange, MarkdownGeoDatasetIntegration, MarkdownViewerMediaMode } from '@/features/markdown/ui/MarkdownRendererTypes'
@@ -40,7 +41,6 @@ const MARKDOWN_INLINE_EMBED_MAX_CHARS = 120_000
 const MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS = 120_000
 const MARKDOWN_MERMAID_DEFER_DOC_CHARS = 90_000
 const MARKDOWN_MERMAID_DEFER_IDLE_MS = 180
-
 export type MarkdownPreviewViewerProps = {
   rootRef: (el: HTMLElement | null) => void
   tokens: TokenWithLines[]
@@ -102,7 +102,6 @@ export type MarkdownPreviewViewerProps = {
   markdownCardPreviewMode?: boolean
   markdownViewerMediaMode?: MarkdownViewerMediaMode
 }
-
 export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
   const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-xs')
@@ -560,14 +559,14 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
           markdownViewerWidthMode={markdownViewerWidthMode}
         />
       ) : null}
-      <article aria-label="Document content"
+      <ViewerSurface editable={false} aria-label="Document content"
         className={
           contentClassName ||
           getMarkdownViewerWidthWrapperClassName(markdownViewerWidthMode || 'standard')
         }
       >
          {body}
-      </article>
+      </ViewerSurface>
     </MarkdownPreviewScrollSurface>
   )
 
