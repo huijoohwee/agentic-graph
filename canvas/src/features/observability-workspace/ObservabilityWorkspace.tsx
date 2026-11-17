@@ -13,6 +13,7 @@ import { PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
 import { AGENT_GRAPH_PROJECTION_DIRECTORY } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { buildAgentGraphWorkspaceIndex } from '@/features/agent-graph/agentGraphWorkspaceIndexBuilder'
 
+const MarkdownEditor = React.lazy(()=>import('agentic-design-system/react/rich-text').then(module=>({default:module.MarkdownEditor})))
 const MissionDashboard = React.lazy(() => import('@/features/agent-ready/AgentMissionDashboardView'))
 const CodebaseGraphExplorer = React.lazy(async () => ({
   default: (await import('@/features/agent-ready/AgentMissionDashboardView')).MissionGraphExplorer,
@@ -272,13 +273,13 @@ export default function ObservabilityWorkspace() {
       {localHost && repository && <section aria-label="Target UI observation record" className="rounded border p-4 space-y-3">
         <h2 className="font-semibold">Target UI observation record</h2>
         <p className="text-sm">Record what was actually visible and the inspection action. This operator-entered record is kept distinct from retained agent traces and source facts.</p>
-        <form className="grid gap-3 sm:grid-cols-2" onSubmit={addManualObservation}>
+        <React.Suspense fallback={<p role="status">Loading text controls…</p>}><form className="grid gap-3 sm:grid-cols-2" onSubmit={addManualObservation}>
           <label className="grid gap-1 text-sm">Target route<PanelTextInput name="route" required maxLength={512} className={button} placeholder="/settings or app route" /></label>
           <label className="grid gap-1 text-sm">Inspection method<SemanticSelect name="method" className={button} defaultValue="browser"><option value="browser">Browser</option><option value="accessibility">Accessibility tree</option><option value="operator-note">Operator note</option></SemanticSelect></label>
-          <label className="grid gap-1 text-sm sm:col-span-2">Visible state<textarea name="visibleState" required maxLength={2000} className="min-h-20 rounded border bg-transparent p-2" placeholder="Describe the visible state; avoid secrets and personal data." /></label>
-          <label className="grid gap-1 text-sm sm:col-span-2">Inspection action and outcome<textarea name="action" required maxLength={1000} className="min-h-16 rounded border bg-transparent p-2" placeholder="For example: inspected the displayed page without activating controls." /></label>
+          <label className="grid gap-1 text-sm sm:col-span-2">Visible state<MarkdownEditor aria-label="Visible state" name="visibleState" required maxLength={2000} className="min-h-20 rounded border bg-transparent p-2" placeholder="Describe the visible state; avoid secrets and personal data." /></label>
+          <label className="grid gap-1 text-sm sm:col-span-2">Inspection action and outcome<MarkdownEditor aria-label="Inspection action and outcome" name="action" required maxLength={1000} className="min-h-16 rounded border bg-transparent p-2" placeholder="For example: inspected the displayed page without activating controls." /></label>
           <div className="sm:col-span-2"><button type="submit" className={button}>Record observation</button></div>
-        </form>
+        </form></React.Suspense>
         {manualObservation && <p role="status" className="text-sm">Recorded at {manualObservation.observedAt} · {manualObservation.method} · {manualObservation.route}: {manualObservation.action}</p>}
       </section>}
       {localHost && repository && <div className="flex flex-wrap items-center gap-3"><button type="button" className={button} onClick={exportDossier}>Download local evidence dossier</button><span className="text-sm">Export omits source text and marks unverified observations and static-analysis limits.</span></div>}

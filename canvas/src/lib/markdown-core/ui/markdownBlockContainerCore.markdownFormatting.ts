@@ -1,3 +1,4 @@
+import { clearMarkdownFormatting } from 'agentic-design-system/markdown'
 import React from 'react'
 import { applyMarkdownFormatAction, type MarkdownFormatAction } from 'grph-shared/markdown/formatting'
 import { areReplacementLinesNoop } from '@/features/markdown/ui/markdownEditParitySsot'
@@ -476,10 +477,7 @@ export const useMarkdownBlockContainerMarkdownFormatting = (args: {
     const text = args.getDraft()
     const start = Math.min(startOffset, endOffset)
     const end = Math.max(startOffset, endOffset)
-    let selected = text.slice(start, end)
-    selected = selected.replace(/^\*\*([\s\S]*?)\*\*$/g, '$1').replace(/^\*([\s\S]*?)\*$/g, '$1').replace(/^~~([\s\S]*?)~~$/g, '$1').replace(/^`([\s\S]*?)`$/g, '$1')
-    selected = selected.replace(/^`(#[0-9a-fA-F]{6})?(\|?bg#[0-9a-fA-F]{6})?:(.+)`$/g, '$3').replace(/^==`(#[0-9a-fA-F]{6})?(\|?bg#[0-9a-fA-F]{6})?:(.+)`==$/g, '$3').replace(/^==([\s\S]*?)==$/g, '$1')
-    selected = selected.replace(/^<u>([\s\S]*?)<\/u>$/gi, '$1').replace(/^<mark>([\s\S]*?)<\/mark>$/gi, '$1').replace(/^<span[^>]*>([\s\S]*?)<\/span>$/gi, '$1').replace(/^\[([\s\S]*?)\]\((?:[^)]*)\)$/g, '$1')
+    const selected = clearMarkdownFormatting(text.slice(start,end))
     args.setDraftToDom(`${text.slice(0, start)}${selected}${text.slice(end)}`, { startOffset: start, endOffset: start + selected.length })
     queueMicrotask(() => args.editorRef.current?.focus())
   }, [args])

@@ -28,7 +28,7 @@ export async function testCanvasEmbedCodePanelReusesSharedCodeBlockControls(): P
     }
     const copyButton = container.querySelector('[aria-label="Copy code to clipboard"]')
     if (!copyButton) throw new Error('expected the shared code-block copy control')
-    const closeButton = container.querySelector('[aria-label="Close share code panel"]') as HTMLButtonElement | null
+    const closeButton = container.querySelector('[data-agentic-panel-control="close"][aria-label="Close"]') as HTMLButtonElement | null
     if (!closeButton) throw new Error('expected the embed panel close control')
     await act(async () => {
       closeButton.click()

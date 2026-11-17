@@ -375,7 +375,7 @@ export function assertPhase1(fixture: SourceFixture) {
     throw new Error('Expected Kanban cards and lanes to reuse shared drag ghost/emphasis and commit flash visuals instead of local styling branches')
   }
 
-  if (smallIconActionSurfaces.some(text => !text.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME')) || smallIconActionSurfaces.some(text => text.includes('inline-flex items-center justify-center w-7 h-7') || text.includes('h-7 w-7'))) {
+  if (smallIconActionSurfaces.some(text => !text.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') && !text.includes("export { ExpandCollapseAllButton as default } from 'agentic-design-system/react/panels'")) || smallIconActionSurfaces.some(text => text.includes('inline-flex items-center justify-center w-7 h-7') || text.includes('h-7 w-7'))) {
     throw new Error('Expected compact icon action surfaces to use the shared small icon action owner')
   }
 }

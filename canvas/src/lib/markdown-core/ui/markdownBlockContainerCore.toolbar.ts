@@ -9,17 +9,4 @@ export const resolveTurnIntoFormatAction = (next: string): MarkdownFormatAction 
   return null
 }
 
-export const toggleHeadingAcrossLines = (args: { text: string; level: 1 | 2 | 3 }): string => {
-  const hashes = '#'.repeat(args.level) + ' '
-  const lines = String(args.text || '').split(/\r?\n/)
-  const allHave = lines.every(l => !l.trim() || l.startsWith(hashes))
-  return lines
-    .map(l => {
-      if (!l.trim()) return l
-      if (allHave) return l.startsWith(hashes) ? l.slice(hashes.length) : l
-      if (/^#{1,6}\s+/.test(l)) return l.replace(/^#{1,6}\s+/, hashes)
-      return `${hashes}${l}`
-    })
-    .join('\n')
-}
-
+export { toggleHeadingAcrossLines } from 'agentic-design-system/markdown'

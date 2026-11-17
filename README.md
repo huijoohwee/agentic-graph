@@ -462,3 +462,5 @@ from `agentic-design-system/react/panels`. Graph retains product decorations, sa
 expansion state and canvas/timeline interactions. The old section import paths
 are pure contract exports; no competing renderer or keyboard handler remains.
 The Canvas observability entry consumes these same shared headers and scrolling.
+
+Markdown semantic commands, source transforms, parser configuration, the selection toolbar and palette controls consume exact Design System exports. Graph retains document selection/commit state, product slash/variable catalogs, graph swatches and overlay placement. Generic source/DOM renderers are not retained locally. Canvas uses this native entry at an exact Graph pin.

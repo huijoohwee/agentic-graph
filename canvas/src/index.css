@@ -4,7 +4,7 @@
 @import 'katex/dist/katex.min.css';
 @import './styles/kgTokens.generated.css';
 @import './styles/application-typography.css';
-@import './styles/semantic-colour-palette.css';
+@import 'agentic-design-system/rich-text.css';
 @import './styles/shared-borders.css';
 @import './styles/shared-ui-profile.css';
 @import './styles/responsive-toolbar.css';
