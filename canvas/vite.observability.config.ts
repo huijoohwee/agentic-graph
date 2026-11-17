@@ -28,7 +28,7 @@ export default defineConfig(async environment => {
       { find: /^@\/hooks\/useGraphStore$/, replacement: path.join(canvasRoot, 'src/features/observability-workspace/readOnlyGraphCanvasStore.ts') },
       ...nativeAliases,
     ] }, esbuild: native.esbuild, define: native.define, worker: native.worker,
-    optimizeDeps: { ...native.optimizeDeps, include: ['react', 'react-dom/client', 'd3', 'dagre', 'agentic-design-system/ktv', 'agentic-design-system/react/ktv', 'agentic-design-system/react/hover', 'agentic-design-system/hover', 'agentic-design-system/hover/text'] },
+    optimizeDeps: { ...native.optimizeDeps, include: ['react', 'react-dom/client', 'd3', 'dagre', 'agentic-design-system/ktv', 'agentic-design-system/react/ktv', 'agentic-design-system/react/hover', 'agentic-design-system/hover', 'agentic-design-system/hover/text', 'agentic-design-system/react/panels'] },
     plugins: [react(), tailwindcss(), createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories }),
       createObservabilityBuildManifestPlugin({ sourceRevision: git(['rev-parse', 'HEAD']),
         sourceDirty: Boolean(git(['status', '--porcelain', '--untracked-files=normal'])), workspaceManifestDigest: workspace.digest,

@@ -1,5 +1,6 @@
 import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React from 'react'
+import { SettingsSectionHeader, PanelScrollRegion } from 'agentic-design-system/react/panels'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { defaultSchema } from '@/lib/graph/schema'
 import type { GraphData } from '@/lib/graph/types'
@@ -234,9 +235,9 @@ export default function ObservabilityWorkspace() {
     anchor.href = url; anchor.download = 'software-forensics-dossier.json'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   return <main className={`min-h-screen min-w-0 p-4 sm:p-6 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`}>
-    <div className="mx-auto max-w-7xl space-y-5">
-      <header className="space-y-2"><h1 className="text-xl font-semibold">{manifest?.title ?? 'Observability workspace'}</h1>
-        <p className="text-sm">Inspect bounded source evidence. Source execution, native parsing, and evaluation are unavailable here.</p></header>
+    <PanelScrollRegion aria-label="Workspace panels" className="mx-auto max-w-7xl space-y-5" style={{ '--agentic-scroll-block-size': 'calc(100dvh - 3rem)' } as React.CSSProperties}>
+      <SettingsSectionHeader stickyHeader title={<section className="space-y-2"><h1 className="text-xl font-semibold">{manifest?.title ?? 'Observability workspace'}</h1>
+        <p className="text-sm">Inspect bounded source evidence. Source execution, native parsing, and evaluation are unavailable here.</p></section>} />
       <section aria-label="Repository selection" className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">Repository<PanelSelect aria-label="Repository" className={button} value={repository} onValueChange={choose}>
           <option value="">Select a repository</option>{manifest?.repositories.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}</PanelSelect></label>
@@ -310,6 +311,6 @@ export default function ObservabilityWorkspace() {
           {observation.sourceDirty && <p role="status" className="text-sm">The local index contains uncommitted source; no immutable Git revision is assigned.</p>}
         </>}
       </>}
-    </div>
+    </PanelScrollRegion>
   </main>
 }

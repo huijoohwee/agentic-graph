@@ -1,7 +1,7 @@
 import React from 'react'
 import { useDashboardWidgets, updateDashboardWidget } from './dashboardWidgetConfiguration'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
-import { DashboardWidgetDisclosure as Disclosure } from '@agentic-base/views-react/dashboard'
+import { PanelDisclosure as Disclosure } from 'agentic-design-system/react/panels'
 
 export function useDashboardWidgetExpansion(id?: string) {
   const { document } = useDashboardWidgets(), expanded = !id || document.widgets[id]?.expanded !== false
@@ -11,5 +11,5 @@ export function useDashboardWidgetExpansion(id?: string) {
 /** Native disclosure keeps its children mounted: hiding evidence never restarts an observer. */
 export default function DashboardWidgetDisclosure({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   const { expanded, setExpanded } = useDashboardWidgetExpansion(id)
-  return <Disclosure id={id} title={renderMarkdownSigilInlineText(title)} expanded={expanded} onExpandedChange={setExpanded}>{children}</Disclosure>
+  return <Disclosure data-dashboard-disclosure={id} id={id} title={renderMarkdownSigilInlineText(title)} expanded={expanded} onExpandedChange={setExpanded}>{children}</Disclosure>
 }

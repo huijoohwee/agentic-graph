@@ -267,7 +267,7 @@ export function GraphRagWorkflowSection({
         headerClassName="px-0"
         collapsed={tracingCollapsed}
         onToggle={onToggleTracingCollapsed}
-        stickyOffsetClassName="top-6"
+        stickyOffset="1.5rem"
       >
         <section className={`space-y-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>
           <section>

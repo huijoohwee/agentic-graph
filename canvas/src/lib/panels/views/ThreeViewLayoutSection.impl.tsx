@@ -356,7 +356,7 @@ export default function ThreeViewLayoutSection({
       collapsed={collapsed}
       onToggle={onToggle}
       headerClassName="px-0"
-      stickyOffsetClassName="top-6"
+      stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>
         {rangeRows.map(row => (

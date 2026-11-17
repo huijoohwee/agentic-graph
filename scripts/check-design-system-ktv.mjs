@@ -10,7 +10,7 @@ assert(geo.includes("from 'agentic-design-system/react/ktv'"));assert(!geo.inclu
 assert(!form.includes('KTV_FIELD_GRID_CLASS_NAME'),'form fields must use the same renderer')
 const base=read('node_modules/@agentic-base/views-react/packages/views-react/src/controls/MenuControls.tsx')
 assert(!base.includes('function KeyTypeValueRow'),'the installed Base source cannot retain the row renderer')
-for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#98807b856ab35bac53c54987d4340cd37982d3ec')
+for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#27acab93cf99eac2b8b4f250840e01a2f61eb78b')
 console.log('PASS direct Design System KTV ownership; no Base, form or geospatial row variant')
 
 assert(read('canvas/src/features/panels/views/graph-fields/GraphFieldsPanelControls.tsx').includes("from '@/lib/ui/panelFormControls'"))
@@ -32,3 +32,12 @@ console.log('PASS direct Design System hover ownership; no local panel, title de
 
 assert(read('node_modules/agentic-design-system/site/key-type-value.js').includes('export function createKeyTypeValueRows'))
 assert(read('node_modules/agentic-design-system/packages/react-ktv/src/index.tsx').includes('key={row.id}'))
+
+for (const [file, symbol] of [['CollapsibleSection.tsx', 'CollapsibleSection as default'], ['ExpandCollapseAllButton.tsx', 'ExpandCollapseAllButton as default'], ['useCollapsibleSectionGroup.ts', 'useCollapsibleSectionGroup']]) {
+  const source = read(`canvas/src/features/panels/ui/${file}`)
+  assert(source.includes(symbol) && source.includes("from 'agentic-design-system/react/panels'"))
+  assert(!/function |useState|onKeyDown|onClick|position:|overflow-/.test(source), 'Graph section contracts cannot retain an implementation')
+}
+assert(read('canvas/src/features/panels/ui/MainPanelBody.tsx').includes('PanelScrollRegion'))
+assert(read('canvas/src/features/observability-workspace/ObservabilityWorkspace.tsx').includes('PanelScrollRegion'))
+console.log('PASS direct Design System section, collapse-group and scrolling ownership')

@@ -34,7 +34,7 @@ type SettingsSectionsProps = {
   renderAreaIntro?: (area: string) => React.ReactNode
   setExpanded: React.Dispatch<React.SetStateAction<string | null>>
   flushFirstSectionTop?: boolean
-  stickyOffsetClassName: string
+  stickyOffset: string
   toggleArea: (area: string, nextCollapsed?: boolean) => void
   values: Record<string, string | number | boolean>
 }
@@ -109,7 +109,7 @@ export function SettingsSections({
   renderAreaIntro,
   setExpanded,
   flushFirstSectionTop = false,
-  stickyOffsetClassName,
+  stickyOffset,
   toggleArea,
   values,
 }: SettingsSectionsProps) {
@@ -151,7 +151,7 @@ export function SettingsSections({
         }
         collapsed={collapsed}
         flushTop={flushFirstSectionTop && shouldFlushKeyTypeValueSectionTop(index)}
-        stickyOffsetClassName={stickyOffsetClassName}
+        stickyOffset={stickyOffset}
         onToggle={next => {
           if (normalizedQuery) return
           toggleArea(area, next)

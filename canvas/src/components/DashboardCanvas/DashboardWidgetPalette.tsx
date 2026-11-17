@@ -1,6 +1,7 @@
 import React from 'react'
 import DashboardLayoutPanel from './DashboardLayoutPanel'
-import { DashboardPrimitive, DashboardWidgetDisclosure } from '@agentic-base/views-react/dashboard'
+import { DashboardPrimitive } from '@agentic-base/views-react/dashboard'
+import { PanelDisclosure as DashboardWidgetDisclosure } from 'agentic-design-system/react/panels'
 import { WidgetPaletteCardLayoutPreview } from '@/features/toolbar/WidgetPaletteCardLayoutPreview'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import DashboardWidgetFlip, { type DashboardTemplate } from './DashboardWidgetFlip'

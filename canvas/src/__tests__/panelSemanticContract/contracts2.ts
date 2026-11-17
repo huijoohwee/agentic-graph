@@ -44,8 +44,8 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
   const collapsibleSection = readUtf8(collapsibleSectionPath)
   const mainPanelSettingsPanelShell = readUtf8(mainPanelSettingsPanelShellPath)
   const centralSectionCss = readUtf8(path.resolve(root, 'src/styles/shared-ui-profile.css'))
-  if (!collapsibleSection.includes('<SettingsSectionHeader') || !collapsibleSection.includes("from '@agentic-base/views-react/settings'")) {
-    throw new Error('Expected collapsible headers to reuse the Base renderer')
+  if (!collapsibleSection.includes('CollapsibleSection as default') || !collapsibleSection.includes("from 'agentic-design-system/react/panels'")) {
+    throw new Error('Expected collapsible headers to reuse the Design System renderer')
   }
   if (!centralSectionCss.includes('.agentic-panel-section-title') || !centralSectionCss.includes('.agentic-panel-section-actions')) {
     throw new Error('Expected central header title/action layout for responsive bounds')

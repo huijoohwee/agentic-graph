@@ -63,7 +63,7 @@ import {
 import { WorkspaceStorageOwnershipRow } from './WorkspaceStorageOwnershipRow'
 
 const WORKSPACE_IMPORT_ACCEPT = [...SOURCE_FILES_FORMATS.import, '.mdx'].join(',')
-const SETTINGS_MAIN_HEADER_STICKY_OFFSET_CLASS = 'top-9'
+const SETTINGS_MAIN_HEADER_STICKY_OFFSET = '2.25rem'
 const CANVAS_EMBED_SETTINGS_AREA = 'Canvas Embed'
 const CROSS_DEVICE_IDENTITY_SETTINGS_AREA = 'Cross-device Identity Gate'
 const DOCUMENT_STORAGE_SYNC_SETTINGS_AREA = 'Document Storage & Sync'
@@ -532,7 +532,7 @@ export default function SettingsView({
             renderAreaIntro={renderSettingsAreaIntro}
             setExpanded={setExpanded}
             flushFirstSectionTop={!headerHasToolbarStrip}
-            stickyOffsetClassName={SETTINGS_MAIN_HEADER_STICKY_OFFSET_CLASS}
+            stickyOffset={SETTINGS_MAIN_HEADER_STICKY_OFFSET}
             toggleArea={toggleArea}
             values={values}
           />
