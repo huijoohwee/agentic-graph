@@ -362,14 +362,14 @@
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/73bf77869d75c60eff687a7e7dbec72ae39be2b2",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#27acab93cf99eac2b8b4f250840e01a2f61eb78b",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/d3430c8da71b0128b644040bfd1ef32d9f36c50e",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
-    "yjs": "^13.6.31",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#27acab93cf99eac2b8b4f250840e01a2f61eb78b"
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
