@@ -230,8 +230,8 @@ export default function SkillsCommandsView({
       >
         {catalogStatusText}
       </p>
-      <section className="agentic-collection" data-kg-floating-panel-catalog-list-rows={layout === 'list' ? FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT : layout}>
-        {entryGroups.map((group, index) => {
+      <section className="agentic-collection agentic-skills-groups" data-kg-floating-panel-catalog-list-rows={layout === 'list' ? FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT : layout}>
+        {entryGroups.map(group => {
           const groupCollapsed = collapsedGroupKeys.has(group.key)
           return (
             <section
@@ -242,18 +242,18 @@ export default function SkillsCommandsView({
               data-kg-skills-commands-grammar-group-collapsed={groupCollapsed ? 'true' : 'false'}
             >
               <CollapsibleSection
+                headingAs="h3"
                 title={(
-                  <span className="flex min-w-0 items-center justify-between gap-2" aria-label={`Skills & Commands ${grammarGroupBy} group`}>
-                    <span className={cn('m-0 truncate text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{group.label}</span>
-                    <span className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{group.entries.length}</span>
+                  <span className="agentic-skills-group-label">
+                    <span>{group.label}</span>{' '}<span>{group.entries.length}</span>
                   </span>
                 )}
                 collapsed={groupCollapsed}
                 onToggle={nextCollapsed => handleToggleGroup(group.key, nextCollapsed)}
                 defaultCollapsed={false}
-                flushTop={index === 0}
+                flushTop
                 id={buildSkillsCommandsGroupContentId(group.key)}
-                className="mt-1 border-t pt-1"
+                className="agentic-skills-group-section"
               >
                 <section className="agentic-collection agentic-skills-list" data-layout={layout} data-kg-skills-commands-grammar-group-rows={group.key}>
                   {group.entries.map(({ grammar, option }) => {
@@ -314,9 +314,9 @@ export default function SkillsCommandsView({
                           />
                         </span>
                         <section className="min-w-0" aria-label={`${option.label} invocation summary`}>
-                          <h3 className="agentic-collection-title" title={sourceTitle}>
+                          <div className="agentic-collection-title" title={sourceTitle}>
                             {option.label}
-                          </h3>
+                          </div>
                           <p className="agentic-collection-meta" title={sourceTitle}>
                             {option.group}
                           </p>
