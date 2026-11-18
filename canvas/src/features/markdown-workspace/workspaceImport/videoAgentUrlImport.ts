@@ -29,6 +29,7 @@ import {
   buildVideoAgentTranscriptImportArtifacts,
   readVideoAgentTranscriptDurationMs,
 } from './videoAgentTranscriptImportArtifacts'
+import { buildVideoAgentImportSidecars } from './videoAgentImportSidecars'
 import { yamlQuote } from './yaml'
 
 type VideoAgentUrlImportDocumentArgs = {
@@ -37,6 +38,11 @@ type VideoAgentUrlImportDocumentArgs = {
   sourceTranscriptJsonText?: string | null
   sourceUrl: string
   workspaceOutputRoot?: WorkspacePath | null
+}
+
+type VideoAgentUrlImportBundle = {
+  markdown: string
+  workspaceFiles: Array<{ path: WorkspacePath; text: string }>
 }
 
 const SOURCE_SPEC_NODE_ID = 'html_video_source_spec'
@@ -116,7 +122,7 @@ export function buildVideoAgentUrlImportDocumentName(args: { sourceName?: string
   return `${base}.video-agent.md`
 }
 
-export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocumentArgs): string {
+function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): VideoAgentUrlImportBundle {
   const sourceUrl = cleanInline(args.sourceUrl)
   const workspaceOutputRoot = normalizeWorkspacePath(args.workspaceOutputRoot || VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH)
   const transcriptDurationMs = readTranscriptDurationMs(args)
@@ -181,7 +187,6 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   if (!sourceVideoTrack || !annotationTrack || !annotationSpan) throw new Error('Video import annotation source linkage is missing')
   const flowchartCode = buildVideoAgentProcessFlowchartCode(pipeline.stages)
   const youtubeId = getYouTubeId(sourceUrl)
-
   const lines: string[] = [
     '---',
     '$schema: "agentic-os-pipeline/v1"',
@@ -541,7 +546,18 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   if (new TextEncoder().encode(markdown).byteLength > URL_IMPORT_DOCUMENT_BYTE_LIMIT) {
     throw new Error('Video import exceeds the 500 KB preview document limit. Import a shorter transcript or segment.')
   }
-  return markdown
+  return {
+    markdown,
+    workspaceFiles: buildVideoAgentImportSidecars({
+      pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl, youtubeId,
+      sourceName: cleanInline(args.sourceName), sourceText: String(args.sourceText || ''),
+      sourceTranscriptJsonText: String(args.sourceTranscriptJsonText || ''),
+    }),
+  }
+}
+
+export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocumentArgs): string {
+  return buildVideoAgentUrlImportBundle(args).markdown
 }
 
 export async function materializeVideoAgentUrlImportDocument(args: {
@@ -558,7 +574,8 @@ export async function materializeVideoAgentUrlImportDocument(args: {
     outputFolderPath,
     buildVideoAgentUrlImportDocumentName(args),
   )
-  const text = buildVideoAgentUrlImportMarkdown({ ...args, workspaceOutputRoot: outputFolderPath })
+  const bundle = buildVideoAgentUrlImportBundle({ ...args, workspaceOutputRoot: outputFolderPath })
+  const text = bundle.markdown
   await writeWorkspaceFileTextEnsuringFile({
     fs: args.fs,
     path: createdPath,
@@ -566,5 +583,13 @@ export async function materializeVideoAgentUrlImportDocument(args: {
   })
   await ensureWorkspaceDocsMirrorFolder({ workspacePath: outputFolderPath })
   await upsertWorkspaceDocsMirrorText({ workspacePath: createdPath, text })
+  for (const file of bundle.workspaceFiles) {
+    await writeWorkspaceFileTextEnsuringFile({
+      fs: args.fs,
+      path: file.path,
+      text: file.text,
+    })
+    await upsertWorkspaceDocsMirrorText({ workspacePath: file.path, text: file.text })
+  }
   return normalizeWorkspacePath(createdPath)
 }

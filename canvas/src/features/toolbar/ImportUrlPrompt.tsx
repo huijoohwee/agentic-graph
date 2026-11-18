@@ -11,6 +11,11 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { cn } from '@/lib/utils'
 
+export type ImportUrlPromptPreset = {
+  label: string
+  value: string
+}
+
 export function ImportUrlPrompt(props: {
   urlDraft: string
   onChange: (next: string) => void
@@ -22,6 +27,7 @@ export function ImportUrlPrompt(props: {
   disabled?: boolean
   rightAddon?: React.ReactNode
   enablePageCapture?: boolean
+  presetOptions?: ReadonlyArray<ImportUrlPromptPreset>
 }) {
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const urlDraft = props.urlDraft
@@ -36,6 +42,22 @@ export function ImportUrlPrompt(props: {
   const [pageCaptureStatus, setPageCaptureStatus] = React.useState<{ kind: 'ready' | 'error'; message: string } | null>(null)
   const pageCaptureRef = React.useRef<{ requestUrl: string; sourceUrl: string } | null>(null)
   const lastDraftRef = React.useRef(normalizedDraft)
+  const presetOptions = React.useMemo(() => {
+    const provided = props.presetOptions
+    if (provided) {
+      const seen = new Set<string>()
+      return provided.filter(option => {
+        const value = String(option?.value || '').trim()
+        if (!value || seen.has(value)) return false
+        seen.add(value)
+        return true
+      })
+    }
+    const defaults: ImportUrlPromptPreset[] = []
+    if (WORKSPACE_IMPORT_URL_TEST) defaults.push({ label: 'Test URL', value: WORKSPACE_IMPORT_URL_TEST })
+    if (WORKSPACE_IMPORT_IMAGE_URL_TEST) defaults.push({ label: 'Test image', value: WORKSPACE_IMPORT_IMAGE_URL_TEST })
+    return defaults
+  }, [props.presetOptions])
 
   React.useEffect(() => {
     if (lastDraftRef.current === normalizedDraft) return
@@ -140,10 +162,11 @@ export function ImportUrlPrompt(props: {
 
   return (
     <section className="kg-import-url-prompt min-w-0" aria-label="URL import controls">
-      {(WORKSPACE_IMPORT_URL_TEST || WORKSPACE_IMPORT_IMAGE_URL_TEST) ? (
+      {presetOptions.length > 0 ? (
         <section className="kg-import-url-presets mb-1 flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain">
-          {WORKSPACE_IMPORT_URL_TEST ? (
+          {presetOptions.map(option => (
             <button
+              key={`${option.label}:${option.value}`}
               type="button"
               className={cn(
                 UI_RESPONSIVE_IMPORT_URL_PRESET_ACTION_CLASSNAME,
@@ -152,26 +175,11 @@ export function ImportUrlPrompt(props: {
                 UI_THEME_TOKENS.button.text,
                 UI_THEME_TOKENS.button.hoverBg,
               )}
-              onClick={() => onChange(WORKSPACE_IMPORT_URL_TEST)}
+              onClick={() => onChange(option.value)}
             >
-              Test URL
+              {option.label}
             </button>
-          ) : null}
-          {WORKSPACE_IMPORT_IMAGE_URL_TEST ? (
-            <button
-              type="button"
-              className={cn(
-                UI_RESPONSIVE_IMPORT_URL_PRESET_ACTION_CLASSNAME,
-                'rounded border text-xs',
-                UI_THEME_TOKENS.input.border,
-                UI_THEME_TOKENS.button.text,
-                UI_THEME_TOKENS.button.hoverBg,
-              )}
-              onClick={() => onChange(WORKSPACE_IMPORT_IMAGE_URL_TEST)}
-            >
-              Test image
-            </button>
-          ) : null}
+          ))}
         </section>
       ) : null}
 

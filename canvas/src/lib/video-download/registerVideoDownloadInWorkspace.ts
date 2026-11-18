@@ -1,12 +1,64 @@
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
+import { formatWorkspaceImportTranscriptStatusLine } from '@/features/markdown-workspace/workspaceImport/transcriptImportText'
+import { resolveDownloadedMediaAccessUrl } from '@/lib/url'
+import type { RemoteMarkdownConversionResult } from '@/lib/net/remoteMarkdownConversions'
+import { getYouTubeId } from 'grph-shared/rich-media/providers'
 import type { VideoDownloadResultOk } from './types'
 
 export type RegisterVideoDownloadResult =
   | { ok: true; workspacePath: WorkspacePath }
   | { ok: false; error: string }
 
-function buildDownloadDocumentText(result: VideoDownloadResultOk): string {
-  const fileUrl = String(result.fileUrl || '').trim()
+const stripLeadingTranscriptPresentation = (markdown: string): string => {
+  let text = String(markdown || '').replace(/\r/g, '')
+  if (text.startsWith('---\n')) {
+    const end = text.indexOf('\n---\n', 4)
+    if (end >= 0) text = text.slice(end + 5)
+  }
+  const lines = text.split('\n')
+  while (lines[0] && !lines[0].trim()) lines.shift()
+  if (/^#\s+/.test(lines[0] || '')) {
+    lines.shift()
+    while (lines[0] && !lines[0].trim()) lines.shift()
+  }
+  if (
+    /^\[!\[[^\]]*\]\([^)]+\)\]\([^)]+\)\s*$/.test(lines[0] || '')
+    || /^!\[[^\]]*\]\([^)]+\)\s*$/.test(lines[0] || '')
+  ) {
+    lines.shift()
+    while (lines[0] && !lines[0].trim()) lines.shift()
+  }
+  return lines.join('\n').trim()
+}
+
+async function buildDownloadTranscriptSection(args: {
+  result: VideoDownloadResultOk
+  fetchYouTubeTranscript?: (url: string) => Promise<RemoteMarkdownConversionResult | null>
+}): Promise<string[]> {
+  const sourceUrl = String(args.result.sourceUrl || '').trim()
+  if (!getYouTubeId(sourceUrl)) return []
+  const fetchYouTubeTranscript = args.fetchYouTubeTranscript || (async (url: string) => {
+    const { fetchYouTubeTranscriptMarkdown } = await import('@/lib/net/remoteMarkdownConversions')
+    return fetchYouTubeTranscriptMarkdown(url)
+  })
+  const converted = await fetchYouTubeTranscript(sourceUrl)
+  if (converted?.ok === true) {
+    const transcriptBody = stripLeadingTranscriptPresentation(converted.markdown)
+    if (transcriptBody) return ['', '## Transcript', '', transcriptBody]
+  }
+  const transcriptStatus = converted?.ok === false
+    ? formatWorkspaceImportTranscriptStatusLine(converted.error)
+    : formatWorkspaceImportTranscriptStatusLine('Transcript unavailable')
+  return ['', '## Transcript', '', transcriptStatus]
+}
+
+async function buildDownloadDocumentText(args: {
+  result: VideoDownloadResultOk
+  fetchYouTubeTranscript?: (url: string) => Promise<RemoteMarkdownConversionResult | null>
+}): Promise<string> {
+  const result = args.result
+  const fileUrl = resolveDownloadedMediaAccessUrl(result)
+  const transcriptSection = await buildDownloadTranscriptSection(args)
   return [
     '---',
     `kgVideoDownloadFileName: ${JSON.stringify(result.fileName)}`,
@@ -26,12 +78,14 @@ function buildDownloadDocumentText(result: VideoDownloadResultOk): string {
     `MIME type: ${result.mimeType}`,
     `Size bytes: ${result.sizeBytes}`,
     `Source URL: ${result.sourceUrl}`,
+    ...transcriptSection,
   ].join('\n')
 }
 
 export async function registerVideoDownloadInWorkspace(args: {
   result: VideoDownloadResultOk
   fs?: WorkspaceFs
+  fetchYouTubeTranscript?: (url: string) => Promise<RemoteMarkdownConversionResult | null>
 }): Promise<RegisterVideoDownloadResult> {
   try {
     const [
@@ -52,7 +106,7 @@ export async function registerVideoDownloadInWorkspace(args: {
       fs,
       parentPath: WORKSPACE_ROOT_PATH,
       name: `${args.result.fileName}.md`,
-      text: buildDownloadDocumentText(args.result),
+      text: await buildDownloadDocumentText(args),
     })
     setWorkspaceEntrySource(workspacePath, { kind: 'url', url: args.result.sourceUrl })
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: workspacePath })

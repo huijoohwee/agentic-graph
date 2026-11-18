@@ -250,7 +250,6 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
   }
 }
 
-
 export async function testActiveWorkspaceRefreshPreservesConcurrentSourceChanges() {
   const { restore } = initJsdomHarness()
   const previousGraph = useGraphStore.getState()

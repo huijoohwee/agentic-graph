@@ -1,0 +1,123 @@
+import { VIDEO_AGENT_SCHEMA_VERSION, type VideoAgentPipeline } from '@/features/video-agent'
+import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import type { WorkspacePath } from '@/features/workspace-fs/types'
+import type { buildVideoAgentTranscriptImportArtifacts } from './videoAgentTranscriptImportArtifacts'
+
+type SidecarInput = {
+  pipeline: VideoAgentPipeline
+  renderData: Record<string, unknown>
+  transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>
+  sourceUrl: string
+  sourcePlaybackUrl: string
+  sourceName: string
+  sourceText: string
+  sourceTranscriptJsonText: string
+  youtubeId: string | null
+}
+
+const jsonFileText = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
+
+export function buildVideoAgentImportSidecars({
+  pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl,
+  sourceName, sourceText, sourceTranscriptJsonText, youtubeId,
+}: SidecarInput) {
+  const { renderSpec } = pipeline
+  const workspaceFiles = renderData.workspaceFiles as Array<{ kind?: unknown; path?: unknown; role?: unknown }>
+  const fileTextByPath = new Map<WorkspacePath, string>()
+  const sourceManifest = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:source-manifest`,
+    sourceUrl,
+    sourceName: sourceName,
+    youtubeId: youtubeId || undefined,
+    sourceText: sourceText,
+    sourceTranscriptJsonText: sourceTranscriptJsonText,
+    sourceVideo: renderData.sourceVideo,
+    transcriptStatus: transcriptArtifacts.sourceTranscript.status,
+    transcriptSegmentCount: transcriptArtifacts.sourceTranscript.segmentCount,
+  }
+  const parseOutput = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:parse-output`,
+    sourceUrl,
+    sourceTranscript: transcriptArtifacts.sourceTranscript,
+    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
+    frameBoundingBoxes: pipeline.frameBoundingBoxes,
+    frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
+  }
+  const searchIndex = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:search-index`,
+    sourceUrl,
+    frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
+    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
+  }
+  const timelineManifest = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:timeline`,
+    sourceUrl,
+    timelineTracks: pipeline.timelineTracks,
+    timelineLanes: (renderData.timelineLanes || []) as unknown,
+    bottomPanelTimelineSync: renderData.bottomPanelTimelineSync,
+  }
+  const generatedAssets = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:generation-plan`,
+    sourceUrl,
+    intent: pipeline.intent,
+    stages: pipeline.stages,
+    reasoningArtifacts: pipeline.reasoningArtifacts.filter(artifact => artifact.capability === 'generate'),
+    richMediaPanels: renderData.richMediaPanels,
+  }
+  const streamManifest = {
+    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:stream-output`,
+    sourceUrl,
+    stream: pipeline.stream,
+    sourcePlaybackUrl,
+    richMediaPanels: renderData.richMediaPanels,
+    renderSpec: {
+      durationMs: renderSpec.durationMs,
+      fps: renderSpec.fps,
+      width: renderSpec.width,
+      height: renderSpec.height,
+      engineHint: renderSpec.engineHint,
+    },
+  }
+  const renderHtmlText = [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    `<title>${sourceUrl}</title>`,
+    '<style>',
+    renderSpec.css,
+    '</style>',
+    '</head>',
+    '<body>',
+    renderSpec.html,
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n')
+  const artifactTextByName: Record<string, string> = {
+    'source.json': jsonFileText(sourceManifest),
+    'dataset-operations.json': jsonFileText({
+      schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:dataset-operation-summary`,
+      sourceUrl,
+      datasetOperationSummary: pipeline.datasetRuntime.datasetOperationSummary,
+      datasetSplitSummary: pipeline.datasetRuntime.datasetSplitSummary,
+      savedDatasetArtifact: pipeline.datasetRuntime.savedDatasetArtifact,
+    }),
+    'visual-dataset.json': jsonFileText(pipeline.datasetRuntime.visualDataset),
+    'zone-counts.json': jsonFileText(pipeline.datasetRuntime.zoneCounting),
+    'moments.json': jsonFileText(searchIndex),
+    'parse.json': jsonFileText(parseOutput),
+    'frame-boxes.json': jsonFileText(pipeline.frameBoundingBoxes),
+    'timeline.json': jsonFileText(timelineManifest),
+    'generated-assets.json': jsonFileText(generatedAssets),
+    'render.html': renderHtmlText,
+    'stream-manifest.json': jsonFileText(streamManifest),
+  }
+  for (const file of workspaceFiles) {
+    const path = normalizeWorkspacePath(String(file.path || ''))
+    const name = path.split('/').filter(Boolean).pop() || ''
+    const text = artifactTextByName[name]
+    if (path && text) fileTextByPath.set(path, text)
+  }
+  return Array.from(fileTextByPath, ([path, text]) => ({ path, text }))
+}
