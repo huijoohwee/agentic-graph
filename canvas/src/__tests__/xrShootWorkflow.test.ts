@@ -44,6 +44,7 @@ import {
   XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID,
 } from '@/features/three/xrShotTargets'
 import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { readXrNativeControllerCamera, selectXrNativeControllerCameraMode } from '@/features/three/xrNativeControllerCameraRuntime'
 function readSource(...parts: string[]): string { return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8') }
 function buildShootGraph(): GraphData {
   return {
@@ -55,6 +56,35 @@ function buildShootGraph(): GraphData {
 }
 function resetToNativeCameraGrammar() { resetAgenticOsRemoteGrammarCatalogForTests() }
 export function testXrShootWorkflowMarksRigsRetimeAndExports() {
+  const priorGraphState = useGraphStore.getState()
+  const priorCamera = readCameraFramingRuntime()
+  const priorCameraMode = readXrNativeControllerCamera().mode
+  try {
+    runXrShootWorkflow()
+  } finally {
+    resetToNativeCameraGrammar()
+    useGraphStore.setState({
+      markdownDocumentName: priorGraphState.markdownDocumentName,
+      markdownDocumentText: priorGraphState.markdownDocumentText,
+      graphData: priorGraphState.graphData,
+      selectedNodeId: priorGraphState.selectedNodeId,
+      canvasRenderMode: priorGraphState.canvasRenderMode,
+      canvas3dMode: priorGraphState.canvas3dMode,
+      floatingPanelOpen: priorGraphState.floatingPanelOpen,
+      floatingPanelView: priorGraphState.floatingPanelView,
+      bottomSurfaceTab: priorGraphState.bottomSurfaceTab,
+      bottomSurfaceCollapsed: priorGraphState.bottomSurfaceCollapsed,
+      timelineTransportDocumentKey: priorGraphState.timelineTransportDocumentKey,
+      timelineTransportPosition: priorGraphState.timelineTransportPosition,
+      timelineTransportPlaying: priorGraphState.timelineTransportPlaying,
+    })
+    hydrateCanonicalXrMotionReferenceRuntime()
+    publishCameraFramingRuntime({ anchorId: priorCamera.anchorId, settings: priorCamera.settings, source: priorCamera.source })
+    selectXrNativeControllerCameraMode(priorCameraMode)
+  }
+}
+
+function runXrShootWorkflow() {
   resetToNativeCameraGrammar(); const ownershipArgs = { mode: 'xr', xrEmptyWorld: false, cameraMarkCount: 1 } as const
   if (!xrChoreographyCanDriveCamera(ownershipArgs)
     || xrChoreographyOwnsCamera({ ...ownershipArgs, timelinePlaying: false })
@@ -357,9 +387,19 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
     || !brief.includes('drone rig, ease-in-out easing, Full Frame 36x24mm, 85mm, focus 2m, 2.39:1 delivery mask')) {
     throw new Error('expected the exported package to preserve camera rig, easing, sensor, zoom, focus, and aspect choreography')
   }
-  const priorCamera = readCameraFramingRuntime()
-  const priorGraphState = useGraphStore.getState()
-  useGraphStore.setState({ floatingPanelOpen: false, floatingPanelView: 'animation' } as never)
+  useGraphStore.setState({
+    markdownDocumentName: 'Shoot scene.md',
+    markdownDocumentText: '# Shoot scene',
+    graphData: { ...graphData, metadata: { [XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]: serializeXrMotionReferencePlan(shootPlan) } },
+    canvasRenderMode: '2d',
+    canvas3dMode: '3d',
+    selectedNodeId: null,
+    floatingPanelOpen: false,
+    floatingPanelView: 'animation',
+    timelineTransportPlaying: false,
+  })
+  if (!hydrateCanonicalXrMotionReferenceRuntime()) throw new Error('expected the authored Shoot scene to load')
+  setXrMotionReferencePlayhead(1)
   const freeOrbitResult = controlLocalCamera({ invocation: '/camera.select @camera #camera camera=free-orbit' })
   selectBoundXrShotTarget('actor-a')
   const targetSelectionState = { panel: useGraphStore.getState().floatingPanelView, camera: inspectLocalCamera().source.selected }
@@ -379,17 +419,20 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
     throw new Error(`expected Camera source selection to switch fixed follow/free orbit and fail closed, got ${JSON.stringify({ freeOrbitResult, fixedFollowResult, invalidCameraResult, invalidCameraSemantic })}`)
   }
   const cameraResult = controlLocalCamera({ invocation: '/camera.frame @camera #camera-shot angle=right-side level=high-angle shot=close-up sensor=65mm lens=85 focus=3.5 aspect=2.39:1' })
-  const controlledCamera = readCameraFramingRuntime()
+  const persistedFraming = useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]
+  const savedFraming = readXrMotionReferencePlan(persistedFraming, graphData.nodes).camera
+    .find(mark => mark.timeSeconds === 1)?.settings
   if (!cameraResult.ok
-    || controlledCamera.settings.angle !== 'right-side'
-    || controlledCamera.settings.level !== 'high-angle'
-    || controlledCamera.settings.shot !== 'close-up'
-    || controlledCamera.settings.sensorId !== '65mm'
-    || controlledCamera.settings.focalLengthMm !== 85
-    || controlledCamera.settings.focusDistanceMeters !== 3.5
-    || controlledCamera.settings.aspectRatio !== '2.39:1'
-    || useGraphStore.getState().floatingPanelView !== 'camera') {
-    throw new Error(`expected Camera MCP invocation to control the shared runtime, got ${JSON.stringify(cameraResult)}`)
+    || cameraResult.camera?.framing.source !== 'timeline'
+    || savedFraming?.angle !== 'right-side'
+    || savedFraming.level !== 'high-angle'
+    || savedFraming.shot !== 'close-up'
+    || savedFraming.sensorId !== '65mm'
+    || savedFraming.focalLengthMm !== 85
+    || savedFraming.focusDistanceMeters !== 3.5
+    || savedFraming.aspectRatio !== '2.39:1'
+    || !cameraResult.camera.surface.cameraPanelOpen) {
+    throw new Error(`expected Camera MCP framing to open Camera and persist its active Timeline key, got ${JSON.stringify(cameraResult)}`)
   }
   useGraphStore.setState({
     markdownDocumentName: 'Shoot scene.md',
@@ -549,20 +592,4 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
     || nativeCameraInspection.invocationGrammar.source !== 'native-agentic-graph-invocation-catalog') {
     throw new Error('expected Camera inspection to remain / @ # ready without remote grammar hydration')
   }
-  useGraphStore.setState({
-    markdownDocumentName: priorGraphState.markdownDocumentName,
-    markdownDocumentText: priorGraphState.markdownDocumentText,
-    graphData: priorGraphState.graphData,
-    canvasRenderMode: priorGraphState.canvasRenderMode,
-    canvas3dMode: priorGraphState.canvas3dMode,
-    floatingPanelOpen: priorGraphState.floatingPanelOpen,
-    floatingPanelView: priorGraphState.floatingPanelView,
-    bottomSurfaceTab: priorGraphState.bottomSurfaceTab,
-    bottomSurfaceCollapsed: priorGraphState.bottomSurfaceCollapsed,
-    timelineTransportDocumentKey: priorGraphState.timelineTransportDocumentKey,
-    timelineTransportPosition: priorGraphState.timelineTransportPosition,
-    timelineTransportPlaying: priorGraphState.timelineTransportPlaying,
-  } as never)
-  hydrateCanonicalXrMotionReferenceRuntime()
-  publishCameraFramingRuntime({ anchorId: priorCamera.anchorId, settings: priorCamera.settings, source: priorCamera.source })
 }
