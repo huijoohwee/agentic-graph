@@ -25,18 +25,20 @@ export const sheetsHeaders = [
   '/content/agentic-sheets/sw.js', '  Service-Worker-Allowed: /agentic-sheets/',
   ...['LICENSE', 'LICENSE.design-system'].flatMap(name => [`/content/agentic-sheets/${name}`, '  Content-Type: text/plain; charset=utf-8']),
 ]
-export async function loadSheetsPin() {
-  const pin = JSON.parse(await fs.readFile(path.join(scriptRoot, 'agentic-sheets-source.json')))
-  if (pin.schema !== 'agentic-graph/sheets-source/v1' || pin.repository !== 'https://github.com/huijoohwee/agentic-base'
+function validateSheetsPin(pin) {
+  if (pin.schema !== 'agentic-graph/sheets-source/v1' || pin.repository !== 'https://github.com/huijoohwee/agentic-sheets'
     || !/^[0-9a-f]{40}$/.test(pin.revision)) throw new Error('Invalid Sheets source pin')
   return pin
+}
+export async function loadSheetsPin() {
+  return validateSheetsPin(JSON.parse(await fs.readFile(path.join(scriptRoot, 'agentic-sheets-source.json'))))
 }
 export function resolveSheetsSource(graphRoot) {
   if (process.env.AGENTIC_SHEETS_SOURCE_ROOT) return path.resolve(process.env.AGENTIC_SHEETS_SOURCE_ROOT)
   const ciSource = path.resolve(graphRoot, '..', 'agentic-sheets-source')
   if (process.env.GITHUB_ACTIONS === 'true') return ciSource
   const common = git(graphRoot, ['rev-parse', '--git-common-dir']).toString().trim()
-  return path.resolve(path.dirname(path.resolve(graphRoot, common)), '..', 'agentic-base')
+  return path.resolve(path.dirname(path.resolve(graphRoot, common)), '..', 'agentic-sheets')
 }
 function validateArtifact(manifest, files) {
   if (manifest.schema !== 'sheets/artifact/v1' || manifest.contract !== 'sheets/workbook/v1'
@@ -54,9 +56,7 @@ function validateArtifact(manifest, files) {
     || digest(files.get('LICENSE.design-system')) !== manifest.designSystem.licenseSha256) throw new Error('Sheets profile/license drift')
 }
 export async function createSheetsArtifact({ graphRoot = path.resolve(scriptRoot, '..'), sourceRoot = resolveSheetsSource(graphRoot), pin } = {}) {
-  pin ||= await loadSheetsPin()
-  if (pin.schema !== 'agentic-graph/sheets-source/v1' || pin.repository !== 'https://github.com/huijoohwee/agentic-base'
-    || !/^[0-9a-f]{40}$/.test(pin.revision)) throw new Error('Invalid Sheets source pin')
+  pin = pin === undefined ? await loadSheetsPin() : validateSheetsPin(pin)
   // Read immutable Git blobs. Unrelated local drafts never enter a release.
   const read = relative => git(sourceRoot, ['show', `${pin.revision}:${relative}`])
   const manifestBytes = read('sheets/dist/artifact-manifest.json'), manifest = JSON.parse(manifestBytes)
@@ -68,7 +68,7 @@ export async function createSheetsArtifact({ graphRoot = path.resolve(scriptRoot
     const body = read(row.path)
     if (body.length !== row.bytes || digest(body) !== row.sha256) throw new Error('Sheets source input drift: ' + row.path)
   }
-  const route = { schema: 'agentic-graph/sheets-route/v1', sourceRevision: pin.revision,
+  const route = { schema: 'agentic-graph/sheets-route/v1', sourceRepository: pin.repository, sourceRevision: pin.revision,
     artifactDigest: manifest.artifactDigest, sourceDigest: manifest.sourceDigest,
     files: [...files].map(([path, body]) => ({ path, bytes: body.length, sha256: digest(body) })) }
   files.set(routeName, Buffer.from(JSON.stringify(route, null, 2) + '\n'))
@@ -112,7 +112,7 @@ const mime = name => name.endsWith('.html') ? /text\/html/i : name.endsWith('.mj
 export async function verifySheetsRoute({ artifactRoot, origins, fetchImpl = fetch, sourceRevision } = {}) {
   const root = assertSafeRoot(artifactRoot, 'Sheets artifact'), route = JSON.parse(await fs.readFile(resolveWithin(root, routeName)))
   const pin = await loadSheetsPin()
-  if (route.schema !== 'agentic-graph/sheets-route/v1' || route.sourceRevision !== (sourceRevision || pin.revision)) throw new Error('Sheets route source mismatch')
+  if (route.schema !== 'agentic-graph/sheets-route/v1' || route.sourceRepository !== pin.repository || route.sourceRevision !== (sourceRevision || pin.revision)) throw new Error('Sheets route source mismatch')
   const files = new Map()
   for (const name of [...names, 'artifact-manifest.json', routeName]) files.set(name, await fs.readFile(resolveWithin(root, name)))
   const manifest = JSON.parse(files.get('artifact-manifest.json')); validateArtifact(manifest, files)
@@ -142,7 +142,7 @@ export async function verifySheetsRoute({ artifactRoot, origins, fetchImpl = fet
     }
     results.push({ origin: url.origin, files: observations, missingRoutes: 3 })
   }
-  return { schema: 'agentic-graph/sheets-route-proof/v1', sourceRevision: route.sourceRevision, artifactDigest: manifest.artifactDigest, origins: results }
+  return { schema: 'agentic-graph/sheets-route-proof/v1', sourceRepository: route.sourceRepository, sourceRevision: route.sourceRevision, artifactDigest: manifest.artifactDigest, origins: results }
 }
 
 export async function verifySheetsBrowser({ origin, artifactDigest }) {

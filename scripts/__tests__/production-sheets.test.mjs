@@ -27,12 +27,14 @@ async function fixture(t) {
   await fs.writeFile(path.join(sourceRoot, 'sheets/input.txt'), 'input')
   const git = args => execFileSync('git', args, { cwd: sourceRoot, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim()
   git(['init', '-q']); git(['add', '.']); git(['-c', 'user.name=Sheets Test', '-c', 'user.email=sheets@example.invalid', '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'fixture'])
-  const pin = { schema: 'agentic-graph/sheets-source/v1', repository: 'https://github.com/huijoohwee/agentic-base', revision: git(['rev-parse', 'HEAD']) }
+  const pin = { schema: 'agentic-graph/sheets-source/v1', repository: 'https://github.com/huijoohwee/agentic-sheets', revision: git(['rev-parse', 'HEAD']) }
   return { root, sourceRoot, mirrorRoot, pin, bodies }
 }
 test('immutable source, ownership, deterministic sync and tamper rejection', async t => {
   const f = await fixture(t), args = { ...f, graphRoot: f.sourceRoot }
-  let plan = await planSheetsSync(args)
+  await assert.rejects(planSheetsSync({ ...args, pin: { ...f.pin, repository: 'https://github.com/huijoohwee/agentic-base' } }), /Invalid Sheets source pin/)
+  const plan = await planSheetsSync(args)
+  assert.equal(plan.artifact.route.sourceRepository, f.pin.repository)
   assert.equal(plan.toCopy.length, 14); await applySheetsSync(plan)
   assert.equal((await planSheetsSync(args)).hasDrift, false)
   await fs.writeFile(path.join(f.sourceRoot, 'sheets/dist/app.mjs'), 'dirty draft')
@@ -64,6 +66,8 @@ test('route verifier checks every byte, MIME, CSP, worker scope and negative pat
   mode = 'ok'
   await fs.writeFile(path.join(plan.targetRoot, 'core.mjs'), 'changed')
   await assert.rejects(verifySheetsRoute(args), /drift/)
+  await fs.writeFile(path.join(plan.targetRoot, 'sheets-route.json'), JSON.stringify({ ...plan.artifact.route, sourceRepository: 'wrong' }))
+  await assert.rejects(verifySheetsRoute(args), /source mismatch/)
 })
 test('existing release owners include Sheets without SPA fallback or duplicate blocks', () => {
   const routes = buildAgenticGraphRedirects({ existing: '', rootFiles: [] })
