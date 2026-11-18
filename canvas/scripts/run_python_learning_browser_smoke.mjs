@@ -230,7 +230,9 @@ try {
   checkpoint('embed-capture')
   await sharedPage.screenshot({ path: join(output, 'shared-canvas.png') })
   await sharedPage.close()
-  await page.getByRole('button', { name: 'Close share code panel', exact: true }).click()
+  const sharePanel = page.getByRole('region', { name: 'Share code panel', exact: true })
+  await sharePanel.getByRole('button', { name: 'Close', exact: true }).click()
+  await sharePanel.waitFor({ state: 'detached' })
 
   checkpoint('debrief-import')
   const downloaded = page.waitForEvent('download')
