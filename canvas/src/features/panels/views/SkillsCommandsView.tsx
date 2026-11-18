@@ -20,9 +20,6 @@ import { insertTextIntoActiveCardInlineTextEditor } from '@/lib/cards/cardInline
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT,
-  floatingPanelCatalogCompactRowClassName,
-  floatingPanelCatalogCompactRowMetaClassName,
-  floatingPanelCatalogCompactRowTitleClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
 import { cn } from '@/lib/utils'
 import {
@@ -231,7 +228,7 @@ export default function SkillsCommandsView({
       >
         {catalogStatusText}
       </p>
-      <section className="grid min-w-0 gap-1" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>
+      <section className="agentic-skills-list" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>
         {entryGroups.map((group, index) => {
           const groupCollapsed = collapsedGroupKeys.has(group.key)
           return (
@@ -256,7 +253,7 @@ export default function SkillsCommandsView({
                 id={buildSkillsCommandsGroupContentId(group.key)}
                 className="mt-1 border-t pt-1"
               >
-                <section className="grid min-w-0 gap-1" data-kg-skills-commands-grammar-group-rows={group.key}>
+                <section className="agentic-skills-list" data-kg-skills-commands-grammar-group-rows={group.key}>
                   {group.entries.map(({ grammar, option }) => {
                     const iconKey = resolveMainPanelInvocationSubjectIconKey(option)
                     const sourceTitle = buildAgenticOsInvocationSourceTitle(option)
@@ -264,10 +261,8 @@ export default function SkillsCommandsView({
                     return (
                       <article
                         key={option.id}
-                        className={cn(
-                          floatingPanelCatalogCompactRowClassName(),
-                          highlighted && 'ring-1 ring-sky-400/70 dark:ring-sky-300/70',
-                        )}
+                        className="agentic-skills-row"
+                        aria-current={highlighted || undefined}
                         data-kg-floating-panel-catalog-row="skills-commands"
                         data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
                         data-kg-skill-command-row={option.id}
@@ -317,10 +312,10 @@ export default function SkillsCommandsView({
                           />
                         </span>
                         <section className="min-w-0" aria-label={`${option.label} invocation summary`}>
-                          <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={sourceTitle}>
+                          <h3 className="agentic-skills-title" title={sourceTitle}>
                             {option.label}
                           </h3>
-                          <p className={floatingPanelCatalogCompactRowMetaClassName()} title={sourceTitle}>
+                          <p className="agentic-skills-meta" title={sourceTitle}>
                             {option.group}
                           </p>
                         </section>

@@ -107,7 +107,8 @@ test('headless typography metadata and KTV layout are projections of the pinned 
   }
   assert.match(toolbarCss, /font-size: var\(--agentic-font-size-body\)/)
   const rows = fs.readFileSync(new URL('../../../grph-shared/src/ui/keyTypeValueRows.ts', import.meta.url), 'utf8')
-  assert.ok(rows.includes('grid-cols-[var(--agentic-ktv-columns)]'))
+  assert.ok(rows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME = KTV_ROW_CLASS'))
+  assert.match(profileCss.toString(), /\.agentic-ktv-row\s*\{[^}]*grid-template-columns:\s*var\(--agentic-ktv-columns\)/s)
   assert.ok(!rows.includes('minmax('), 'Column geometry must have one central owner')
 })
 
@@ -156,7 +157,10 @@ test('Preview and the Media library share the layout picker and the panel toggle
     assert.match(consumer, /<MediaCatalogLayoutControls\b/, file)
     assert.doesNotMatch(consumer, /aria-label="(?:Preview )?(?:list|card|grid) layout"/i, file)
   }
-  for (const file of ['command-menu/MediaCatalogLayoutControls.tsx', 'toolbar/FloatingPanelSkillsCommandsView.tsx', 'immersive-media/ImmersiveMediaPanelProjection.tsx']) {
+  const skills = source('toolbar/FloatingPanelSkillsCommandsView.tsx')
+  assert.match(skills, /import .*mountSkillsCommandsHeader.* from 'agentic-design-system\/skills-commands'/)
+  assert.doesNotMatch(skills, /<ToggleButtonGroup|function ToggleButton|className="agentic-toggle-group"/)
+  for (const file of ['command-menu/MediaCatalogLayoutControls.tsx', 'immersive-media/ImmersiveMediaPanelProjection.tsx']) {
     const consumer = source(file)
     assert.match(consumer, /from '@agentic-base\/views-react\/controls'/, file)
     assert.match(consumer, /<ToggleButtonGroup\b/, file)

@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { floatingPanelCatalogCompactRowMetaClassName, floatingPanelCatalogCompactRowTitleClassName } from '@/lib/ui/floatingPanelCatalogLayout'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
@@ -237,15 +236,14 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     if (!messageGateway) throw new Error('Expected Agentic OS binding registry to expose @message-gateway')
 
     const panel = container.querySelector('[data-kg-floating-panel-skills-commands-view="true"]')
-    const sharedHeader = container.querySelector('[data-kg-floating-panel-catalog-header="1"]')
+    const sharedHeader = container.querySelector('.agentic-skills-header')
     const sharedBody = container.querySelector('[data-kg-floating-panel-catalog-body="skills-commands"]') as HTMLElement | null
     const catalogSurface = container.querySelector('[data-kg-floating-panel-skills-commands="true"]') as HTMLElement | null
-    const prefixFilter = container.querySelector('[data-kg-floating-panel-skills-commands-prefix-filter="1"]')
-    const grammarGroup = container.querySelector('[data-kg-floating-panel-skills-commands-grammar-group="1"]')
-    const sharedSearchToggle = container.querySelector('[data-kg-floating-panel-catalog-search-toggle="1"]') as HTMLButtonElement | null
-    const skillsSearchToggle = container.querySelector('[data-kg-skills-commands-search-toggle="1"]') as HTMLButtonElement | null
-    const subjectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="subject"]') as HTMLButtonElement | null
-    const objectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="object"]') as HTMLButtonElement | null
+    const prefixFilter = container.querySelector('[role="group"][aria-label="Skills & Commands prefix"]')
+    const grammarGroup = container.querySelector('[role="group"][aria-label="Skills & Commands group by"]')
+    const sharedSearchToggle = container.querySelector('button[aria-label="Search skills and commands"]') as HTMLButtonElement | null
+    const subjectGroupToggle = container.querySelector('button[aria-label="Group by Subject"]') as HTMLButtonElement | null
+    const objectGroupToggle = container.querySelector('button[aria-label="Group by Object"]') as HTMLButtonElement | null
     const motionCaptureProjection = container.querySelector('[data-kg-motion-capture-projection="skills"]')
     const exaSearchProjection = container.querySelector('[data-kg-exa-search-skills-projection="configuration-only"]')
     const exaSearchInvocation = exaSearchProjection?.querySelector('[data-kg-exa-search-invocation="canonical"]')
@@ -253,27 +251,24 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     const motionCaptureWebMcp = motionCaptureProjection?.querySelector('[data-kg-motion-capture-web-mcp="1"]')
     if (
       !panel ||
-      panel.getAttribute('data-kg-floating-panel-catalog-layout') !== 'media-reuse' ||
+      panel.getAttribute('data-kg-floating-panel-catalog-layout') !== 'skills-commands' ||
       !sharedHeader ||
-      sharedHeader.getAttribute('data-kg-floating-panel-catalog-header-fixed') !== '1' ||
-      !sharedHeader.matches('.agentic-panel-section-header.shrink-0') ||
       sharedHeader.className.includes('sticky') ||
       !sharedBody ||
-      !sharedBody.className.includes('overflow-auto') ||
+      !sharedBody.classList.contains('agentic-skills-body') ||
       !catalogSurface ||
       catalogSurface.className.includes('overflow-auto') ||
       !prefixFilter?.matches('.agentic-panel-section-actions > .agentic-toggle-group[role="group"]') ||
       prefixFilter.nextElementSibling !== grammarGroup ||
       !grammarGroup?.matches('.agentic-toggle-group[role="group"]') ||
-      container.querySelectorAll('[data-kg-skills-commands-prefix-toggle]').length !== 3 ||
-      container.querySelectorAll('[data-kg-skills-commands-grammar-toggle]').length !== 3 ||
+      prefixFilter.querySelectorAll('button').length !== 3 ||
+      grammarGroup.querySelectorAll('button').length !== 3 ||
       !(subjectGroupToggle instanceof dom.window.HTMLButtonElement) ||
       !(objectGroupToggle instanceof dom.window.HTMLButtonElement) ||
       subjectGroupToggle.getAttribute('aria-label') !== 'Group by Subject' ||
       subjectGroupToggle.getAttribute('aria-pressed') !== 'true' ||
       objectGroupToggle.getAttribute('aria-pressed') !== 'false' ||
       !(sharedSearchToggle instanceof dom.window.HTMLButtonElement) ||
-      skillsSearchToggle !== sharedSearchToggle ||
       !motionCaptureProjection ||
       !exaSearchProjection ||
       !exaSearchInvocation?.textContent?.includes('/tool.catalog') ||
@@ -285,20 +280,16 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !motionCaptureInvocation.textContent.includes('#pose') ||
       !motionCaptureWebMcp?.textContent?.includes('agentic-graph.control_local_motion_control')
     ) {
-      throw new Error('Expected Skills & Commands to reuse the shared Media layout and canonical Exa/Motion Capture invocation projections')
+      throw new Error('Expected Skills & Commands to use the Design System catalog and canonical Exa/Motion Capture invocation projections')
     }
-    const groupDisclosureActions = container.querySelector('[data-kg-skills-commands-disclosure-actions="header"]') as HTMLElement | null
-    const groupDisclosureButton = groupDisclosureActions?.querySelector('button') as HTMLButtonElement | null
+    const groupDisclosureButton = sharedHeader.querySelector('button[aria-label="Collapse All"]') as HTMLButtonElement | null
     const storySubjectGroup = container.querySelector('[data-kg-skills-commands-grammar-group="subject:story"]') as HTMLElement | null
     const agentSubjectGroup = container.querySelector('[data-kg-skills-commands-grammar-group="subject:agent"]') as HTMLElement | null
     const storySubjectGroupToggle = storySubjectGroup?.querySelector('[role="button"][aria-controls]') as HTMLElement | null
-    const searchBeforeDisclosure = sharedSearchToggle && groupDisclosureActions
-      ? Boolean(sharedSearchToggle.compareDocumentPosition(groupDisclosureActions) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING)
+    const searchBeforeDisclosure = sharedSearchToggle && groupDisclosureButton
+      ? Boolean(sharedSearchToggle.compareDocumentPosition(groupDisclosureButton) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING)
       : false
     if (
-      !groupDisclosureActions ||
-      !sharedHeader.contains(groupDisclosureActions) ||
-      sharedBody.contains(groupDisclosureActions) ||
       !(groupDisclosureButton instanceof dom.window.HTMLButtonElement) ||
       groupDisclosureButton.getAttribute('aria-label') !== 'Collapse All' ||
       !searchBeforeDisclosure ||
@@ -306,9 +297,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       storySubjectGroup.getAttribute('data-kg-skills-commands-grammar-group-collapsed') !== 'false' ||
       !(storySubjectGroupToggle instanceof dom.window.HTMLElement) ||
       storySubjectGroupToggle.getAttribute('aria-expanded') !== 'true' ||
-      !storySubjectGroupToggle.classList.contains('agentic-panel-section-header') ||
-      !storySubjectGroupToggle.className.includes('sticky') ||
-      !storySubjectGroupToggle.className.includes('top-0') ||
+      !storySubjectGroupToggle.closest('.agentic-panel-section-header[data-agentic-sticky="true"]') ||
       !agentSubjectGroup ||
       agentSubjectGroup.getAttribute('data-kg-skills-commands-grammar-group-collapsed') !== 'false'
     ) {
@@ -366,8 +355,8 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !storybuildingIcon.className.includes('kg-skill-command-icon') ||
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
-      storybuildingTitle?.className !== floatingPanelCatalogCompactRowTitleClassName() ||
-      storybuildingMeta?.className !== floatingPanelCatalogCompactRowMetaClassName() ||
+      storybuildingTitle?.className !== 'agentic-skills-title' ||
+      storybuildingMeta?.className !== 'agentic-skills-meta' ||
       storybuildingToken?.getAttribute('data-kg-card-inline-keyword-pill') !== '1' ||
       storybuildingToken.getAttribute('data-kg-skill-command-token-chip') !== '1' ||
       !storybuildingToken.className.includes('kg-responsive-element-row') ||
@@ -399,7 +388,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       throw new Error('Expected Skills & Commands SVO segmented control to switch catalog grouping to Object')
     }
 
-    const slashToggle = container.querySelector('[data-kg-skills-commands-prefix-toggle="slash"]') as HTMLButtonElement | null
+    const slashToggle = container.querySelector('button[aria-label="Slash commands"]') as HTMLButtonElement | null
     if (!(slashToggle instanceof dom.window.HTMLButtonElement)) {
       throw new Error('Expected FloatingPanel Skills & Commands to expose a Media-style prefix segmented control')
     }
@@ -419,7 +408,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       sharedSearchToggle.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForNextFrame(dom.window)
     })
-    const searchInput = container.querySelector('[data-kg-skills-commands-search-input="1"]') as HTMLInputElement | null
+    const searchInput = container.querySelector('input[type="search"]') as HTMLInputElement | null
     if (!(searchInput instanceof dom.window.HTMLInputElement) || searchInput.getAttribute('placeholder') !== 'Search commands') {
       throw new Error('Expected Skills & Commands search button to expand the shared catalog search input')
     }
@@ -535,34 +524,33 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
     throw new Error('Expected Skills & Commands to be removed from the MainPanel icon registry')
   }
   if (
-    floatingPropsPanel.includes("import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'") ||
+    floatingPropsPanel.includes("from '@/features/panels/views/SkillsCommandsView'") ||
     floatingPropsPanel.includes('data-kg-floating-props-panel-skills-pane="true"') ||
     floatingPropsPanel.includes('data-kg-floating-props-panel-layout="skills-right"')
   ) {
     throw new Error('Expected Props Panel to stop embedding Skills & Commands as a right-side pane')
   }
   if (
-    !floatingSkillsPanel.includes("import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'") ||
-    !floatingSkillsPanel.includes("from '@/lib/ui/floatingPanelCatalogLayout'") ||
+    !floatingSkillsPanel.includes("from '@/features/panels/views/SkillsCommandsView'") ||
+    !floatingSkillsPanel.includes("from 'agentic-design-system/skills-commands'") ||
     !floatingSkillsPanel.includes('data-kg-floating-panel-skills-commands-view="true"') ||
-    !floatingSkillsPanel.includes('data-kg-floating-panel-catalog-layout="media-reuse"') ||
+    !floatingSkillsPanel.includes('data-kg-floating-panel-catalog-layout="skills-commands"') ||
     !mediaCatalogPanelView.includes("from '@/lib/ui/floatingPanelCatalogLayout'") ||
     !mediaCatalogPanelView.includes('<FloatingPanelCatalogHeader') ||
     !mediaCatalogPanelView.includes('<FloatingPanelCatalogSearchControl') ||
     !mediaCatalogPanelView.includes('FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT') ||
     !mediaCatalogPanelView.includes('data-kg-floating-panel-catalog-list="media"') ||
     !mediaCatalogPanelView.includes('data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
-    !floatingSkillsPanel.includes('trailingActions=') ||
-    !skillsCommandsView.includes('floatingPanelCatalogCompactRowClassName()') ||
-    !skillsCommandsView.includes('floatingPanelCatalogCompactRowTitleClassName()') ||
-    !skillsCommandsView.includes('floatingPanelCatalogCompactRowMetaClassName()') ||
+    !floatingSkillsPanel.includes('mountSkillsCommandsHeader(') ||
+    !skillsCommandsView.includes('className="agentic-skills-row"') ||
+    !skillsCommandsView.includes('className="agentic-skills-title"') ||
+    !skillsCommandsView.includes('className="agentic-skills-meta"') ||
     !skillsCommandsView.includes('renderAgenticOsInvocationKeywordChip') ||
     !skillsCommandsView.includes('resolveInlineInvocationChipClassName') ||
     !skillsCommandsView.includes('data-kg-skill-command-token-chip') ||
     !skillsCommandsView.includes("from '@/features/panels/ui/CollapsibleSection'") ||
-    !floatingSkillsPanel.includes("from '@/features/panels/ui/ExpandCollapseAllButton'") ||
+    !floatingSkillsPanel.includes('.setDisclosure(') ||
     !floatingSkillsPanel.includes("from '@/features/panels/ui/useCollapsibleSectionGroup'") ||
-    !floatingSkillsPanel.includes('data-kg-skills-commands-disclosure-actions="header"') ||
     skillsCommandsView.includes('stickyHeader={false}') ||
     !skillsCommandsView.includes('data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
     !mediaCatalogListItems.includes('floatingPanelCatalogCompactRowTitleClassName()') ||

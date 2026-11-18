@@ -1,3 +1,4 @@
+import { skillsCommandsTab } from 'agentic-design-system/skills-commands'
 export const UI_LAYOUT = {
   toolbarOffsetPx: 36,
 } as const;
@@ -87,7 +88,7 @@ export const UI_LABELS = {
   workflow: 'Workflow',
   sidebar: 'Sidebar',
   propsPanel: 'Props Panel',
-  skillsCommands: 'Skills & Commands',
+  skillsCommands: skillsCommandsTab.label,
   blockLibrary: 'Block library',
   promptPresets: 'Prompt Presets',
   geo: 'Geo',
