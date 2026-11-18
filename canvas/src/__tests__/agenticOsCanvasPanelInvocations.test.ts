@@ -255,10 +255,10 @@ export function testCanvasInteractionInvocationsUseSkillsCommandsCatalog() {
   const floatingSkillsCommands = readFileSync(resolve(process.cwd(), 'src/features/toolbar/FloatingPanelSkillsCommandsView.tsx'), 'utf8')
   const catalogSearchLayout = readFileSync(resolve(process.cwd(), 'src/lib/ui/floatingPanelCatalogLayout.tsx'), 'utf8')
   if (
-    !floatingSkillsCommands.includes("import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'") ||
+    !floatingSkillsCommands.includes("from '@/features/panels/views/SkillsCommandsView'") ||
     !floatingSkillsCommands.includes('<SkillsCommandsView') ||
     !floatingSkillsCommands.includes('prefixFilter={prefixFilter}') ||
-    !floatingSkillsCommands.includes('searchQuery={search.searchQuery}') ||
+    !floatingSkillsCommands.includes('searchQuery={searchQuery}') ||
     !catalogSearchLayout.includes('export function useFloatingPanelCatalogSearch(): FloatingPanelCatalogSearchState') ||
     !toolbar.includes("<FloatingPanelSkillsCommandsView />")
   ) {

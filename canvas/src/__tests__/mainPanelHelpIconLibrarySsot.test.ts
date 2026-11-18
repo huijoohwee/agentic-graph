@@ -31,7 +31,7 @@ export const testMainPanelHelpIconLibraryReusesSharedSsot = () => {
   const mainPanelText = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'MainPanel.tsx'))
   const toolbarMenuText = readUtf8(path.resolve(root, 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx'))
   if (!toolbarMenuText.includes("from '@/lib/toolbar/ToolbarToolMenuGeoView'") || !toolbarMenuText.includes('<GeoView')) throw new Error('Expected toolbar menu to compose the shared Geo view')
-  const floatingPanelText = toolbarMenuText + '\n' + readUtf8(path.resolve(root, 'src', 'lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx'))
+  const floatingPanelText = readUtf8(path.resolve(root, 'src/features/toolbar/FloatingPanelViewTabs.tsx')) + '\n' + toolbarMenuText + '\n' + readUtf8(path.resolve(root, 'src', 'lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx'))
   const helpIconsText = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpIconsSection.tsx'))
   const graphFieldsHeaderText = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelGraphFieldsHeader.tsx'))
   const graphFieldsViewText = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'GraphFieldsView.tsx'))

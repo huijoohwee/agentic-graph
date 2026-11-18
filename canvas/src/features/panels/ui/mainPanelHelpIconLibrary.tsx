@@ -1,3 +1,4 @@
+import { skillsCommandsTab } from 'agentic-design-system/skills-commands'
 import React from 'react'
 import { DESIGN_ICONS } from '@agentic-base/views-react/controls'
 const { Accessibility, ArrowRightLeft, BarChart3, Braces, CalendarClock, Camera, ChartGantt, Clapperboard, Copy, CreditCard, Cuboid, Eraser, GitBranch, Globe2, Hand, Hash, HelpCircle, History: HistoryIcon, ImageIcon, LayoutGrid, Link2, ListChecks, LocateFixed, Map: MapIcon, MessageCircle, MonitorPlay, Network, Palette, Plane, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type: TextTypeIcon, UserX, Users, Workflow } = DESIGN_ICONS
@@ -306,8 +307,8 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
   },
   'floatingPanel.skillsCommands': {
     category: 'FloatingPanel surface',
-    label: 'Skills & Commands',
-    Icon: SquareTerminal,
+    label: skillsCommandsTab.label,
+    Icon: DESIGN_ICONS[skillsCommandsTab.icon],
   },
   'floatingPanel.blockLibrary': {
     category: 'FloatingPanel surface',

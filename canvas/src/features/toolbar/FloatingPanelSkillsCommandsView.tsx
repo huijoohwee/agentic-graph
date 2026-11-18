@@ -1,23 +1,9 @@
 import React from 'react'
-import { ToggleButton, ToggleButtonGroup } from '@agentic-base/views-react/controls'
-import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
-import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'
-import {
-  resolveSkillsCommandsGroupKeys,
-  type SkillsCommandsPrefixFilter,
-} from '@/features/panels/views/SkillsCommandsView'
-import type { SkillsCommandsGrammarGroupBy } from '@/features/panels/views/skillsCommandsGrammar'
-import { AtSign, Hash, Slash } from 'lucide-react'
-import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
+import { initialCatalogFilters, mountSkillsCommandsHeader, skillsCommandsTab, type CatalogHeader } from 'agentic-design-system/skills-commands'
+import 'agentic-design-system/skills-commands.css'
+import SkillsCommandsView, { resolveSkillsCommandsGroupKeys } from '@/features/panels/views/SkillsCommandsView'
 import { useCollapsibleSectionGroup } from '@/features/panels/ui/useCollapsibleSectionGroup'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
-import {
-  FloatingPanelCatalogHeader,
-  FloatingPanelCatalogSearchControl,
-  floatingPanelCatalogBodyClassName,
-  floatingPanelCatalogSurfaceClassName,
-  useFloatingPanelCatalogSearch,
-} from '@/lib/ui/floatingPanelCatalogLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
@@ -36,18 +22,6 @@ import { openFloatingPanelChatWithSeedWhenReady } from '@/features/chat/floating
 const openCommandPrompt = (text: string) => openFloatingPanelChatWithSeedWhenReady({
   text, mode: 'replace', delivery: 'queuedHandoff', submit: false,
 })
-
-const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
-  { filter: 'slash', label: 'Slash commands', Icon: Slash },
-  { filter: 'hash', label: 'Hash semantics', Icon: Hash },
-  { filter: 'at', label: 'At bindings', Icon: AtSign },
-]
-
-const SKILLS_COMMANDS_GRAMMAR_GROUPS: Array<{ groupBy: SkillsCommandsGrammarGroupBy; label: string; shortLabel: string }> = [
-  { groupBy: 'subject', label: 'Subject', shortLabel: 'S' },
-  { groupBy: 'verb', label: 'Verb', shortLabel: 'V' },
-  { groupBy: 'object', label: 'Object', shortLabel: 'O' },
-]
 
 type InvocationExecutionStatus =
   | 'idle'
@@ -113,9 +87,15 @@ export function FloatingPanelSkillsCommandsView({
   promptRuntime = defaultPromptPresetSelectionRuntime,
   openPrompt = openCommandPrompt,
 }: FloatingPanelSkillsCommandsViewProps = {}) {
-  const iconClass = useToolbarIconClass()
   const panelTypography = usePanelTypography()
-  const search = useFloatingPanelCatalogSearch()
+  const [{ prefix: prefixFilter, groupBy: grammarGroupBy, query: searchQuery }, setFilters] = React.useState(initialCatalogFilters)
+  const headerHost = React.useRef<HTMLDivElement>(null)
+  const header = React.useRef<CatalogHeader | null>(null)
+  React.useLayoutEffect(() => {
+    if (!headerHost.current) return
+    header.current = mountSkillsCommandsHeader(headerHost.current, setFilters)
+    return () => { header.current?.destroy(); header.current = null }
+  }, [])
   const mcpTarget = useSkillsCommandsMcpTarget()
   const [executionFeedback, setExecutionFeedback] = React.useState<InvocationExecutionFeedback>(EMPTY_EXECUTION_FEEDBACK)
   const [structuredInputText, setStructuredInputText] = React.useState('{}')
@@ -243,13 +223,11 @@ export function FloatingPanelSkillsCommandsView({
       confirmation: displayedOutcome.confirmation,
     })
   }, [executeTarget, mcpTarget.resolution, mcpTarget.status, structuredInputText])
-  const [prefixFilter, setPrefixFilter] = React.useState<SkillsCommandsPrefixFilter>('all')
-  const [grammarGroupBy, setGrammarGroupBy] = React.useState<SkillsCommandsGrammarGroupBy>('subject')
   const visibleGroupKeys = React.useMemo(() => resolveSkillsCommandsGroupKeys({
     grammarGroupBy,
     prefixFilter,
-    searchQuery: search.searchQuery,
-  }), [grammarGroupBy, prefixFilter, search.searchQuery])
+    searchQuery,
+  }), [grammarGroupBy, prefixFilter, searchQuery])
   const visibleGroupKeyValues = React.useMemo(() => visibleGroupKeys.map(group => group.key), [visibleGroupKeys])
   const {
     allCollapsed: allGroupsCollapsed,
@@ -258,94 +236,25 @@ export function FloatingPanelSkillsCommandsView({
     expandAll: expandAllGroups,
     setCollapsedKeys: setCollapsedGroupKeys,
   } = useCollapsibleSectionGroup(visibleGroupKeyValues)
+  React.useLayoutEffect(() => {
+    header.current?.setDisclosure(visibleGroupKeyValues.length > 0, allGroupsCollapsed, allGroupsCollapsed ? expandAllGroups : collapseAllGroups)
+  }, [visibleGroupKeyValues, allGroupsCollapsed, expandAllGroups, collapseAllGroups])
 
   return (
     <section
-      className={floatingPanelCatalogSurfaceClassName(panelTypography.panelTextClass)}
+      className={cn('agentic-skills-catalog', panelTypography.panelTextClass)}
       data-kg-floating-panel-skills-commands-view="true"
-      data-kg-floating-panel-catalog-layout="media-reuse"
-      data-kg-floating-panel-skills-commands-media-layout="reuse"
+      data-kg-floating-panel-catalog-layout="skills-commands"
       data-kg-floating-panel-skills-commands-mcp-target={mcpTarget.mcpTool || undefined}
       data-kg-floating-panel-skills-commands-invocation-target={mcpTarget.target || undefined}
       data-kg-floating-panel-skills-commands-invocation-target-kind={mcpTarget.targetKind}
       data-kg-floating-panel-skills-commands-mcp-target-status={mcpTarget.status}
       data-kg-floating-panel-skills-commands-mcp-target-action={mcpTarget.resolution?.invocation.action || undefined}
       data-kg-floating-panel-skills-commands-mcp-target-tokens={targetTokens?.join(' ') || undefined}
-      aria-label="Skills & Commands"
+      aria-label={skillsCommandsTab.label}
     >
-      <FloatingPanelCatalogHeader
-        title="Skills & Commands"
-        subtitle="/ # @ invocation catalog"
-        actionsLabel="Skills & Commands actions"
-        dataAttributes={{ 'data-kg-floating-panel-skills-commands-header': '1' }}
-        actions={(
-          <>
-            <ToggleButtonGroup aria-label="Skills & Commands prefix" data-kg-floating-panel-skills-commands-prefix-filter="1">
-              {SKILLS_COMMANDS_PREFIX_FILTERS.map(({ filter, label, Icon }) => (
-                <ToggleButton key={filter} title={label} aria-label={label}
-                  pressed={prefixFilter === 'all' || prefixFilter === filter}
-                  data-kg-skills-commands-prefix-toggle={filter}
-                  onClick={() => setPrefixFilter(current => current === filter ? 'all' : filter)}>
-                  <Icon className={iconClass} aria-hidden />
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-            <ToggleButtonGroup aria-label="Skills & Commands group by" data-kg-floating-panel-skills-commands-grammar-group="1">
-              {SKILLS_COMMANDS_GRAMMAR_GROUPS.map(({ groupBy, label, shortLabel }) => (
-                <ToggleButton key={groupBy} title={`Group by ${label}`} aria-label={`Group by ${label}`}
-                  pressed={grammarGroupBy === groupBy} data-kg-skills-commands-grammar-toggle={groupBy}
-                  onClick={() => setGrammarGroupBy(groupBy)}>
-                  {shortLabel}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </>
-        )}
-        searchControl={(
-          <FloatingPanelCatalogSearchControl
-            state={search}
-            id="kg-skills-commands-catalog-search"
-            buttonLabel="Search skills and commands"
-            panelLabel="Search Skills & Commands catalog"
-            placeholder="Search commands"
-            panelWidthClassName="w-40 max-w-[12rem]"
-            affordanceDataAttributes={{
-              'data-kg-floating-panel-skills-commands-search-affordance': '1',
-              'data-kg-skills-commands-search-affordance': '1',
-            }}
-            panelDataAttributes={{
-              'data-kg-floating-panel-skills-commands-search-panel': 'overlay',
-              'data-kg-skills-commands-search-panel': 'overlay',
-            }}
-            inputDataAttributes={{
-              'data-kg-floating-panel-skills-commands-search-input': '1',
-              'data-kg-skills-commands-search-input': '1',
-            }}
-            clearDataAttributes={{
-              'data-kg-floating-panel-skills-commands-search-clear': '1',
-              'data-kg-skills-commands-search-clear': '1',
-            }}
-            toggleDataAttributes={{
-              'data-kg-floating-panel-skills-commands-search-toggle': '1',
-              'data-kg-skills-commands-search-toggle': '1',
-            }}
-          />
-        )}
-        trailingActions={visibleGroupKeyValues.length > 0 ? (
-          <section
-            className="inline-flex shrink-0 items-center"
-            aria-label="Skills & Commands group disclosure"
-            data-kg-skills-commands-disclosure-actions="header"
-          >
-            <ExpandCollapseAllButton
-              allCollapsed={allGroupsCollapsed}
-              onExpandAll={expandAllGroups}
-              onCollapseAll={collapseAllGroups}
-            />
-          </section>
-        ) : null}
-      />
-      <section className={floatingPanelCatalogBodyClassName()} tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
+      <div ref={headerHost} />
+      <section className="agentic-skills-body" tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
         {selectionError ? <p role="alert">{selectionError}</p> : null}
         {mcpTarget.status === 'loading' ? (
           <p role="status" data-kg-floating-panel-skills-commands-mcp-feedback="loading">
@@ -438,7 +347,7 @@ export function FloatingPanelSkillsCommandsView({
             onCollapsedGroupKeysChange={setCollapsedGroupKeys}
             onCommandActivate={selectCommand}
             prefixFilter={prefixFilter}
-            searchQuery={search.searchQuery}
+            searchQuery={searchQuery}
             highlightedTokens={targetTokens}
           />
         ) : null}
