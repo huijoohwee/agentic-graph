@@ -87,10 +87,39 @@
 }
 .agentic-toggle-group > button:where(:enabled:hover) { background: var(--agentic-control-hover-background); }
 :is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: var(--agentic-control-selected-foreground); background-color: var(--agentic-control-selected-background); }
+.agentic-grid-cell[role="gridcell"][aria-selected="true"][tabindex="0"] { position: relative; }
+.agentic-grid-cell[role="gridcell"][aria-selected="true"][tabindex="0"]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: var(--agentic-control-focus-width) solid var(--agentic-control-selected-foreground);
+}
+[data-agentic-annotation-target="true"] {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-selected-foreground);
+  outline-offset: var(--agentic-control-focus-offset);
+}
+/* A reference label and its target use the same slot. Line patterns also work without color. */
+[data-agentic-reference="1"] { --agentic-reference-color: var(--agentic-dashboard-primary); --agentic-reference-line: solid; }
+[data-agentic-reference="2"] { --agentic-reference-color: var(--agentic-dashboard-secondary); --agentic-reference-line: dashed; }
+[data-agentic-reference="3"] { --agentic-reference-color: var(--agentic-dashboard-success); --agentic-reference-line: dotted; }
+.agentic-reference-list:not([hidden]) {
+  display: flex; flex-wrap: wrap; gap: var(--agentic-control-padding-inline); align-items: baseline;
+}
+.agentic-reference-label[data-agentic-reference] {
+  color: var(--agentic-reference-color); font: inherit; font-weight: 600;
+  border-block-end: var(--agentic-control-focus-width) var(--agentic-reference-line) currentColor;
+}
+.agentic-grid-cell[data-agentic-reference] { position: relative; }
+.agentic-grid-cell[data-agentic-reference]::before {
+  content: ""; position: absolute; inset: var(--agentic-control-focus-width); pointer-events: none;
+  border: var(--agentic-control-focus-width) var(--agentic-reference-line) var(--agentic-reference-color);
+}
 .agentic-toggle-group > button:focus-visible { outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: calc(-1 * var(--agentic-control-focus-width)); }
 .agentic-toggle-group > button:disabled { opacity: .5; cursor: not-allowed; }
 @media (forced-colors: active) {
   :is(.agentic-control-selected, .agentic-toggle-group > button[aria-pressed="true"]) { color: HighlightText; background: Highlight; forced-color-adjust: none; }
+  .agentic-grid-cell[role="gridcell"][aria-selected="true"][tabindex="0"]::after { border-color: currentColor; }
+  [data-agentic-annotation-target="true"] { outline-color: Highlight; }
+  .agentic-reference-label[data-agentic-reference], .agentic-grid-cell[data-agentic-reference]::before { --agentic-reference-color: CanvasText; }
+  .agentic-grid-cell[role="gridcell"][aria-selected="true"][tabindex="0"][data-agentic-reference]::before { --agentic-reference-color: HighlightText; }
 }
 .agentic-checkbox-group {
   display: inline-flex; align-items: center; gap: var(--agentic-control-padding-block);
@@ -139,6 +168,18 @@
   block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height);
   padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border: var(--agentic-control-border); border-radius: var(--agentic-control-radius);
   font-family: var(--agentic-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
+}
+[data-agentic-inline-editing] { position: relative; }
+[data-agentic-inline-editing] > input.agentic-inline-editor {
+  box-sizing: border-box; position: absolute; inset: var(--agentic-control-focus-width);
+  inline-size: calc(100% - 2 * var(--agentic-control-focus-width)); block-size: calc(100% - 2 * var(--agentic-control-focus-width));
+  min-inline-size: 0; min-block-size: 0; margin: 0; padding: 0 var(--agentic-control-padding-inline);
+  border: 0; border-radius: 0; background: var(--agentic-panel-background); color: var(--agentic-panel-foreground);
+  font: inherit; text-align: start;
+}
+[data-agentic-inline-editing] > input.agentic-inline-editor:focus {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight);
+  outline-offset: calc(-1 * var(--agentic-control-focus-width));
 }
 textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   block-size: auto; padding-block: var(--agentic-control-padding-block); resize: vertical;
