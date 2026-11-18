@@ -29,6 +29,7 @@ import {
   buildVideoAgentTranscriptImportArtifacts,
   readVideoAgentTranscriptDurationMs,
 } from './videoAgentTranscriptImportArtifacts'
+import { buildVideoAgentImportSidecars } from './videoAgentImportSidecars'
 import { yamlQuote } from './yaml'
 
 type VideoAgentUrlImportDocumentArgs = {
@@ -67,7 +68,6 @@ const sanitizeFilenamePart = (value: unknown): string => {
 }
 
 const jsonBlock = (value: unknown): string => JSON.stringify(value)
-const jsonFileText = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 
 const readTranscriptDurationMs = (args: Pick<VideoAgentUrlImportDocumentArgs, 'sourceTranscriptJsonText' | 'sourceUrl'>): number => {
   return readVideoAgentTranscriptDurationMs({
@@ -187,104 +187,6 @@ function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): 
   if (!sourceVideoTrack || !annotationTrack || !annotationSpan) throw new Error('Video import annotation source linkage is missing')
   const flowchartCode = buildVideoAgentProcessFlowchartCode(pipeline.stages)
   const youtubeId = getYouTubeId(sourceUrl)
-  const workspaceFiles = renderData.workspaceFiles as Array<{ kind?: unknown; path?: unknown; role?: unknown }>
-  const fileTextByPath = new Map<WorkspacePath, string>()
-  const sourceManifest = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:source-manifest`,
-    sourceUrl,
-    sourceName: cleanInline(args.sourceName),
-    youtubeId: youtubeId || undefined,
-    sourceText: String(args.sourceText || ''),
-    sourceTranscriptJsonText: String(args.sourceTranscriptJsonText || ''),
-    sourceVideo: renderData.sourceVideo,
-    transcriptStatus: transcriptArtifacts.sourceTranscript.status,
-    transcriptSegmentCount: transcriptArtifacts.sourceTranscript.segmentCount,
-  }
-  const parseOutput = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:parse-output`,
-    sourceUrl,
-    sourceTranscript: transcriptArtifacts.sourceTranscript,
-    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
-    frameBoundingBoxes: pipeline.frameBoundingBoxes,
-    frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
-  }
-  const searchIndex = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:search-index`,
-    sourceUrl,
-    frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
-    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
-  }
-  const timelineManifest = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:timeline`,
-    sourceUrl,
-    timelineTracks: pipeline.timelineTracks,
-    timelineLanes: (renderData.timelineLanes || []) as unknown,
-    bottomPanelTimelineSync: renderData.bottomPanelTimelineSync,
-  }
-  const generatedAssets = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:generation-plan`,
-    sourceUrl,
-    intent: pipeline.intent,
-    stages: pipeline.stages,
-    reasoningArtifacts: pipeline.reasoningArtifacts.filter(artifact => artifact.capability === 'generate'),
-    richMediaPanels: renderData.richMediaPanels,
-  }
-  const streamManifest = {
-    schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:stream-output`,
-    sourceUrl,
-    stream: pipeline.stream,
-    sourcePlaybackUrl,
-    richMediaPanels: renderData.richMediaPanels,
-    renderSpec: {
-      durationMs: renderSpec.durationMs,
-      fps: renderSpec.fps,
-      width: renderSpec.width,
-      height: renderSpec.height,
-      engineHint: renderSpec.engineHint,
-    },
-  }
-  const renderHtmlText = [
-    '<!doctype html>',
-    '<html lang="en">',
-    '<head>',
-    '<meta charset="utf-8">',
-    `<title>${sourceUrl}</title>`,
-    '<style>',
-    renderSpec.css,
-    '</style>',
-    '</head>',
-    '<body>',
-    renderSpec.html,
-    '</body>',
-    '</html>',
-    '',
-  ].join('\n')
-  const artifactTextByName: Record<string, string> = {
-    'source.json': jsonFileText(sourceManifest),
-    'dataset-operations.json': jsonFileText({
-      schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:dataset-operation-summary`,
-      sourceUrl,
-      datasetOperationSummary: pipeline.datasetRuntime.datasetOperationSummary,
-      datasetSplitSummary: pipeline.datasetRuntime.datasetSplitSummary,
-      savedDatasetArtifact: pipeline.datasetRuntime.savedDatasetArtifact,
-    }),
-    'visual-dataset.json': jsonFileText(pipeline.datasetRuntime.visualDataset),
-    'zone-counts.json': jsonFileText(pipeline.datasetRuntime.zoneCounting),
-    'moments.json': jsonFileText(searchIndex),
-    'parse.json': jsonFileText(parseOutput),
-    'frame-boxes.json': jsonFileText(pipeline.frameBoundingBoxes),
-    'timeline.json': jsonFileText(timelineManifest),
-    'generated-assets.json': jsonFileText(generatedAssets),
-    'render.html': renderHtmlText,
-    'stream-manifest.json': jsonFileText(streamManifest),
-  }
-  for (const file of workspaceFiles) {
-    const path = normalizeWorkspacePath(String(file.path || ''))
-    const name = path.split('/').filter(Boolean).pop() || ''
-    const text = artifactTextByName[name]
-    if (path && text) fileTextByPath.set(path, text)
-  }
-
   const lines: string[] = [
     '---',
     '$schema: "agentic-os-pipeline/v1"',
@@ -646,7 +548,11 @@ function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): 
   }
   return {
     markdown,
-    workspaceFiles: Array.from(fileTextByPath.entries()).map(([path, text]) => ({ path, text })),
+    workspaceFiles: buildVideoAgentImportSidecars({
+      pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl, youtubeId,
+      sourceName: cleanInline(args.sourceName), sourceText: String(args.sourceText || ''),
+      sourceTranscriptJsonText: String(args.sourceTranscriptJsonText || ''),
+    }),
   }
 }
 
