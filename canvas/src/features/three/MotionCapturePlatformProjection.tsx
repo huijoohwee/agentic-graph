@@ -1,5 +1,7 @@
 import 'agentic-design-system/collection-layout.css'
 import React from 'react'
+import type { CollectionLayout } from 'agentic-design-system/collection-layout'
+import { SkillsCommandReference } from '@/features/panels/views/SkillsCommandReference'
 import { Download, Network, Radio, ShieldCheck, Upload } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { downloadBlob } from '@/lib/graph/save'
@@ -64,8 +66,10 @@ function MotionCaptureInvocationChip({ variant }: { variant: Exclude<MotionCaptu
 
 export function MotionCapturePlatformProjection({
   variant,
+  layout = 'list',
 }: {
   variant: MotionCapturePlatformProjectionVariant
+  layout?: CollectionLayout
 }) {
   const session = React.useSyncExternalStore(
     motionCapturePlatformUiAdapter.subscribeSession,
@@ -172,10 +176,28 @@ export function MotionCapturePlatformProjection({
     : 'off'
 
   if (variant !== 'full') {
+    const evidenceLabel = evidence.researchReady ? 'Research-ready evidence' : 'Evidence incomplete'
+    const sessionSummary = `${captureSurfaceActive ? tierLabel(evidence.tier) : 'Open an approved XR capture surface'} · ${session.sources.length} source${session.sources.length === 1 ? '' : 's'} · ${recording.status} · peer ${compactPeerStatus}`
+    const details = <>
+      <MotionCaptureInvocationChip variant={variant} />
+      <p className={UI_THEME_TOKENS.text.tertiary} data-kg-motion-capture-web-mcp="1">WebMCP · {webMcpControlTool}</p>
+    </>
+    if (variant === 'skills') {
+      return (
+        <SkillsCommandReference layout={layout} icon={Radio} label="Motion Capture" description={evidenceLabel}
+          aria-label="Skills and Commands motion capture runtime"
+          data-kg-motion-capture-projection={variant}
+          data-kg-motion-capture-runtime-ready={captureSurfaceActive ? '1' : '0'}
+          data-kg-motion-capture-research-ready={evidence.researchReady ? '1' : '0'}>
+          <p className={UI_THEME_TOKENS.text.secondary}>{sessionSummary}</p>
+          {details}
+        </SkillsCommandReference>
+      )
+    }
     return (
       <section
         className="agentic-collection-item mx-1 mb-2 text-xs" data-layout="card"
-        aria-label={`${variant === 'skills' ? 'Skills and Commands' : 'Media'} motion capture runtime`}
+        aria-label="Media motion capture runtime"
         data-kg-motion-capture-projection={variant}
         data-kg-motion-capture-runtime-ready={captureSurfaceActive ? '1' : '0'}
         data-kg-motion-capture-research-ready={evidence.researchReady ? '1' : '0'}
@@ -183,24 +205,21 @@ export function MotionCapturePlatformProjection({
         <header className="flex min-w-0 items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold"><Radio className="h-3.5 w-3.5" aria-hidden="true" /> Motion Capture</span>
           <span className={evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.text.tertiary}>
-            {evidence.researchReady ? 'Research-ready evidence' : 'Evidence incomplete'}
+            {evidenceLabel}
           </span>
         </header>
         <p className={UI_THEME_TOKENS.text.secondary}>
-          {captureSurfaceActive ? tierLabel(evidence.tier) : 'Open an approved XR capture surface'} · {session.sources.length} source{session.sources.length === 1 ? '' : 's'} · {recording.status} · peer {compactPeerStatus}
+          {sessionSummary}
         </p>
-        <MotionCaptureInvocationChip variant={variant} />
-        <p className={UI_THEME_TOKENS.text.tertiary} data-kg-motion-capture-web-mcp="1">WebMCP · {webMcpControlTool}</p>
-        {variant === 'media' ? (
-          <section className="flex flex-wrap gap-1" aria-label="Motion capture Media exports">
-            <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('json')} data-kg-motion-capture-media-export="json">
-              <Download className="h-3 w-3" aria-hidden="true" /> JSON
-            </button>
-            <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('csv')} data-kg-motion-capture-media-export="csv">
-              <Download className="h-3 w-3" aria-hidden="true" /> CSV
-            </button>
-          </section>
-        ) : null}
+        {details}
+        <section className="flex flex-wrap gap-1" aria-label="Motion capture Media exports">
+          <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('json')} data-kg-motion-capture-media-export="json">
+            <Download className="h-3 w-3" aria-hidden="true" /> JSON
+          </button>
+          <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('csv')} data-kg-motion-capture-media-export="csv">
+            <Download className="h-3 w-3" aria-hidden="true" /> CSV
+          </button>
+        </section>
       </section>
     )
   }

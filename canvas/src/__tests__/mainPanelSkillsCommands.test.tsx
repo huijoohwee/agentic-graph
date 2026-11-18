@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertSkillsCatalogLayouts } from './helpers/assertSkillsCatalogLayouts'
 import { resolve } from 'node:path'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -282,6 +283,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     ) {
       throw new Error('Expected Skills & Commands to use the Design System catalog and canonical Exa/Motion Capture invocation projections')
     }
+    await assertSkillsCatalogLayouts(panel, sharedBody)
     const groupDisclosureButton = sharedHeader.querySelector('button[aria-label="Collapse All"]') as HTMLButtonElement | null
     const storySubjectGroup = container.querySelector('[data-kg-skills-commands-grammar-group="subject:story"]') as HTMLElement | null
     const agentSubjectGroup = container.querySelector('[data-kg-skills-commands-grammar-group="subject:agent"]') as HTMLElement | null
@@ -552,7 +554,6 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
     !floatingSkillsPanel.includes('.setDisclosure(') ||
     !floatingSkillsPanel.includes("from '@/features/panels/ui/useCollapsibleSectionGroup'") ||
     skillsCommandsView.includes('stickyHeader={false}') ||
-    !skillsCommandsView.includes('data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
     !mediaCatalogListItems.includes('agentic-collection-title') ||
     !mediaCatalogListItems.includes('agentic-collection-meta') ||
     !mediaCatalogListItems.includes('agentic-collection-trailing')

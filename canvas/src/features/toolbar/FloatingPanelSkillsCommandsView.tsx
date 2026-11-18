@@ -88,7 +88,7 @@ export function FloatingPanelSkillsCommandsView({
   openPrompt = openCommandPrompt,
 }: FloatingPanelSkillsCommandsViewProps = {}) {
   const panelTypography = usePanelTypography()
-  const [{ prefix: prefixFilter, groupBy: grammarGroupBy, query: searchQuery }, setFilters] = React.useState(initialCatalogFilters)
+  const [{ prefix: prefixFilter, groupBy: grammarGroupBy, query: searchQuery, layout }, setFilters] = React.useState(initialCatalogFilters)
   const headerHost = React.useRef<HTMLDivElement>(null)
   const header = React.useRef<CatalogHeader | null>(null)
   React.useLayoutEffect(() => {
@@ -335,13 +335,14 @@ export function FloatingPanelSkillsCommandsView({
           </section>
         ) : null}
         {targetingMcpInvocation ? null : (
-          <>
-            <ExaSearchSkillsCommandsProjection />
-            <MotionCapturePlatformProjection variant="skills" />
-          </>
+          <section className="agentic-collection agentic-skills-list" data-layout={layout} aria-label="Invocation references">
+            <ExaSearchSkillsCommandsProjection layout={layout} />
+            <MotionCapturePlatformProjection variant="skills" layout={layout} />
+          </section>
         )}
         {mcpTarget.status === 'idle' || mcpTarget.status === 'ready' ? (
           <SkillsCommandsView
+            layout={layout}
             collapsedGroupKeys={collapsedGroupKeys}
             grammarGroupBy={grammarGroupBy}
             onCollapsedGroupKeysChange={setCollapsedGroupKeys}
