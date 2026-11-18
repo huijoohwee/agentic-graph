@@ -99,8 +99,14 @@ export async function planSheetsSync({ graphRoot, mirrorRoot, sourceRoot, pin })
   let obsoletePanel
   if (existing.length) {
     const previous = JSON.parse(await fs.readFile(resolveWithin(targetRoot, routeName)))
-    if (previous.schema !== 'agentic-graph/sheets-route/v1' || !Array.isArray(previous.files)
-      || existing.some(name => name !== routeName && !previous.files.some(row => row.path === name))) throw new Error('Sheets mirror ownership mismatch')
+    if (previous.schema !== 'agentic-graph/sheets-route/v1' || !Array.isArray(previous.files)) throw new Error('Sheets mirror ownership mismatch')
+    for (const name of existing) {
+      if (name === routeName || previous.files.some(row => row.path === name)) continue
+      // A retry may find the exact new module written before the route receipt was replaced.
+      if (name === panelFile && artifact.files.has(name)
+        && (await fs.readFile(resolveWithin(targetRoot, name))).equals(artifact.files.get(name))) continue
+      throw new Error('Sheets mirror ownership mismatch')
+    }
     if (existing.includes(panelFile) && !artifact.files.has(panelFile)) {
       obsoletePanel = previous.files.find(row => row.path === panelFile)
     }
@@ -117,11 +123,13 @@ export async function applySheetsSync(plan) {
   await fs.mkdir(plan.targetRoot, { recursive: true })
   if (plan.obsoletePanel) {
     const file = resolveWithin(plan.targetRoot, panelFile)
-    const current = await fs.readFile(file)
-    if (current.length !== plan.obsoletePanel.bytes || digest(current) !== plan.obsoletePanel.sha256) {
-      throw new Error('Changed Sheets panel asset during rollback')
-    }
-    await fs.unlink(file)
+    try {
+      const current = await fs.readFile(file)
+      if (current.length !== plan.obsoletePanel.bytes || digest(current) !== plan.obsoletePanel.sha256) {
+        throw new Error('Changed Sheets panel asset during rollback')
+      }
+      await fs.unlink(file)
+    } catch (error) { if (error.code !== 'ENOENT') throw error }
   }
   for (const { relativePath, body } of plan.toCopy) {
     const target = resolveWithin(plan.targetRoot, relativePath), temporary = target + '.tmp-' + process.pid
