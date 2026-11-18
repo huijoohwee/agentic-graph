@@ -40,7 +40,7 @@ type SkillsCommandsViewProps = {
 
 export type SkillsCommandsPrefixFilter = ChatInvocationCatalogPrefixFilter
 type SkillsCommandsCatalogEntry = ChatInvocationCatalogEntry
-const SKILLS_COMMANDS_ICON_SLOT_CLASSNAME = 'kg-skill-command-icon inline-flex h-7 w-7 shrink-0 items-center justify-center'
+const SKILLS_COMMANDS_ICON_SLOT_CLASSNAME = 'kg-skill-command-icon agentic-collection-leading'
 const SKILLS_COMMANDS_ICON_GLYPH_CLASSNAME = 'kg-skill-command-icon-glyph'
 
 type SkillsCommandsRenderEntry = {
@@ -228,7 +228,7 @@ export default function SkillsCommandsView({
       >
         {catalogStatusText}
       </p>
-      <section className="agentic-skills-list" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>
+      <section className="agentic-collection agentic-skills-list" data-layout="list" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>
         {entryGroups.map((group, index) => {
           const groupCollapsed = collapsedGroupKeys.has(group.key)
           return (
@@ -253,7 +253,7 @@ export default function SkillsCommandsView({
                 id={buildSkillsCommandsGroupContentId(group.key)}
                 className="mt-1 border-t pt-1"
               >
-                <section className="agentic-skills-list" data-kg-skills-commands-grammar-group-rows={group.key}>
+                <section className="agentic-collection agentic-skills-list" data-layout="list" data-kg-skills-commands-grammar-group-rows={group.key}>
                   {group.entries.map(({ grammar, option }) => {
                     const iconKey = resolveMainPanelInvocationSubjectIconKey(option)
                     const sourceTitle = buildAgenticOsInvocationSourceTitle(option)
@@ -261,7 +261,7 @@ export default function SkillsCommandsView({
                     return (
                       <article
                         key={option.id}
-                        className="agentic-skills-row"
+                        className="agentic-collection-item agentic-skills-row" data-layout="list"
                         aria-current={highlighted || undefined}
                         data-kg-floating-panel-catalog-row="skills-commands"
                         data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
@@ -312,10 +312,10 @@ export default function SkillsCommandsView({
                           />
                         </span>
                         <section className="min-w-0" aria-label={`${option.label} invocation summary`}>
-                          <h3 className="agentic-skills-title" title={sourceTitle}>
+                          <h3 className="agentic-collection-title" title={sourceTitle}>
                             {option.label}
                           </h3>
-                          <p className="agentic-skills-meta" title={sourceTitle}>
+                          <p className="agentic-collection-meta" title={sourceTitle}>
                             {option.group}
                           </p>
                         </section>

@@ -30,8 +30,6 @@ import {
   continueMediaPointerDrag,
   finishMediaDrag,
   isMediaRowControlTarget,
-  mediaListItemClassName,
-  mediaListThumbnailFrameClassName,
   primeMediaMouseDrag,
   primeMediaPointerDrag,
   shouldHandleMediaRowPointer,
@@ -71,7 +69,7 @@ export function XrInvocationButton({ invocation, disabled, onInvoke }: { invocat
 function XrMediaCatalogThumb({ Icon, color, label, assetId }: { Icon: LucideIcon; color: string; label: string; assetId?: string }) {
   return (
     <figure
-      className={mediaListThumbnailFrameClassName('m-0 items-center justify-center cursor-grab active:cursor-grabbing')}
+      className="agentic-collection-preview group m-0 items-center justify-center cursor-grab active:cursor-grabbing"
       style={{ color }}
       aria-label={`${label} preview`}
       data-kg-media-xr-thumbnail="media-card"
@@ -108,7 +106,8 @@ export function XrLibraryCard({
   return (
     <article
       draggable={Boolean(dragPayload)}
-      className={cn(mediaListItemClassName(), active ? UI_THEME_TOKENS.button.activeBg : '')}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="card"
+      aria-current={active ? 'true' : undefined}
       title={dragPayload ? `Drag ${label} onto the Canvas` : `Select ${label} in Timeline`}
       tabIndex={onSelect ? 0 : undefined}
       onClick={onSelect ? event => { if (!isMediaRowControlTarget(event.target)) onSelect() } : undefined}

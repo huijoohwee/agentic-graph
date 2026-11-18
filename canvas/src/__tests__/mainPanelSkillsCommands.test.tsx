@@ -76,7 +76,7 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
       storybuildingIcon.getAttribute('aria-label') !== 'Storybuilding icon' ||
       storybuildingIcon.hasAttribute('aria-hidden') ||
       !storybuildingIcon.className.includes('kg-skill-command-icon') ||
-      !storybuildingIcon.className.includes('h-7') ||
+      !storybuildingIcon.className.includes('agentic-collection-leading') ||
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
       !storybuildingIconSvg?.getAttribute('class')?.includes('kg-skill-command-icon-glyph') ||
@@ -355,8 +355,8 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !storybuildingIcon.className.includes('kg-skill-command-icon') ||
       storybuildingIcon.className.includes('rounded') ||
       storybuildingIcon.className.includes('border') ||
-      storybuildingTitle?.className !== 'agentic-skills-title' ||
-      storybuildingMeta?.className !== 'agentic-skills-meta' ||
+      storybuildingTitle?.className !== 'agentic-collection-title' ||
+      storybuildingMeta?.className !== 'agentic-collection-meta' ||
       storybuildingToken?.getAttribute('data-kg-card-inline-keyword-pill') !== '1' ||
       storybuildingToken.getAttribute('data-kg-skill-command-token-chip') !== '1' ||
       !storybuildingToken.className.includes('kg-responsive-element-row') ||
@@ -542,9 +542,9 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
     !mediaCatalogPanelView.includes('data-kg-floating-panel-catalog-list="media"') ||
     !mediaCatalogPanelView.includes('data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
     !floatingSkillsPanel.includes('mountSkillsCommandsHeader(') ||
-    !skillsCommandsView.includes('className="agentic-skills-row"') ||
-    !skillsCommandsView.includes('className="agentic-skills-title"') ||
-    !skillsCommandsView.includes('className="agentic-skills-meta"') ||
+    !skillsCommandsView.includes('className="agentic-collection-item agentic-skills-row"') ||
+    !skillsCommandsView.includes('className="agentic-collection-title"') ||
+    !skillsCommandsView.includes('className="agentic-collection-meta"') ||
     !skillsCommandsView.includes('renderAgenticOsInvocationKeywordChip') ||
     !skillsCommandsView.includes('resolveInlineInvocationChipClassName') ||
     !skillsCommandsView.includes('data-kg-skill-command-token-chip') ||
@@ -553,9 +553,9 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
     !floatingSkillsPanel.includes("from '@/features/panels/ui/useCollapsibleSectionGroup'") ||
     skillsCommandsView.includes('stickyHeader={false}') ||
     !skillsCommandsView.includes('data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}') ||
-    !mediaCatalogListItems.includes('floatingPanelCatalogCompactRowTitleClassName()') ||
-    !mediaCatalogListItems.includes('floatingPanelCatalogCompactRowMetaClassName()') ||
-    !mediaCatalogListItems.includes('floatingPanelCatalogCompactRowTokenClassName()')
+    !mediaCatalogListItems.includes('agentic-collection-title') ||
+    !mediaCatalogListItems.includes('agentic-collection-meta') ||
+    !mediaCatalogListItems.includes('agentic-collection-trailing')
   ) {
     throw new Error('Expected FloatingPanel Skills & Commands to own the catalog surface while reusing the Media FloatingPanel catalog layout and list row height')
   }

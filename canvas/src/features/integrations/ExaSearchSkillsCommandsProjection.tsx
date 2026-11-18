@@ -1,3 +1,4 @@
+import 'agentic-design-system/collection-layout.css'
 import React from 'react'
 import { Search } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
@@ -15,7 +16,7 @@ import {
 export function ExaSearchSkillsCommandsProjection() {
   return (
     <section
-      className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+      className="agentic-collection-item mx-1 mb-2 text-xs" data-layout="card"
       aria-label="Exa Search API coding-agent integration"
       data-kg-exa-search-skills-projection="configuration-only"
     >

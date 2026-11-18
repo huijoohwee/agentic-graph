@@ -3,8 +3,6 @@ import { Camera, Footprints, type LucideIcon } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import {
   FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT,
-  floatingPanelCatalogThreeRowClassName,
-  floatingPanelCatalogThreeRowThumbnailFrameClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
@@ -40,12 +38,12 @@ function ChoreographyCard({
 }) {
   return (
     <article
-      className={floatingPanelCatalogThreeRowClassName('cursor-default')}
+      className="agentic-collection-item cursor-default" data-layout="card"
       data-kg-xr-choreography-card={target}
       data-kg-xr-choreography-card-layout={FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT}
     >
       <span
-        className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')}
+        className="agentic-collection-preview group"
         role="img"
         aria-label={`${title} choreography path`}
       >

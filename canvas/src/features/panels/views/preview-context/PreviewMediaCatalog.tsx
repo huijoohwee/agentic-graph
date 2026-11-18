@@ -2,9 +2,8 @@ import React from 'react'
 import { MediaCatalogLayoutControls } from '@/features/command-menu/MediaCatalogLayoutControls'
 import type { CommandMenuRichMediaItem } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { FloatingPanelCatalogHeader, FloatingPanelCatalogSearchControl, floatingPanelCatalogCompactRowClassName, floatingPanelCatalogThreeRowClassName, matchesFloatingPanelCatalogSearch, useFloatingPanelCatalogSearch } from '@/lib/ui/floatingPanelCatalogLayout'
+import { FloatingPanelCatalogHeader, FloatingPanelCatalogSearchControl, matchesFloatingPanelCatalogSearch, useFloatingPanelCatalogSearch } from '@/lib/ui/floatingPanelCatalogLayout'
 import { resolveMediaKindOverlayIcon } from '@/lib/ui/mediaKindOverlayIcon'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import type { MediaCatalogLayout } from '@/features/command-menu/mediaCatalogTypes'
 
@@ -24,14 +23,15 @@ export default function PreviewMediaCatalog({ items, models = false }: { items: 
       <FloatingPanelCatalogHeader title={models ? '3D for XR' : 'Media'} subtitle={`${items.length} in current document or selection`} actionsLabel="Preview media layout"
         actions={<MediaCatalogLayoutControls context="preview" layout={layout} onChange={setLayout} />}
         searchControl={<FloatingPanelCatalogSearchControl state={search} id="kg-preview-media-search" buttonLabel="Search preview media" panelLabel="Search preview media" placeholder="Search current media" />} />
-      {visible.length ? <ul className={cn('m-0 grid list-none gap-2 p-0', layout === 'grid' && 'grid-cols-2')} aria-label="Preview media items">
+      {visible.length ? <ul className="agentic-collection" data-layout={layout} data-columns="2" aria-label="Preview media items">
         {visible.slice(0, 100).map(item => {
           const Icon = resolveMediaKindOverlayIcon(item.kind)
           const thumbnail = item.kind === 'image' ? item.src : item.thumbnailUrl
           return <li key={item.key} className="min-w-0">
             <button type="button" aria-label={`Preview ${item.label}`} aria-pressed={activeKey === item.key} onClick={() => select(item)}
-              className={cn('w-full', layout === 'list' ? floatingPanelCatalogCompactRowClassName() : layout === 'card' ? floatingPanelCatalogThreeRowClassName() : `grid gap-1 rounded border p-2 text-left ${UI_THEME_TOKENS.panel.border}`, activeKey === item.key && UI_THEME_TOKENS.button.activeBg)}>
-              {thumbnail && layout !== 'list' ? <img src={thumbnail} alt={item.alt || item.label} className="h-20 w-full rounded object-contain" loading="lazy" decoding="async" /> : <Icon className="size-5" role="img" aria-label={item.kind} />}
+              aria-current={activeKey === item.key ? 'true' : undefined}
+              className="agentic-collection-item w-full" data-layout={layout}>
+              {thumbnail && layout !== 'list' ? <img src={thumbnail} alt={item.alt || item.label} className={cn("h-20 w-full rounded object-contain", layout === "card" && "agentic-collection-preview")} loading="lazy" decoding="async" /> : <span className={layout === 'list' ? 'agentic-collection-leading' : layout === 'card' ? 'agentic-collection-preview' : undefined}><Icon className="size-5" role="img" aria-label={item.kind} /></span>}
               <span className="grid min-w-0 gap-1"><span className="line-clamp-2 font-medium">{item.label}</span><span className="text-xs">{item.kind} · {item.source === 'markdown' ? `Line ${item.startLine}` : 'Selected node'}</span></span>
             </button>
           </li>

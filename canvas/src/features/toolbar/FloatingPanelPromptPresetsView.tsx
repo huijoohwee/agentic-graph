@@ -19,10 +19,6 @@ import {
   FloatingPanelCatalogHeader,
   FloatingPanelCatalogSearchControl,
   floatingPanelCatalogBodyClassName,
-  floatingPanelCatalogCompactIconFrameClassName,
-  floatingPanelCatalogCompactRowClassName,
-  floatingPanelCatalogCompactRowMetaClassName,
-  floatingPanelCatalogCompactRowTitleClassName,
   floatingPanelCatalogSurfaceClassName,
   matchesFloatingPanelCatalogSearch,
   useFloatingPanelCatalogSearch,
@@ -53,13 +49,13 @@ function renderPromptPresetTokenChip(preset: PromptPreset): React.ReactNode {
   const chip = renderAgenticOsInvocationKeywordChip({ value: preset.slashCommand, className })
   if (React.isValidElement<{ className?: string }>(chip)) {
     return React.cloneElement(chip, {
-      className: cn(chip.props.className, 'shrink-0'),
+      className: cn(chip.props.className, 'agentic-collection-trailing'),
       'data-kg-prompt-preset-token-chip': preset.id,
     } as React.HTMLAttributes<HTMLElement>)
   }
   return (
     <span
-      className={cn(className, 'shrink-0')}
+      className={cn(className, 'agentic-collection-trailing')}
       title={preset.slashCommand}
       data-kg-card-inline-keyword-pill="1"
       data-kg-prompt-preset-token-chip={preset.id}
@@ -186,7 +182,7 @@ export function FloatingPanelPromptPresetsView({
           <p className={cn('px-2 py-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>No prompt presets match this search.</p>
         ) : null}
         <section
-          className="grid min-w-0 gap-1"
+          className="agentic-collection" data-layout="list"
           data-kg-floating-panel-catalog-list="prompt-presets"
           data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
         >
@@ -194,7 +190,7 @@ export function FloatingPanelPromptPresetsView({
             <button
               key={preset.id}
               type="button"
-              className={floatingPanelCatalogCompactRowClassName()}
+              className="agentic-collection-item" data-layout="list"
               disabled={Boolean(invokingId)}
               aria-label={`Use ${preset.label} in ${preset.executionSurface === 'card-run' ? 'Card' : 'Chat'}`}
               title={`${preset.description} ${preset.executionSurface === 'card-run' ? 'Insert into the active Card without running.' : 'Use in Chat without submitting.'}`}
@@ -205,12 +201,12 @@ export function FloatingPanelPromptPresetsView({
               data-kg-prompt-preset-delivery={preset.executionSurface === 'card-run' ? 'card-insert-no-run' : 'chat-seed-no-submit'}
               onClick={() => { void invokePreset(preset) }}
             >
-              <span className={floatingPanelCatalogCompactIconFrameClassName()} aria-hidden="true">
+              <span className="agentic-collection-leading" aria-hidden="true">
                 <MainPanelTypeIcon iconKey="floatingPanel.promptPresets" className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0">
-                <span className={floatingPanelCatalogCompactRowTitleClassName('block')}>{preset.label}</span>
-                <span className={floatingPanelCatalogCompactRowMetaClassName('block')}>
+                <span className="agentic-collection-title block">{preset.label}</span>
+                <span className="agentic-collection-meta block">
                   {invokingId === preset.id ? 'Opening in Chat…' : preset.description}
                 </span>
               </span>

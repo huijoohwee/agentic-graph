@@ -1,3 +1,4 @@
+import 'agentic-design-system/collection-layout.css'
 import React from 'react'
 import { Download, Network, Radio, ShieldCheck, Upload } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -173,7 +174,7 @@ export function MotionCapturePlatformProjection({
   if (variant !== 'full') {
     return (
       <section
-        className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+        className="agentic-collection-item mx-1 mb-2 text-xs" data-layout="card"
         aria-label={`${variant === 'skills' ? 'Skills and Commands' : 'Media'} motion capture runtime`}
         data-kg-motion-capture-projection={variant}
         data-kg-motion-capture-runtime-ready={captureSurfaceActive ? '1' : '0'}

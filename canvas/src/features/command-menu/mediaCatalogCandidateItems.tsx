@@ -16,9 +16,6 @@ import {
   getCommandMenuMediaDescription,
   getCommandMenuMediaSourceLabel,
   isMediaRowControlTarget,
-  mediaCardClassName,
-  mediaListItemClassName,
-  mediaListThumbnailFrameClassName,
   shouldHandleMediaRowPointer,
   useNativeVideoMediaThumbnail,
 } from './mediaCatalogShared'
@@ -45,7 +42,7 @@ export function MediaCandidateRow({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaListItemClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="card"
       onDragStart={event => onDragStart(event, item)}
       onDragEnd={finishMediaDrag}
       onPointerDownCapture={event => {
@@ -114,7 +111,7 @@ export function MediaCandidateCard({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaCardClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="grid"
       onDragStart={event => onDragStart(event, item)}
       onDragEnd={finishMediaDrag}
       onPointerDownCapture={event => {
@@ -309,7 +306,7 @@ function MediaSourceMetadataThumbnail({ item, rounded = true }: { item: MediaCat
   const metadataAttrs = sourceMetadataAttrs(item)
   if (thumbnailUrl) {
     return (
-      <span className={rounded ? mediaListThumbnailFrameClassName('items-center justify-center') : 'block h-full w-full'} data-kg-media-source-metadata-thumbnail="1">
+      <span className={rounded ? 'agentic-collection-preview group' : 'block h-full w-full'} data-kg-media-source-metadata-thumbnail="1">
         <MediaKindOverlay Icon={Video} label="video" appearance="hover" />
         <MediaInfoOverlay label={buildSourceMetadataTags(item).join(' | ') || item.sourceUrl} appearance="hover" />
         <img src={thumbnailUrl} alt="" className={cn('h-full w-full object-cover', rounded && 'rounded')} data-kg-command-menu-media-thumbnail="1" data-kg-command-menu-media-thumbnail-format={thumbnail?.format || fallbackThumbnail.format || undefined} data-kg-command-menu-media-thumbnail-raster-format={thumbnail?.rasterFormat || fallbackThumbnail.rasterFormat || undefined} data-kg-command-menu-media-thumbnail-time={thumbnail?.timestampSeconds ?? fallbackThumbnail.timestampSeconds ?? undefined} {...(metadataAttrs as React.ImgHTMLAttributes<HTMLImageElement>)} loading="lazy" decoding="async" {...LOW_PRIORITY_MEDIA_THUMBNAIL_IMAGE_PROPS} draggable={false} />
@@ -322,7 +319,7 @@ function MediaSourceMetadataThumbnail({ item, rounded = true }: { item: MediaCat
 export function MediaSourceMetadataRow({ item }: { item: MediaCatalogSourceMetadataItem }) {
   const tags = buildSourceMetadataTags(item)
   return (
-    <article className={cn('grid min-w-0 gap-2 rounded border p-2 text-left shadow-none', 'grid-cols-[6.875rem_minmax(0,1fr)]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
+    <article className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="card" data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
       <MediaSourceMetadataThumbnail item={item} />
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${item.name} source metadata`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
@@ -343,7 +340,7 @@ export function MediaSourceMetadataRow({ item }: { item: MediaCatalogSourceMetad
 export function MediaSourceMetadataCard({ item }: { item: MediaCatalogSourceMetadataItem }) {
   const tags = buildSourceMetadataTags(item)
   return (
-    <article className={mediaCardClassName()} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
+    <article className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="grid" data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
       <figure className={cn('group relative m-0 aspect-[16/9] w-full overflow-hidden border-b', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
         <MediaSourceMetadataThumbnail item={item} rounded={false} />
       </figure>
@@ -382,7 +379,7 @@ export function MediaActionRow({
     <article
       role="button"
       tabIndex={0}
-      className={mediaListItemClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="card"
       data-kg-command-menu-media-action={action.id}
       data-kg-command-menu-prefix={prefix}
       data-kg-media-list-row-layout="3-rows"
@@ -439,7 +436,7 @@ export function MediaActionCard({
     <article
       role="button"
       tabIndex={0}
-      className={mediaCardClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="grid"
       data-kg-command-menu-media-action={action.id}
       data-kg-command-menu-prefix={prefix}
       onPointerDownCapture={event => {

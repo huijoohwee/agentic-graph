@@ -114,7 +114,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   }
   if (
     !commandCatalogPanelText.includes('data-kg-media-layout-selector')
-    || !commandCatalogPanelText.includes('data-kg-media-layout-toggle')
+    || !commandCatalogPanelText.includes('mountCollectionLayoutPicker')
     || !commandCatalogPanelText.includes('data-kg-media-search-toggle')
     || !commandCatalogPanelText.includes('data-kg-media-search-affordance')
     || !commandCatalogPanelText.includes('data-kg-media-search-overlay-anchor')
@@ -128,7 +128,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     || !commandCatalogPanelText.includes('data-kg-media-grid')
     || !commandCatalogPanelText.includes('data-kg-media-list-layout')
     || !commandCatalogPanelText.includes('data-kg-media-card-layout')
-    || !commandCatalogPanelText.includes('Card layout')
+    || !commandCatalogPanelText.includes('data-layout="card"')
     || !commandCatalogPanelText.includes('MEDIA_COMPACT_LIST_ROW_LAYOUT')
     || !commandCatalogPanelText.includes('data-kg-media-list-row-layout={MEDIA_COMPACT_LIST_ROW_LAYOUT}')
     || !commandCatalogPanelText.includes('data-kg-media-list-view-row="1"')
@@ -136,11 +136,8 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     || !commandCatalogPanelText.includes('data-kg-media-list-row-section="title"')
     || !commandCatalogPanelText.includes('data-kg-media-list-row-section="meta"')
     || !commandCatalogPanelText.includes('data-kg-media-list-row-section="description"')
-    || !commandCatalogPanelText.includes('MEDIA_LIST_THUMBNAIL_COLUMN_CLASSNAME')
-    || !commandCatalogPanelText.includes('MEDIA_LIST_THUMBNAIL_FRAME_CLASSNAME')
-    || !commandCatalogPanelText.includes("from '@/lib/ui/floatingPanelCatalogLayout'") || !commandCatalogPanelText.includes('floatingPanelCatalogThreeRowClassName')
-    || !commandCatalogPanelText.includes('floatingPanelCatalogThreeRowThumbnailFrameClassName') || !floatingPanelCatalogLayoutText.includes('grid-cols-[6.875rem_minmax(0,1fr)]')
-    || !floatingPanelCatalogLayoutText.includes('group relative inline-flex h-[4.625rem] w-[6.475rem]') || !floatingPanelCatalogLayoutText.includes('overflow-visible')
+    || !commandCatalogPanelText.includes("from '@/lib/ui/floatingPanelCatalogLayout'") || !commandCatalogPanelText.includes('agentic-collection-item')
+    || !commandCatalogPanelText.includes('agentic-collection-preview') || !floatingPanelCatalogLayoutText.includes('agentic-design-system/collection-layout.css')
     || !commandCatalogPanelText.includes('MediaListThumbnailIconFrame')
     || !commandCatalogPanelText.includes("MediaDownloadOverlay, MediaInfoOverlay, MediaKindOverlay, MediaOpenLinkOverlay } from '@/lib/ui/MediaKindOverlay'")
     || !commandCatalogPanelText.includes("resolveMediaKindOverlayIcon } from '@/lib/ui/mediaKindOverlayIcon'")
@@ -153,7 +150,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
     || !commandCatalogPanelText.includes('<article')
     || !commandCatalogPanelText.includes('<figure')
   ) {
-    throw new Error('Expected FloatingPanel Media to own a semantic grid/list layout selector, proportional media thumbnail lane, card layout, and 3-row list layout')
+    throw new Error('Expected FloatingPanel Media to use the shared layout selector and render media-specific thumbnail and row content')
   }
   if (commandCatalogPanelText.includes('inline-flex h-8 w-14') || commandCatalogPanelText.includes('grid h-10 w-14')) {
     throw new Error('Expected FloatingPanel Media list thumbnails and command icons to reuse the shared proportional thumbnail lane')
@@ -340,11 +337,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   }
   if (
     !commandCatalogPanelText.includes('data-kg-command-menu-media-thumbnail')
-    || !commandCatalogPanelText.includes('mediaListThumbnailFrameClassName')
-    || !floatingPanelCatalogLayoutText.includes('rounded border')
-    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.panel.border')
-    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.input.bg')
-    || !floatingPanelCatalogLayoutText.includes('shadow-none')
+    || !commandCatalogPanelText.includes('agentic-collection-preview')
   ) {
     throw new Error('Expected FloatingPanel Media thumbnails to use the shared tokenized proportional thumbnail frame')
   }

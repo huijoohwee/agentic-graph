@@ -365,8 +365,8 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (
     (xrMediaLibrarySource.match(/<XrLibraryCard/g) || []).length < 2
     || !xrMediaLibrarySource.includes('data-kg-media-xr-card-layout="media-3-rows"')
-    || !xrMediaLibrarySource.includes('mediaListItemClassName()')
-    || !xrMediaLibrarySource.includes('mediaListThumbnailFrameClassName(')
+    || !xrMediaLibrarySource.includes('agentic-collection-item')
+    || !xrMediaLibrarySource.includes('agentic-collection-preview')
   ) {
     throw new Error('expected Environment Kits and Subjects & Props to reuse the Media three-row card layout owner')
   }

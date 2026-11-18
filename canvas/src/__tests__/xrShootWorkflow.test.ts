@@ -89,7 +89,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   const cameraMcpInvocationSource = readSource('features', 'strybldr', 'CameraMcpInvocationSection.tsx')
   const cameraWebMcpSource = readSource('features', 'agent-ready', 'cameraWebMcpTools.ts')
   const floatingPanelCatalogLayoutSource = readSource('lib', 'ui', 'floatingPanelCatalogLayout.tsx')
-  const mediaCatalogSharedSource = readSource('features', 'command-menu', 'mediaCatalogShared.tsx')
+  const mediaCatalogCardSource = readSource('features', 'command-menu', 'XrMediaLibraryCards.tsx')
   const stageSource = readSource('features', 'three', 'XrMotionReferenceStage.tsx')
   const subjectSource = readSource('features', 'three', 'XrSceneLibrarySubject.tsx')
   const retimeCssSource = readSource('features', 'three', 'CameraMotionMarkRetime.css') + timelineChromeGanttCssSource + readSource('components', 'timeline', 'TimelineTransportLane.css')
@@ -145,14 +145,14 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   for (const marker of ['<CollapsibleSection', '<ExpandCollapseAllButton', '<CameraMcpInvocationSection', 'useCollapsibleSectionGroup', 'Expand All Camera sections', 'Collapse All Camera sections', 'renderMarkdownSigilInlineText', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-camera-runtime-invocation-chip-renderer="shared-markdown-sigil"', '/camera.frame #camera-shot @camera']) {
     if (!cameraPanelSource.includes(marker)) throw new Error(`expected Camera to reuse the 3D-for-XR disclosure owner through ${marker}`)
   }
-  for (const marker of ['getAgenticOsDictionaryInvocations', 'inspectLocalCamera', 'data-kg-camera-grammar-status={nativeInvocationReady', 'data-kg-camera-webmcp-tool', 'data-kg-camera-invocation-token', 'floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName', 'renderMarkdownSigilInlineText(title,', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-camera-invocation-chip-renderer=', "const invocationTitle = /^[#/@]/.test(title)"]) {
+  for (const marker of ['getAgenticOsDictionaryInvocations', 'inspectLocalCamera', 'data-kg-camera-grammar-status={nativeInvocationReady', 'data-kg-camera-webmcp-tool', 'data-kg-camera-invocation-token', 'agentic-collection-item', 'agentic-collection-preview', 'renderMarkdownSigilInlineText(title,', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-camera-invocation-chip-renderer=', "const invocationTitle = /^[#/@]/.test(title)"]) {
     if (!cameraMcpInvocationSource.includes(marker)) throw new Error(`expected Camera MCP cards to project the shared catalog through ${marker}`)
   }
   if (!floatingPanelCatalogLayoutSource.includes('FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT')) {
     throw new Error('expected the shared floating-panel catalog owner to name the three-row layout')
   }
-  for (const marker of ['floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName']) {
-    if (!floatingPanelCatalogLayoutSource.includes(marker) || !mediaCatalogSharedSource.includes(marker)) {
+  for (const marker of ['agentic-collection-item', 'agentic-collection-preview']) {
+    if (!cameraMcpInvocationSource.includes(marker) || !mediaCatalogCardSource.includes(marker)) {
       throw new Error(`expected Camera and Media 3D to share the three-row catalog layout through ${marker}`)
     }
   }
