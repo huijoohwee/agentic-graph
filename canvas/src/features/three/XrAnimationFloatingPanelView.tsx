@@ -25,8 +25,6 @@ import {
   FloatingPanelCatalogSearchControl,
   floatingPanelCatalogBodyClassName,
   floatingPanelCatalogSurfaceClassName,
-  floatingPanelCatalogThreeRowClassName,
-  floatingPanelCatalogThreeRowThumbnailFrameClassName,
   matchesFloatingPanelCatalogSearch,
   useFloatingPanelCatalogSearch,
 } from '@/lib/ui/floatingPanelCatalogLayout'
@@ -155,13 +153,13 @@ function AnimationPresetCard({
   const active = compatible && !disabled
   return (
     <article
-      className={floatingPanelCatalogThreeRowClassName()}
+      className="agentic-collection-item" data-layout="card"
       data-kg-animation-card={preset.id}
       data-kg-animation-card-layout="media-3-rows"
       data-kg-animation-card-kind={preset.kind}
       data-kg-animation-card-applied={appliedTo ? "1" : "0"}
     >
-      <span className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')} role="img" aria-label={`${preset.label} procedural animation preview`}>
+      <span className="agentic-collection-preview group" role="img" aria-label={`${preset.label} procedural animation preview`}>
         <Icon className="size-8" aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">

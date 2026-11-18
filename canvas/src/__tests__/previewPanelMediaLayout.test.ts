@@ -132,10 +132,10 @@ export async function testCommandMenuMediaLayoutSelectorTogglesGridAndList() {
       throw new Error('expected Media grid actions to move non-media Agentic OS / # @ entries into Skills & Commands')
     }
 
-    const listButton = doc.querySelector('[data-kg-media-layout-toggle="list"]') as HTMLButtonElement | null
-    const cardButton = doc.querySelector('[data-kg-media-layout-toggle="card"]') as HTMLButtonElement | null
-    const gridButton = doc.querySelector('[data-kg-media-layout-toggle="grid"]') as HTMLButtonElement | null
-    if (!listButton || !cardButton || !gridButton) throw new Error('expected list, card, and grid layout buttons')
+    const listButton = doc.querySelector('[data-kg-media-layout-selector] [data-agentic-layout-choice="list"]') as HTMLButtonElement | null
+    const cardButton = doc.querySelector('[data-kg-media-layout-selector] [data-agentic-layout-choice="card"]') as HTMLButtonElement | null
+    const gridButton = doc.querySelector('[data-kg-media-layout-selector] [data-agentic-layout-choice="grid"]') as HTMLButtonElement | null
+    if (!listButton || !cardButton || !gridButton) throw new Error('expected the shared list, card, and grid layout buttons')
     if (
       listButton.getAttribute('aria-label') !== 'List layout' ||
       cardButton.getAttribute('aria-label') !== 'Card layout' ||
@@ -201,9 +201,8 @@ export async function testCommandMenuMediaLayoutSelectorTogglesGridAndList() {
     if (compactRows.length === 0) throw new Error('expected media candidates to render as compact list-view rows')
     const firstCompactRow = compactRows[0]
     if (
-      !firstCompactRow.className.includes('grid-cols-[1.75rem_minmax(0,1fr)_auto]') ||
-      !firstCompactRow.className.includes('shadow-sm') ||
-      !firstCompactRow.className.includes('rounded')
+      !firstCompactRow.classList.contains('agentic-collection-item') ||
+      firstCompactRow.dataset.layout !== 'list'
     ) {
       throw new Error('expected Media compact rows to reuse the Skills & Commands compact catalog row shell')
     }

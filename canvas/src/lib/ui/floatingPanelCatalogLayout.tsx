@@ -1,3 +1,4 @@
+import 'agentic-design-system/collection-layout.css'
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import React from 'react'
 import { Search, X } from 'lucide-react'
@@ -7,13 +8,7 @@ import { cn } from '@/lib/utils'
 type DataAttributes = Record<`data-${string}`, string | undefined>
 
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT = 'compact-list'
-export const FLOATING_PANEL_CATALOG_COMPACT_ICON_FRAME_CLASSNAME = 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TITLE_CLASSNAME = 'm-0 truncate text-xs font-semibold'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME = 'm-0 mt-0.5 truncate text-xs'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME = 'shrink-0 truncate font-mono text-xs'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT = 'media-3-rows'
-export const FLOATING_PANEL_CATALOG_THREE_ROW_GRID_CLASSNAME = 'grid-cols-[6.875rem_minmax(0,1fr)]'
-export const FLOATING_PANEL_CATALOG_THREE_ROW_THUMBNAIL_FRAME_CLASSNAME = 'group relative inline-flex h-[4.625rem] w-[6.475rem] shrink-0 overflow-visible rounded border p-[2px] shadow-none'
 
 export function floatingPanelCatalogSurfaceClassName(extraClassName?: string): string {
   return cn('flex h-full min-h-0 flex-col overflow-hidden px-1 pb-2', extraClassName)
@@ -21,56 +16,6 @@ export function floatingPanelCatalogSurfaceClassName(extraClassName?: string): s
 
 export function floatingPanelCatalogBodyClassName(extraClassName?: string): string {
   return cn('min-h-0 flex-1 overflow-auto', extraClassName)
-}
-
-export function floatingPanelCatalogCompactIconFrameClassName(extraClassName?: string): string {
-  return cn(
-    FLOATING_PANEL_CATALOG_COMPACT_ICON_FRAME_CLASSNAME,
-    UI_THEME_TOKENS.panel.border,
-    UI_THEME_TOKENS.input.bg,
-    extraClassName,
-  )
-}
-
-export function floatingPanelCatalogCompactRowClassName(): string {
-  return cn(
-    'grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded border px-2 py-2 text-left shadow-none transition-colors',
-    UI_THEME_TOKENS.panel.border,
-    UI_THEME_TOKENS.panel.bg,
-    UI_THEME_TOKENS.button.hoverBg,
-  )
-}
-
-export function floatingPanelCatalogCompactRowTitleClassName(extraClassName?: string): string {
-  return cn(FLOATING_PANEL_CATALOG_COMPACT_ROW_TITLE_CLASSNAME, UI_THEME_TOKENS.text.primary, extraClassName)
-}
-
-export function floatingPanelCatalogCompactRowMetaClassName(extraClassName?: string): string {
-  return cn(FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME, UI_THEME_TOKENS.text.tertiary, extraClassName)
-}
-
-export function floatingPanelCatalogCompactRowTokenClassName(extraClassName?: string): string {
-  return cn(FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME, UI_THEME_TOKENS.text.tertiary, extraClassName)
-}
-
-export function floatingPanelCatalogThreeRowClassName(extraClassName?: string): string {
-  return cn(
-    'grid min-w-0 gap-2 rounded border p-2 text-left shadow-none transition-colors',
-    FLOATING_PANEL_CATALOG_THREE_ROW_GRID_CLASSNAME,
-    UI_THEME_TOKENS.panel.border,
-    UI_THEME_TOKENS.panel.bg,
-    UI_THEME_TOKENS.button.hoverBg,
-    extraClassName,
-  )
-}
-
-export function floatingPanelCatalogThreeRowThumbnailFrameClassName(extraClassName?: string): string {
-  return cn(
-    FLOATING_PANEL_CATALOG_THREE_ROW_THUMBNAIL_FRAME_CLASSNAME,
-    UI_THEME_TOKENS.panel.border,
-    UI_THEME_TOKENS.input.bg,
-    extraClassName,
-  )
 }
 
 export function normalizeFloatingPanelCatalogSearchText(value: string): string {

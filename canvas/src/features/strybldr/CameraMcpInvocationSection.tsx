@@ -9,8 +9,6 @@ import {
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import {
   FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT,
-  floatingPanelCatalogThreeRowClassName,
-  floatingPanelCatalogThreeRowThumbnailFrameClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
@@ -69,12 +67,12 @@ function CameraCatalogCard({
   const invocationTitle = /^[#/@]/.test(title)
   return (
     <article
-      className={floatingPanelCatalogThreeRowClassName('cursor-default')}
+      className="agentic-collection-item cursor-default" data-layout="card"
       data-kg-camera-card-layout={FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT}
       {...dataAttributes}
     >
       <span
-        className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')}
+        className="agentic-collection-preview group"
         role="img"
         aria-label={`${title} Camera runtime card`}
       >

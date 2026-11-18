@@ -14,9 +14,6 @@ import {
   continueMediaPointerDrag,
   finishMediaDrag,
   isMediaRowControlTarget,
-  mediaCardClassName,
-  mediaListItemClassName,
-  mediaListThumbnailFrameClassName,
   primeMediaMouseDrag,
   primeMediaPointerDrag,
   shouldHandleMediaRowPointer,
@@ -101,7 +98,7 @@ export function UploadedMediaRow({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaListItemClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="card"
       onDragStart={event => onDragStart(event, item, generatedThumbnail)}
       onDragEnd={finishMediaDrag}
       data-kg-media-upload-item={item.id}
@@ -145,7 +142,7 @@ export function UploadedMediaRow({
     >
       <button
         type="button"
-        className={cn(mediaListThumbnailFrameClassName(), 'cursor-grab active:cursor-grabbing')}
+        className={cn('agentic-collection-preview group', 'cursor-grab active:cursor-grabbing')}
         title={`Preview ${item.name}`}
         aria-label={`Preview ${item.name}`}
         draggable={true}
@@ -339,7 +336,7 @@ export function UploadedMediaCard({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaCardClassName()}
+      className="agentic-collection-item cursor-grab active:cursor-grabbing" data-layout="grid"
       onDragStart={event => onDragStart(event, item, generatedThumbnail)}
       onDragEnd={finishMediaDrag}
       data-kg-media-drag-affordance="frame"

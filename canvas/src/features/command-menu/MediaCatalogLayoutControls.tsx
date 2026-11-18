@@ -1,34 +1,37 @@
-import { ToggleButton, ToggleButtonGroup } from '@agentic-base/views-react/controls'
-import { Grid2X2, List, Rows3 } from 'lucide-react'
-import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
-import type { MediaCatalogLayout } from './mediaCatalogTypes'
-
-const layouts = [
-  { value: 'list', label: 'List layout', Icon: List },
-  { value: 'card', label: 'Card layout', Icon: Rows3 },
-  { value: 'grid', label: 'Grid layout', Icon: Grid2X2 },
-] as const
+import React from 'react'
+import { mountCollectionLayoutPicker, type CollectionLayout } from 'agentic-design-system/collection-layout'
 
 type Props = {
   context: 'library' | 'preview'
-  layout: MediaCatalogLayout
-  onChange: (value: MediaCatalogLayout) => void
+  layout: CollectionLayout
+  onChange: (value: CollectionLayout) => void
 }
 
 export function MediaCatalogLayoutControls({ context, layout, onChange }: Props) {
-  const iconClass = useToolbarIconClass()
-  const library = context === 'library'
-  return (
-    <ToggleButtonGroup aria-label={library ? 'Media layout' : 'Preview layout'} data-kg-media-layout-selector={library ? '1' : undefined}>
-      {layouts.map(({ value, label, Icon }) => {
-        const name = library ? label : `Preview ${value} layout`
-        return (
-          <ToggleButton key={value} title={name} aria-label={name} pressed={layout === value}
-            data-kg-media-layout-toggle={library ? value : undefined} onClick={() => onChange(value)}>
-            <Icon className={iconClass} aria-hidden />
-          </ToggleButton>
-        )
-      })}
-    </ToggleButtonGroup>
-  )
+  const host = React.useRef<HTMLDivElement>(null)
+  const current = React.useRef({ layout, onChange })
+  const picker = React.useRef<ReturnType<typeof mountCollectionLayoutPicker> | null>(null)
+
+  React.useLayoutEffect(() => {
+    current.current = { layout, onChange }
+    picker.current?.setLayout(layout)
+  }, [layout, onChange])
+
+  React.useLayoutEffect(() => {
+    if (!host.current) return
+    const library = context === 'library'
+    const mounted = mountCollectionLayoutPicker(host.current, {
+      layout: current.current.layout,
+      label: library ? 'Media layout' : 'Preview layout',
+      labelPrefix: library ? undefined : 'Preview',
+      onChange: value => current.current.onChange(value),
+    })
+    picker.current = mounted
+    return () => {
+      picker.current = null
+      mounted.destroy()
+    }
+  }, [context])
+
+  return <div ref={host} data-kg-media-layout-selector={context === 'library' ? '1' : undefined} />
 }

@@ -1,8 +1,9 @@
+import type { CollectionLayout as MediaCatalogLayout } from 'agentic-design-system/collection-layout'
 import React from 'react'
 import { INLINE_UPLOAD_MEDIA_VARIABLE_ACTION_ID, type InlineCommandMenuActionSpec } from '@/lib/command-menu/inlineCommandMenuCatalog'
 import type { TimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
 
-export type MediaCatalogLayout = 'card' | 'grid' | 'list'
+export type { MediaCatalogLayout }
 export type MediaPanelActionSpec = InlineCommandMenuActionSpec
 export type MediaCatalogSourceMetadataItem = {
   byteSize: number | null

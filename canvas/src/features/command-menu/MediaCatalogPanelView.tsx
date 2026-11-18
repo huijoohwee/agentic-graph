@@ -307,7 +307,7 @@ export function MediaCatalogPanelView({
         <section ref={mediaListRef} tabIndex={-1} data-kg-media-list="1">
           {catalogLayout === 'list' ? (
             <section
-              className="grid min-w-0 gap-1"
+              className="agentic-collection" data-layout="list"
               aria-label="Media list"
               data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
               data-kg-media-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
@@ -343,7 +343,7 @@ export function MediaCatalogPanelView({
               ))}
             </section>
           ) : catalogLayout === 'card' ? (
-            <section className="grid min-w-0 gap-2" aria-label="Media card layout" data-kg-media-card-rows="3">
+            <section className="agentic-collection" data-layout="card" aria-label="Media card layout" data-kg-media-card-rows="3">
             {visibleSourceMetadataItem ? <MediaSourceMetadataRow item={visibleSourceMetadataItem} /> : null}
             {visibleUploadedMediaItems.map(item => (
               <UploadedMediaRow
@@ -382,7 +382,7 @@ export function MediaCatalogPanelView({
             ))}
             </section>
           ) : (
-            <section className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-label="Media grid" data-kg-media-grid="1">
+            <section className="agentic-collection" data-layout="grid" aria-label="Media grid" data-kg-media-grid="1">
             {visibleSourceMetadataItem ? <MediaSourceMetadataCard item={visibleSourceMetadataItem} /> : null}
             {visibleUploadedMediaItems.map(item => (
               <UploadedMediaCard

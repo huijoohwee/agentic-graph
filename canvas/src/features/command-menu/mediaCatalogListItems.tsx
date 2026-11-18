@@ -7,9 +7,6 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MediaDownloadOverlay, MediaInfoOverlay, MediaKindOverlay, MediaOpenLinkOverlay } from '@/lib/ui/MediaKindOverlay'
 import { resolveMediaKindOverlayIcon } from '@/lib/ui/mediaKindOverlayIcon'
 import {
-  floatingPanelCatalogCompactRowMetaClassName,
-  floatingPanelCatalogCompactRowTitleClassName,
-  floatingPanelCatalogCompactRowTokenClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
 import { cn } from '@/lib/utils'
 import { LOW_PRIORITY_MEDIA_THUMBNAIL_IMAGE_PROPS, MEDIA_GENERATE_MEDIA_ACTION_ID, MEDIA_IMPORT_URL_ACTION_ID, type MediaCatalogSourceMetadataItem, type MediaPanelActionSpec } from './mediaCatalogTypes'
@@ -22,8 +19,6 @@ import {
   getCommandMenuMediaDescription,
   getCommandMenuMediaSourceLabel,
   isMediaRowControlTarget,
-  mediaCompactListIconFrameClassName,
-  mediaCompactListItemClassName,
   primeMediaMouseDrag,
   primeMediaPointerDrag,
   shouldHandleMediaRowPointer,
@@ -72,7 +67,7 @@ export function MediaCandidateListRow({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaCompactListItemClassName()}
+      className="agentic-collection-item" data-layout="list"
       data-kg-command-menu-media-candidate={item.key}
       data-kg-media-draggable="1"
       data-kg-command-menu-media-kind={item.kind}
@@ -97,14 +92,14 @@ export function MediaCandidateListRow({
         onSelect(item)
       }}
     >
-      <span className={mediaCompactListIconFrameClassName()} aria-hidden>
+      <span className="agentic-collection-leading" aria-hidden>
         <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${displayName} media compact summary`}>
-        <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={displayName} data-kg-media-list-row-section="title">{displayName}</h3>
-        <p className={floatingPanelCatalogCompactRowMetaClassName()} title={description} data-kg-media-list-row-section="meta">{source}</p>
+        <h3 className="agentic-collection-title" title={displayName} data-kg-media-list-row-section="title">{displayName}</h3>
+        <p className="agentic-collection-meta" title={description} data-kg-media-list-row-section="meta">{source}</p>
       </section>
-      <span className={floatingPanelCatalogCompactRowTokenClassName()}>@</span>
+      <span className="agentic-collection-trailing">@</span>
     </article>
   )
 }
@@ -112,15 +107,15 @@ export function MediaCandidateListRow({
 export function MediaSourceMetadataListRow({ item }: { item: MediaCatalogSourceMetadataItem }) {
   const tags = buildSourceMetadataTags(item)
   return (
-    <article className={mediaCompactListItemClassName()} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" data-kg-media-list-row-layout={MEDIA_COMPACT_LIST_ROW_LAYOUT} data-kg-media-list-view-row="1">
-      <span className={mediaCompactListIconFrameClassName()} aria-hidden>
+    <article className="agentic-collection-item" data-layout="list" data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" data-kg-media-list-row-layout={MEDIA_COMPACT_LIST_ROW_LAYOUT} data-kg-media-list-view-row="1">
+      <span className="agentic-collection-leading" aria-hidden>
         <Video className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${item.name} source compact metadata`}>
-        <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={item.name} data-kg-media-list-row-section="title">{item.name}</h3>
-        <p className={floatingPanelCatalogCompactRowMetaClassName()} title={tags.join(' ')} data-kg-media-list-row-section="meta">{tags.join(' ') || 'Source-backed video sequence metadata'}</p>
+        <h3 className="agentic-collection-title" title={item.name} data-kg-media-list-row-section="title">{item.name}</h3>
+        <p className="agentic-collection-meta" title={tags.join(' ')} data-kg-media-list-row-section="meta">{tags.join(' ') || 'Source-backed video sequence metadata'}</p>
       </section>
-      <span className={floatingPanelCatalogCompactRowTokenClassName()}>source</span>
+      <span className="agentic-collection-trailing">source</span>
     </article>
   )
 }
@@ -145,7 +140,7 @@ export function MediaActionListRow({
     <article
       role="button"
       tabIndex={0}
-      className={mediaCompactListItemClassName()}
+      className="agentic-collection-item" data-layout="list"
       data-kg-command-menu-media-action={action.id}
       data-kg-command-menu-prefix={prefix}
       data-kg-media-list-row-layout={MEDIA_COMPACT_LIST_ROW_LAYOUT}
@@ -166,14 +161,14 @@ export function MediaActionListRow({
         onSelect(action)
       }}
     >
-      <span className={mediaCompactListIconFrameClassName()} aria-hidden>
+      <span className="agentic-collection-leading" aria-hidden>
         <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${action.label} compact action`}>
-        <h3 className={floatingPanelCatalogCompactRowTitleClassName()} data-kg-media-list-row-section="title">{action.label}</h3>
-        <p className={floatingPanelCatalogCompactRowMetaClassName()} title={action.description} data-kg-media-list-row-section="meta">{action.group}</p>
+        <h3 className="agentic-collection-title" data-kg-media-list-row-section="title">{action.label}</h3>
+        <p className="agentic-collection-meta" title={action.description} data-kg-media-list-row-section="meta">{action.group}</p>
       </section>
-      <span className={floatingPanelCatalogCompactRowTokenClassName()}>{prefix}</span>
+      <span className="agentic-collection-trailing">{prefix}</span>
     </article>
   )
 }
@@ -210,7 +205,7 @@ export function UploadedMediaListRow({
       role="button"
       tabIndex={0}
       draggable={true}
-      className={mediaCompactListItemClassName()}
+      className="agentic-collection-item" data-layout="list"
       data-kg-media-upload-item={item.id}
       data-kg-media-draggable="1"
       data-kg-media-upload-kind={item.kind}
@@ -255,7 +250,7 @@ export function UploadedMediaListRow({
     >
       <button
         type="button"
-        className={mediaCompactListIconFrameClassName('group relative overflow-hidden p-0')}
+        className="agentic-collection-leading group relative overflow-hidden p-0"
         title={`Preview ${item.name}`}
         aria-label={`Preview ${item.name}`}
         data-kg-media-row-control="1"
@@ -276,8 +271,8 @@ export function UploadedMediaListRow({
         )}
       </button>
       <section className="min-w-0" aria-label={`${item.name} uploaded media compact summary`}>
-        <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={item.name} data-kg-media-list-row-section="title">{item.name}</h3>
-        <p className={floatingPanelCatalogCompactRowMetaClassName()} title={meta} data-kg-media-list-row-section="meta">{meta}</p>
+        <h3 className="agentic-collection-title" title={item.name} data-kg-media-list-row-section="title">{item.name}</h3>
+        <p className="agentic-collection-meta" title={meta} data-kg-media-list-row-section="meta">{meta}</p>
       </section>
       <button
         type="button"
