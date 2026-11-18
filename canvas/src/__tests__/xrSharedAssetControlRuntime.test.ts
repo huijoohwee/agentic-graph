@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { Group, Mesh } from 'three'
+import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
 import { applyGameFpsNpcSelectionHighlight } from '@/features/game-fps/GameFpsSharedNpcHighlights'
+import { GameModeFloatingPanelView } from '@/features/game-fps/GameModeFloatingPanelView'
 import { readGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -27,6 +31,8 @@ import {
 } from '@/features/three/XrKeyboardChoreographyRuntime'
 import { readXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { xrMotionReferenceTimelineDocumentKey } from '@/features/three/xrMotionReferenceTimeline'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
 const source = (...parts: string[]) => readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
 
@@ -53,7 +59,7 @@ function buildSharedAssetGraph(): GraphData {
   }
 }
 
-export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGameMode(): void {
+export async function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGameMode(): Promise<void> {
   const previousState = useGraphStore.getState()
   const previousSurface = {
     markdownDocumentName: previousState.markdownDocumentName,
@@ -158,20 +164,19 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       throw new Error(`expected BottomPanel Timeline object lanes without cast metadata to promote and animate, got ${JSON.stringify({ looseTimelineLaneApplied, loosePerformerTrack, savedAfterLooseTimelineApply })}`)
     }
 
-    const selectedNpc = controlXrSharedAssetControls({ operation: 'select-target', targetId: 'npc-scout' })
+    await selectGameModeNpcInPanel()
     const npcInspection = inspectXrSharedAssetControls()
     const animatedNpc = controlXrSharedAssetControls({ operation: 'apply-animation', presetId: 'dance' })
     const rejectedNpcActionPath = controlXrSharedAssetControls({ operation: 'apply-animation', presetId: 'car-chase' })
     const npcControl = readXrSharedAssetGameplayNpcControl('npc-scout')
-    if (!selectedNpc.ok
-      || npcInspection.selectedKind !== 'npc'
+    if (npcInspection.selectedKind !== 'npc'
       || npcInspection.selectedTargetId !== 'npc-scout'
       || !npcInspection.targets.some(target => target.kind === 'npc' && target.id === 'npc-scout')
       || !animatedNpc.ok
       || rejectedNpcActionPath.ok
       || npcControl.assignedPresetId !== 'dance'
       || useGraphStore.getState().floatingPanelView !== 'gameMode') {
-      throw new Error(`expected shared controls to select and animate gameplay npc-* targets without stealing the Game Mode panel, got ${JSON.stringify({ selectedNpc, npcInspection, animatedNpc, rejectedNpcActionPath, npcControl, floatingPanelView: useGraphStore.getState().floatingPanelView })}`)
+      throw new Error(`expected shared controls to select and animate gameplay npc-* targets without stealing the Game Mode panel, got ${JSON.stringify({ npcInspection, animatedNpc, rejectedNpcActionPath, npcControl, floatingPanelView: useGraphStore.getState().floatingPanelView })}`)
     }
 
     const componentSource = source('features', 'three', 'XrSharedAssetControls.tsx')
@@ -181,6 +186,7 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     const motionSource = source('features', 'three', 'MotionControlTargetCards.tsx')
     const motionRuntimeSource = source('features', 'three', 'xrMotionReferenceRuntime.ts')
     const timelineSource = source('features', 'three', 'XrCameraMotionSection.tsx')
+    const insertedLanesSource = source('features', 'three', 'XrTimelineInsertedLanes.tsx')
     const retimeSource = source('features', 'three', 'CameraMotionMarkRetime.tsx')
     const gameModeSource = source('features', 'game-fps', 'GameModeFloatingPanelView.tsx')
     const gameStageSource = source('features', 'game-fps', 'GameFpsMissionStage.tsx')
@@ -230,13 +236,6 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       if (!motionRuntimeSource.includes(marker)) throw new Error(`expected XR motion runtime to promote placed subjects into cast tracks through ${marker}`)
     }
     for (const marker of [
-      'data-kg-game-mode-npc-shared-target={npc.id}',
-      'data-kg-xr-shared-gameplay-npc-selected={sharedAssetControls.selectedKind === \'npc\'',
-      'controlXrSharedAssetControls({ operation: \'select-target\', targetId: npcId })',
-    ]) {
-      if (!gameModeSource.includes(marker)) throw new Error(`expected Game Mode NPC rows to expose shared npc-* targeting through ${marker}`)
-    }
-    for (const marker of [
       'readXrSharedAssetGameplayNpcControl',
       'sampleXrAnimationPose',
       'mesh.userData.kgXrSharedAssetTarget = npc.id',
@@ -248,6 +247,11 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       'data-kg-xr-gameplay-npc-lane={npc.id}',
       'data-kg-xr-gameplay-npc-bar={npc.id}',
       'data-kg-xr-shared-asset-target={npc.id}',
+      'onClick={() => selectNpcTimelineLane(npc.id)}',
+    ]) {
+      if (!insertedLanesSource.includes(marker)) throw new Error(`expected BottomPanel Timeline NPC lanes to expose ${marker}`)
+    }
+    for (const marker of [
       "controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })",
       "controlXrSharedAssetControls({ operation: 'select-target', targetId })",
     ]) {
@@ -333,6 +337,35 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     useGraphStore.setState(previousSurface as never)
     hydrateCanonicalXrMotionReferenceRuntime()
     hydrateCanonicalXrPhysicsRuntime()
+  }
+}
+
+async function selectGameModeNpcInPanel(): Promise<void> {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.body.appendChild(dom.window.document.createElement('div'))
+  const root = createRoot(container)
+  const { uiToasts, uiLogEntries } = useGraphStore.getState()
+  try {
+    dom.window.history.replaceState(null, '', `/?studio-offline=${'1'.repeat(40)}`)
+    await mountReactRoot(root, React.createElement(
+      AgenticOsRemoteGrammarAutoHydrationBoundary,
+      { children: React.createElement(GameModeFloatingPanelView) },
+    ))
+    const button = container.querySelector<HTMLButtonElement>('[data-kg-game-mode-npc-shared-target="npc-scout"]')
+    assert.ok(button, 'expected a shared targeting button for npc-scout')
+    assert.equal(button.getAttribute('aria-pressed'), 'false')
+
+    await act(async () => button.click())
+
+    assert.equal(button.getAttribute('aria-pressed'), 'true')
+    assert.equal(button.closest('[data-kg-game-mode-npc-row]')?.getAttribute('data-kg-xr-shared-gameplay-npc-selected'), '1')
+  } finally {
+    try {
+      await unmountReactRoot(root)
+    } finally {
+      useGraphStore.setState({ uiToasts, uiLogEntries })
+      restore()
+    }
   }
 }
 
