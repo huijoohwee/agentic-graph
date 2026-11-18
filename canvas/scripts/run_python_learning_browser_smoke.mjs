@@ -29,7 +29,7 @@ try {
   await symlink(join(root, 'node_modules'), join(scratch, 'node_modules'), 'dir')
   await writeFile(join(scratch, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/proof-entry.jsx"></script></body></html>')
   const catalogText = process.env.PROGRAMMATIC_DRONE_CATALOG ? await readFile(process.env.PROGRAMMATIC_DRONE_CATALOG, 'utf8') : undefined
-  await writeFile(join(scratch, 'proof-entry.jsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import Page from '/@fs/${canvas}/src/features/testing/PythonLearningSmokePage.tsx';import '/@fs/${canvas}/src/index.css';createRoot(document.getElementById('root')).render(<Page catalogText={new URLSearchParams(location.search).has('catalog') ? ${JSON.stringify(catalogText) || 'undefined'} : undefined}/>);`)
+  await writeFile(join(scratch, 'proof-entry.jsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import Page from '/@fs/${canvas}/src/features/testing/PythonLearningSmokePage.tsx';import 'agentic-design-system/profile.css';import '/@fs/${canvas}/src/index.css';createRoot(document.getElementById('root')).render(<Page catalogText={new URLSearchParams(location.search).has('catalog') ? ${JSON.stringify(catalogText) || 'undefined'} : undefined}/>);`)
   const proofPath = '/__python_learning_smoke'
   server = await createServer({ configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', root: canvas, cacheDir: join(scratch, 'vite-cache'),
     plugins: [{ name: 'python-learning-smoke-entry', configureServer(owner) {
