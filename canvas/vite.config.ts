@@ -6328,6 +6328,7 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/react-dom/')) return 'react'
                 if (moduleId.includes('/node_modules/react-router-dom/')) return 'react'
                 if (moduleId.includes('/node_modules/d3/')) return 'd3'
+                if (/\/node_modules\/agentic-design-system\/site\/(?:skills-commands\.js|toolbar-icons\.js|icons\.json)$/.test(moduleId)) return 'design-system-panel'
                 if (moduleId.includes('/node_modules/lucide-react/')) return 'ui'
                 if (moduleId.includes('/node_modules/zustand/')) return 'ui'
                 if (moduleId.includes('/node_modules/fflate/')) return 'fflate'
@@ -6353,8 +6354,7 @@ export default defineConfig(({ command, mode }) => {
                 ) {
                   return 'markdown-ast'
                 }
-                // Preserve Mermaid's diagram-level dynamic imports. Prefix each emitted chunk so
-                // the existing lazy-vendor cache and byte-budget policies keep applying to them.
+                // Preserve Mermaid's diagram-level lazy imports and cache budgets.
                 const mermaidInternalChunk = moduleId.match(
                   /\/node_modules\/mermaid\/dist\/chunks\/mermaid\.core\/([^/?]+)\.mjs(?:\?.*)?$/,
                 )
