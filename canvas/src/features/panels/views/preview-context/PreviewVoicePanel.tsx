@@ -50,7 +50,7 @@ export default function PreviewVoicePanel({ documentText, selectionText }: { doc
     if (!speakBrowserText({ text, language: voice.lang, voice, onEnd: () => finish('Preview complete.'), onError: () => finish('Voice preview failed. Try another local voice.') })) finish('Voice preview is unavailable.')
   }
   return <section className="grid min-w-0 gap-3" aria-label="AI Voice Studio preview">
-    <header><h3 className="font-semibold">AI Voice Studio</h3><p className="text-xs">Audition text from this document with an installed local voice.</p></header>
+    <header><h3 className="agentic-panel-title">AI Voice Studio</h3><p className="text-xs">Audition text from this document with an installed local voice.</p></header>
     <nav className="flex flex-wrap gap-2" aria-label="Voice preview source">
       <button type="button" className="rounded border px-2 py-1" onClick={() => { stop(); setText(excerpt.text) }}>Use document excerpt</button>
       <button type="button" className="rounded border px-2 py-1" disabled={!selectionText.trim()} onClick={() => { stop(); setText(selectionText.slice(0, PREVIEW_NARRATION_LIMIT)) }}>Use selected item text</button>

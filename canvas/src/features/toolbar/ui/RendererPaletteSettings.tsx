@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
@@ -17,18 +18,14 @@ import {
 } from '@/lib/config';
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens';
 import { PlainTextInputEditor } from '@/components/ui/PlainTextInputEditor';
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography';
 import {
   UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME,
   UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses';
 
 export function RendererPaletteSettings() {
-  const uiPanelKeyValueInputClass = useGraphStore(
-    (s) =>
-      s.uiPanelKeyValueInputClass ||
-      PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass
-  );
+  const typography = usePanelTypography()
+  const uiPanelKeyValueInputClass = typography.keyValueInputClass
   const { palette, handleUpdatePaletteColor } = useRendererPalette();
 
   const nodeTypes = [

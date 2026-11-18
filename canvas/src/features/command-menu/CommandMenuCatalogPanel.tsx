@@ -109,7 +109,7 @@ export function CommandMenuReferenceCatalog({
     <section className={cn('min-h-0 overflow-auto px-1 pb-2', panelTypography.panelTextClass, className)} aria-label="Command Menu" data-kg-command-menu-ktv-layout="1" data-kg-command-menu-reference-catalog="1">
       <header className={cn('mb-1 flex items-center justify-between gap-2 px-1 py-1', compactHeader ? '' : UI_THEME_TOKENS.panel.bg)}>
         <section className="min-w-0">
-          <h2 className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</h2>
+          <h2 className={cn('truncate agentic-panel-title', UI_THEME_TOKENS.text.primary)}>{title}</h2>
           <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
         </section>
         <section className="flex shrink-0 items-center gap-1" aria-label="Command prefixes">

@@ -77,7 +77,7 @@ export function SpatialAssetToolsPanel() {
       />
 
       <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="3D graphics stack" data-kg-media-3d-graphics-stack="1">
-        <h3 className="text-xs font-semibold uppercase">Graphics</h3>
+        <h3 className="agentic-panel-title">Graphics</h3>
         <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-xs">
           {runtimeStack.map(item => (
             <React.Fragment key={item.id}>
@@ -97,7 +97,7 @@ export function SpatialAssetToolsPanel() {
       >
         <header className="flex flex-wrap items-center justify-between gap-2">
           <section className="min-w-0">
-            <h3 className="text-xs font-semibold uppercase">Spatial Tools</h3>
+            <h3 className="agentic-panel-title">Spatial Tools</h3>
             <output className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-media-3d-spatial-tool-label="1">
               {readSpatialCaptureToolLabel(spatialTool)}
             </output>

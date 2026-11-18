@@ -51,7 +51,7 @@ function ChoreographyCard({
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-xr-choreography-card-row="title">
-          <h3 className="truncate text-xs font-semibold" title={title}>{title}</h3>
+          <h3 className="truncate agentic-panel-title" title={title}>{title}</h3>
         </header>
         <section className="grid min-w-0 gap-0.5" data-kg-xr-choreography-card-row="meta">
           <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{description}</p>
@@ -139,7 +139,7 @@ export function XrChoreographyInspector({
     <section className="grid gap-2" aria-label="Choreography" data-kg-xr-choreography-inspector="shared-runtime">
       <header className="flex items-center justify-between gap-2">
         <section className="min-w-0">
-          <h2 className="text-xs font-semibold uppercase">Choreography</h2>
+          <h2 className="agentic-panel-title">Choreography</h2>
           <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>One mark model · Configure selected marks in Timeline</p>
         </section>
         <section className="grid shrink-0 justify-items-end gap-0.5">

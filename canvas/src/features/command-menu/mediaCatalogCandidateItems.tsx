@@ -323,7 +323,7 @@ export function MediaSourceMetadataRow({ item }: { item: MediaCatalogSourceMetad
       <MediaSourceMetadataThumbnail item={item} />
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${item.name} source metadata`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
-          <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
+          <h3 className={cn('m-0 truncate agentic-panel-title', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
           <span className={cn('shrink-0 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>source</span>
         </header>
         <section className="flex min-w-0 flex-wrap items-center gap-1" data-kg-media-list-row-section="meta">
@@ -346,7 +346,7 @@ export function MediaSourceMetadataCard({ item }: { item: MediaCatalogSourceMeta
       </figure>
       <header className="flex min-w-0 items-start justify-between gap-2 px-2 pt-2">
         <section className="min-w-0">
-          <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
+          <h3 className={cn('m-0 truncate agentic-panel-title', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
           <p className={cn('m-0 mt-1 truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>source-backed</p>
         </section>
         <ResponsiveInlineIconBadge Icon={Video} label="video" />
@@ -462,7 +462,7 @@ export function MediaActionCard({
       </figure>
       <header className="flex min-w-0 items-start justify-between gap-2 px-2 pt-2">
         <section className="min-w-0">
-          <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{action.label}</h3>
+          <h3 className={cn('m-0 truncate agentic-panel-title', UI_THEME_TOKENS.text.primary)}>{action.label}</h3>
           <p className={cn('m-0 mt-1 truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{action.id}</p>
         </section>
         <ResponsiveInlineIconBadge Icon={Icon} label={prefix} />

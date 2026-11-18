@@ -1,10 +1,7 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import Tooltip from 'agentic-design-system/react/hover'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import {
-  KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  KTV_STATUS_TEXT_SIZE_CLASS_NAME,
-} from 'grph-shared/ui/keyTypeValueRows'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildNodeMediaInventory, type NodeMediaInventoryRow } from '@/components/GraphCanvas/helpers'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
@@ -31,13 +28,11 @@ export default function MediaNodesSection({
   onToggle?: (next: boolean) => void
 }) {
   const graph = useActiveGraphRenderData() as GraphData | null
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || 'font-sans')
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  )
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(
-    s => s.uiPanelMicroLabelTextSizeClass || KTV_STATUS_TEXT_SIZE_CLASS_NAME,
-  )
+  const {
+    fontClass: uiPanelTextFontClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    microLabelTextSizeClass: uiPanelMicroLabelTextSizeClass,
+  } = usePanelTypography()
   const renderMediaAsNodes = useGraphStore(s => s.renderMediaAsNodes)
   const setRenderMediaAsNodes = useGraphStore(s => s.setRenderMediaAsNodes)
   const markdownViewerMediaMode = useGraphStore(s => s.markdownViewerMediaMode || 'chip')

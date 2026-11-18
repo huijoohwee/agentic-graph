@@ -187,7 +187,7 @@ export function DesignEditorOverviewPanel(props: {
 
       <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Design tokens state">
         <header className={cn(uiToolbarRowScrollClassName, 'justify-between gap-2')}>
-          <section className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Tokens</section>
+          <section className={cn('agentic-panel-title', UI_THEME_TOKENS.text.primary)}>Tokens</section>
           <button
             type="button"
             className={cn('App-toolbar__btn', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg, panelTypography.microLabelClass)}

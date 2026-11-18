@@ -1,6 +1,6 @@
 @layer base {
   body { font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
-  h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
+  :is(h3, h4):not(:where(.agentic-panel-section-title, .agentic-panel-title)) { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
   .lucide,
   [data-kg-ui-icon] {
     stroke-width: var(--agentic-icon-stroke-width);

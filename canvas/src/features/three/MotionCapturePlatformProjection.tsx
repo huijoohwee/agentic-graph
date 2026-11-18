@@ -235,7 +235,7 @@ export function MotionCapturePlatformProjection({
     >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <span>
-          <h3 className="text-xs font-semibold">Capture platform</h3>
+          <h3 className="agentic-panel-title">Capture platform</h3>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Provider-neutral · derived landmarks only</p>
         </span>
         <span className={cn('rounded border px-1.5 py-0.5 text-xs', UI_THEME_TOKENS.panel.border, evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.status.warning)}>

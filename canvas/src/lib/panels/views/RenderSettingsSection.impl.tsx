@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { RendererSectionDisclosure } from '@/features/panels/hooks/useRendererPanelState'
 import React from 'react'
 import { runMarkdownPipelineWithStatus } from '@/features/panels/hooks/markdownPipelineActions'
@@ -61,15 +62,11 @@ export default function RenderSettingsSection({ layoutSettings, inspection = fal
   }, [documentStructureBaselineLock, upsertUiToast])
 
   const [pipelineStatus, setPipelineStatus] = React.useState<string | null>(null)
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-xs',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const neutralToolbarButtonClassName = `App-toolbar__btn ${uiToolbarButtonMutedClassName}`
 
   const voxelApplicable = isVoxelModeApplicable({

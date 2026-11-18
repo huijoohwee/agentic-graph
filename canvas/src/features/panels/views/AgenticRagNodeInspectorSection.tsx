@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import Tooltip from 'agentic-design-system/react/hover'
 import {
@@ -34,21 +35,17 @@ export function AgenticRagNodeInspectorSection({
   onCopyAgenticRagNodeJson,
   agenticPathInfo,
 }: AgenticRagNodeInspectorSectionProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-xs',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const uiIconPillBadgeTextSizeClass = useGraphStore(s => s.uiIconPillBadgeTextSizeClass)
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
   const uiPanelRowDensityCompactClass = useGraphStore(
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
   )
   const inspectorPanelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1`
-  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`
+  const inspectorHeadingClassName = `agentic-panel-title ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorMutedTextClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorBodyClassName = `text-xs ${UI_THEME_TOKENS.text.primary} space-y-1`
   const inspectorLabelClassName = UI_THEME_TOKENS.text.secondary

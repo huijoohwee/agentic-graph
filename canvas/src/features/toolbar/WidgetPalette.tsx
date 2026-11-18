@@ -5,7 +5,6 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
 import {
   beginFlowWidgetPointerDragSession,
   buildFlowWidgetDragPayload,
@@ -32,8 +31,7 @@ export default function WidgetPalette(args: {
   children?: React.ReactNode
 }) {
   const panelTypography = usePanelTypography()
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || 'font-sans')
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = panelTypography
   const aspectRatio = useGraphStore(s => s.strybldrStoryboardCardAspectMode === '9:16' ? '9:16' : '16:9')
   const entries = args.entries
   const dragEnabled = args.dragEnabled === true

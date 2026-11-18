@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import Tooltip from 'agentic-design-system/react/hover'
@@ -50,7 +51,6 @@ interface GraphRagWorkflowIndexingSectionProps {
 }
 
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
 export function GraphRagWorkflowIndexingSection({
   workflowDoc,
@@ -76,23 +76,13 @@ export function GraphRagWorkflowIndexingSection({
     },
     [onUpdateWorkflow],
   )
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s =>
-      s.uiPanelKeyValueInputClass ||
-      PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
-  )
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(
-    s => s.uiPanelMicroLabelTextSizeClass || 'text-xs',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    monospaceTextClass: uiPanelMonospaceTextClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    microLabelTextSizeClass: uiPanelMicroLabelTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    keyValueInputClass: uiPanelKeyValueInputClass,
+  } = usePanelTypography()
   const sectionTextClassName = `${UI_THEME_TOKENS.text.primary} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass}`
   const updateMaxHops = React.useCallback(
     (raw: number) => {

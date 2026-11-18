@@ -169,10 +169,10 @@ export function CitySimPanelProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <b className="flex items-center gap-1 text-xs">
+          <span className="agentic-panel-title flex items-center gap-1">
             <ProjectionIcon surface={surface} />
             {copy.title}
-          </b>
+          </span>
           <span className={cn('block text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Local-only · $0 default path
           </span>

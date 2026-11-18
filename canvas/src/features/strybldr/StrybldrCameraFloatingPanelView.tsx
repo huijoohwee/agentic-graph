@@ -61,7 +61,7 @@ export function StrybldrCameraFloatingPanelView() {
               <Camera className="size-5" aria-hidden />
             </span>
             <section className="min-w-0 flex-1">
-              <h3 className="text-xs font-semibold">Camera Runtime</h3>
+              <h3 className="agentic-panel-title">Camera Runtime</h3>
               <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One shared Camera owner across 2D, 3D, and XR.</p>
               <section
                 className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}

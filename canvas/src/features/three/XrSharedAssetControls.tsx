@@ -128,7 +128,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
       data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
     >
       <header className="flex min-w-0 items-center justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-1 text-xs font-semibold">
+        <h3 className="flex min-w-0 items-center gap-1 agentic-panel-title">
           <Target className="size-3.5 shrink-0" aria-hidden />
           <span className="truncate">XR Asset Control</span>
         </h3>

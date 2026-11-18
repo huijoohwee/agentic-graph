@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import Tooltip from 'agentic-design-system/react/hover'
 import {
@@ -93,12 +94,7 @@ export function OrchestratorTraversalSection({
   presetsProps,
   editorProps,
 }: OrchestratorTraversalSectionProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   return (
     <>
       <CollapsibleSection

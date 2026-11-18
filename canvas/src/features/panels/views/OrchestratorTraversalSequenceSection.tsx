@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { ChevronDown } from 'lucide-react'
 import { type TraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
@@ -45,15 +46,11 @@ export function TraversalSequenceSection({
 }: TraversalSequenceSectionProps) {
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const iconSizeClass = getIconSizeClass(uiIconScale)
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const [traversalExpanded, setTraversalExpanded] = React.useState(false)
   const graphRagTraversal =
     lastTraversal && lastTraversal.mode === 'graphRag' ? lastTraversal : null
@@ -70,11 +67,7 @@ export function TraversalSequenceSection({
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
           >
             <section
-              className={[
-                `flex items-center gap-1 font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`,
-                uiPanelKeyValueTextSizeClass,
-                uiPanelTextFontClass,
-              ].join(' ')}
+              className={`agentic-panel-title flex items-center gap-1 ${UI_THEME_TOKENS.text.tertiary}`}
             >
               <span>{UI_COPY.orchestratorTraversalSequenceTitle}</span>
             </section>
@@ -187,17 +180,13 @@ interface GenericTraversalDetailsProps {
 }
 
 function GenericTraversalDetails({ lastTraversal }: GenericTraversalDetailsProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const uiPanelRowDensityCompactClass = useGraphStore(
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
-  )
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
   )
   if (lastTraversal.mode !== 'generic') return null
   return (

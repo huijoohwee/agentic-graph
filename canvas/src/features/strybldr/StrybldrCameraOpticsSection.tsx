@@ -46,7 +46,7 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
       data-kg-camera-optics={formatCameraOptics(settings)}
     >
       <header className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-xs font-black uppercase tracking-normal">
+        <span className="agentic-panel-title flex items-center gap-1">
           <Aperture className="size-3.5" aria-hidden /> Real optics
         </span>
         <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Camera-owned · keyframable</span>

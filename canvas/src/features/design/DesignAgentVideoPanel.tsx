@@ -117,7 +117,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
   return (
     <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Design video render state">
       <header className={cn(uiToolbarRowScrollClassName, 'justify-between gap-2')}>
-        <section className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Video</section>
+        <section className={cn('agentic-panel-title', UI_THEME_TOKENS.text.primary)}>Video</section>
         <button
           type="button"
           className={cn('App-toolbar__btn', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg, panelTypography.microLabelClass)}
@@ -147,7 +147,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
       </dl>
       <section className="mt-2 grid min-w-0 gap-2 xl:grid-cols-2" aria-label="Agent video workspace">
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 agentic-panel-title', UI_THEME_TOKENS.text.primary)}>
             <FileCode className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Workspace files</span>
           </header>
@@ -162,7 +162,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 agentic-panel-title', UI_THEME_TOKENS.text.primary)}>
             <ListTree className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Compositions</span>
           </header>
@@ -179,7 +179,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 agentic-panel-title', UI_THEME_TOKENS.text.primary)}>
             <Images className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Assets</span>
           </header>
@@ -193,7 +193,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 agentic-panel-title', UI_THEME_TOKENS.text.primary)}>
             <Rows3 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Timeline lanes</span>
           </header>

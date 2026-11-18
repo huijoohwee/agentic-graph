@@ -1,15 +1,23 @@
+import { createContext, useContext } from 'react'
 import { normalizeSingleLineControlClassName } from './theme-tokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
-import { PANEL_TYPOGRAPHY_DEFAULTS, type PanelTypography } from 'grph-shared/ui/panelTypography'
+import { coercePanelTypography, PANEL_TYPOGRAPHY_DEFAULTS, type PanelTypography } from 'grph-shared/ui/panelTypography'
 
 export type { PanelTypography } from 'grph-shared/ui/panelTypography'
 
+// FloatingPanelShell supplies the body font. Its descendants use the pinned
+// Design System roles even when other editors have custom typography saved.
+export const FloatingPanelTypographyContext = createContext(false)
+const sharedPanelTypography = coercePanelTypography(null)
+
 export function usePanelTypography(): PanelTypography {
+  const floating = useContext(FloatingPanelTypographyContext)
   return useGraphStore(
     useShallow(state => {
+      if (floating) return sharedPanelTypography
       const fontClass = state.uiPanelTextFontClass || PANEL_TYPOGRAPHY_DEFAULTS.fontClass
       const textSizeClass = normalizeUiTextClasses(state.uiPanelKeyValueTextSizeClass || PANEL_TYPOGRAPHY_DEFAULTS.textSizeClass)
       const microLabelTextSizeClass =

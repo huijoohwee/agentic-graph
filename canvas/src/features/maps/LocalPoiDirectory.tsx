@@ -245,7 +245,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
       aria-labelledby="local-poi-directory-title"
     >
       <header>
-        <h3 id="local-poi-directory-title" className="font-semibold mb-1">Local POI Directory</h3>
+        <h3 id="local-poi-directory-title" className="agentic-panel-title mb-1">Local POI Directory</h3>
         <p className="opacity-70">
           {isSyntheticSourcePreview
             ? 'Showing the synthetic places embedded in the selected demo document. This read-only preview creates no operator attestations or release manifest.'

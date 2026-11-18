@@ -461,7 +461,7 @@ export function CitySimFloatingPanelView() {
           aria-label="City zoning advisor"
         >
           <header className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-1 text-xs font-semibold">
+            <h3 className="flex items-center gap-1 agentic-panel-title">
               <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
               Zoning advisor
             </h3>

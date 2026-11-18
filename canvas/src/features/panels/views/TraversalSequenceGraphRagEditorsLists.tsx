@@ -1,6 +1,6 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { Eraser } from 'lucide-react'
-import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { type TraversalSummary, type GraphRagTraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
 import { reorderList } from '@/lib/reorder'
@@ -31,6 +31,7 @@ export function TraverseNodesListEditor({
   setLastTraversal,
   selectNode,
 }: TraverseNodesListEditorProps) {
+  const { panelTextClass } = usePanelTypography()
   const {
     editingTraverseIndex,
     setEditingTraverseIndex,
@@ -38,12 +39,7 @@ export function TraverseNodesListEditor({
     setEditingTraverseText,
   } = editPaths
   return (
-    <section
-      className={[
-        useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-sm'),
-        useGraphStore(s => s.uiPanelTextFontClass || 'font-sans'),
-      ].join(' ')}
-    >
+    <section className={panelTextClass}>
       <section className="flex items-center justify-between mb-[2px]">
         <span className="font-semibold">{UI_COPY.orchestratorTraversalTraverseNodesTitle}</span>
         <button
@@ -207,16 +203,9 @@ export function HopsListEditor({
   setLastTraversal,
 }: HopsListEditorProps) {
   const { editingHopIndex, setEditingHopIndex, editingHopText, setEditingHopText } = editPaths
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
+  const { panelTextClass, monospaceTextClass: uiPanelMonospaceTextClass } = usePanelTypography()
   return (
-    <section
-      className={[
-        useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-sm'),
-        useGraphStore(s => s.uiPanelTextFontClass || 'font-sans'),
-      ].join(' ')}
-    >
+    <section className={panelTextClass}>
       <section className="flex items-center justify-between mb-[2px]">
         <span className="font-semibold">{UI_COPY.orchestratorTraversalHopsTitle}</span>
         <button
@@ -375,16 +364,9 @@ export function MultiHopListEditor({
     editingMultiHopText,
     setEditingMultiHopText,
   } = editPaths
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
+  const { panelTextClass, monospaceTextClass: uiPanelMonospaceTextClass } = usePanelTypography()
   return (
-    <section
-      className={[
-        useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-sm'),
-        useGraphStore(s => s.uiPanelTextFontClass || 'font-sans'),
-      ].join(' ')}
-    >
+    <section className={panelTextClass}>
       <section className="flex items-center justify-between mb-[2px]">
         <span className="font-semibold">{UI_COPY.orchestratorTraversalMultiHopTitle}</span>
         <button

@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { Eraser } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -38,15 +39,11 @@ export function TraversalQueryExampleEditor({
     editingExampleText,
     setEditingExampleText,
   } = editState
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    monospaceTextClass: uiPanelMonospaceTextClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+  } = usePanelTypography()
   return (
     <section
       className={[
@@ -284,12 +281,7 @@ export function AddHopInputs({
     newMultiHopText,
     setNewMultiHopText,
   } = editPaths
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   if (lastTraversal.mode !== 'graphRag') return null
   return (
     <section

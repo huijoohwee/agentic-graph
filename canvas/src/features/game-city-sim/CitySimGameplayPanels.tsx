@@ -86,7 +86,7 @@ export function CitySimGeoXrGameplayPanels({
           data-kg-city-gameplay-goal={snapshot.gameplay?.taskPoiId ?? ''}
         >
           <header className="flex items-center justify-between gap-2">
-            <h3 className="font-semibold">Neighborhood activity</h3>
+            <h3 className="agentic-panel-title">Neighborhood activity</h3>
             <span data-kg-city-gameplay-score="1">
               {snapshot.gameplay?.completedTasks ?? 0} goals reached
             </span>
@@ -178,7 +178,7 @@ export function CitySimGeoXrGameplayPanels({
           data-kg-city-coop-role={coop.role}
         >
           <header className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-1 font-semibold"><Users className="h-3.5 w-3.5" aria-hidden="true" /> Cooperative planning</h3>
+            <h3 className="flex items-center gap-1 agentic-panel-title"><Users className="h-3.5 w-3.5" aria-hidden="true" /> Cooperative planning</h3>
             <span>{coop.role === 'guest' ? 'Guest' : coop.role === 'host' ? 'Host' : 'Solo'}</span>
           </header>
           <p role="status" aria-live="polite" data-kg-city-coop-status="1" className={UI_THEME_TOKENS.text.secondary}>

@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
@@ -91,8 +92,7 @@ export function ResponsiveControlInput({
   className,
   ...inputProps
 }: ResponsiveControlInputProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
 
   return (
     <PanelTextInput
@@ -142,8 +142,7 @@ export function ResponsiveSelectRow({
   disabled,
   onChange,
 }: ResponsiveSelectRowProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
 
   return (
     <ResponsiveControlRow label={label} compact={compact} typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
@@ -170,8 +169,7 @@ export function ResponsiveToggleRow({
   disabled,
   onChange,
 }: ResponsiveToggleRowProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   const toggleGroupClassName = compact ? UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_CLASSNAME : UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_END_CLASSNAME
 
   return (

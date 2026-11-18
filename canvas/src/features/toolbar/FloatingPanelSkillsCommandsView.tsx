@@ -3,7 +3,6 @@ import { initialCatalogFilters, mountSkillsCommandsHeader, skillsCommandsTab, ty
 import 'agentic-design-system/skills-commands.css'
 import SkillsCommandsView, { resolveSkillsCommandsGroupKeys } from '@/features/panels/views/SkillsCommandsView'
 import { useCollapsibleSectionGroup } from '@/features/panels/ui/useCollapsibleSectionGroup'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
@@ -87,7 +86,6 @@ export function FloatingPanelSkillsCommandsView({
   promptRuntime = defaultPromptPresetSelectionRuntime,
   openPrompt = openCommandPrompt,
 }: FloatingPanelSkillsCommandsViewProps = {}) {
-  const panelTypography = usePanelTypography()
   const [{ prefix: prefixFilter, groupBy: grammarGroupBy, query: searchQuery, layout }, setFilters] = React.useState(initialCatalogFilters)
   const headerHost = React.useRef<HTMLDivElement>(null)
   const header = React.useRef<CatalogHeader | null>(null)
@@ -242,7 +240,7 @@ export function FloatingPanelSkillsCommandsView({
 
   return (
     <section
-      className={cn('agentic-skills-catalog', panelTypography.panelTextClass)}
+      className="agentic-skills-catalog"
       data-kg-floating-panel-skills-commands-view="true"
       data-kg-floating-panel-catalog-layout="skills-commands"
       data-kg-floating-panel-skills-commands-mcp-target={mcpTarget.mcpTool || undefined}

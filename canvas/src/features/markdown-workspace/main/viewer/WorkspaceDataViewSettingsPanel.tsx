@@ -213,7 +213,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
       ariaLabel={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}
       title={(
         <section className="flex min-w-0 max-w-full flex-col gap-1">
-          <h2 className={['text-base font-semibold min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
+          <h2 className={['agentic-panel-title min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
             {title}
           </h2>
           <p className={['text-xs min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>

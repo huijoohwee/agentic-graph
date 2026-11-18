@@ -115,8 +115,8 @@ export async function testInspectorTypographyUsesUiSettings() {
     const dt = container.querySelector('dt')
     if (!dt) throw new Error('expected inspector to render a dt element')
     const dtClass = String(dt.closest('[data-panel-field-row]')?.getAttribute('class') || dt.getAttribute('class') || '')
-    if (!dtClass.includes('text-[15px]')) {
-      throw new Error(`expected dt to use key/value size class, got ${JSON.stringify(dtClass)}`)
+    if (!dtClass.split(' ').includes('agentic-ktv-row') || dtClass.includes('text-[15px]')) {
+      throw new Error(`expected Design System row typography, got ${JSON.stringify(dtClass)}`)
     }
 
     const textarea = container.querySelector('textarea')

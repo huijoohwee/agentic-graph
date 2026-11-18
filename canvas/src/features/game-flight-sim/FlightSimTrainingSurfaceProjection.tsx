@@ -105,7 +105,7 @@ export function FlightSimTrainingSurfaceProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h3 className="flex items-center gap-1 text-xs font-semibold">
+          <h3 className="flex items-center gap-1 agentic-panel-title">
             <Plane className="h-3.5 w-3.5" aria-hidden="true" />
             Flight Training · {training.missionTitle}
           </h3>

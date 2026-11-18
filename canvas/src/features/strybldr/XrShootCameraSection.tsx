@@ -180,7 +180,7 @@ export function XrShootCameraSection() {
         <section className="flex min-w-0 items-center gap-2">
           <Clapperboard className="size-4 shrink-0" aria-hidden />
           <section>
-            <h3 className="text-xs font-black tracking-normal">SHOOT</h3>
+            <h3 className="agentic-panel-title">SHOOT</h3>
             <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Scene/object links, cast marks, rig, camera track.</p>
           </section>
         </section>

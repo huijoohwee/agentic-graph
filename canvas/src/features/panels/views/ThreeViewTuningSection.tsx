@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { RendererSectionDisclosure } from '@/features/panels/hooks/useRendererPanelState'
 import React from 'react'
 import type { GraphSchema } from '@/lib/graph/schema'
@@ -9,7 +10,6 @@ import ThreeViewStarfieldSection from '@/features/panels/views/ThreeViewStarfiel
 import ThreeViewCameraSection from '@/features/panels/views/ThreeViewCameraSection'
 import ThreeViewSelectionSection from '@/features/panels/views/ThreeViewSelectionSection'
 import ThreeViewGlobeEffectsSection from '@/features/panels/views/ThreeViewGlobeEffectsSection'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
 interface ThreeViewTuningSectionProps {
   schema: GraphSchema
@@ -18,11 +18,8 @@ interface ThreeViewTuningSectionProps {
 }
 
 export default function ThreeViewTuningSection({ schema, setThreeConfig, disclosure }: ThreeViewTuningSectionProps) {
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s =>
-      s.uiPanelKeyValueInputClass ||
-      PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
-  )
+  const typography = usePanelTypography()
+  const uiPanelKeyValueInputClass = typography.keyValueInputClass
 
   return (
     <section>

@@ -140,7 +140,7 @@ export function GaussianSplatEditorSection({
     >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <section className="min-w-0">
-          <h3 className="text-xs font-semibold uppercase">Gaussian Splat Studio</h3>
+          <h3 className="agentic-panel-title">Gaussian Splat Studio</h3>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{statusCopy}</p>
         </section>
         <output className={cn('rounded border px-2 py-1 text-xs', UI_THEME_TOKENS.panel.border)}>
@@ -150,7 +150,7 @@ export function GaussianSplatEditorSection({
 
       {inspection ? (
         <section aria-label="Gaussian splat inspection" data-kg-xr-gaussian-inspect="1">
-          <h4 className="text-xs font-semibold uppercase">Inspect</h4>
+          <h4 className="agentic-panel-title">Inspect</h4>
           <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
             <dt className={UI_THEME_TOKENS.text.tertiary}>Source / loaded</dt>
             <dd>{countLabel(inspection.sourcePointCount)} / {countLabel(inspection.loadedPointCount)}</dd>
@@ -204,7 +204,7 @@ export function GaussianSplatEditorSection({
       </fieldset>
 
       <section className="space-y-2" aria-label="Gaussian splat publication" data-kg-xr-gaussian-publish="1">
-        <h4 className="text-xs font-semibold uppercase">Publish</h4>
+        <h4 className="agentic-panel-title">Publish</h4>
         <nav className="flex flex-wrap gap-1">
           <button type="button" className="App-toolbar__btn" disabled={!editable} onClick={downloadOptimized} data-kg-xr-gaussian-download="1">Download optimized PLY</button>
           <button type="button" className="App-toolbar__btn" disabled={!editable} onClick={exportManifest} data-kg-xr-gaussian-manifest="1">Export edit manifest</button>

@@ -6,13 +6,11 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { uiToolbarColumnMenuListClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
 import { GROUP_PANEL_INVOCATION } from '@/features/group-panel/groupPanelContract.mjs'
 
 export function GroupPanelPaletteAction(props: { active: boolean }) {
   const panelTypography = usePanelTypography()
-  const uiPanelKeyValueTextSizeClass = useGraphStore(state => state.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
-  const uiPanelTextFontClass = useGraphStore(state => state.uiPanelTextFontClass || 'font-sans')
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = panelTypography
   const grouping = useSelectionGrouping({ active: props.active })
   return (
     <aside className="border-b border-[var(--kg-border)]" aria-label="Group Panel controls">

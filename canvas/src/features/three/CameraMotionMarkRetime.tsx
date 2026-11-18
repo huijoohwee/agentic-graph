@@ -408,7 +408,7 @@ export function CameraMotionMarkRetime({
       data-kg-xr-timeline-retime-layout={layout}
     >
       <header className="flex items-center justify-between gap-2 px-0.5">
-        <h4 className="text-xs font-semibold uppercase">Retime marks</h4>
+        <h4 className="agentic-panel-title">Retime marks</h4>
         <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Seconds · actor + camera</p>
       </header>
       <fieldset className="contents" disabled={!humanControlsEnabled} aria-label="Human timeline retiming">

@@ -81,7 +81,7 @@ function CameraCatalogCard({
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${title} Camera runtime summary`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-floating-panel-card-row="title">
           <h4
-            className={cn(invocationTitle ? UI_INLINE_CHIP_GROUP_CLASSNAME : 'truncate', 'text-xs font-semibold')}
+            className={cn(invocationTitle ? UI_INLINE_CHIP_GROUP_CLASSNAME : 'truncate', 'agentic-panel-title')}
             title={title}
             data-kg-camera-invocation-chip-renderer={invocationTitle ? 'shared-markdown-sigil' : undefined}
           >

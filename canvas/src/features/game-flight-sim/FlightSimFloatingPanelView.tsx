@@ -497,7 +497,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim companions"
         >
-          <h3 className="text-xs font-semibold">Motion Control · XR Mode</h3>
+          <h3 className="agentic-panel-title">Motion Control · XR Mode</h3>
           <div className="flex flex-wrap gap-1">
             <button
               type="button"
@@ -525,7 +525,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           data-kg-flight-sim-invocations="native"
         >
-          <h3 className="text-xs font-semibold">WebMCP · / · @ · #</h3>
+          <h3 className="agentic-panel-title">WebMCP · / · @ · #</h3>
           <Invocation operation="open" />
           <Invocation operation="start" />
           <Invocation operation="throttle" throttle={0.75} />

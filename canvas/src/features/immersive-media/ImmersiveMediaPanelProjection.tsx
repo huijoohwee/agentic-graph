@@ -356,7 +356,7 @@ export function ImmersiveMediaPanelProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <b className="flex items-center gap-1 text-xs"><SurfaceIcon surface={surface} />{copy.title}</b>
+          <span className="agentic-panel-title flex items-center gap-1"><SurfaceIcon surface={surface} />{copy.title}</span>
           <span className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{copy.subtitle} · local $0 default</span>
         </span>
         <span className="flex shrink-0 gap-1">

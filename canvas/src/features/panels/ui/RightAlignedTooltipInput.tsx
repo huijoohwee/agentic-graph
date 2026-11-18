@@ -1,7 +1,7 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import Tooltip from 'agentic-design-system/react/hover'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import { RightAlignedValueCell } from 'grph-shared/react/keyTypeValueRow'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 
@@ -23,13 +23,11 @@ export function RightAlignedTooltipInput({
   containerClassName,
   ...inputProps
 }: RightAlignedTooltipInputProps) {
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || PANEL_TYPOGRAPHY_DEFAULTS.fontClass)
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || PANEL_TYPOGRAPHY_DEFAULTS.textSizeClass,
-  )
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s => s.uiPanelKeyValueInputClass || PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
-  )
+  const {
+    fontClass: uiPanelTextFontClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    keyValueInputClass: uiPanelKeyValueInputClass,
+  } = usePanelTypography()
   const mergedClassName = [
     uiPanelTextFontClass,
     uiPanelKeyValueTextSizeClass,

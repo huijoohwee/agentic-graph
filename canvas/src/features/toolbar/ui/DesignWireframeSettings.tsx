@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -13,8 +14,7 @@ import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolb
 
 export function DesignWireframeSettings(props: { collapsed?: boolean; onToggle?: (collapsed: boolean) => void }) {
   const { settings, setSettings, resetSettings } = useDesignWireframeSettings()
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
+  const { fontClass: uiPanelTextFontClass, textSizeClass: uiPanelKeyValueTextSizeClass } = usePanelTypography()
   const bumpDesignWireframeCacheEpoch = useGraphStore(s => s.bumpDesignWireframeCacheEpoch)
 
   return (

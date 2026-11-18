@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import Tooltip from 'agentic-design-system/react/hover'
@@ -33,7 +34,6 @@ export interface AgenticContextGraphContextUrlRowProps {
 }
 
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
 const graphRagWorkflowSummaryClassName = `space-y-0.5 text-xs ${UI_THEME_TOKENS.text.secondary}`
 const graphRagWorkflowRowClassName = `border-b ${UI_THEME_TOKENS.panel.divider}`
@@ -45,17 +45,13 @@ export function AgenticContextGraphContextUrlRow({
   onChangeAgenticContextUrl,
   mode,
 }: AgenticContextGraphContextUrlRowProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const uiPanelRowDensityDefaultClass = useGraphStore(
     s => s.uiPanelRowDensityDefaultClass || 'py-1',
-  )
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
   )
   return (
     <KeyTypeValueStaticRow
@@ -152,22 +148,14 @@ export function GraphRagWorkflowSection({
   agenticContext,
   onChangeAgenticContextUrl,
 }: GraphRagWorkflowSectionProps) {
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    monospaceTextClass: uiPanelMonospaceTextClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    keyValueInputClass: uiPanelKeyValueInputClass,
+  } = usePanelTypography()
   const uiPanelRowDensityDefaultClass = useGraphStore(
     s => s.uiPanelRowDensityDefaultClass || 'py-1',
-  )
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s =>
-      s.uiPanelKeyValueInputClass ||
-      PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
   )
 
   return (
