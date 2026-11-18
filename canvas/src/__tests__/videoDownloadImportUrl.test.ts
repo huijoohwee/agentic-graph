@@ -5,7 +5,7 @@ import { parseVideoDownloadResult, printVideoDownloadResult } from '@/lib/video-
 import { registerVideoDownloadInWorkspace } from '@/lib/video-download/registerVideoDownloadInWorkspace'
 import { resolveVideoDownload, resolveVideoDownloadEndpoint, sanitizeVideoDownloadError } from '@/lib/video-download/videoDownloadResolver'
 import type { VideoDownloadResultOk } from '@/lib/video-download/types'
-import { normalizeImportUrlInput } from '@/lib/url'
+import { normalizeImportUrlInput, resolveDownloadedMediaAccessUrl } from '@/lib/url'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { resolveMediaImportUrlFile } from '@/lib/storage/uploadedMediaPanelImportUrl'
 
@@ -26,6 +26,11 @@ function okResult(sourceUrl: string): VideoDownloadResultOk {
     sourceUrl,
     fileUrl: '/__video_download_file?path=huijoohwee%2Fvideo%2Fdownload-test%2Fsample.mp4',
   }
+}
+
+function okResultWithoutFileUrl(sourceUrl: string): VideoDownloadResultOk {
+  const { fileUrl: _fileUrl, ...result } = okResult(sourceUrl)
+  return result
 }
 
 export function testVideoDownloadEligibilityIsPureAndDomainOwned() {
@@ -132,12 +137,82 @@ export async function testVideoDownloadWorkspaceRegistrationPreservesFields() {
   }
 }
 
+export async function testVideoDownloadWorkspaceRegistrationBuildsLocalFileAccessUrlFromFilePath() {
+  const fs = createMemoryWorkspaceFs()
+  const result = okResultWithoutFileUrl('https://example.test/source')
+  const registration = await registerVideoDownloadInWorkspace({ result, fs })
+  if (registration.ok === false) throw new Error(registration.error)
+  const text = await fs.readFileText(registration.workspacePath)
+  const expectedUrl = resolveDownloadedMediaAccessUrl(result)
+  if (!expectedUrl) throw new Error('expected local file access URL')
+  if (!text?.includes(expectedUrl) || !text.includes(`[Open local video](${expectedUrl})`)) {
+    throw new Error(`expected workspace document to expose derived local file URL, got ${text}`)
+  }
+}
+
+export async function testVideoDownloadWorkspaceRegistrationAppendsYouTubeTranscript() {
+  const fs = createMemoryWorkspaceFs()
+  const sourceUrl = 'https://www.youtube.com/watch?v=OyzQCweKNtA'
+  const result = okResult(sourceUrl)
+  const registration = await registerVideoDownloadInWorkspace({
+    result,
+    fs,
+    fetchYouTubeTranscript: async () => ({
+      ok: true,
+      name: 'youtube-OyzQCweKNtA.md',
+      markdown: [
+        '# Downloaded Transcript',
+        '',
+        '[![Downloaded Transcript](https://i.ytimg.com/vi/OyzQCweKNtA/hqdefault.jpg)](https://youtu.be/OyzQCweKNtA)',
+        '',
+        '[0:00](https://youtu.be/OyzQCweKNtA?t=0) Intro line.',
+        '',
+        'Second paragraph.',
+      ].join('\n'),
+    }),
+  })
+  if (registration.ok === false) throw new Error(registration.error)
+  const text = await fs.readFileText(registration.workspacePath)
+  if (
+    !text?.includes('## Transcript')
+    || !text.includes('[0:00](https://youtu.be/OyzQCweKNtA?t=0) Intro line.')
+    || !text.includes('Second paragraph.')
+    || text.includes('# Downloaded Transcript')
+  ) {
+    throw new Error(`expected workspace document to append transcript body without duplicating its heading, got ${text}`)
+  }
+}
+
+export async function testVideoDownloadWorkspaceRegistrationReportsYouTubeTranscriptUnavailable() {
+  const fs = createMemoryWorkspaceFs()
+  const sourceUrl = 'https://www.youtube.com/watch?v=OyzQCweKNtA'
+  const result = okResult(sourceUrl)
+  const registration = await registerVideoDownloadInWorkspace({
+    result,
+    fs,
+    fetchYouTubeTranscript: async () => ({
+      ok: false,
+      error: 'Transcript unavailable via native fetch',
+    }),
+  })
+  if (registration.ok === false) throw new Error(registration.error)
+  const text = await fs.readFileText(registration.workspacePath)
+  if (
+    !text?.includes('## Transcript')
+    || !text.includes('Transcript status: Transcript unavailable via native fetch')
+  ) {
+    throw new Error(`expected workspace document to surface transcript unavailability, got ${text}`)
+  }
+}
+
 export function testVideoDownloadLaunchAndEndpointSourceContracts() {
   const launch = readSource('lib', 'toolbar', 'LaunchDropdownImportUrlItem.tsx')
   const panel = readSource('features', 'toolbar', 'VideoDownloadOptionsPanel.tsx')
   const bridge = readSource('features', 'markdown-explorer', 'workspaceActionBridge.ts')
   const config = readSource('lib', 'config.env.ts')
   const resolver = readSource('lib', 'video-download', 'videoDownloadResolver.ts')
+  const url = readSource('lib', 'url.ts')
+  const register = readSource('lib', 'video-download', 'registerVideoDownloadInWorkspace.ts')
   const settingsRegistry = readSource('features', 'settings', 'registry-ui.workspace.ts')
   const settingsStore = readSource('lib', 'workspace', 'workspaceStoreSyncSettings.ts')
   const viteConfig = fs.readFileSync(path.resolve(rootDir, 'vite.config.ts'), 'utf8')
@@ -153,6 +228,10 @@ export function testVideoDownloadLaunchAndEndpointSourceContracts() {
   if (!panel.includes('Downloading…')) throw new Error('expected downloading label')
   if (!bridge.includes('downloadVideo?:')) throw new Error('expected workspace bridge downloadVideo hook')
   if (!config.includes('VITE_VIDEO_DOWNLOAD_ENDPOINT')) throw new Error('expected video endpoint env key')
+  if (!url.includes('resolveDownloadedMediaAccessUrl')) throw new Error('expected shared downloaded media access URL helper')
+  if (!register.includes('formatWorkspaceImportTranscriptStatusLine') || !register.includes('## Transcript')) {
+    throw new Error('expected downloaded video workspace registration to own transcript enrichment and shared transcript status')
+  }
   if (!resolver.includes("VIDEO_DOWNLOAD_LOCAL_ROUTE_PATH = '/__video_download'")) throw new Error('expected local same-origin download route')
   if (!resolver.includes('readWorkspaceImportVideoDownloadOutputDirSetting')) {
     throw new Error('expected resolver to read the MainPanel Settings output directory')
@@ -241,5 +320,45 @@ export async function testFloatingPanelMediaImportUrlFallsBackToVideoDownload() 
     !calls.some(call => call.input === fileUrl)
   ) {
     throw new Error(`expected FloatingPanel Media Import URL to reuse video-download fallback, got ${JSON.stringify({ calls, file: { name: file.name, size: file.size, type: file.type }, requestBody })}`)
+  }
+}
+
+export async function testFloatingPanelMediaImportUrlUsesFilePathWhenDownloaderOmitsFileUrl() {
+  const sourceUrl = 'https://youtu.be/MediaImport02'
+  const endpoint = 'http://localhost:5178/__video_download'
+  const fallbackResult = okResultWithoutFileUrl(sourceUrl)
+  const derivedFileUrl = resolveDownloadedMediaAccessUrl(fallbackResult)
+  const calls: Array<{ input: string; body: string }> = []
+  const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const inputText = String(input)
+    calls.push({ input: inputText, body: String(init?.body || '') })
+    if (inputText === endpoint) {
+      return new Response(JSON.stringify({ result: fallbackResult }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+    if (inputText === derivedFileUrl) {
+      return new Response(new Blob(['video bytes'], { type: 'video/mp4' }), {
+        status: 200,
+        headers: { 'content-type': 'video/mp4' },
+      })
+    }
+    return new Response('<html>provider page</html>', {
+      status: 200,
+      headers: { 'content-type': 'text/html' },
+    })
+  }
+
+  const file = await resolveMediaImportUrlFile({ urlRaw: sourceUrl, fetchImpl, videoDownloadEndpoint: endpoint })
+  if (
+    file.name !== 'sample.mp4' ||
+    file.type !== 'video/mp4' ||
+    file.size <= 0 ||
+    !calls.some(call => call.input === endpoint) ||
+    !derivedFileUrl ||
+    !calls.some(call => call.input === derivedFileUrl)
+  ) {
+    throw new Error(`expected FloatingPanel Media Import URL to fetch derived local file URL, got ${JSON.stringify({ calls, derivedFileUrl, file: { name: file.name, size: file.size, type: file.type } })}`)
   }
 }

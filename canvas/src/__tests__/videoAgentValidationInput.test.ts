@@ -182,6 +182,7 @@ export function testVideoAgentValidationConfigSupportsUserConfiguredImportUrls()
   const configSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'video-agent', 'videoAgentValidationConfig.ts'), 'utf8')
   const validationControlsSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'video-agent', 'VideoAgentValidationImportControls.tsx'), 'utf8')
   const launchImportSource = readFileSync(resolve(process.cwd(), 'src', 'lib', 'toolbar', 'LaunchDropdownImportUrlItem.tsx'), 'utf8')
+  const importUrlPromptSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'toolbar', 'ImportUrlPrompt.tsx'), 'utf8')
   if (
     !configSource.includes('VIDEO_AGENT_VALIDATION_CONFIG_STORAGE_KEY')
     || !configSource.includes('VITE_AGENTIC_OS_VIDEO_AGENT_VALIDATION_DOC_PATH')
@@ -198,9 +199,22 @@ export function testVideoAgentValidationConfigSupportsUserConfiguredImportUrls()
     'onBeforeImport={beforeValidationImport}',
     'onSelectUrl={url =>',
     'optionButtonLabel={option => `Use ${option.label}`}',
+    'readVideoAgentValidationConfigFromRuntimeInput',
+    'mergeVideoAgentValidationConfigs',
+    'buildVideoAgentValidationUrlOptions',
+    'presetOptions={importUrlPresetOptions}',
   ]) {
     if (!launchImportSource.includes(requiredUiToken)) {
       throw new Error(`expected Launch Import URL UI to expose ${requiredUiToken}`)
+    }
+  }
+  for (const requiredPromptToken of [
+    'presetOptions?: ReadonlyArray<ImportUrlPromptPreset>',
+    'const presetOptions = React.useMemo(() => {',
+    'return provided.filter(option => {',
+  ]) {
+    if (!importUrlPromptSource.includes(requiredPromptToken)) {
+      throw new Error(`expected Import URL prompt to expose ${requiredPromptToken}`)
     }
   }
   for (const requiredSharedToken of [
@@ -218,7 +232,13 @@ export function testVideoAgentValidationConfigSupportsUserConfiguredImportUrls()
       throw new Error(`expected shared video-agent validation controls to expose ${requiredSharedToken}`)
     }
   }
-  if (launchImportSource.includes('readVideoAgentValidationConfig') || launchImportSource.includes('writeVideoAgentValidationConfig')) {
+  if (
+    launchImportSource.includes('readVideoAgentValidationConfig(')
+    || launchImportSource.includes('writeVideoAgentValidationConfig(')
+    || launchImportSource.includes('readVideoAgentValidationConfigFromEnv')
+    || launchImportSource.includes('readVideoAgentValidationConfigFromStorage')
+    || launchImportSource.includes('writeVideoAgentValidationConfigToStorage')
+  ) {
     throw new Error('expected Launch Import URL to delegate video-agent validation config state to the shared owner')
   }
   if (launchImportSource.includes('Use first')) {
@@ -498,6 +518,7 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
       throw new Error(`expected complete video-agent import to preserve video URL provenance, got ${JSON.stringify(sourceUnit)}`)
     }
     const importedText = String((await fs.readFileText(imported.createdPaths[0] || '')) || '')
+    const outputRoot = String(imported.createdPaths[0] || '').replace(/\/[^/]+$/, '')
     for (const token of [
       'kgVideoAgentImport: true', 'kgWorkspaceOutputRoot: "/docs_/', `kgYoutubeVideoId: "${videoId}"`, 'kgVideoSequenceTimeline: true', 'kgVideoSequenceSources:',
       'videoAgentRuntimeContract:', 'frameBoundingBoxes:', 'frameByFrameSamples', 'sourcePlaybackUrl', 'sourceTranscript', 'frameByFrameTranscript',
@@ -507,6 +528,24 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
     ]) {
       if (!importedText.includes(token)) {
         throw new Error(`expected complete video-agent import document to include ${token}`)
+      }
+    }
+    const sidecarExpectations: Array<[string, string]> = [
+      [`${outputRoot}/source.json`, '"sourceText"'],
+      [`${outputRoot}/dataset-operations.json`, '"datasetOperationSummary"'],
+      [`${outputRoot}/visual-dataset.json`, '"agentic-graph-visual-annotation-dataset/v1"'],
+      [`${outputRoot}/zone-counts.json`, '"agentic-graph-zone-counting/v1"'],
+      [`${outputRoot}/moments.json`, '"frameByFrameTranscript"'],
+      [`${outputRoot}/parse.json`, '"frameByFrameSamples"'],
+      [`${outputRoot}/frame-boxes.json`, '"tracked subject"'],
+      [`${outputRoot}/timeline.json`, '"timelineTracks"'],
+      [`${outputRoot}/render.html`, sourceUrl],
+      [`${outputRoot}/stream-manifest.json`, '"stream-output"'],
+    ]
+    for (const [path, token] of sidecarExpectations) {
+      const text = String((await fs.readFileText(path)) || '')
+      if (!text.includes(token)) {
+        throw new Error(`expected complete video-agent import to materialize ${path} with ${token}`)
       }
     }
     const parsed = await loadGraphDataFromTextViaParser('youtube.video-agent.md', importedText, { applyToStore: false })

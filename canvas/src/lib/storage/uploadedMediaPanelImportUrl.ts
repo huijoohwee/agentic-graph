@@ -1,5 +1,5 @@
 import { resolveBinaryDownloadProxyUrl } from '@/lib/chatEndpoint'
-import { deriveFilenameFromUrl, normalizeImportUrlInput } from '@/lib/url'
+import { deriveFilenameFromUrl, normalizeImportUrlInput, resolveDownloadedMediaAccessUrl } from '@/lib/url'
 import { isVideoDownloadEligible } from '@/lib/video-download/isVideoDownloadEligible'
 import { resolveVideoDownload } from '@/lib/video-download/videoDownloadResolver'
 import type { VideoDownloadOptions } from '@/lib/video-download/types'
@@ -137,8 +137,8 @@ export async function resolveMediaImportUrlFile(args: ResolveMediaImportUrlFileA
       fetchImpl,
     })
     if (download.ok === false) throw new Error(download.error || 'Video download failed')
-    const fileUrl = String(download.result.fileUrl || '').trim()
-    if (!fileUrl) throw new Error('Video download did not expose a media file URL')
+    const fileUrl = resolveDownloadedMediaAccessUrl(download.result)
+    if (!fileUrl) throw new Error('Video download did not expose an accessible local media file')
     const { blob, contentType } = await fetchMediaUrlBlob({ fetchImpl, url: fileUrl, contentTypeHint: download.result.mimeType })
     return new File([blob], ensureFilenameExtension(download.result.fileName || deriveFilenameFromUrl(fileUrl, 'imported-media'), contentType), { type: contentType, lastModified: Date.now() })
   }

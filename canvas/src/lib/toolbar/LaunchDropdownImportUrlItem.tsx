@@ -7,7 +7,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { cn } from '@/lib/utils'
-import { ImportUrlPrompt } from '@/features/toolbar/ImportUrlPrompt'
+import { ImportUrlPrompt, type ImportUrlPromptPreset } from '@/features/toolbar/ImportUrlPrompt'
 import { VideoDownloadOptionsPanel } from '@/features/toolbar/VideoDownloadOptionsPanel'
 import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
 import { isWorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
@@ -18,6 +18,11 @@ import { resolveVideoDownloadEndpoint } from '@/lib/video-download/videoDownload
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { VideoAgentValidationImportControls } from '@/features/video-agent/VideoAgentValidationImportControls'
+import {
+  buildVideoAgentValidationUrlOptions,
+  mergeVideoAgentValidationConfigs,
+  readVideoAgentValidationConfigFromRuntimeInput,
+} from '@/features/video-agent'
 import {
   DESIGN_IMPORT_URL_RENDERER_SELECTION,
   ImportUrlRendererSelect,
@@ -122,6 +127,26 @@ export function LaunchDropdownImportUrlItem(props: {
     }
   }, [])
   const isVideoEligible = isVideoDownloadEligible(urlDraft)
+  const importUrlPresetOptions = React.useMemo<ImportUrlPromptPreset[]>(() => {
+    const options: ImportUrlPromptPreset[] = []
+    const seen = new Set<string>()
+    const addOption = (label: string, value: string) => {
+      const nextValue = String(value || '').trim()
+      if (!nextValue || seen.has(nextValue)) return
+      seen.add(nextValue)
+      options.push({ label, value: nextValue })
+    }
+    const runtimeValidationConfig = mergeVideoAgentValidationConfigs(
+      readVideoAgentValidationConfigFromRuntimeInput(activeGraphData),
+      null,
+    )
+    for (const option of buildVideoAgentValidationUrlOptions(runtimeValidationConfig.importUrls)) {
+      addOption(`Validation ${option.label}`, option.url)
+    }
+    addOption('Test URL', WORKSPACE_IMPORT_URL_TEST)
+    addOption('Test image', WORKSPACE_IMPORT_IMAGE_URL_TEST)
+    return options
+  }, [activeGraphData])
 
   React.useEffect(() => {
     if (!props.open) {
@@ -306,8 +331,8 @@ export function LaunchDropdownImportUrlItem(props: {
             return
           }
           if (!draft) {
-            if (WORKSPACE_IMPORT_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_URL_TEST)
-            else if (WORKSPACE_IMPORT_IMAGE_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_IMAGE_URL_TEST)
+            const firstPreset = importUrlPresetOptions[0]?.value || ''
+            if (firstPreset) setUrlDraft(firstPreset)
           }
           void targetSkillsCommands().catch(() => undefined)
           setUrlInputOpen(true)
@@ -334,6 +359,7 @@ export function LaunchDropdownImportUrlItem(props: {
             onCancel={() => setUrlInputOpen(false)}
             autoFocus
             disabled={isImportingUrl}
+            presetOptions={importUrlPresetOptions}
             confirmLabel={agentGraphRepositoryMode || isLaunchAgentGraphRepositoryUrl(urlDraft) ? 'Import codebase graph' : 'Import URL into workspace'}
             confirmIcon={<FileDown className={props.menuIconClass} aria-hidden="true" />}
             onConfirm={runImportUrl}

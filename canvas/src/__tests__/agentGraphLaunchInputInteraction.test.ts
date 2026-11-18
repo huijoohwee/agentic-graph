@@ -247,6 +247,77 @@ export async function testAgentGraphLaunchImportUrlInputRunsVisibleCanonicalGrap
   }
 }
 
+export async function testAgentGraphLaunchImportUrlSurfacesDedupedValidationPresets() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvasRenderMode('2d')
+    useGraphStore.getState().setCanvas2dRenderer('storyboard')
+    useGraphStore.getState().setGraphData({
+      type: 'Graph',
+      nodes: [],
+      edges: [],
+      metadata: {
+        frontmatterMeta: {
+          videoAgentRuntimeContract: {
+            testUrls: [
+              'https://video.example.test/alpha',
+              'https://video.example.test/beta',
+              'https://video.example.test/alpha',
+            ],
+          },
+        },
+      },
+    } as never)
+    const LaunchShell = () => React.createElement(LaunchDropdownImportUrlItem, {
+      canvas2dRenderer: 'storyboard',
+      menuIconClass: 'icon',
+      menuItemClass: 'item',
+      onClose: () => undefined,
+      open: true,
+      pushUiToast: useGraphStore.getState().pushUiToast,
+    })
+    await mountReactRoot(root, React.createElement(LaunchShell), {
+      window: dom.window as unknown as Window,
+      tasks: 1,
+      frames: 1,
+    })
+
+    const disclosure = container.querySelector(
+      '[data-kg-launch-import-url-skills-commands-target="skillsCommands"]',
+    )
+    assert.ok(disclosure instanceof dom.window.HTMLButtonElement)
+    await act(async () => {
+      disclosure.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      await waitForTasks(1)
+    })
+
+    const presetButtons = Array.from(
+      container.querySelectorAll('.kg-import-url-presets button'),
+    ) as HTMLButtonElement[]
+    assert.deepEqual(
+      presetButtons.map(button => button.textContent?.trim()),
+      ['Validation URL 1', 'Validation URL 2'],
+    )
+    const input = container.querySelector('input.kg-import-url-input')
+    assert.ok(input instanceof dom.window.HTMLInputElement)
+    await act(async () => {
+      presetButtons[1]?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      await waitForTasks(1)
+    })
+    assert.equal(input.value, 'https://video.example.test/beta')
+  } finally {
+    await unmountReactRoot(root, { window: dom.window as unknown as Window, tasks: 1 })
+    container.remove()
+    useGraphStore.getState().resetAll()
+    restore()
+  }
+}
+
 export async function testAgentGraphRepositoryProgressPreviewRollsBackOnFailure() {
   const graphBefore = useGraphStore.getState().graphData
   try {

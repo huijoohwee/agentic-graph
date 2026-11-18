@@ -111,6 +111,15 @@ export function buildLocalFsRangeFetchPath(value: unknown): string | null {
   return `/__agentic_os_local_file?path=${encodeURIComponent(raw)}`
 }
 
+export function resolveDownloadedMediaAccessUrl(args: {
+  fileUrl?: string | null
+  filePath?: string | null
+}): string {
+  const fileUrl = String(args.fileUrl || '').trim()
+  if (fileUrl) return fileUrl
+  return buildLocalFsRangeFetchPath(args.filePath) || ''
+}
+
 export function isYouTubeUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false
   const raw = unwrapUserProvidedText(value) || value.trim()
