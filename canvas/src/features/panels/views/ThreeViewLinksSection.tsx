@@ -36,10 +36,11 @@ export default function ThreeViewLinksSection({
 
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Edges and particles"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

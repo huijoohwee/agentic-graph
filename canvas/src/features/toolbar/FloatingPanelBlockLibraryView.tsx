@@ -1,3 +1,4 @@
+import { CollapsibleSection, ExpandCollapseAllButton, useCollapsibleSectionGroup } from 'agentic-design-system/react/panels'
 import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import * as React from 'react'
@@ -20,7 +21,16 @@ export function FloatingPanelBlockLibraryView() {
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [selectedGeneration, setSelectedGeneration] = React.useState<number | null>(null)
   const [position, setPosition] = React.useState<BlockInsertPosition>('inside')
-  const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set(CATEGORIES))
+  const visibleGroups = CATEGORIES.map(category => ({
+    category,
+    entries: BLOCK_DEFINITIONS.filter(item => item.category === category &&
+      matchesFloatingPanelCatalogSearch(search.normalizedSearchQuery, [item.title, item.description, category])),
+  })).filter(group => group.entries.length)
+  const categories = useCollapsibleSectionGroup(visibleGroups.map(group => group.category))
+  const results = useCollapsibleSectionGroup(visibleGroups.map(group => group.category))
+  const { expandAll: expandSearchResults } = results
+  React.useEffect(() => { expandSearchResults() }, [search.normalizedSearchQuery, expandSearchResults])
+  const group = search.normalizedSearchQuery ? results : categories
   const [feedback, setFeedback] = React.useState('')
   const selected = BLOCK_DEFINITIONS.find(item => item.id === selectedId) || null
   const target = session?.target || null
@@ -34,47 +44,38 @@ export function FloatingPanelBlockLibraryView() {
   }
   return <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Block library">
     <FloatingPanelCatalogHeader title="Block library" subtitle="Local program definitions" actionsLabel="Block library actions"
-      actions={<button type="button" className={`rounded border px-1 text-xs ${UI_THEME_TOKENS.panel.border}`}
-        onClick={() => setExpanded(previous => previous.size === CATEGORIES.length ? new Set() : new Set(CATEGORIES))}>
-        {expanded.size === CATEGORIES.length ? 'Collapse all' : 'Expand all'}</button>}
+      actions={visibleGroups.length ? <ExpandCollapseAllButton allCollapsed={group.allCollapsed}
+        onCollapseAll={group.collapseAll} onExpandAll={group.expandAll} /> : null}
       searchControl={<FloatingPanelCatalogSearchControl id="block-library-search" buttonLabel="Search Block library"
         panelLabel="Search Block library" placeholder="Search blocks" state={search} />} />
-    <section className={floatingPanelCatalogBodyClassName('space-y-3 px-1.5 py-2')} aria-label="Block categories"
-      style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--kg-border, #94a3b8) 64%, transparent) 0.8px, transparent 0.9px)', backgroundSize: '18px 18px' }}>
-      {CATEGORIES.map(category => {
-        const entries = BLOCK_DEFINITIONS.filter(item => item.category === category && matchesFloatingPanelCatalogSearch(search.normalizedSearchQuery, [item.title, item.description, category]))
-        if (!entries.length) return null
-        const open = !!search.normalizedSearchQuery || expanded.has(category)
+    <section className={floatingPanelCatalogBodyClassName('space-y-3 px-1.5 py-2')} aria-label="Block categories">
+      {visibleGroups.map(({ category, entries }) => {
         const tone = BLOCK_VISUAL_TONES[category]
         return <section key={category} aria-label={`${category} blocks`} data-block-category={category}>
-          <button type="button" aria-expanded={open} className="flex min-h-9 w-full items-center gap-2 rounded-md border px-2 py-1 text-left text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10"
-            style={{ borderColor: `color-mix(in srgb, ${tone} 55%, transparent)`, background: `color-mix(in srgb, ${tone} 12%, var(--kg-panel-bg, white))` }}
-            onClick={() => setExpanded(previous => { const next = new Set(previous); if (!next.delete(category)) next.add(category); return next })}>
-            <span className="h-4 w-1.5 rounded-full" aria-hidden="true" style={{ background: tone }} />
-            <span className="min-w-0 flex-1">{category}</span><span className="rounded px-1 font-mono opacity-70">{entries.length}</span>
-            <span aria-hidden="true">{open ? '−' : '+'}</span>
-          </button>
-          {open && <ul className="space-y-1.5 pt-1.5">{entries.map(item => <li key={item.id}>
-            <button type="button" onClick={() => { setSelectedId(item.id); setSelectedGeneration(session?.generation ?? null); setFeedback('') }} aria-pressed={selectedId === item.id}
-              className={`block w-full rounded-lg border border-transparent px-2.5 py-2 text-left shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${uiSelectedRowStateClassName(selectedId === item.id)}`}
-              style={{ background: `color-mix(in srgb, ${tone} 8%, var(--kg-panel-bg, white))`,
-                outline: selectedId === item.id ? undefined : `1px solid color-mix(in srgb, ${tone} 45%, transparent)` }}>
-              <span className="flex min-w-0 items-start gap-2">
-                <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" style={{ background: tone }}>{category[0]}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold leading-4">{item.title}</span>
-                  <span className="mt-0.5 block text-xs leading-4 opacity-75">{item.description}</span>
+          <CollapsibleSection headingAs="h3" title={`${category} (${entries.length})`}
+            collapsed={group.collapsedKeys.has(category)} onToggle={collapsed => group.setCollapsed(category, collapsed)}>
+            <ul className="space-y-1.5 pt-1.5">{entries.map(item => <li key={item.id}>
+              <button type="button" onClick={() => { setSelectedId(item.id); setSelectedGeneration(session?.generation ?? null); setFeedback('') }} aria-pressed={selectedId === item.id}
+                className={`block w-full rounded-lg border border-transparent px-2.5 py-2 text-left shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--agentic-control-focus)] ${uiSelectedRowStateClassName(selectedId === item.id)}`}
+                style={{ background: `color-mix(in srgb, ${tone} 8%, var(--agentic-panel-background))`,
+                  outline: selectedId === item.id ? undefined : `1px solid color-mix(in srgb, ${tone} 45%, transparent)` }}>
+                <span className="flex min-w-0 items-start gap-2">
+                  <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" style={{ background: tone }}>{category[0]}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold leading-4">{item.title}</span>
+                    <span className="mt-0.5 block text-xs leading-4 opacity-75">{item.description}</span>
+                  </span>
                 </span>
-              </span>
-              <span aria-hidden="true" className="kg-block-preview mt-2 font-mono text-xs leading-4" data-shape={blockDefinitionShape(item.id)}
-                style={{ '--block-tone': tone } as React.CSSProperties}>
-                {item.snippet.split('\n').map((line, index) => <span key={index} className="block truncate">{line || ' '}</span>)}
-              </span>
-            </button>
-          </li>)}</ul>}
+                <span aria-hidden="true" className="kg-block-preview mt-2 font-mono text-xs leading-4" data-shape={blockDefinitionShape(item.id)}
+                  style={{ '--block-tone': tone } as React.CSSProperties}>
+                  {item.snippet.split('\n').map((line, index) => <span key={index} className="block truncate">{line || ' '}</span>)}
+                </span>
+              </button>
+            </li>)}</ul>
+          </CollapsibleSection>
         </section>
       })}
-      {!BLOCK_DEFINITIONS.some(item => matchesFloatingPanelCatalogSearch(search.normalizedSearchQuery, [item.title, item.description, item.category])) &&
+      {!visibleGroups.length &&
         <p role="status" className="px-2 py-4 text-xs">No matching blocks.</p>}
     </section>
     <section className={`shrink-0 space-y-1 border-t px-2 py-2 text-xs ${UI_THEME_TOKENS.panel.border}`} aria-label="Block insertion">

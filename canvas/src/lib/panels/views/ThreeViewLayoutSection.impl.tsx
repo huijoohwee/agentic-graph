@@ -352,10 +352,11 @@ export default function ThreeViewLayoutSection({
 
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Layout and geometry"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

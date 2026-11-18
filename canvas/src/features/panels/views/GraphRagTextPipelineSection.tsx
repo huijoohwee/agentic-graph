@@ -182,7 +182,7 @@ export default function GraphRagTextPipelineSection() {
   const hasLibLink = typeof lib.url === 'string' && lib.url.length > 0
 
   return (
-    <CollapsibleSection title={header} collapsed={collapsed} onToggle={setCollapsed}>
+    <CollapsibleSection headingAs="h4" title={header} collapsed={collapsed} onToggle={setCollapsed}>
       <section className={['mt-2 space-y-2', uiPanelKeyValueTextSizeClass, uiPanelTextFontClass].join(' ')}>
         <section className="flex flex-wrap gap-1">
           {stages.map((s, i) => (

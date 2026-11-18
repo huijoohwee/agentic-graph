@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react'
 import { HorizontalResizeSeparatorHr } from '@/components/ui/VerticalResizeSeparatorHr'
@@ -268,14 +269,12 @@ export function StoryboardWidgetFloatingPanelView() {
       data-kg-storyboard-widget-input-count={summary.inputCount}
       data-kg-storyboard-widget-output-count={summary.outputCount}
     >
-      <header className="flex items-center justify-between gap-2 px-1">
-        <section className="min-w-0">
-          <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Storyboard Widget</section>
-          <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-storyboard-widget-port-summary="1">
-            {summary.inputCount} inputs, {summary.outputCount} outputs, {summary.connectedCount} connected
-          </section>
-        </section>
-      </header>
+      <SettingsSectionHeader title={<>
+        <h2 className="agentic-panel-title truncate">Storyboard Widget</h2>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-storyboard-widget-port-summary="1">
+          {summary.inputCount} inputs, {summary.outputCount} outputs, {summary.connectedCount} connected
+        </p>
+      </>} />
       <section className="flex min-h-0 flex-1 flex-col" data-kg-storyboard-widget-port-split="1">
         <section
           ref={rowsPaneRef}
@@ -318,14 +317,11 @@ export function StoryboardWidgetFloatingPanelView() {
           style={detailsPaneStyle}
           data-kg-storyboard-widget-port-detail-panel="1"
         >
-          <header className="flex items-center justify-between gap-2 px-1 pb-1">
-            <section className={cn('min-w-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Details</section>
-            {selectedRow ? (
-              <section className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
-                {selectedRow.connectedEdgeCount} edges
-              </section>
-            ) : null}
-          </header>
+          <SettingsSectionHeader headingAs="h3" title="Details" actions={
+            selectedRow && <output className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
+              {selectedRow.connectedEdgeCount} edges
+            </output>
+          } />
           <VideoAgentValidationImportControls
             runtimeInput={graphData}
             optionMode="import"

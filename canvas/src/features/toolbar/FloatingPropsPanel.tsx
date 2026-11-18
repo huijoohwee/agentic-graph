@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -29,10 +30,11 @@ export function FloatingPropsPanel() {
 
   return (
     <section
-      className={`${UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME} ${UI_THEME_TOKENS.panel.bg}`}
+      className={UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME}
       aria-label="Props Panel"
       data-kg-props-panel-surface="widget-palette"
     >
+      <SettingsSectionHeader headingAs="h2" title="Props Panel" />
       {!storyboardRendererActive && !dashboardActive ? (
         <p className={`px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`} role="status">
           Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.

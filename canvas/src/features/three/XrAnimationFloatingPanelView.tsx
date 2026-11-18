@@ -1,3 +1,4 @@
+import { CollapsibleSection, SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { inspectXrSharedAssetControls, readXrSharedAssetControlRevision, subscribeXrSharedAssetControlRuntime } from './xrSharedAssetControlRuntime'
 import {
@@ -5,7 +6,6 @@ import {
   ArrowUp,
   Boxes,
   Car,
-  ChevronDown,
   CircleDot,
   Crosshair,
   CupSoda,
@@ -163,21 +163,16 @@ function AnimationPresetCard({
         <Icon className="size-8" aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
-        <header className="flex min-w-0 items-center justify-between gap-2" data-kg-animation-card-row="title">
-          <h3 className="truncate text-xs font-semibold">{preset.label}</h3>
-          <button
-            type="button"
-            className="App-toolbar__btn grid size-6 shrink-0 place-items-center"
-            title={collapsed ? `Expand ${preset.label}` : `Collapse ${preset.label}`}
-            aria-label={collapsed ? `Expand ${preset.label}` : `Collapse ${preset.label}`}
-            aria-expanded={!collapsed}
-            aria-controls={detailsId}
-            onClick={() => onToggle(!collapsed)}
-            data-kg-animation-card-toggle={preset.id}
-          >
-            <ChevronDown className={cn('size-3.5 transition-transform', collapsed ? '' : 'rotate-180')} aria-hidden />
-          </button>
-        </header>
+        <CollapsibleSection headingAs="h3" id={detailsId} flushTop stickyHeader={false}
+          collapsed={collapsed} onToggle={onToggle}
+          title={<span data-kg-animation-card-row="title" data-kg-animation-card-toggle={preset.id}>{preset.label}</span>}>
+          <section className="grid gap-1 text-xs" data-kg-animation-card-details={preset.id}>
+            <p className={UI_THEME_TOKENS.text.secondary}>Compatible: {preset.compatibleAssetIds.length ? preset.compatibleAssetIds.join(', ') : preset.compatibleCategories.join(', ') || 'graph cast'}</p>
+            <p className={UI_THEME_TOKENS.text.tertiary}>Deterministic procedural pose/path · native agentic-graph runtime · no external animation asset.</p>
+            {!compatible ? <p className="text-amber-700 dark:text-amber-300">Choose a compatible cast target to apply this preset.</p> : null}
+            <AnimationInvocationChips active={active} invocation={invocation} surface="details" />
+          </section>
+        </CollapsibleSection>
         <section className="grid min-w-0 gap-0.5" data-kg-animation-card-row="meta">
           <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{preset.description}</p>
           <p className={cn('m-0 truncate text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{preset.kind.replace('-', ' ')} · {preset.cycleSeconds}s · {preset.loop ? 'loop' : 'one shot'}</p>
@@ -187,16 +182,6 @@ function AnimationPresetCard({
           {appliedTo ? <output className="text-xs text-emerald-700 dark:text-emerald-300" aria-label={`${preset.label} assignment`}>Applied to {appliedTo}</output> : null}
           <AnimationInvocationChips invocation={invocation} surface="action" />
         </footer>
-      </section>
-      <section
-        id={detailsId}
-        className={cn('col-span-2 grid gap-1 border-t pt-2 text-xs', UI_THEME_TOKENS.panel.border, collapsed ? 'hidden' : '')}
-        data-kg-animation-card-details={preset.id}
-      >
-        <p className={UI_THEME_TOKENS.text.secondary}>Compatible: {preset.compatibleAssetIds.length ? preset.compatibleAssetIds.join(', ') : preset.compatibleCategories.join(', ') || 'graph cast'}</p>
-        <p className={UI_THEME_TOKENS.text.tertiary}>Deterministic procedural pose/path · native agentic-graph runtime · no external animation asset.</p>
-        {!compatible ? <p className="text-amber-700 dark:text-amber-300">Choose a compatible cast target to apply this preset.</p> : null}
-        <AnimationInvocationChips active={active} invocation={invocation} surface="details" />
       </section>
     </article>
   )
@@ -345,9 +330,9 @@ export function XrAnimationFloatingPanelView() {
           runtime={runtime}
           selectedActorId={selectedActorId}
         >
-        {visiblePaths.length ? <section className="grid gap-2" aria-label="Action paths" data-kg-animation-group="action-path"><header className="flex items-center justify-between"><h2 className="text-xs font-semibold uppercase">Action paths</h2><output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePaths.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visiblePaths} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        {visiblePaths.length ? <section className="grid gap-2" aria-label="Action paths" data-kg-animation-group="action-path"><SettingsSectionHeader headingAs="h2" title="Action paths" actions={<output>{visiblePaths.length}</output>} /><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visiblePaths} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
         </XrChoreographyInspector>
-        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><header className="flex items-center justify-between"><h2 className="text-xs font-semibold uppercase">Character motions</h2><output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleCharacter.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><SettingsSectionHeader headingAs="h2" title="Character motions" actions={<output>{visibleCharacter.length}</output>} /><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
 
         {!visiblePresets.length ? <p className={cn('p-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>No animation presets match this search.</p> : null}
         {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady={sceneReady} /> : null}

@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { GitBranch, GitCommitHorizontal, GitMerge, PencilLine, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -173,10 +174,7 @@ export function GitGraphFloatingPanelView() {
   if (!code) {
     return (
       <section className="flex h-full flex-col" aria-label="GitGraph command editor" data-kg-gitgraph-floating-panel="1">
-        <header className="flex items-center justify-between gap-2 px-1 py-1">
-          <span className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</span>
-          <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
-        </header>
+        <SettingsSectionHeader headingAs="h2" title="GitGraph" actions={<HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />} />
         {documentHistory.length ? (
           <ol className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]" aria-label="Version history list">
             {documentHistory.map(({ entry, index }, versionIndex) => (
@@ -213,13 +211,12 @@ export function GitGraphFloatingPanelView() {
       data-kg-gitgraph-selected-row-key={selectedCommandKey || undefined}
       data-kg-gitgraph-selected-command={selectedCommand?.kind || undefined}
     >
-      <header className="flex items-center justify-between gap-2 px-1">
-        <section className="min-w-0">
-          <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</section>
+      <SettingsSectionHeader title={<>
+          <h2 className="agentic-panel-title truncate">GitGraph</h2>
           <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
             {buildCommandDescription(selectedCommand)}
           </section>
-        </section>
+        </>} actions={
         <nav className="flex items-center gap-1" aria-label="GitGraph version and edit controls">
           <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
           <button
@@ -233,7 +230,7 @@ export function GitGraphFloatingPanelView() {
             <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </nav>
-      </header>
+      } />
       <section className={GITGRAPH_CREATE_ACTION_GRID_CLASS_NAME} data-kg-gitgraph-create-actions="1">
         <button
           type="button"

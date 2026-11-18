@@ -27,10 +27,11 @@ export default function ThreeViewBackgroundFogSection({
   const valueTextClassName = UI_THEME_TOKENS.text.tertiary
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Background and fog"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

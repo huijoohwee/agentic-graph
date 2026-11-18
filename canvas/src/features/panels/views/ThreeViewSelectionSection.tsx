@@ -29,10 +29,11 @@ export default function ThreeViewSelectionSection({
 
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Selection highlighting"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

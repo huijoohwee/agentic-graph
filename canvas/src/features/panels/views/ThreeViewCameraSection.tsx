@@ -29,10 +29,11 @@ export default function ThreeViewCameraSection({
   const valueTextClassName = UI_THEME_TOKENS.text.tertiary
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Camera and navigation"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

@@ -16,7 +16,8 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
-import { uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { cn } from '@/lib/utils'
 import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
 import { usePanelStack } from '@/lib/ui/usePanelStack'
@@ -337,6 +338,7 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}
             {floatingPanelView === 'chat' && (
               <React.Suspense fallback={null}>
+                <h2 className="sr-only">Chat</h2>
                 <FloatingPanelChatLazy />
               </React.Suspense>
             )}
@@ -393,7 +395,7 @@ export function ToolbarToolMenu({
             )}
             {floatingPanelView === 'graphTraversal' && (
               <section className="space-y-2" aria-label="Graph traversal">
-                <header className={`${uiToolbarRowScrollJustifyBetweenClassName} gap-2`} aria-label="Graph traversal actions">
+                <SettingsSectionHeader headingAs="h2" title="Graph traversal" ariaLabel="Graph traversal actions" className="flex-wrap" actions={<>
                   <nav className={`${uiToolbarRowScrollClassName} gap-2`} aria-label="Traversal tools">
                     <button
                       type="button"
@@ -404,7 +406,7 @@ export function ToolbarToolMenu({
                     </button>
                   </nav>
                   <p className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>Geospatial</p>
-                </header>
+                </>} />
                 <OrchestratorSettingsSection
                   graphRagCollapsed={orchestratorGraphRagCollapsed}
                   presetsCollapsed={orchestratorPresetsCollapsed}

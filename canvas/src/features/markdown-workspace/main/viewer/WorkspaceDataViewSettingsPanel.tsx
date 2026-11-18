@@ -42,13 +42,12 @@ type WorkspaceDataViewSettingsPanelProps = Omit<WorkspaceDataViewFloatingBinding
   title?: string
 }
 
-const VIEW_SECTION_HEADER_SPACING_CLASS_NAME = 'pt-[3px] pb-[3px]'
 const baseSettingsThemeStyle = {
-  '--agentic-base-settings-border': 'var(--kg-border)',
-  '--agentic-base-settings-text': 'var(--kg-text-primary)',
-  '--agentic-base-settings-surface': 'var(--kg-panel-bg)',
-  '--agentic-base-settings-header': 'var(--kg-panel-header-bg, var(--kg-panel-bg))',
-  '--agentic-base-settings-muted': 'var(--kg-text-tertiary)',
+  '--agentic-base-settings-border': 'var(--agentic-panel-border-color)',
+  '--agentic-base-settings-text': 'var(--agentic-panel-foreground)',
+  '--agentic-base-settings-surface': 'var(--agentic-panel-background)',
+  '--agentic-base-settings-header': 'var(--agentic-panel-background)',
+  '--agentic-base-settings-muted': 'var(--agentic-base-muted, var(--kg-text-tertiary))',
 } as React.CSSProperties
 
 export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsPanelProps) {
@@ -214,9 +213,9 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
       ariaLabel={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}
       title={(
         <section className="flex min-w-0 max-w-full flex-col gap-1">
-          <h3 className={['text-base font-semibold min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
+          <h2 className={['text-base font-semibold min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
             {title}
-          </h3>
+          </h2>
           <p className={['text-xs min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
             {props.contextLabel}
           </p>
@@ -292,13 +291,13 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </section>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('layout')}
             collapsed={collapsedByPanel.layout}
             onToggle={next => togglePanel('layout', next)}
             toolbarAligned
             stickyHeader={false}
             flushTop
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <section className="space-y-4" aria-label="Layout">
               <WorkspaceDataViewSettingsLifecycle {...props} />
@@ -449,12 +448,12 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </CollapsibleSection>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('properties')}
             collapsed={collapsedByPanel.properties}
             onToggle={next => togglePanel('properties', next)}
             toolbarAligned
             stickyHeader={false}
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <WorkspaceDataViewSettingsPropertiesSection
               canMutate={props.canMutate}
@@ -470,12 +469,12 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </CollapsibleSection>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('filter')}
             collapsed={collapsedByPanel.filter}
             onToggle={next => togglePanel('filter', next)}
             toolbarAligned
             stickyHeader={false}
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <WorkspaceDataViewSettingsFilterSection
               columns={props.columns}
@@ -485,12 +484,12 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </CollapsibleSection>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('sort')}
             collapsed={collapsedByPanel.sort}
             onToggle={next => togglePanel('sort', next)}
             toolbarAligned
             stickyHeader={false}
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <WorkspaceDataViewSettingsSortSection
               sourceView={props.sourceView}
@@ -501,23 +500,23 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </CollapsibleSection>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('group')}
             collapsed={collapsedByPanel.group}
             onToggle={next => togglePanel('group', next)}
             toolbarAligned
             stickyHeader={false}
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <WorkspaceDataViewSettingsGroupSection {...props} />
           </CollapsibleSection>
 
           <CollapsibleSection
+            headingAs="h3"
             title={renderSectionTitle('reset')}
             collapsed={collapsedByPanel.reset}
             onToggle={next => togglePanel('reset', next)}
             toolbarAligned
             stickyHeader={false}
-            headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <section aria-label="Reset" className="space-y-3">
               <section className={['text-sm font-medium', UI_THEME_TOKENS.text.primary].join(' ')}>

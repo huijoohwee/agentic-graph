@@ -1,7 +1,6 @@
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import LocalPoiDirectory from '@/features/maps/LocalPoiDirectory'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 export default function NearbyPlacesPanel({ onSelectMapFeature, selectedMapFeatureId, selectionSource }: {
   onSelectMapFeature?: (featureId: string) => boolean | Promise<boolean>
@@ -10,10 +9,10 @@ export default function NearbyPlacesPanel({ onSelectMapFeature, selectedMapFeatu
 }) {
   return (
     <CollapsibleSection
+      headingAs="h2"
       title="Nearby Places"
       defaultCollapsed={false}
       stickyHeader={false}
-      className={`border-b ${UI_THEME_TOKENS.panel.border}`}
       flushTop
     >
       <LocalPoiDirectory

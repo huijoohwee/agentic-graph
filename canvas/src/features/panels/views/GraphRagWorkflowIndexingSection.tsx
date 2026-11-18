@@ -112,6 +112,7 @@ export function GraphRagWorkflowIndexingSection({
 
   return (
     <CollapsibleSection
+      headingAs="h4"
       title={(
         <Tooltip
           content={WORKFLOW_INDEXING_PARAMETERS_TOOLTIP}
@@ -121,7 +122,7 @@ export function GraphRagWorkflowIndexingSection({
           <span>{UI_COPY.graphRagWorkflowIndexingParametersTitle}</span>
         </Tooltip>
       )}
-      headerClassName="px-0"
+
       collapsed={indexingCollapsed}
       onToggle={onToggleIndexingCollapsed}
       stickyOffset="1.5rem"

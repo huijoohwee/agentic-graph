@@ -1,11 +1,10 @@
 import React from 'react'
+import Tooltip from 'agentic-design-system/react/hover'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import {
   KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  KTV_SECTION_TITLE_CLASS_NAME,
   KTV_STATUS_TEXT_SIZE_CLASS_NAME,
 } from 'grph-shared/ui/keyTypeValueRows'
-import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildNodeMediaInventory, type NodeMediaInventoryRow } from '@/components/GraphCanvas/helpers'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
@@ -84,55 +83,15 @@ export default function MediaNodesSection({
     : []
   const hasIframeHosts = iframeHostList.length > 0
 
-  const titleContent = (
-    <section className="flex flex-col">
-      <span className="inline-flex items-center gap-2">
-        {copy.badge && (
-          <span
-            className={[
-              uiPanelKeyValueTextSizeClass,
-              uiPanelTextFontClass,
-              `font-semibold ${UI_THEME_TOKENS.text.tertiary}`,
-            ].join(' ')}
-          >
-            {copy.badge}
-          </span>
-        )}
-        <span className={KTV_SECTION_TITLE_CLASS_NAME}>
-          {copy.title}
-        </span>
-      </span>
-      {copy.descriptionShort && (
-        <span
-          className={[
-            uiPanelMicroLabelTextSizeClass,
-            uiPanelTextFontClass,
-            UI_THEME_TOKENS.text.secondary,
-          ].join(' ')}
-        >
-          {copy.descriptionShort}
-        </span>
-      )}
-    </section>
-  )
-
   return (
     <CollapsibleSection
-      title={copy.tooltip ? (
-        <Tooltip
-          content={copy.tooltip}
-          maxWidthPx={260}
-
-        >
-          {titleContent}
-        </Tooltip>
-      ) : (
-        titleContent
-      )}
+      headingAs="h3"
+      title={copy.title}
       toolbarAligned={toolbarAligned}
       collapsed={collapsed}
       onToggle={onToggle}
     >
+      <p>{copy.descriptionShort}</p>
       {!graph || totalCount === 0 ? (
         <section
           className={[

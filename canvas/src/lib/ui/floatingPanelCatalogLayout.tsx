@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import 'agentic-design-system/collection-layout.css'
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import React from 'react'
@@ -110,23 +111,24 @@ export function FloatingPanelCatalogHeader({
   trailingActions?: React.ReactNode
 }) {
   return (
-    <header
-      className={cn('agentic-panel-section-header z-30 mb-1 shrink-0 flex-wrap', UI_THEME_TOKENS.panel.bg)}
-      aria-label={`${title} header`}
+    <SettingsSectionHeader
+      ariaLabel={`${title} header`}
+      className="z-30 mb-1 shrink-0 flex-wrap"
+      stickyHeader
       data-kg-floating-panel-catalog-header="1"
       data-kg-floating-panel-catalog-header-fixed="1"
       {...dataAttributes}
-    >
-      <section className="agentic-panel-section-title">
-        <h2 className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</h2>
+      title={<>
+        <h2 className="agentic-panel-title truncate">{title}</h2>
         <p className={cn('truncate text-xs font-normal', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
-      </section>
-      <section className="agentic-panel-section-actions min-w-0 max-w-full" aria-label={actionsLabel}>
+      </>}
+      actionsClassName="min-w-0 max-w-full"
+      actions={(actions || searchControl || trailingActions) && <section className="contents" aria-label={actionsLabel}>
         {actions}
         {searchControl}
         {trailingActions}
-      </section>
-    </header>
+      </section>}
+    />
   )
 }
 

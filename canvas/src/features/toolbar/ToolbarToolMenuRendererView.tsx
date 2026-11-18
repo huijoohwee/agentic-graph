@@ -5,7 +5,7 @@ import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRendererPanelState } from '@/features/panels/hooks/useRendererPanelState'
 import RenderSettingsSection from '@/lib/panels/views/RenderSettingsSection.impl'
-import { UI_LABELS } from '@/lib/config'
+import { CollapsibleSection, ExpandCollapseAllButton, SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import { RendererPaletteSettings } from '@/features/toolbar/ui/RendererPaletteSettings'
 import { RendererHoverSettings } from '@/features/toolbar/ui/RendererHoverSettings'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -44,33 +44,6 @@ export function ToolbarToolMenuRendererView(props: {
 }) {
   const onRegisterActions = props.onRegisterActions
   const inspectionGraph = useRendererInspectionGraph()
-  const {
-    sections: renderSections,
-    allSectionsCollapsed: allRenderSectionsCollapsed,
-    collapseAllSections: collapseRenderSections,
-    expandAllSections: expandRenderSections,
-  } = useRendererPanelState({ source: 'floatingPanel' })
-  const renderSectionsCollapsed = renderSections.byKey
-  const renderSectionSetters = renderSections.setters
-
-  const renderLinksCollapsed = renderSectionsCollapsed.links
-  const renderLayoutCollapsed = renderSectionsCollapsed.layout
-  const renderBackgroundFogCollapsed = renderSectionsCollapsed.backgroundFog
-  const renderStarfieldCollapsed = renderSectionsCollapsed.starfield
-  const renderCameraCollapsed = renderSectionsCollapsed.camera
-  const renderSelectionCollapsed = renderSectionsCollapsed.selection
-  const renderPresetsCollapsed = renderSectionsCollapsed.presets
-  const renderCodebaseIndexCollapsed = renderSectionsCollapsed.codebaseIndex
-
-  const setRenderLinksCollapsed = renderSectionSetters.links
-  const setRenderLayoutCollapsed = renderSectionSetters.layout
-  const setRenderBackgroundFogCollapsed = renderSectionSetters.backgroundFog
-  const setRenderStarfieldCollapsed = renderSectionSetters.starfield
-  const setRenderCameraCollapsed = renderSectionSetters.camera
-  const setRenderSelectionCollapsed = renderSectionSetters.selection
-  const setRenderPresetsCollapsed = renderSectionSetters.presets
-  const setRenderCodebaseIndexCollapsed = renderSectionSetters.codebaseIndex
-
   const {
     workspaceViewMode,
     canvasRenderMode,
@@ -154,6 +127,9 @@ export function ToolbarToolMenuRendererView(props: {
   const showDesignWireframeUi = canvasRenderMode === '2d' && canvas2dRenderer === 'design'
   const showFlowchartUi = canvasRenderMode === '2d' && isFlowchartCanvas2dRenderer(canvas2dRenderer)
   const showRadarGalaxyUi = !inspectionGraph && canvasRenderMode === '2d' && isD3Like2dRenderer(canvas2dRenderer)
+  const { allCollapsed, setAll, disclosure } = useRendererPanelState({
+    source: 'floatingPanel', tuning: !inspectionGraph, radar: showRadarGalaxyUi, flowchart: showFlowchartUi, design: showDesignWireframeUi,
+  })
   const allowLayoutModeSelection = !!inspectionGraph || isD3Like2dRenderer(canvas2dRenderer)
 
   React.useEffect(() => {
@@ -188,50 +164,34 @@ export function ToolbarToolMenuRendererView(props: {
 
   return (
     <section className="flex flex-col gap-2">
+      <SettingsSectionHeader headingAs="h2" title="Renderer" actions={
+        <ExpandCollapseAllButton allCollapsed={allCollapsed} onExpandAll={() => setAll(false)} onCollapseAll={() => setAll(true)} />
+      } />
       <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} />
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <React.Suspense fallback={null}>
           <WorkspaceTableModeControlLazy />
         </React.Suspense>
       </section>
-      <RendererPaletteSettings />
-      <section className={uiToolbarSettingsPanelBodyClassName}>
-        <RendererHoverSettings />
-      </section>
+      <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
+        <RendererPaletteSettings />
+        <section className={uiToolbarSettingsPanelBodyClassName}>
+          <RendererHoverSettings />
+        </section>
+      </CollapsibleSection>
       <RenderSettingsSection
         inspection={!!inspectionGraph}
         layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
-        threeGroupsCollapsed={{
-          links: renderLinksCollapsed,
-          layout: renderLayoutCollapsed,
-          backgroundFog: renderBackgroundFogCollapsed,
-          starfield: renderStarfieldCollapsed,
-          camera: renderCameraCollapsed,
-          selection: renderSelectionCollapsed,
-        }}
-        onToggleThreeGroup={(group, next) => {
-          if (group === 'links') setRenderLinksCollapsed(next)
-          else if (group === 'layout') setRenderLayoutCollapsed(next)
-          else if (group === 'backgroundFog') setRenderBackgroundFogCollapsed(next)
-          else if (group === 'starfield') setRenderStarfieldCollapsed(next)
-          else if (group === 'camera') setRenderCameraCollapsed(next)
-          else if (group === 'selection') setRenderSelectionCollapsed(next)
-        }}
-        presetsCollapsed={renderPresetsCollapsed}
-        onTogglePresets={setRenderPresetsCollapsed}
-        codebaseIndexCollapsed={renderCodebaseIndexCollapsed}
-        onToggleCodebaseIndex={setRenderCodebaseIndexCollapsed}
+        disclosure={disclosure}
       />
       <EdgeTypesRendererSettings
+        {...disclosure('edgeTypes')}
         selectedEdgeType={edgeTypeDraft}
         onSelectEdgeType={handleSelectEdgeType}
       />
-      {showRadarGalaxyUi ? <RadarGalaxyRendererSettings /> : null}
-      {showFlowchartUi ? <FlowchartRendererSettings /> : null}
-      <section className="flex flex-col gap-1" aria-label="Rich media rendering">
-        <section className={`text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>
-          Rich media
-        </section>
+      {showRadarGalaxyUi ? <RadarGalaxyRendererSettings {...disclosure('radar')} /> : null}
+      {showFlowchartUi ? <FlowchartRendererSettings {...disclosure('flowchart')} /> : null}
+      <CollapsibleSection headingAs="h3" title="Rich media" {...disclosure('richMedia')}>
         <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
           <PanelSelect
             className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
@@ -245,8 +205,8 @@ export function ToolbarToolMenuRendererView(props: {
             <option value="embed">Interactive embed</option>
           </PanelSelect>
         </ResponsiveControlRow>
-      </section>
-      {showDesignWireframeUi ? <DesignWireframeSettings /> : null}
+      </CollapsibleSection>
+      {showDesignWireframeUi ? <DesignWireframeSettings {...disclosure('design')} /> : null}
       {showGraphEditorUi ? (
         <section className="flex min-w-0 max-w-full flex-wrap gap-2" aria-label="Graph editor tools and inspector">
           <GraphEditorToolRail
@@ -259,24 +219,6 @@ export function ToolbarToolMenuRendererView(props: {
           </section>
         </section>
       ) : null}
-      <section className="flex items-center gap-2">
-        <button
-          type="button"
-          className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
-          onClick={collapseRenderSections}
-          disabled={allRenderSectionsCollapsed}
-        >
-          {UI_LABELS.collapseAll}
-        </button>
-        <button
-          type="button"
-          className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
-          onClick={expandRenderSections}
-        >
-          {UI_LABELS.expandAll}
-        </button>
-      </section>
-
     </section>
   )
 }

@@ -17,7 +17,7 @@ export function GroupPanelPaletteAction(props: { active: boolean }) {
   return (
     <aside className="border-b border-[var(--kg-border)]" aria-label="Group Panel controls">
       <header className="px-3 py-2">
-        <h4 className={`font-semibold ${UI_THEME_TOKENS.text.primary} ${panelTypography.panelTextClass}`}>Group Panels</h4>
+        <h3 className="agentic-panel-title">Group Panels</h3>
         <p className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
           Select two or more cards, panels, or Group Panels to create a nested frame.
         </p>

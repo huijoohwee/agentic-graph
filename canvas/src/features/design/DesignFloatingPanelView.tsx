@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { FileCode, Film, Hand, Layers, ListTree, Maximize2, MonitorPlay, MousePointer, Palette, Redo, Ruler, Undo } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -75,11 +76,10 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
 
   return (
     <section className="h-full flex flex-col" aria-label="Design panel">
-      <header className={cn(uiToolbarRowScrollClassName, 'justify-between gap-2 w-full select-none', UI_THEME_TOKENS.panel.divider)}>
-        <section className="flex min-w-0 items-center gap-2 px-1 py-1">
-          <section className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>2D Renderer: Design</section>
-          {lastLabel ? <section className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{lastLabel}</section> : null}
-        </section>
+      <SettingsSectionHeader className="flex-wrap" title={<>
+        <h2 className="agentic-panel-title">2D Renderer: Design</h2>
+        {lastLabel && <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{lastLabel}</span>}
+      </>} actions={<>
         <nav className={`${uiToolbarRowScrollClassName} gap-1`} aria-label="Design panel controls">
           <button
             type="button"
@@ -197,7 +197,7 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
           }}
           menuWidthClass={UI_RESPONSIVE_NARROW_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
         />
-      </header>
+      </>} />
       <nav className={cn(uiToolbarRowScrollClassName, 'mt-1 gap-1 px-1')} aria-label="Design workspace sections">
         {tabs.map(item => {
           const Icon = item.icon

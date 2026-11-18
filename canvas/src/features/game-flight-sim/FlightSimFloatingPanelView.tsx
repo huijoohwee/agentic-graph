@@ -1,3 +1,4 @@
+import { PanelDisclosure } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospatialSource'
 import {
@@ -147,6 +148,8 @@ export function FlightSimFloatingPanelView() {
     || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
+  const evidenceId = React.useId()
+  const [evidenceOpen, setEvidenceOpen] = React.useState(false)
   const [evidenceLoaded, setEvidenceLoaded] = React.useState(false)
 
   React.useEffect(() => {
@@ -271,12 +274,12 @@ export function FlightSimFloatingPanelView() {
       />
 
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
-        <details className={cn('min-w-0 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
-          onToggle={event => { if (event.currentTarget.open) setEvidenceLoaded(true) }} data-kg-flight-evidence="1">
-          <summary className="min-h-[44px] cursor-pointer text-xs font-semibold">Evidence and analysis</summary>
+        <PanelDisclosure id={evidenceId} expanded={evidenceOpen} data-kg-flight-evidence="1"
+          onExpandedChange={open => { setEvidenceOpen(open); if (open) setEvidenceLoaded(true) }}
+          title={<h3 className="agentic-panel-title inline">Evidence and analysis</h3>}>
           <p className="mb-2 text-xs">Local imported records are separate from simulated aircraft state. Export before closing the Flight panel.</p>
           {evidenceLoaded ? <React.Suspense fallback={<p role="status" className="text-xs">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense> : null}
-        </details>
+        </PanelDisclosure>
         <section
           className={cn(
             'grid grid-cols-3 gap-2 rounded border p-2 text-xs',

@@ -48,7 +48,7 @@ export function RendererHoverSettings() {
           maxWidthPx={260}
           contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
         >
-          <span className={UI_THEME_TOKENS.text.primary}>schema.behavior.hover.content</span>
+          <span className={UI_THEME_TOKENS.text.primary} title="schema.behavior.hover.content">Hover content</span>
         </Tooltip>
       }
       typeNode={null}
@@ -59,7 +59,7 @@ export function RendererHoverSettings() {
           contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
           className="w-full"
         >
-          <section className="flex gap-2 justify-end w-full">
+          <section className="flex w-full flex-wrap justify-end gap-2">
             <label className={`${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} ${UI_THEME_TOKENS.text.secondary} cursor-pointer`}>
               <input
                 type="checkbox"

@@ -1,7 +1,7 @@
+import type { RendererSectionDisclosure } from '@/features/panels/hooks/useRendererPanelState'
 import React from 'react'
 import { runMarkdownPipelineWithStatus } from '@/features/panels/hooks/markdownPipelineActions'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import Tooltip from 'agentic-design-system/react/hover'
 import { KeyTypeValueSectionStack } from 'grph-shared/react/keyTypeValueLayout'
 import { ResponsiveControlInput, ResponsiveControlRow, ResponsiveSelectRow } from '@/lib/ui/responsiveControlRows'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -19,36 +19,13 @@ import { uiToolbarButtonMutedClassName, uiToolbarSettingsPanelBodyClassName } fr
 import { UI_RESPONSIVE_BADGE_CHIP_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 type GraphSelectMode = NonNullable<GraphBehavior['selectMode']>
 type GraphCreateMode = NonNullable<GraphBehavior['createMode']>
-interface ThreeGroupsCollapsed {
-  links: boolean
-  layout: boolean
-  backgroundFog: boolean
-  starfield: boolean
-  camera: boolean
-  selection: boolean
-}
-
 interface RenderSettingsSectionProps {
   layoutSettings?: React.ComponentProps<typeof LayoutModeRendererSettings>
   inspection?: boolean
-  threeGroupsCollapsed?: ThreeGroupsCollapsed
-  onToggleThreeGroup?: (group: keyof ThreeGroupsCollapsed, next: boolean) => void
-  presetsCollapsed?: boolean
-  onTogglePresets?: (next: boolean) => void
-  codebaseIndexCollapsed?: boolean
-  onToggleCodebaseIndex?: (next: boolean) => void
+  disclosure: RendererSectionDisclosure
 }
 
-export default function RenderSettingsSection({
-  layoutSettings,
-  inspection = false,
-  threeGroupsCollapsed,
-  onToggleThreeGroup,
-  presetsCollapsed,
-  onTogglePresets,
-  codebaseIndexCollapsed,
-  onToggleCodebaseIndex,
-}: RenderSettingsSectionProps) {
+export default function RenderSettingsSection({ layoutSettings, inspection = false, disclosure }: RenderSettingsSectionProps) {
   const schema = useGraphStore(s => s.schema) as GraphSchema
   const setSchema = useGraphStore(s => s.setSchema)
   const canvasRenderMode = useGraphStore(s => s.canvasRenderMode)
@@ -89,9 +66,6 @@ export default function RenderSettingsSection({
   )
   const uiPanelTextFontClass = useGraphStore(
     s => s.uiPanelTextFontClass || 'font-sans',
-  )
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(
-    s => s.uiPanelMicroLabelTextSizeClass || 'text-xs',
   )
   const uiPanelMonospaceTextClass = useGraphStore(
     s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
@@ -307,42 +281,6 @@ export default function RenderSettingsSection({
     return sorted
   }, [schema])
 
-  const renderSectionTitle = React.useCallback(
-    (copyKey: keyof typeof RENDER_PANEL_SECTION_COPY) => {
-      const copy = RENDER_PANEL_SECTION_COPY[copyKey]
-      const titleContent = (
-        <section className="flex flex-col">
-          <span className="inline-flex items-center gap-2">
-            {copy.badge && (
-              <span className={`text-xs font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>
-                {copy.badge}
-              </span>
-            )}
-            <span className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary}`}>
-              {copy.title}
-            </span>
-          </span>
-          {copy.descriptionShort && (
-            <span className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>
-              {copy.descriptionShort}
-            </span>
-          )}
-        </section>
-      )
-      if (!copy.tooltip) return titleContent
-      return (
-        <Tooltip
-          content={copy.tooltip}
-          maxWidthPx={260}
-          contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
-        >
-          {titleContent}
-        </Tooltip>
-      )
-    },
-    [uiPanelMicroLabelTextSizeClass],
-  )
-
   return (
     <section>
       {schemaBadges.length > 0 && (
@@ -364,12 +302,13 @@ export default function RenderSettingsSection({
         </section>
       )}
       <CollapsibleSection
-        title={renderSectionTitle('presetsAndTuning')}
+        headingAs="h3"
+        title={RENDER_PANEL_SECTION_COPY.presetsAndTuning.title}
         toolbarAligned
         headerClassName="z-20"
-        collapsed={presetsCollapsed}
-        onToggle={onTogglePresets}
+        {...disclosure('presets')}
       >
+        <p>{RENDER_PANEL_SECTION_COPY.presetsAndTuning.descriptionShort}</p>
         <LayoutModeRendererSettings embedded {...layoutSettings} inspection={inspection} />
         <section className={uiToolbarSettingsPanelBodyClassName}>
           <KeyTypeValueSectionStack>
@@ -554,17 +493,17 @@ export default function RenderSettingsSection({
         {!inspection && <ThreeViewTuningSection
           schema={schema}
           setThreeConfig={setThreeConfig}
-          threeGroupsCollapsed={threeGroupsCollapsed}
-          onToggleThreeGroup={onToggleThreeGroup}
+          disclosure={disclosure}
         />}
       </CollapsibleSection>
-      <MediaNodesSection toolbarAligned />
+      <MediaNodesSection toolbarAligned {...disclosure('mediaNodes')} />
       <CollapsibleSection
-        title={renderSectionTitle('codebaseIndexPipeline')}
+        headingAs="h3"
+        title={RENDER_PANEL_SECTION_COPY.codebaseIndexPipeline.title}
         toolbarAligned
-        collapsed={codebaseIndexCollapsed}
-        onToggle={onToggleCodebaseIndex}
+        {...disclosure('codebaseIndex')}
       >
+        <p>{RENDER_PANEL_SECTION_COPY.codebaseIndexPipeline.descriptionShort}</p>
         <section
           className={[
             `flex items-center gap-2 ${UI_THEME_TOKENS.text.tertiary}`,

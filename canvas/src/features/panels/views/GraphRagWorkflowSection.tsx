@@ -253,6 +253,7 @@ export function GraphRagWorkflowSection({
         onUpdateWorkflow={onUpdateWorkflow}
       />
       <CollapsibleSection
+        headingAs="h4"
         title={(
           <Tooltip
             content={ORCHESTRATOR_TRACING_OPTIONS_TOOLTIP}
@@ -264,7 +265,7 @@ export function GraphRagWorkflowSection({
             </span>
           </Tooltip>
         )}
-        headerClassName="px-0"
+
         collapsed={tracingCollapsed}
         onToggle={onToggleTracingCollapsed}
         stickyOffset="1.5rem"
