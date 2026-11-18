@@ -21,7 +21,7 @@ import {
   createXrV2SpatialAssetMetadata,
   isXrV2SpatialAssetMetadata,
 } from '@/features/xr-v2/xrV2SpatialAssetMetadata'
-import { XrV2WorkspaceReadinessPanelView } from '@/features/xr-v2/XrV2WorkspaceReadinessPanel'
+import '@/tests/lib/registerCssLoader'
 import {
   beginXrV2DeliveryCriterionObservation,
   probeXrV2WorkspaceReadiness,
@@ -458,6 +458,7 @@ test('workspace readiness never promotes a failed material binding to browser ev
 
 test('mounted seed surface renders capability tier before disabled capture actions', async () => {
   const snapshot = await readySnapshot()
+  const { XrV2WorkspaceReadinessPanelView } = await import('@/features/xr-v2/XrV2WorkspaceReadinessPanel')
   const html = renderToStaticMarkup(<XrV2WorkspaceReadinessPanelView snapshot={snapshot} />)
   const tierIndex = html.indexOf('data-kg-xr-v2-capability-tier-output="1"')
   const captureIndex = html.indexOf('data-kg-xr-v2-spatial-capture-start="1"')

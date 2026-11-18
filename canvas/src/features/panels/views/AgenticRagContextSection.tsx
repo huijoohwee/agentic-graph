@@ -41,6 +41,7 @@ export default function AgenticRagContextSection({
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={(
         <Tooltip
           content={ORCHESTRATOR_AGENTIC_COPY.contextSectionTooltip}

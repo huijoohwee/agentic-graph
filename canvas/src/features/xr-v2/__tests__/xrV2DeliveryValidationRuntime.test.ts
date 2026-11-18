@@ -4,8 +4,7 @@ import { test } from 'node:test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { XrV2DeliveryValidationPanel } from '../XrV2DeliveryValidationPanel'
-import { XrV2CrossDeviceAssetPanel } from '../XrV2CrossDeviceAssetPanel'
+import '@/tests/lib/registerCssLoader'
 import type {
   XrV2ConnectedPreviewAuthoringEdit,
   XrV2ConnectedPreviewBrowserObservation,
@@ -344,7 +343,8 @@ test('connected preview enforces one hard overall deadline and aborts the underl
   assert.equal(probeAborted, true)
 })
 
-test('workspace delivery panel is local-first and performs no action on render', () => {
+test('workspace delivery panel is local-first and performs no action on render', async () => {
+  const { XrV2DeliveryValidationPanel } = await import('../XrV2DeliveryValidationPanel')
   const html = renderToStaticMarkup(React.createElement(XrV2DeliveryValidationPanel, { actionsEnabled: true }))
   assert.match(html, /data-kg-xr-v2-delivery-validation="1"/)
   assert.match(html, /data-kg-xr-v2-saved-asset-scope="local-first-explicit-existing-storage"/)
@@ -356,7 +356,8 @@ test('workspace delivery panel is local-first and performs no action on render',
   assert.equal(XR_V2_CROSS_DEVICE_BLOCKER.code, 'shared-storage-auth-and-server-digest-not-enforced')
 })
 
-test('existing-storage panel performs no publish, list, or read on mount', () => {
+test('existing-storage panel performs no publish, list, or read on mount', async () => {
+  const { XrV2CrossDeviceAssetPanel } = await import('../XrV2CrossDeviceAssetPanel')
   let operations = 0
   const adapterFactory = () => Object.freeze({
     config: readXrV2CrossDeviceAssetConfig({ workspaceId: 'kgws:xr-test', baseUrl: 'https://example.com' }),

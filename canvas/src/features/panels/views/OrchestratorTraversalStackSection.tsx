@@ -102,6 +102,7 @@ export function OrchestratorTraversalSection({
   return (
     <>
       <CollapsibleSection
+        headingAs="h3"
         title={(
           <Tooltip
             content={AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION}
@@ -143,6 +144,7 @@ export function OrchestratorTraversalSection({
         />
       </CollapsibleSection>
       <CollapsibleSection
+        headingAs="h3"
           title={(
           <Tooltip
             content={TRAVERSAL_PRESETS_SECTION_TOOLTIP}
@@ -188,6 +190,7 @@ export function OrchestratorTraversalSection({
           />
         </CollapsibleSection>
       <CollapsibleSection
+        headingAs="h3"
           title={(
             <Tooltip
               content={TRAVERSAL_EDITOR_AND_LAYERS_SECTION_TOOLTIP}

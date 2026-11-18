@@ -115,8 +115,7 @@ const normalizeBuilderParams = (preset: ApiRuntimePreset | null | undefined, par
   )
 }
 
-export function FlowchartRendererSettings() {
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+export function FlowchartRendererSettings(props: { collapsed?: boolean; onToggle?: (collapsed: boolean) => void }) {
   const [apiRuntimeMeta, setApiRuntimeMeta] = React.useState<ApiRuntimeMeta | null>(null)
   const [builderPresetId, setBuilderPresetId] = React.useState('')
   const [builderParams, setBuilderParams] = React.useState<Record<string, unknown>>({})
@@ -363,7 +362,7 @@ export function FlowchartRendererSettings() {
   )
 
   return (
-    <CollapsibleSection title="Flowchart" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
+    <CollapsibleSection title="Flowchart" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
       <section
         className={uiToolbarSettingsPanelBodyClassName}
         style={safeAreaAware ? { paddingBottom: 'max(var(--agentic-control-padding-inline), env(safe-area-inset-bottom))' } : undefined}

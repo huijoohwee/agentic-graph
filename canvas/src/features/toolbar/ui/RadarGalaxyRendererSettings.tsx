@@ -53,8 +53,7 @@ const readForceMode = (schema: GraphSchema, key: 'radialOrbitMode', fallback: 'f
   return v === 'solar' || v === 'atomic' ? v : fallback
 }
 
-export function RadarGalaxyRendererSettings() {
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+export function RadarGalaxyRendererSettings(props: { collapsed?: boolean; onToggle?: (collapsed: boolean) => void }) {
   const schema = useGraphStore(s => s.schema)
   const setSchema = useGraphStore(s => s.setSchema)
 
@@ -91,7 +90,7 @@ export function RadarGalaxyRendererSettings() {
   }, [setSchema])
 
   return (
-    <CollapsibleSection title="Radar Galaxy" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
+    <CollapsibleSection title="Radar Galaxy" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Controls hub-spoke force distances, curved flow arrows, and repulsion for JSON-imported radar maps.

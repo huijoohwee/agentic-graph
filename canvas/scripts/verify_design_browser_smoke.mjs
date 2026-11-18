@@ -59,8 +59,8 @@ async function verify() {
     await floatingPanel.waitFor({ state: 'visible' })
     assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true, 'Expected seed floating panel must close through its rendered control')
     const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
-    assert.equal(await timeline.locator('.agentic-base-floating-panel-header').count(), 1, 'BottomPanel must reuse the Base panel header shell')
-    assert.equal(await timeline.getByRole('navigation', { name: 'Bottom panel views', exact: true }).count(), 1)
+    assert.equal(await timeline.locator(':scope > header.agentic-panel-header').count(), 1, 'BottomPanel must reuse the Design System panel header')
+    assert.equal(await timeline.getByRole('tablist', { name: 'Bottom panel views', exact: true }).count(), 1)
     await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     await timeline.waitFor({ state: 'detached' })
     console.log('Design browser: canvas ready')
@@ -89,7 +89,10 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('renderer')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
-    await floatingPanel.getByRole('button', { name: 'Expand all', exact: true }).click()
+    await floatingPanel.getByRole('heading', { name: 'Renderer', level: 2 }).waitFor()
+    const collapse = floatingPanel.getByRole('button', { name: 'Collapse All', exact: true })
+    if (await collapse.isVisible()) await collapse.click()
+    await floatingPanel.getByRole('button', { name: 'Expand All', exact: true }).click()
     const fieldControls = [floatingPanel.getByRole('slider', { name: 'Voxel Idle Rotate Speed', exact: true }),
       floatingPanel.getByRole('checkbox', { name: 'Voxel Animation', exact: true }),
       floatingPanel.getByRole('button', { name: 'Node Sizing', exact: true })]

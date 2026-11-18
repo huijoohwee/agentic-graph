@@ -1,3 +1,4 @@
+import type { RendererSectionDisclosure } from '@/features/panels/hooks/useRendererPanelState'
 import React from 'react'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -10,35 +11,13 @@ import ThreeViewSelectionSection from '@/features/panels/views/ThreeViewSelectio
 import ThreeViewGlobeEffectsSection from '@/features/panels/views/ThreeViewGlobeEffectsSection'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
-interface ThreeGroupsCollapsed {
-  links: boolean
-  layout: boolean
-  backgroundFog: boolean
-  starfield: boolean
-  camera: boolean
-  selection: boolean
-}
-
 interface ThreeViewTuningSectionProps {
   schema: GraphSchema
   setThreeConfig: (config: Partial<GraphSchema['three']>) => void
-  threeGroupsCollapsed?: ThreeGroupsCollapsed
-  onToggleThreeGroup?: (group: keyof ThreeGroupsCollapsed, next: boolean) => void
+  disclosure: RendererSectionDisclosure
 }
 
-export default function ThreeViewTuningSection({
-  schema,
-  setThreeConfig,
-  threeGroupsCollapsed,
-  onToggleThreeGroup,
-}: ThreeViewTuningSectionProps) {
-  const linksCollapsed = threeGroupsCollapsed?.links ?? false
-  const layoutCollapsed = threeGroupsCollapsed?.layout ?? false
-  const backgroundFogCollapsed = threeGroupsCollapsed?.backgroundFog ?? false
-  const starfieldCollapsed = threeGroupsCollapsed?.starfield ?? false
-  const cameraCollapsed = threeGroupsCollapsed?.camera ?? false
-  const selectionCollapsed = threeGroupsCollapsed?.selection ?? false
-
+export default function ThreeViewTuningSection({ schema, setThreeConfig, disclosure }: ThreeViewTuningSectionProps) {
   const uiPanelKeyValueInputClass = useGraphStore(
     s =>
       s.uiPanelKeyValueInputClass ||
@@ -50,46 +29,40 @@ export default function ThreeViewTuningSection({
       <ThreeViewLinksSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={linksCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('links', next)}
+        {...disclosure('links')}
       />
       <ThreeViewGlobeEffectsSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={false}
+        {...disclosure('globeEffects')}
       />
       <ThreeViewLayoutSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={layoutCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('layout', next)}
+        {...disclosure('layout')}
         uiPanelKeyValueInputClass={uiPanelKeyValueInputClass}
       />
       <ThreeViewBackgroundFogSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={backgroundFogCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('backgroundFog', next)}
+        {...disclosure('backgroundFog')}
         uiPanelKeyValueInputClass={uiPanelKeyValueInputClass}
       />
       <ThreeViewStarfieldSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={starfieldCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('starfield', next)}
+        {...disclosure('starfield')}
         uiPanelKeyValueInputClass={uiPanelKeyValueInputClass}
       />
       <ThreeViewCameraSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={cameraCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('camera', next)}
+        {...disclosure('camera')}
       />
       <ThreeViewSelectionSection
         schema={schema}
         setThreeConfig={setThreeConfig}
-        collapsed={selectionCollapsed}
-        onToggle={next => onToggleThreeGroup && onToggleThreeGroup('selection', next)}
+        {...disclosure('selection')}
       />
     </section>
   )

@@ -11,14 +11,14 @@ import {
 } from '@/lib/ui/responsiveControlRows'
 import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 
-export function DesignWireframeSettings() {
+export function DesignWireframeSettings(props: { collapsed?: boolean; onToggle?: (collapsed: boolean) => void }) {
   const { settings, setSettings, resetSettings } = useDesignWireframeSettings()
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
   const bumpDesignWireframeCacheEpoch = useGraphStore(s => s.bumpDesignWireframeCacheEpoch)
 
   return (
-    <CollapsibleSection title="Design wireframe" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
+    <CollapsibleSection title="Design wireframe" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Controls for webpage source-url wireframes (layout fidelity, grouping cues, label readability).

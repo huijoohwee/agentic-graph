@@ -44,11 +44,12 @@ const THREE_EDGE_RENDERER_OPTIONS: Array<{ value: ThreeEdgeRendererType; label: 
 const EDGE_THICKNESS_OPTIONS = [1, 1.5, 2, 2.5, 3, 4, 5] as const
 
 export function EdgeTypesRendererSettings(props: {
+  collapsed?: boolean
+  onToggle?: (collapsed: boolean) => void
   selectedEdgeType?: GlobalEdgeType
   onSelectEdgeType?: (next: GlobalEdgeType) => void
 }) {
   const onSelectEdgeTypeProp = props.onSelectEdgeType
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
   const schema = useGraphStore(s => s.schema)
   const canvasRenderMode = useGraphStore(s => s.canvasRenderMode)
   const canvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
@@ -154,7 +155,7 @@ export function EdgeTypesRendererSettings(props: {
   }, [edgeAnimated])
 
   return (
-    <CollapsibleSection title="Edge Types" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
+    <CollapsibleSection title="Edge Types" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Applies globally to Flowchart, Flow Canvas, Design, Storyboard Widget, document modes, 2D/3D/geospatial surfaces, and Text/Image/Video widgets. Default is Bezier with animated blue edges.

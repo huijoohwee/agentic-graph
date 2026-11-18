@@ -1,3 +1,4 @@
+import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { useShallow } from 'zustand/react/shallow'
@@ -306,10 +307,7 @@ export function MermaidDiagramPanelView({
         data-kg-mermaid-diagram-render-mode={renderMode}
         data-kg-mermaid-diagram-empty="1"
       >
-        <header className="flex min-w-0 items-center justify-between gap-2 px-1 py-1">
-          <span className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</span>
-          {headerActions}
-        </header>
+        <SettingsSectionHeader headingAs="h2" title={title} actions={headerActions} />
         <section className={cn('px-1 text-xs', UI_THEME_TOKENS.text.secondary)}>{emptyLabel}</section>
       </section>
     )
@@ -324,9 +322,8 @@ export function MermaidDiagramPanelView({
       data-kg-mermaid-diagram-surface={surface}
       data-kg-mermaid-diagram-render-mode={renderMode}
     >
-      <header className={`flex min-w-0 items-center justify-between gap-2 px-1 ${UI_THEME_TOKENS.control.height}`}>
-        <section className="min-w-0">
-          <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</section>
+      <SettingsSectionHeader title={<>
+          <h2 className="agentic-panel-title truncate">{title}</h2>
           {showRowList ? (
             <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
               {rowEntries.length === model.rows.length
@@ -334,9 +331,7 @@ export function MermaidDiagramPanelView({
                 : `${rowEntries.length} / ${model.rows.length} parsed rows`}
             </section>
           ) : null}
-        </section>
-        {headerActions}
-      </header>
+        </>} actions={headerActions} />
       {showDiagram ? (
         <MermaidDiagramRenderPreview
           code={code}

@@ -59,7 +59,7 @@ export default function WidgetPalette(args: {
       data-main-panel-no-drag="true"
     >
       <header className={`px-3 py-2 border-b ${UI_THEME_TOKENS.panel.border}`} aria-label="Palette header">
-        <h4 className={`font-semibold ${UI_THEME_TOKENS.text.primary} ${panelTypography.panelTextClass}`}>Widgets</h4>
+        <h3 className="agentic-panel-title">Widgets</h3>
         <p className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
           {selectionLinkSession
             ? <>Choose a target Widget to link to “{selectionSummary}”.</>

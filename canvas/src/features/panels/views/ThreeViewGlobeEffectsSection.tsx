@@ -38,10 +38,11 @@ export default function ThreeViewGlobeEffectsSection({
   const selectionControlClassName = `${UI_RESPONSIVE_SMALL_SELECTION_CONTROL_CLASSNAME} rounded ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.selectionControl}`
   return (
     <CollapsibleSection
+      headingAs="h4"
       title="Globe effects"
       collapsed={collapsed}
       onToggle={onToggle}
-      headerClassName="px-0"
+
       stickyOffset="1.5rem"
     >
       <ThreeViewFieldSection>

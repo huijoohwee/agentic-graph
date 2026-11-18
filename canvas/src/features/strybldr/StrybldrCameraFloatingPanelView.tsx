@@ -23,7 +23,7 @@ const CAMERA_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 function CameraSectionTitle({ label, value }: { label: string; value: string }) {
   return (
     <span className="flex min-w-0 items-center justify-between gap-2">
-      <span className="truncate text-xs font-semibold uppercase">{label}</span>
+      <span className="truncate">{label}</span>
       <output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{value}</output>
     </span>
   )
@@ -88,13 +88,14 @@ export function StrybldrCameraFloatingPanelView() {
         </header>
 
         <CollapsibleSection
+          headingAs="h3"
           title={<CameraSectionTitle label="Framing" value="shared" />}
           collapsed={collapsedKeys.has('framing')}
           onToggle={collapsed => setCollapsed('framing', collapsed)}
           defaultCollapsed={false}
           flushTop
-          headerClassName="px-0"
-          className="mt-1 border-t pt-1"
+
+          className="mt-1"
           id="camera-framing-section"
         >
           <StrybldrCameraFramingSection />
@@ -102,12 +103,13 @@ export function StrybldrCameraFloatingPanelView() {
 
         {xrActive ? (
           <CollapsibleSection
+            headingAs="h3"
             title={<CameraSectionTitle label="Shoot" value="XR" />}
             collapsed={collapsedKeys.has('shoot')}
             onToggle={collapsed => setCollapsed('shoot', collapsed)}
             defaultCollapsed={false}
-            headerClassName="px-0"
-            className="mt-1 border-t pt-1"
+
+            className="mt-1"
             id="camera-shoot-section"
           >
             <XrShootCameraSection />
@@ -115,12 +117,13 @@ export function StrybldrCameraFloatingPanelView() {
         ) : null}
 
         <CollapsibleSection
+          headingAs="h3"
           title={<CameraSectionTitle label="WebMCP & Invocations" value="/ # @" />}
           collapsed={collapsedKeys.has('mcp-invocations')}
           onToggle={collapsed => setCollapsed('mcp-invocations', collapsed)}
           defaultCollapsed={false}
-          headerClassName="px-0"
-          className="mt-1 border-t pt-1"
+
+          className="mt-1"
           id="camera-mcp-invocations-section"
         >
           <CameraMcpInvocationSection />
