@@ -1,5 +1,5 @@
 import { createBaseTableHost } from '@agentic-base/views-react/table'
-import '@agentic-base/views-react/browser.css'
+import '@agentic-base/views-react/browser-components.css'
 import type { TableHostAdapter } from '@agentic-base/views-react/table'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'

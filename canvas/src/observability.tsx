@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { NativeTitleTooltip } from 'agentic-design-system/react/hover'
 import ObservabilityWorkspace from './features/observability-workspace/ObservabilityWorkspace'
+import 'agentic-design-system/profile.css'
 import './index.css'
 
 const root = document.getElementById('root')

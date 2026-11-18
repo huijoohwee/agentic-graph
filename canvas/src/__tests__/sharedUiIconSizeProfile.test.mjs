@@ -28,7 +28,13 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.equal(pin.metrics.floatingPanelRadius, 8)
   assert.match(profileCss.toString('utf8'), /--agentic-floating-panel-radius:\s*var\(--agentic-panel-radius\);/)
   assert.match(profileCss.toString('utf8'), /--agentic-panel-radius:\s*8px;/)
-  assert.match(applicationCss, /@import '\.\/styles\/shared-ui-profile\.css';/)
+  assert.doesNotMatch(applicationCss, /@import[^;]*shared-ui-profile/)
+  for (const file of ['main.tsx', 'observability.tsx']) {
+    const entry = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8')
+    assert.ok(entry.includes("import 'agentic-design-system/profile.css'"), file)
+  }
+  const table = fs.readFileSync(new URL('../features/markdown/ui/GraphTableHost.tsx', import.meta.url), 'utf8')
+  assert.ok(table.includes("import '@agentic-base/views-react/browser-components.css'"))
   assert.match(centralGraphCss, /--kg-compact-glyph-size:\s*var\(--agentic-icon-size-compact\);/)
   assert.match(centralGraphCss, /--kg-default-glyph-size:\s*var\(--agentic-icon-size-default\);/)
   assert.match(toolbarCss, /\.kg-compact-glyph\s*\{[^}]*width:\s*var\(--kg-compact-glyph-size\);/s)
@@ -150,7 +156,7 @@ test('Graph styles cannot redeclare the shared control or dashboard styles', () 
   assert.match(canvasToolbar, /\.kg-canvas-page-surface \.kg-dashboard-content \{ --agentic-dashboard-top-inset: 0px; \}/)
 })
 
-test('Preview and the Media library share the layout picker and the panel toggles use Base controls', () => {
+test('Preview and the Media library share the Design System layout picker and immersive controls use Base toggles', () => {
   const source = path => fs.readFileSync(new URL('../features/' + path, import.meta.url), 'utf8')
   for (const file of ['command-menu/MediaCatalogPanelView.tsx', 'panels/views/preview-context/PreviewMediaCatalog.tsx']) {
     const consumer = source(file)
@@ -160,12 +166,14 @@ test('Preview and the Media library share the layout picker and the panel toggle
   const skills = source('toolbar/FloatingPanelSkillsCommandsView.tsx')
   assert.match(skills, /import .*mountSkillsCommandsHeader.* from 'agentic-design-system\/skills-commands'/)
   assert.doesNotMatch(skills, /<ToggleButtonGroup|function ToggleButton|className="agentic-toggle-group"/)
-  for (const file of ['command-menu/MediaCatalogLayoutControls.tsx', 'immersive-media/ImmersiveMediaPanelProjection.tsx']) {
-    const consumer = source(file)
-    assert.match(consumer, /from '@agentic-base\/views-react\/controls'/, file)
-    assert.match(consumer, /<ToggleButtonGroup\b/, file)
-    assert.doesNotMatch(consumer, /function ToggleButton\b|className="agentic-toggle-group"/, file)
-  }
+  const picker = source('command-menu/MediaCatalogLayoutControls.tsx')
+  assert.ok(picker.includes("from 'agentic-design-system/collection-layout'"))
+  assert.match(picker, /mountCollectionLayoutPicker\(host\.current/)
+  assert.doesNotMatch(picker, /<ToggleButtonGroup|className="agentic-toggle-group"/)
+  const immersive = source('immersive-media/ImmersiveMediaPanelProjection.tsx')
+  assert.ok(immersive.includes("from '@agentic-base/views-react/controls'"))
+  assert.match(immersive, /<ToggleButtonGroup\b/)
+  assert.doesNotMatch(immersive, /function ToggleButton\b|className="agentic-toggle-group"/)
 })
 
 test('Mission dashboard composition uses the Base shell, card grid, primitives, board and layout helpers', () => {

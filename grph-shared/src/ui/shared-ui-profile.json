@@ -152,19 +152,19 @@
       "key": "surface.panel.background",
       "cssVar": "--agentic-panel-background",
       "type": "themed-color",
-      "value": "light-dark(oklch(100% 0 0), oklch(20% 0.012 260))"
+      "value": "var(--kg-panel-bg, light-dark(oklch(100% 0 0), oklch(20% 0.012 260)))"
     },
     {
       "key": "surface.panel.foreground",
       "cssVar": "--agentic-panel-foreground",
       "type": "themed-color",
-      "value": "light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260))"
+      "value": "var(--kg-text-primary, light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260)))"
     },
     {
       "key": "surface.panel.border-color",
       "cssVar": "--agentic-panel-border-color",
       "type": "themed-color",
-      "value": "light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260))"
+      "value": "var(--kg-border, light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260)))"
     },
     {
       "key": "surface.panel.border",

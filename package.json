@@ -357,7 +357,7 @@
     "spatial-workspace:full-app": "node canvas/scripts/run_spatial_workspace_full_app_smoke.mjs --build"
   },
   "dependencies": {
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#a231836ed408e717b0aaea3056351c7d880c893f",
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#5b41cec1ba15a7dd8b9665027c1db3a162a409bb",
     "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
@@ -369,7 +369,7 @@
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#2e477852043eff4d3c914dae2914210b355e4a52"
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#9a1ec581124c9fb7868903c0d42581e151c59fe6"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",

@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@e52a52111f52b6af85f99195ec9e59a490548575; profile sha256 e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd. Do not edit. */
+/* Generated from agentic-design-system@0e1a21ff98a02604b7f733c6705380133c3d7d1c; profile sha256 bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -23,9 +23,9 @@
   --agentic-panel-gap: 0.75rem;
   --agentic-toolbar-overlay-layer: 6000;
   --agentic-toolbar-shadow: 0 1px 2px rgb(0 0 0 / .04);
-  --agentic-panel-background: light-dark(oklch(100% 0 0), oklch(20% 0.012 260));
-  --agentic-panel-foreground: light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260));
-  --agentic-panel-border-color: light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260));
+  --agentic-panel-background: var(--kg-panel-bg, light-dark(oklch(100% 0 0), oklch(20% 0.012 260)));
+  --agentic-panel-foreground: var(--kg-text-primary, light-dark(oklch(22% 0.018 260), oklch(94% 0.005 260)));
+  --agentic-panel-border-color: var(--kg-border, light-dark(oklch(83% 0.012 260), oklch(36% 0.014 260)));
   --agentic-panel-border: 1px solid var(--agentic-panel-border-color);
   --agentic-panel-radius: 8px;
   --agentic-control-height: 28px;
@@ -75,9 +75,9 @@
 .agentic-toggle-group {
   box-sizing: border-box; display: inline-flex; align-items: stretch;
   min-inline-size: 0; max-inline-size: 100%; block-size: var(--agentic-control-height); overflow-x: auto;
-  scrollbar-width: none; border: var(--agentic-control-border);
-  border-radius: var(--agentic-control-radius); background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas));
-  color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText));
+  scrollbar-width: none; border: var(--agentic-panel-control-border, var(--agentic-control-border));
+  border-radius: var(--agentic-control-radius); background: var(--agentic-panel-background);
+  color: var(--agentic-panel-foreground);
   font: 500 var(--kg-text-xs, .75rem)/var(--kg-text-xs-line, 1rem) var(--agentic-font-sans);
 }
 .agentic-toggle-group > button {
@@ -157,7 +157,7 @@
 .agentic-icon-color { color: var(--agentic-base-muted, var(--kg-text-secondary, CanvasText)); }
 .agentic-icon-hover:is(:hover, :focus-visible) { background: var(--agentic-control-hover-background); }
 .agentic-icon-padding { padding: var(--agentic-control-padding-block); }
-.agentic-icon-pill, .agentic-icon-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; min-block-size: var(--agentic-control-height); padding: 0 var(--agentic-control-padding-inline); border: var(--agentic-control-border); border-radius: var(--agentic-control-radius); white-space: nowrap; }
+.agentic-icon-pill, .agentic-icon-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; min-block-size: var(--agentic-control-height); padding: 0 var(--agentic-control-padding-inline); border: var(--agentic-panel-control-border, var(--agentic-control-border)); border-radius: var(--agentic-control-radius); white-space: nowrap; }
 .agentic-icon-text, .agentic-icon-pill, .agentic-icon-badge { font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
 @container agentic-ktv (width < 22.25rem) {
   .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
@@ -166,7 +166,7 @@
 .agentic-form-control, :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)), .agentic-select-trigger {
   box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%;
   block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height);
-  padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border: var(--agentic-control-border); border-radius: var(--agentic-control-radius);
+  padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border: var(--agentic-panel-control-border, var(--agentic-control-border)); border-radius: var(--agentic-control-radius);
   font-family: var(--agentic-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
 }
 [data-agentic-inline-editing] { position: relative; }
@@ -195,7 +195,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   display: flex; flex-direction: column; gap: var(--agentic-menu-gap); min-inline-size: 0;
   color: var(--agentic-base-text, var(--kg-text-primary, CanvasText));
   background: var(--agentic-base-surface, var(--kg-panel-bg, Canvas));
-  border: var(--agentic-control-border);
+  border: var(--agentic-panel-control-border, var(--agentic-control-border));
   border-radius: var(--agentic-control-radius); box-shadow: var(--kg-shadow-overlay, 0 8px 24px rgb(0 0 0 / .12));
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
   max-block-size: calc(100dvh - var(--agentic-menu-edge-gap) - var(--agentic-menu-edge-gap));
