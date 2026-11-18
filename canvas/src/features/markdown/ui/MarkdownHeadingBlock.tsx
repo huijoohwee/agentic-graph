@@ -5,7 +5,7 @@ import { renderInlineTokens } from '@/lib/markdown-core/ui/MarkdownInlineRendere
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { RenderOpts } from './MarkdownRendererTypes'
 import { MarkdownBlockContainer } from './MarkdownBlockContainer'
-import { ChevronDown, Link2 } from 'lucide-react'
+import { HeadingActions } from 'agentic-design-system/react/panels'
 import { slugify } from 'grph-shared/markdown/slugify'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui'
@@ -100,27 +100,8 @@ export const MarkdownHeadingBlock = React.memo(function MarkdownHeadingBlock({
     MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_BASE_CLASS,
     'block',
     headingTypographyClass,
-    'pr-6',
     'overflow-x-auto whitespace-nowrap',
   ].filter(Boolean).join(' ')
-  const headingRightRailClassName = 'absolute right-0 inset-y-0 flex items-center gap-1 shrink-0'
-  const headingControlVisibilityClassName = 'opacity-0 group-hover:opacity-100 transition-opacity'
-  const headingLinkClassName = [
-    headingControlVisibilityClassName,
-    'p-0.5 rounded',
-    'no-underline',
-    UI_THEME_TOKENS.text.tertiary,
-    UI_THEME_TOKENS.button.hoverText,
-    UI_THEME_TOKENS.button.hoverBg,
-    'flex items-center justify-center shrink-0',
-  ].join(' ')
-  const headingButtonClassName = [
-    headingControlVisibilityClassName,
-    'p-0.5 rounded',
-    UI_THEME_TOKENS.button.text,
-    UI_THEME_TOKENS.button.hoverBg,
-    'flex items-center justify-center shrink-0',
-  ].join(' ')
   const content = renderInlineTokens(h.tokens, {
     activeDocumentPath: opts.activeDocumentPath,
     uiPanelTextFontClass: opts.uiPanelTextFontClass,
@@ -248,59 +229,6 @@ export const MarkdownHeadingBlock = React.memo(function MarkdownHeadingBlock({
     if (!m) return { prefix: '', content: line }
     return { prefix: m[1] || '', content: m[2] || '' }
   }, [])
-  const editStaticChildren = (gutterControlsEnabled || id || canCollapse)
-    ? (
-        <>
-          {gutterControlsEnabled ? (
-            <MarkdownBlockGutterControls
-              canInsertLine={canInsertLine}
-              onInsertLine={() => opts.onInsertLineAfter?.(endLine)}
-              canReorder={canReorder}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              iconSizeClass={iconSizeClass}
-              iconStrokeWidth={uiIconStrokeWidth}
-              labelReorder="Reorder section"
-              labelInsert={UI_COPY.markdownBlockInsertLineLabel}
-            />
-          ) : null}
-          <span className={headingRightRailClassName}>
-            {id ? (
-              <a
-                href={`#${id}`}
-                className={headingLinkClassName}
-                aria-label="Permalink"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation()
-                }}
-              >
-                <Link2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </a>
-            ) : null}
-            {canCollapse ? (
-              <button
-                type="button"
-                className={headingButtonClassName}
-                title={isCollapsed ? 'Expand section' : 'Collapse section'}
-                aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  opts.onToggleCollapse?.(id)
-                }}
-              >
-                <ChevronDown
-                  className={`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary} transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
-                  strokeWidth={uiIconStrokeWidth}
-                  aria-hidden="true"
-                />
-              </button>
-            ) : null}
-          </span>
-        </>
-      )
-    : undefined
-
   return (
     <section
       className={[
@@ -315,7 +243,7 @@ export const MarkdownHeadingBlock = React.memo(function MarkdownHeadingBlock({
     >
       <MarkdownBlockContainer
         as={Tag}
-        className={`${stickyHeadingEnabled ? `${UI_THEME_TOKENS.panel.bg} backdrop-blur-md h-full py-0.5` : 'py-1'} ${cls} ${MARKDOWN_NORMAL_TEXT_READ_SURFACE_BASE_CLASS} group min-w-0 relative ${gutterReserved ? `${MARKDOWN_BLOCK_GUTTER_PADDING_LEFT_CLASS} ${MARKDOWN_BLOCK_GUTTER_PADDING_RIGHT_CLASS}` : ''} ${isDragging ? `${UI_THEME_TOKENS.button.activeBg} opacity-60` : ''}`}
+        className={`${stickyHeadingEnabled ? `${UI_THEME_TOKENS.panel.bg} backdrop-blur-md h-full py-0.5` : 'py-1'} ${cls} ${MARKDOWN_NORMAL_TEXT_READ_SURFACE_BASE_CLASS} agentic-action-heading group min-w-0 relative ${gutterReserved ? `${MARKDOWN_BLOCK_GUTTER_PADDING_LEFT_CLASS} ${MARKDOWN_BLOCK_GUTTER_PADDING_RIGHT_CLASS}` : ''} ${isDragging ? `${UI_THEME_TOKENS.button.activeBg} opacity-60` : ''}`}
         highlightClass={highlightClass}
         highlightStyle={mergedStyle}
         startLine={startLine}
@@ -332,8 +260,6 @@ export const MarkdownHeadingBlock = React.memo(function MarkdownHeadingBlock({
         editHtmlRender="inline"
         editStripLinePrefix={stripHeadingPrefix}
         editPreserveBlockHeight={false}
-        editStaticChildren={editStaticChildren}
-        editStaticChildrenMode="passthrough"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -354,40 +280,11 @@ export const MarkdownHeadingBlock = React.memo(function MarkdownHeadingBlock({
             />
           </>
         ) : null}
-        <bdi className={['block min-w-0 pr-6', UI_TEXT_TRUNCATE].join(' ')}>{content}</bdi>
-        <span className={headingRightRailClassName}>
-          {id ? (
-            <a
-              href={`#${id}`}
-              className={headingLinkClassName}
-              aria-label="Permalink"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation()
-              }}
-            >
-              <Link2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-            </a>
-          ) : null}
-          {canCollapse ? (
-            <button
-              type="button"
-              className={headingButtonClassName}
-              title={isCollapsed ? 'Expand section' : 'Collapse section'}
-              aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                e.stopPropagation()
-                opts.onToggleCollapse?.(id)
-              }}
-            >
-              <ChevronDown
-                className={`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary} transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
-                strokeWidth={uiIconStrokeWidth}
-                aria-hidden="true"
-              />
-            </button>
-          ) : null}
-        </span>
+        <bdi className={UI_TEXT_TRUNCATE}>{content}</bdi>
+        {id && (
+          <HeadingActions headingId={id} expanded={!isCollapsed}
+            onToggle={canCollapse ? () => opts.onToggleCollapse?.(id) : undefined} />
+        )}
       </MarkdownBlockContainer>
     </section>
   )
