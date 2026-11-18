@@ -440,7 +440,13 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     useGraphStore.setState({
       markdownDocumentName: 'Animation invocation.md',
       markdownDocumentText: '# Animation invocation',
-      graphData,
+      graphData: {
+        ...graphData,
+        metadata: {
+          ...graphData.metadata,
+          [XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]: serializeXrMotionReferencePlan(readXrMotionReferencePlan(null, graphData.nodes)),
+        },
+      },
       canvasRenderMode: '2d',
       canvas3dMode: '3d',
       floatingPanelOpen: false,
@@ -452,9 +458,11 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     const invocation = buildXrAnimationInvocation('dance')
     const applied = controlLocalAnimation({ invocation })
     const activeState = useGraphStore.getState()
+    const persistedAnimation = readXrMotionReferencePlan(activeState.graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY], graphData.nodes)
     if (invocation !== '/animation.control #character-motion @selected-actor operation=apply preset=dance'
       || !applied.ok
       || readXrMotionReferenceRuntime().plan.cast[0]?.animation?.presetId !== 'dance'
+      || persistedAnimation.cast.find(track => track.actorId === 'actor-a')?.animation?.presetId !== 'dance'
       || activeState.canvasRenderMode !== '3d'
       || activeState.canvas3dMode !== 'xr'
       || activeState.floatingPanelView !== 'animation'
