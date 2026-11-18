@@ -295,11 +295,13 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       !(groupDisclosureButton instanceof dom.window.HTMLButtonElement) ||
       groupDisclosureButton.getAttribute('aria-label') !== 'Collapse All' ||
       !searchBeforeDisclosure ||
+      sharedHeader.querySelector('h2')?.textContent !== 'Skills & Commands' ||
       !storySubjectGroup ||
       storySubjectGroup.getAttribute('data-kg-skills-commands-grammar-group-collapsed') !== 'false' ||
       !(storySubjectGroupToggle instanceof dom.window.HTMLElement) ||
       storySubjectGroupToggle.getAttribute('aria-expanded') !== 'true' ||
-      !storySubjectGroupToggle.closest('.agentic-panel-section-header[data-agentic-sticky="true"]') ||
+      !storySubjectGroupToggle.matches('.agentic-panel-section-header[data-agentic-sticky="true"] > h3 > button') ||
+      !storySubjectGroupToggle.closest('.agentic-skills-groups .agentic-skills-group-section') ||
       !agentSubjectGroup ||
       agentSubjectGroup.getAttribute('data-kg-skills-commands-grammar-group-collapsed') !== 'false'
     ) {
@@ -340,7 +342,7 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     const storybuildingRow = container.querySelector('[data-kg-skill-command-row="storybuilding"]') as HTMLElement | null
     const memoryWriteRow = container.querySelector('[data-kg-skill-command-token="/memory.write"]') as HTMLElement | null
     const storybuildingIcon = storybuildingRow?.querySelector('[data-kg-skill-command-icon="1"]') as HTMLElement | null
-    const storybuildingTitle = storybuildingRow?.querySelector('h3') as HTMLElement | null
+    const storybuildingTitle = storybuildingRow?.querySelector('.agentic-collection-title') as HTMLElement | null
     const storybuildingMeta = storybuildingRow?.querySelector('p') as HTMLElement | null
     const storybuildingToken = storybuildingRow?.querySelector('[data-kg-skill-command-slash="storybuilding"]') as HTMLElement | null
     if (
