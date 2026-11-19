@@ -9,8 +9,9 @@ import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
 import { bindSequenceSvg, createSequenceSvgPlayback } from '../features/sequence/sequenceSvgBinding'
 import { resolveSequenceCanvasLayout, constrainSequenceParticipantPosition } from '../features/sequence/sequenceCanvasLayout'
-import './sequenceDisplayControls.test'
+import '../tests/lib/registerCssLoader'
 import { defaultSchema } from '../lib/graph/schema'
+await import('./sequenceDisplayControls.test')
 type Box = { x: number; y: number; width: number; height: number }
 const boxOf = (element: Element): Box => {
   if (element.tagName === 'circle') { const r = Number(element.getAttribute('r')); return { x: Number(element.getAttribute('cx')) - r, y: Number(element.getAttribute('cy')) - r, width: r * 2, height: r * 2 } }

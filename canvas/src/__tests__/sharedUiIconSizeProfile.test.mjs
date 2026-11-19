@@ -136,10 +136,12 @@ test('legacy renderer fields reuse the KTV adapter and palette and renderer sect
 
 test('sequence inspector body and spacing consume the same shared roles', () => {
   const inspectorCss = fs.readFileSync(new URL('../features/sequence/SequenceFlow.css', import.meta.url), 'utf8')
-  assert.match(inspectorCss, /\.sequence-inspector > p \{[^}]*font-size: var\(--agentic-font-size-body\); line-height: var\(--agentic-line-height-body\)/)
+  assert.doesNotMatch(inspectorCss, /\.sequence-inspector > (?:h2|p)\s*\{/)
   assert.doesNotMatch(inspectorCss, /\.sequence-inspector[^{}]*\{[^}]*font-size: (?:12|13)px/)
   const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
-  assert.ok(inspector.includes('sequence-inspector ${uiToolbarSettingsPanelBodyClassName}'))
+  assert.match(inspector, /<PanelScrollRegion\b/)
+  assert.match(inspector, /<SettingsSectionHeader\b/)
+  assert.match(inspector, /<section className="agentic-panel-section-body">/)
 })
 
 test('Graph styles cannot redeclare the shared control or dashboard styles', () => {
