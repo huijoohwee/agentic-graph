@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import {
@@ -43,7 +44,7 @@ export function LayoutModeRendererSettings(props: {
   inspection?: boolean
 }) {
   const onSelectLayoutModeProp = props.onSelectLayoutMode
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+  const { fontClass: uiPanelTextFontClass } = usePanelTypography()
   const schema = useGraphStore(s => s.schema)
   const setSchema = useGraphStore(s => s.setSchema)
   const canvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)

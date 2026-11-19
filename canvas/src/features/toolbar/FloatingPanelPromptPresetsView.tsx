@@ -13,7 +13,6 @@ import { PROCEDURAL_ASSET_PROMPT_TOKENS } from '@/features/image-to-glb/procedur
 import { insertTextIntoActiveCardInlineTextEditor } from '@/lib/cards/cardInlineTextExternalCommands'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { resolveInlineInvocationChipClassName } from '@/features/markdown/ui/dataViewChipStyles'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import {
   FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT,
   FloatingPanelCatalogHeader,
@@ -70,7 +69,6 @@ export function FloatingPanelPromptPresetsView({
 }: {
   runtime?: FloatingPanelPromptPresetsRuntime
 }) {
-  const panelTypography = usePanelTypography()
   const search = useFloatingPanelCatalogSearch()
   const [presets, setPresets] = React.useState<PromptPreset[]>([])
   const [catalogError, setCatalogError] = React.useState('')
@@ -138,7 +136,7 @@ export function FloatingPanelPromptPresetsView({
   const statusMessage = catalogError || invocationError
   return (
     <section
-      className={floatingPanelCatalogSurfaceClassName(panelTypography.panelTextClass)}
+      className={floatingPanelCatalogSurfaceClassName()}
       data-kg-floating-panel-prompt-presets-view="true"
       data-kg-floating-panel-catalog-layout="media-reuse"
       aria-label="Prompt Presets"

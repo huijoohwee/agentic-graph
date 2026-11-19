@@ -111,7 +111,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="xr-3d">
         <header className="flex items-center gap-2">
           <Box className="size-4" aria-hidden="true" />
-          <h3 className="text-xs font-semibold">3D for XR</h3>
+          <h3 className="agentic-panel-title">3D for XR</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('xr-3d')} data-kg-motion-control-open-target="xr-3d">Open</button>
         </header>
         <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
@@ -162,7 +162,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="animation">
         <header className="flex items-center gap-2">
           <Clapperboard className="size-4" aria-hidden="true" />
-          <h3 className="text-xs font-semibold">Animation</h3>
+          <h3 className="agentic-panel-title">Animation</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('animation')} data-kg-motion-control-open-target="animation">Open</button>
         </header>
         <p className={cn('text-xs', animation.sceneReady && animationTarget.compatible ? UI_THEME_TOKENS.text.secondary : UI_THEME_TOKENS.status.warning)}>{animationStatus}</p>
@@ -176,7 +176,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="game-mode">
         <header className="flex items-center gap-2">
           <Gamepad2 className="size-4" aria-hidden="true" />
-          <h3 className="text-xs font-semibold">Game Mode</h3>
+          <h3 className="agentic-panel-title">Game Mode</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('game-mode')} data-kg-motion-control-open-target="game-mode">Open</button>
         </header>
         <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>

@@ -1,3 +1,4 @@
+import '../tests/lib/registerCssLoader'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import yaml from 'js-yaml'

@@ -1,5 +1,5 @@
 import React from 'react'
-import { uiToolbarSettingsPanelBodyClassName } from '../toolbar/ui/toolbarStyles'
+import { SettingsSectionHeader, PanelScrollRegion } from 'agentic-design-system/react/panels'
 
 export type SequenceInspectorItem = {
   id: string
@@ -30,16 +30,19 @@ export function SequenceInspectorView({
   title, summary, status, items, selectedId, onSelect, disabled = false,
   ariaLabel = 'Sequence inspector', textClassName = '', headingRef, beforeItems, selectedAction, footer,
 }: SequenceInspectorViewProps) {
-  return <section className={`sequence-flow sequence-inspector ${uiToolbarSettingsPanelBodyClassName} ${textClassName}`} aria-label={ariaLabel} aria-busy={disabled || undefined}>
-    <h2 ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2><p>{summary}</p>
-    {beforeItems}
-    <ol>{items.map((item, index) => <li key={item.id}>
-      <button type="button" data-step-id={item.id} aria-pressed={item.id === selectedId} disabled={disabled} onClick={() => onSelect(item.id)}>
-        <strong>{item.ordinal ?? index + 1}. {item.label}</strong><span>{item.detail}</span><small>{item.meta}</small>
-      </button>
-      {item.id === selectedId ? selectedAction : null}
-    </li>)}</ol>
-    <p role="status">{status}</p>
-    {footer}
-  </section>
+  return <PanelScrollRegion className={`sequence-flow sequence-inspector ${textClassName}`} aria-label={ariaLabel} aria-busy={disabled || undefined}>
+    <SettingsSectionHeader title={<h2 className="agentic-panel-title" ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2>} />
+    <section className="agentic-panel-section-body">
+      <p>{summary}</p>
+      {beforeItems}
+      <ol>{items.map((item, index) => <li key={item.id}>
+        <button type="button" data-step-id={item.id} aria-pressed={item.id === selectedId} disabled={disabled} onClick={() => onSelect(item.id)}>
+          <strong>{item.ordinal ?? index + 1}. {item.label}</strong><span>{item.detail}</span><small>{item.meta}</small>
+        </button>
+        {item.id === selectedId ? selectedAction : null}
+      </li>)}</ol>
+      <p role="status">{status}</p>
+      {footer}
+    </section>
+  </PanelScrollRegion>
 }

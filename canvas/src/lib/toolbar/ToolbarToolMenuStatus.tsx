@@ -55,10 +55,9 @@ export const FloatingPanelHeaderStatus = React.memo(function FloatingPanelHeader
   pipelineStatus: string | null
   exportStatus?: string | null
   devStatusMetrics: FloatingPanelDevStatusMetrics
-  uiPanelMicroLabelTextSizeClass: string
 }) {
-  const { pipelineStatus, exportStatus, devStatusMetrics, uiPanelMicroLabelTextSizeClass } = props
-  const statusClassName = `${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} kg-truncate-chip`
+  const { pipelineStatus, exportStatus, devStatusMetrics } = props
+  const statusClassName = `${UI_THEME_TOKENS.text.tertiary} kg-truncate-chip`
 
   return (
     <span className={`${uiToolbarRowScrollClassName} gap-1 pl-1`}>

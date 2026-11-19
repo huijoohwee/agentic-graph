@@ -37,7 +37,7 @@ function setup() {
 }
 
 test('native shell and inspector keep their markup and optional controller slots', () => {
-  const markup = renderToStaticMarkup(<FloatingPanelShell minimized pinned={false} rowHeight="comfortable" fieldLine="single"
+  const markup = renderToStaticMarkup(<FloatingPanelShell pinned={false} rowHeight="comfortable" fieldLine="single"
     header={<button>Native controls</button>}>
     <SequenceInspectorView title="Sequence Diagram" summary="Authored rehearsal" status="Selected step 7"
       items={[{ id: 'event', ordinal: 7, label: 'Request', detail: 'Buyer → Store · request', meta: 'Source line 9' }]}
@@ -48,12 +48,14 @@ test('native shell and inspector keep their markup and optional controller slots
   assert.match(markup, /agentic-base-floating-panel-inner/)
   assert.match(markup, /agentic-base-floating-panel-header/)
   assert.match(markup, /agentic-base-floating-panel-draggable/)
-  assert.match(markup, /sequence-flow sequence-inspector agentic-panel-section-body font-sans text-sm/)
+  assert.match(markup, /agentic-panel-scroll-region sequence-flow sequence-inspector font-sans text-sm/)
+  assert.match(markup, /<h2 class="agentic-panel-title">Sequence Diagram<\/h2>/)
+  assert.match(markup, /class="agentic-panel-section-body"/)
   assert.match(markup, /<strong>7\. Request<\/strong>/)
   assert.match(markup, /aria-pressed="true"/)
   assert.match(markup, /Branch selector/)
   assert.match(markup, /Offline controls/)
-  assert.doesNotMatch(markup, /data-sequence-guide-action|tabindex/)
+  assert.doesNotMatch(markup, /data-sequence-guide-action|tabindex="-1"/)
 })
 
 test('plain text is snapshotted; selection is controlled and only the selected action renders', () => {
@@ -129,7 +131,7 @@ test('focus enters once, Escape closes once, and destroy leaves return focus to 
     const ignored = new env.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     ignored.preventDefault(); row.dispatchEvent(ignored)
     assert.equal(closes, 1)
-    act(() => (env.target.querySelector('[aria-label="Close offer setup"]') as HTMLButtonElement).click())
+    act(() => (env.target.querySelector('button[data-agentic-panel-control="close"]') as HTMLButtonElement).click())
     assert.equal(closes, 2)
     env.field.focus()
     act(() => handle.destroy()); handle.destroy()

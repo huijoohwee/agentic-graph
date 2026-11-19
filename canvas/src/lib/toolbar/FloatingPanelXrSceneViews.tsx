@@ -1,3 +1,4 @@
+import { PanelScrollRegion } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -52,21 +53,21 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
   ) ? view as CitySimProjectionSurface : null
   const immersiveMediaSurface = projectionSurface as ImmersiveMediaProjectionSurface | null
   const content = (
+    <PanelScrollRegion
+      className="h-full min-h-0"
+      data-kg-city-sim-panel-composition={projectionSurface || undefined}
+      data-kg-immersive-media-panel-composition={immersiveMediaSurface || undefined}
+    >
+      {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
+      {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
       <section
-        className="flex h-full min-h-0 flex-col"
-        data-kg-city-sim-panel-composition={projectionSurface || undefined}
-        data-kg-immersive-media-panel-composition={immersiveMediaSurface || undefined}
+        // Let the outer region scroll the projections past the full-height tab controls.
+        className="h-full min-h-0 overflow-auto"
+        data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
       >
-        {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
-        {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
-        <section
-          // Keep the catalog header and rows reachable when the projections fill the viewport.
-          className={`flex-1 ${view === 'media' ? 'min-h-[min(100%,calc(3*var(--agentic-row-height)))]' : 'min-h-0'} ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
-          data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
-        >
-          {panel}
-        </section>
+        {panel}
       </section>
+    </PanelScrollRegion>
   )
   return <React.Suspense fallback={null}>{view === 'media' && (xr || warehouseAvailable)
     ? <XrWorkspaceMediaPanelLazy>{content}</XrWorkspaceMediaPanelLazy> : content}</React.Suspense>

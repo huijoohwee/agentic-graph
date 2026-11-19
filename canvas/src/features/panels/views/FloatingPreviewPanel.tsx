@@ -1,5 +1,4 @@
 import React from 'react'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { FloatingPanelCatalogHeader, floatingPanelCatalogBodyClassName, floatingPanelCatalogSurfaceClassName } from '@/lib/ui/floatingPanelCatalogLayout'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useCommandMenuRichMediaInventory } from '@/lib/command-menu/commandMenuRichMediaInventory'
@@ -13,7 +12,6 @@ const PreviewMediaCatalog = React.lazy(() => import('./preview-context/PreviewMe
 const PreviewVoicePanel = React.lazy(() => import('./preview-context/PreviewVoicePanel'))
 
 export default function FloatingPreviewPanel() {
-  const typography = usePanelTypography()
   const documentName = useGraphStore(state => state.markdownDocumentName || '')
   const documentText = useGraphStore(state => state.markdownDocumentText || '')
   const selectedNodeId = useGraphStore(state => state.selectedNodeId)
@@ -25,7 +23,7 @@ export default function FloatingPreviewPanel() {
   const selectedItem = scopedItems.find(item => item.key === activeKey)
   const openLibrary = () => { emitFloatingPanelOpen({ tab: 'media', open: true }); setMediaCatalogMode(mode) }
   return (
-    <section aria-label="Preview Panel" className={floatingPanelCatalogSurfaceClassName(typography.panelTextClass)}>
+    <section aria-label="Preview Panel" className={floatingPanelCatalogSurfaceClassName()}>
       <FloatingPanelCatalogHeader title="Preview Panel" subtitle={documentName || 'Current selection'} actionsLabel="Preview controls" />
       <section className={floatingPanelCatalogBodyClassName('space-y-2')} aria-label="Preview Panel content">
         <MediaCatalogModeControls mode={mode} onChange={setMode} context="preview" />

@@ -56,7 +56,7 @@ export function SpatialWorkspaceReview() {
   const receipts = snapshot && 'receipts' in snapshot ? snapshot.receipts : []
   const latest = [...receipts].reverse().find(row => row.kind === 'apply' && !receipts.some(other => other.undoOf === row.id))
   return <section aria-label="Spatial change review" className="grid min-w-0 gap-2 border-t border-[color:var(--kg-border)] p-2 text-xs" style={{ color: 'var(--kg-text-primary)', background: 'var(--kg-panel-bg)' }} data-kg-spatial-review>
-    <h3 className="font-semibold">Review a scene change</h3>
+    <h3 className="agentic-panel-title">Review a scene change</h3>
     <p>Preview position or scale edits, then apply the exact change. Bounds are approximate; physical correspondence is unknown.</p>
     {snapshot && !snapshot.ok && <><p role="status">{snapshot.message}</p><button type="button" className="min-h-11 rounded border px-3" onClick={() => setRefresh(value => value + 1)}>Refresh inspection</button></>}
     {snapshot?.ok && 'provenance' in snapshot && <p>Authored positions · metres. Simulated bounds · approximate. {snapshot.provenance.observation ? `Imported observation · ${snapshot.provenance.observation.availability} · ${snapshot.provenance.observation.units} · physical scale unknown.` : 'No observation linked.'}</p>}

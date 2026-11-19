@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 const NativeGraphStatsSection = React.lazy(() => import('@/features/graph-inspector/ui/NativeGraphStatsSection'))
@@ -104,12 +105,7 @@ function GraphRagSettingsSection({
   const selectEdge = useGraphStore(s => s.selectEdge)
   const requestAiKgTraversal = useGraphStore(s => s.requestAiKgTraversal)
   const setRequestAiKgTraversal = useGraphStore(s => s.setRequestAiKgTraversal)
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   const [traversalDelayMs, setTraversalDelayMs] = React.useState(() =>
     lsInt(LS_KEYS.orchestratorTraversalDelayMs, ORCHESTRATOR_TRAVERSAL_DELAY_DEFAULT_MS),
   )

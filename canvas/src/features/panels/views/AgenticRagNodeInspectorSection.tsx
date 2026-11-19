@@ -1,5 +1,6 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
-import Tooltip from 'agentic-design-system/react/hover'
 import {
   AGENTIC_RAG_CONTEXT_URL,
   AGENTIC_RAG_SCHEMA_URL,
@@ -34,57 +35,38 @@ export function AgenticRagNodeInspectorSection({
   onCopyAgenticRagNodeJson,
   agenticPathInfo,
 }: AgenticRagNodeInspectorSectionProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-xs',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass,
+  } = usePanelTypography()
   const uiIconPillBadgeTextSizeClass = useGraphStore(s => s.uiIconPillBadgeTextSizeClass)
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
   const uiPanelRowDensityCompactClass = useGraphStore(
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
   )
-  const inspectorPanelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1`
-  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorMutedTextClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorBodyClassName = `text-xs ${UI_THEME_TOKENS.text.primary} space-y-1`
   const inspectorLabelClassName = UI_THEME_TOKENS.text.secondary
 
   return (
-    <section className={inspectorPanelClassName}>
-      <section className="flex items-center justify-between mb-1">
-        <Tooltip
-          content={ORCHESTRATOR_AGENTIC_COPY.nodeInspectorTooltip}
-          maxWidthPx={260}
-          contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
+    <CollapsibleSection headingAs="h4" defaultCollapsed={false} stickyHeader={false}
+      title={<span title={ORCHESTRATOR_AGENTIC_COPY.nodeInspectorTooltip}>{ORCHESTRATOR_AGENTIC_COPY.nodeInspectorTitle}</span>}
+      actions={selectedAgenticNode && (
+        <button
+          type="button"
+          className={[
+            'App-toolbar__btn',
+            UI_THEME_TOKENS.button.neutralMuted,
+            UI_THEME_TOKENS.button.hoverBg,
+            uiPanelKeyValueTextSizeClass,
+            uiPanelTextFontClass,
+          ].join(' ')}
+          onClick={onCopyAgenticRagNodeJson}
         >
-          <section className="flex items-center gap-1">
-            <section
-              className={inspectorHeadingClassName}
-            >
-              {ORCHESTRATOR_AGENTIC_COPY.nodeInspectorTitle}
-            </section>
-          </section>
-        </Tooltip>
-        {selectedAgenticNode && (
-          <button
-            type="button"
-            className={[
-              'App-toolbar__btn',
-              UI_THEME_TOKENS.button.neutralMuted,
-              UI_THEME_TOKENS.button.hoverBg,
-              uiPanelKeyValueTextSizeClass,
-              uiPanelTextFontClass,
-            ].join(' ')}
-            onClick={onCopyAgenticRagNodeJson}
-          >
-            {AGENTIC_RAG_NODE_JSON_COPY_LABEL}
-          </button>
-        )}
-      </section>
+          {AGENTIC_RAG_NODE_JSON_COPY_LABEL}
+        </button>
+      )}
+    >
       {agenticCopyStatus && selectedAgenticNode && (
         <section
           className={`${inspectorMutedTextClassName} mb-1`}
@@ -398,6 +380,6 @@ export function AgenticRagNodeInspectorSection({
           </section>
         </section>
       )}
-    </section>
+    </CollapsibleSection>
   )
 }

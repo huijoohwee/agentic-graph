@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { Headphones, Plane, Volume2 } from 'lucide-react'
@@ -88,11 +89,7 @@ export function FlightSimTrainingSurfaceProjection({
 
   return (
     <section
-      className={cn(
-        'grid gap-2 rounded border p-2',
-        UI_THEME_TOKENS.panel.border,
-        UI_THEME_TOKENS.panel.bg,
-      )}
+      className="min-w-0"
       aria-label={`Flight training in ${surface}`}
       data-kg-flight-training-surface={surface}
       data-kg-flight-training-mission={training.missionId}
@@ -103,130 +100,121 @@ export function FlightSimTrainingSurfaceProjection({
       data-kg-flight-training-envelope={training.envelope.status}
       data-kg-flight-training-control-authority={training.envelope.controlAuthority.toFixed(4)}
     >
-      <header className="flex items-start justify-between gap-2">
-        <section className="min-w-0">
-          <h3 className="flex items-center gap-1 text-xs font-semibold">
-            <Plane className="h-3.5 w-3.5" aria-hidden="true" />
-            Flight Training · {training.missionTitle}
-          </h3>
-          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
-            {SURFACE_ROLE[surface]}
-          </p>
-        </section>
-        <output className="shrink-0 text-right text-xs font-semibold">
-          {training.available ? `${training.score}/100 · ${training.grade}` : 'Unavailable'}
-        </output>
-      </header>
-
-      <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
-        {training.coachingCue}
-      </p>
-
-      {surface === 'motion-control' ? (
-        <p
-          className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
-          data-kg-flight-training-motion-controls="connected-handoff"
-        >
-          Start Motion Control, then return to Flight Sim: lean forward/back for pitch,
-          lean side-to-side for roll, raise both hands for power, and hold hands wide
-          while leaning to yaw. Camera tracking remains live across the handoff.
-        </p>
-      ) : null}
-
-      {training.available ? <section className="grid grid-cols-3 gap-1 text-xs" aria-label="Flight training outcomes">
-        <span><b>Route</b><br />{training.routeProgress}%</span>
-        <span><b>Stable</b><br />{training.stabilityPercent}%</span>
-        <span><b>Energy</b><br />{training.energyPercent}%</span>
-      </section> : null}
-
-      <output
-        className={cn(
-          'rounded border px-2 py-1 text-xs font-semibold',
-          training.envelope.severity === 'warning'
-            ? 'border-rose-400/40 text-rose-300'
-            : training.envelope.severity === 'caution'
-              ? 'border-amber-400/40 text-amber-300'
-              : 'border-cyan-400/40 text-cyan-300',
-        )}
-        aria-label="Flight envelope status"
+      <CollapsibleSection headingAs="h3" defaultCollapsed={false} stickyHeader={false}
+        title={<span className="inline-flex items-center gap-1"><Plane className="size-3.5" aria-hidden />Flight Training · {training.missionTitle}</span>}
+        actions={<output>{training.available ? `${training.score}/100 · ${training.grade}` : 'Unavailable'}</output>}
       >
-        {training.envelope.label}{training.envelope.targetSpeedMetersPerSecond
-          ? ` · target ${training.envelope.targetSpeedMetersPerSecond[0]}–${training.envelope.targetSpeedMetersPerSecond[1]} m/s` : ''}
-        {' · '}control {Math.round(training.envelope.controlAuthority * 100)}%
-      </output>
+        <p className={UI_THEME_TOKENS.text.tertiary}>{SURFACE_ROLE[surface]}</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
+          {training.coachingCue}
+        </p>
 
-      <label className="grid gap-1 text-xs">
-        <span>Training mission</span>
-        <PanelSelect
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
-          value={training.missionId}
-          disabled={selectionLocked}
-          onValueChange={selectedValueInput => selectTraining('mission', selectedValueInput)}
-          data-kg-flight-training-mission-select="1"
-        >
-          {!training.available ? <option value="">Training unavailable</option> : null}
-          {profile?.missions.map(mission => (
-            <option key={mission.id} value={mission.id}>{mission.label}</option>
-          ))}
-        </PanelSelect>
-      </label>
+        {surface === 'motion-control' ? (
+          <p
+            className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
+            data-kg-flight-training-motion-controls="connected-handoff"
+          >
+            Start Motion Control, then return to Flight Sim: lean forward/back for pitch,
+            lean side-to-side for roll, raise both hands for power, and hold hands wide
+            while leaning to yaw. Camera tracking remains live across the handoff.
+          </p>
+        ) : null}
 
-      <label className="grid gap-1 text-xs">
-        <span>Practice failure</span>
-        <PanelSelect
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
-          value={training.failureId}
-          disabled={selectionLocked}
-          onValueChange={selectedValueInput => selectTraining('failure', selectedValueInput)}
-          data-kg-flight-training-failure-select="1"
-        >
-          {!training.available ? <option value="">Training unavailable</option> : null}
-          {profile?.failures.map(failure => (
-            <option key={failure.id} value={failure.id}>{failure.label}</option>
-          ))}
-        </PanelSelect>
-      </label>
+        {training.available ? <section className="grid grid-cols-3 gap-1 text-xs" aria-label="Flight training outcomes">
+          <span><b>Route</b><br />{training.routeProgress}%</span>
+          <span><b>Stable</b><br />{training.stabilityPercent}%</span>
+          <span><b>Energy</b><br />{training.energyPercent}%</span>
+        </section> : null}
 
-      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
-        {training.available ? `${training.terrain} · ${training.night ? 'night lighting' : 'day lighting'} · ${training.airspeedReliable ? 'airspeed reliable' : 'airspeed unreliable'}` : 'Training profile unavailable.'}
-      </p>
+        <output
+          className={cn(
+            'rounded border px-2 py-1 text-xs font-semibold',
+            training.envelope.severity === 'warning'
+              ? 'border-rose-400/40 text-rose-300'
+              : training.envelope.severity === 'caution'
+                ? 'border-amber-400/40 text-amber-300'
+                : 'border-cyan-400/40 text-cyan-300',
+          )}
+          aria-label="Flight envelope status"
+        >
+          {training.envelope.label}{training.envelope.targetSpeedMetersPerSecond
+            ? ` · target ${training.envelope.targetSpeedMetersPerSecond[0]}–${training.envelope.targetSpeedMetersPerSecond[1]} m/s` : ''}
+          {' · '}control {Math.round(training.envelope.controlAuthority * 100)}%
+        </output>
 
-      <div className="flex flex-wrap gap-1">
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={opening}
-          onClick={() => void openTrainer()}
-          data-kg-flight-training-open="1"
-        >
-          <Plane className="h-3.5 w-3.5" aria-hidden="true" />
-          {training.flightActive ? 'Flight Sim' : 'Open trainer'}
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={!training.voiceAvailable}
-          aria-pressed={training.voiceEnabled}
-          onClick={() => setVoice(!training.voiceEnabled)}
-          data-kg-flight-training-voice-toggle="1"
-        >
-          <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
-          Voice {training.voiceEnabled ? 'on' : 'off'}
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={!training.voiceAvailable}
-          onClick={() => speakFlightSimTrainingCue()}
-          data-kg-flight-training-hear-cue="1"
-        >
-          <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> Hear cue
-        </button>
-      </div>
+        <label className="grid gap-1 text-xs">
+          <span>Training mission</span>
+          <PanelSelect
+            className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
+            value={training.missionId}
+            disabled={selectionLocked}
+            onValueChange={selectedValueInput => selectTraining('mission', selectedValueInput)}
+            data-kg-flight-training-mission-select="1"
+          >
+            {!training.available ? <option value="">Training unavailable</option> : null}
+            {profile?.missions.map(mission => (
+              <option key={mission.id} value={mission.id}>{mission.label}</option>
+            ))}
+          </PanelSelect>
+        </label>
 
-      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
-        Systems: {training.systemsChecklist.join(' · ')}
-      </p>
+        <label className="grid gap-1 text-xs">
+          <span>Practice failure</span>
+          <PanelSelect
+            className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
+            value={training.failureId}
+            disabled={selectionLocked}
+            onValueChange={selectedValueInput => selectTraining('failure', selectedValueInput)}
+            data-kg-flight-training-failure-select="1"
+          >
+            {!training.available ? <option value="">Training unavailable</option> : null}
+            {profile?.failures.map(failure => (
+              <option key={failure.id} value={failure.id}>{failure.label}</option>
+            ))}
+          </PanelSelect>
+        </label>
+
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+          {training.available ? `${training.terrain} · ${training.night ? 'night lighting' : 'day lighting'} · ${training.airspeedReliable ? 'airspeed reliable' : 'airspeed unreliable'}` : 'Training profile unavailable.'}
+        </p>
+
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            disabled={opening}
+            onClick={() => void openTrainer()}
+            data-kg-flight-training-open="1"
+          >
+            <Plane className="h-3.5 w-3.5" aria-hidden="true" />
+            {training.flightActive ? 'Flight Sim' : 'Open trainer'}
+          </button>
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            disabled={!training.voiceAvailable}
+            aria-pressed={training.voiceEnabled}
+            onClick={() => setVoice(!training.voiceEnabled)}
+            data-kg-flight-training-voice-toggle="1"
+          >
+            <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
+            Voice {training.voiceEnabled ? 'on' : 'off'}
+          </button>
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            disabled={!training.voiceAvailable}
+            onClick={() => speakFlightSimTrainingCue()}
+            data-kg-flight-training-hear-cue="1"
+          >
+            <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> Hear cue
+          </button>
+        </div>
+
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+          Systems: {training.systemsChecklist.join(' · ')}
+        </p>
+      </CollapsibleSection>
     </section>
   )
 }

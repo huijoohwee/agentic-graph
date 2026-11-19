@@ -16,8 +16,8 @@ import { CameraMcpInvocationSection } from './CameraMcpInvocationSection'
 import { StrybldrCameraFramingSection } from './StrybldrCameraFramingSection'
 import { XrShootCameraSection } from './XrShootCameraSection'
 
-const CAMERA_SECTION_KEYS = ['framing', 'mcp-invocations'] as const
-const XR_CAMERA_SECTION_KEYS = ['framing', 'shoot', 'mcp-invocations'] as const
+const CAMERA_SECTION_KEYS = ['runtime', 'framing', 'mcp-invocations'] as const
+const XR_CAMERA_SECTION_KEYS = ['runtime', 'framing', 'shoot', 'mcp-invocations'] as const
 const CAMERA_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 
 function CameraSectionTitle({ label, value }: { label: string; value: string }) {
@@ -53,39 +53,34 @@ export function StrybldrCameraFloatingPanelView() {
         title="Camera"
         subtitle="Shared framing, subject-bound XR moves, WebMCP, and invocation tokens"
         actionsLabel="Camera actions"
+        actions={<>
+          <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleSectionKeys.length} sections</output>
+          <ExpandCollapseAllButton
+            allCollapsed={allCollapsed}
+            onExpandAll={expandAll}
+            onCollapseAll={collapseAll}
+            titleExpand="Expand All Camera sections"
+            titleCollapse="Collapse All Camera sections"
+          />
+        </>}
       />
       <section className={`${UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME} px-1 pb-2`} data-kg-camera-catalog-layout="3d-for-xr-shared">
-        <header className={cn('mb-1 grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-camera-catalog-summary="1">
-          <section className="flex items-start gap-2">
-            <span className={cn('grid size-10 shrink-0 place-items-center rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
-              <Camera className="size-5" aria-hidden />
-            </span>
-            <section className="min-w-0 flex-1">
-              <h3 className="text-xs font-semibold">Camera Runtime</h3>
-              <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One shared Camera owner across 2D, 3D, and XR.</p>
-              <section
-                className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}
-                aria-label="Camera Runtime invocation tokens"
-                data-kg-camera-runtime-invocation-chip-renderer="shared-markdown-sigil"
-              >
-                <span>WebMCP · inspect + control</span>
-                {renderMarkdownSigilInlineText('/camera.frame #camera-shot @camera', {
-                  renderKeywordChip: ({ value, className }) => renderAgenticOsInvocationKeywordChip({ value, className, sourceLink: false }),
-                })}
-              </section>
+        <section data-kg-camera-catalog-summary="1">
+          <CollapsibleSection headingAs="h3" title={<span className="inline-flex items-center gap-1"><Camera className="size-4" aria-hidden />Camera Runtime</span>}
+            collapsed={collapsedKeys.has('runtime')} onToggle={value => setCollapsed('runtime', value)} defaultCollapsed={false}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One shared Camera owner across 2D, 3D, and XR.</p>
+            <section
+              className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}
+              aria-label="Camera Runtime invocation tokens"
+              data-kg-camera-runtime-invocation-chip-renderer="shared-markdown-sigil"
+            >
+              <span>WebMCP · inspect + control</span>
+              {renderMarkdownSigilInlineText('/camera.frame #camera-shot @camera', {
+                renderKeywordChip: ({ value, className }) => renderAgenticOsInvocationKeywordChip({ value, className, sourceLink: false }),
+              })}
             </section>
-            <section className="flex shrink-0 items-center gap-1">
-              <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleSectionKeys.length} sections</output>
-              <ExpandCollapseAllButton
-                allCollapsed={allCollapsed}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
-                titleExpand="Expand All Camera sections"
-                titleCollapse="Collapse All Camera sections"
-              />
-            </section>
-          </section>
-        </header>
+          </CollapsibleSection>
+        </section>
 
         <CollapsibleSection
           headingAs="h3"

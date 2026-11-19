@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import { ToggleButton, ToggleButtonGroup } from '@agentic-base/views-react/controls'
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
@@ -338,11 +339,7 @@ export function ImmersiveMediaPanelProjection({
   }
   return (
     <aside
-      className={cn(
-        'mx-1 mb-1 grid shrink-0 gap-1.5 rounded border p-2',
-        UI_THEME_TOKENS.panel.border,
-        UI_THEME_TOKENS.panel.bg,
-      )}
+      className="min-w-0 shrink-0"
       aria-label={`${copy.title} projection`}
       data-kg-immersive-media-projection={surface}
       data-kg-immersive-media-active={snapshot.active ? '1' : '0'}
@@ -354,97 +351,99 @@ export function ImmersiveMediaPanelProjection({
       data-kg-immersive-media-selected-marker={snapshot.selectedMarkerId || ''}
       data-kg-immersive-media-mcp="agentic-graph.control_local_immersive_media"
     >
-      <header className="flex items-start justify-between gap-2">
-        <span className="min-w-0">
-          <b className="flex items-center gap-1 text-xs"><SurfaceIcon surface={surface} />{copy.title}</b>
-          <span className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{copy.subtitle} · local $0 default</span>
-        </span>
-        <span className="flex shrink-0 gap-1">
+      <CollapsibleSection
+        headingAs="h3" defaultCollapsed={false} stickyHeader={false}
+        title={<span className="inline-flex items-center gap-1"><SurfaceIcon surface={surface} />{copy.title}</span>}
+        actions={
+          <span className="flex shrink-0 gap-1">
+            <button
+              type="button"
+              className="App-toolbar__btn"
+              onClick={snapshot.active ? closeImmersiveMedia : openImmersiveMedia}
+              data-kg-immersive-media-open={snapshot.active ? '0' : '1'}
+            >
+              {snapshot.active ? <Eye className="h-3.5 w-3.5" aria-hidden="true" /> : <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />}
+              {snapshot.active ? 'Close' : 'Open'}
+            </button>
+            <button type="button" className="App-toolbar__btn" disabled={!snapshot.active || pending} onClick={() => void capture()}>
+              <Camera className="h-3.5 w-3.5" aria-hidden="true" /> Shot
+            </button>
+          </span>
+        }
+      >
+        <p className={UI_THEME_TOKENS.text.tertiary}>{copy.subtitle} · local $0 default</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{snapshot.description}</p>
+        <nav
+          className="flex flex-wrap gap-1"
+          aria-label="Custom immersive navigation"
+          aria-busy={transitioning}
+          data-kg-immersive-media-navbar="custom"
+        >
+          <button
+            type="button"
+            className={cn('App-toolbar__btn', introPending ? UI_THEME_TOKENS.status.info : '')}
+            aria-label="Play immersive intro"
+            title="Play immersive intro"
+            disabled={transitioning}
+            onClick={playImmersiveMediaIntro}
+          >
+            <Play className="h-3 w-3" aria-hidden="true" /> Intro
+          </button>
           <button
             type="button"
             className="App-toolbar__btn"
-            onClick={snapshot.active ? closeImmersiveMedia : openImmersiveMedia}
-            data-kg-immersive-media-open={snapshot.active ? '0' : '1'}
+            aria-label="Reset immersive Camera view"
+            title="Reset immersive Camera view"
+            disabled={transitioning}
+            onClick={resetImmersiveMediaView}
           >
-            {snapshot.active ? <Eye className="h-3.5 w-3.5" aria-hidden="true" /> : <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />}
-            {snapshot.active ? 'Close' : 'Open'}
+            <RotateCcw className="h-3 w-3" aria-hidden="true" /> Reset
           </button>
-          <button type="button" className="App-toolbar__btn" disabled={!snapshot.active || pending} onClick={() => void capture()}>
-            <Camera className="h-3.5 w-3.5" aria-hidden="true" /> Shot
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            aria-label="Zoom in immersive Camera"
+            title="Zoom in immersive Camera"
+            disabled={transitioning}
+            onClick={() => zoomImmersiveMedia('in')}
+          >
+            <ZoomIn className="h-3 w-3" aria-hidden="true" /> Zoom +
           </button>
-        </span>
-      </header>
-      <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{snapshot.description}</p>
-      <nav
-        className="flex flex-wrap gap-1"
-        aria-label="Custom immersive navigation"
-        aria-busy={transitioning}
-        data-kg-immersive-media-navbar="custom"
-      >
-        <button
-          type="button"
-          className={cn('App-toolbar__btn', introPending ? UI_THEME_TOKENS.status.info : '')}
-          aria-label="Play immersive intro"
-          title="Play immersive intro"
-          disabled={transitioning}
-          onClick={playImmersiveMediaIntro}
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            aria-label="Zoom out immersive Camera"
+            title="Zoom out immersive Camera"
+            disabled={transitioning}
+            onClick={() => zoomImmersiveMedia('out')}
+          >
+            <ZoomOut className="h-3 w-3" aria-hidden="true" /> Zoom −
+          </button>
+          <button
+            type="button"
+            className={cn('App-toolbar__btn', transitionPending ? UI_THEME_TOKENS.status.info : '')}
+            aria-label="Play panorama transition"
+            title="Play panorama transition"
+            disabled={transitioning}
+            onClick={transitionImmersiveMedia}
+          >
+            <Clapperboard className="h-3 w-3" aria-hidden="true" /> Transition
+          </button>
+        </nav>
+        <SurfaceControls surface={surface} />
+        <p
+          className={cn(
+            'min-h-4 rounded px-1 py-0.5 text-xs',
+            snapshot.error ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary,
+          )}
+          role={snapshot.error ? 'alert' : 'status'}
+          aria-live={snapshot.error ? 'assertive' : 'polite'}
+          data-kg-immersive-media-status={snapshot.lastAction}
         >
-          <Play className="h-3 w-3" aria-hidden="true" /> Intro
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          aria-label="Reset immersive Camera view"
-          title="Reset immersive Camera view"
-          disabled={transitioning}
-          onClick={resetImmersiveMediaView}
-        >
-          <RotateCcw className="h-3 w-3" aria-hidden="true" /> Reset
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          aria-label="Zoom in immersive Camera"
-          title="Zoom in immersive Camera"
-          disabled={transitioning}
-          onClick={() => zoomImmersiveMedia('in')}
-        >
-          <ZoomIn className="h-3 w-3" aria-hidden="true" /> Zoom +
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          aria-label="Zoom out immersive Camera"
-          title="Zoom out immersive Camera"
-          disabled={transitioning}
-          onClick={() => zoomImmersiveMedia('out')}
-        >
-          <ZoomOut className="h-3 w-3" aria-hidden="true" /> Zoom −
-        </button>
-        <button
-          type="button"
-          className={cn('App-toolbar__btn', transitionPending ? UI_THEME_TOKENS.status.info : '')}
-          aria-label="Play panorama transition"
-          title="Play panorama transition"
-          disabled={transitioning}
-          onClick={transitionImmersiveMedia}
-        >
-          <Clapperboard className="h-3 w-3" aria-hidden="true" /> Transition
-        </button>
-      </nav>
-      <SurfaceControls surface={surface} />
-      <p
-        className={cn(
-          'min-h-4 rounded px-1 py-0.5 text-xs',
-          snapshot.error ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary,
-        )}
-        role={snapshot.error ? 'alert' : 'status'}
-        aria-live={snapshot.error ? 'assertive' : 'polite'}
-        data-kg-immersive-media-status={snapshot.lastAction}
-      >
-        {snapshot.message}
-      </p>
-      {surface === 'media' && <ThreeRendererControls />}
+          {snapshot.message}
+        </p>
+        {surface === 'media' && <ThreeRendererControls />}
+      </CollapsibleSection>
     </aside>
   )
 }

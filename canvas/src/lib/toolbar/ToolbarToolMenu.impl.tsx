@@ -14,7 +14,7 @@ import {
   UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
   UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { FloatingPanelTypographyContext } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
 import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
@@ -119,12 +119,6 @@ export function ToolbarToolMenu({
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
 
   const devStatusMetrics = useFloatingPanelDevStatusMetrics()
-
-  const {
-    fontClass: uiPanelTextFontClass,
-    textSizeClass: uiPanelKeyValueTextSizeClass,
-    microLabelTextSizeClass: uiPanelMicroLabelTextSizeClass,
-  } = usePanelTypography()
 
   const { sections: orchestratorSections } = useOrchestratorPanelState()
   const orchestratorSectionCollapsedById = orchestratorSections.byId
@@ -233,8 +227,6 @@ export function ToolbarToolMenu({
     FLOATING_PANEL_FULL_HEIGHT_VIEWS.has(floatingPanelView)
       ? 'flex-1 min-h-0 overflow-hidden'
       : UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
-    uiPanelTextFontClass,
-    uiPanelKeyValueTextSizeClass,
     UI_THEME_TOKENS.text.primary,
   )
 
@@ -309,7 +301,6 @@ export function ToolbarToolMenu({
                 pipelineStatus={pipelineStatus}
                 exportStatus={exportStatus}
                 devStatusMetrics={devStatusMetrics}
-                uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
               />
             </FloatingPanelViewTabs>
             <HeaderActions
@@ -326,6 +317,7 @@ export function ToolbarToolMenu({
       </>}
     >
           {!floatingPanelMinimized && <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
+            <FloatingPanelTypographyContext.Provider value>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
             {floatingPanelView === 'sequence' && <React.Suspense fallback={<p>Opening sequence…</p>}><SequenceInspectorLazy /></React.Suspense>}
@@ -338,7 +330,7 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}
             {floatingPanelView === 'chat' && (
               <React.Suspense fallback={null}>
-                <h2 className="sr-only">Chat</h2>
+                <SettingsSectionHeader headingAs="h2" title="Chat" />
                 <FloatingPanelChatLazy />
               </React.Suspense>
             )}
@@ -405,7 +397,7 @@ export function ToolbarToolMenu({
                       Open `orchestrator/graphrag-workflow.jsonld`
                     </button>
                   </nav>
-                  <p className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>Geospatial</p>
+                  <p className={UI_THEME_TOKENS.text.tertiary}>Geospatial</p>
                 </>} />
                 <OrchestratorSettingsSection
                   graphRagCollapsed={orchestratorGraphRagCollapsed}
@@ -424,6 +416,7 @@ export function ToolbarToolMenu({
               </section>
             )}
             </PanelFormDensityProvider>
+            </FloatingPanelTypographyContext.Provider>
           </section>}
     </FloatingPanelShell>
   )

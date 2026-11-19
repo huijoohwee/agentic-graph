@@ -44,6 +44,24 @@ export async function testFloatingPanelSectionHeadingsAndBulkToggle() {
       await clickBulk('Collapse All')
       assertSections(false)
     }
+    const { ImmersiveMediaPanelProjection } = await import('@/features/immersive-media/ImmersiveMediaPanelProjection')
+    const { CitySimPanelProjection } = await import('@/features/game-city-sim/CitySimPanelProjection')
+    await act(async () => root.render(<>
+      <ImmersiveMediaPanelProjection surface="camera" />
+      <CitySimPanelProjection surface="camera" />
+    </>))
+    const [source, city] = host.querySelectorAll<HTMLButtonElement>('h3 > .agentic-panel-section-toggle')
+    assert.equal(source?.textContent, 'Immersive Camera')
+    assert.equal(city?.textContent, 'City framing')
+    const mediaBody = document.getElementById(source!.getAttribute('aria-controls')!)!
+    const zoomButton = mediaBody.querySelector('button[aria-label="Zoom in immersive Camera"]')!
+    assert.ok(zoomButton)
+    await act(async () => source!.click())
+    assert.ok(mediaBody.hidden)
+    assert.equal(city!.getAttribute('aria-expanded'), 'true')
+    await act(async () => source!.click())
+    assert.equal(mediaBody.hidden, false)
+    assert.equal(mediaBody.querySelector('button[aria-label="Zoom in immersive Camera"]'), zoomButton, 'folding preserves the mounted controls')
   } finally {
     await act(async () => root.unmount())
     host.remove()

@@ -485,7 +485,7 @@ export function MotionControlFloatingPanelView() {
         <FlightSimTrainingSurfaceProjection surface="motion-control" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-invocations="shared-catalog">
-          <h3 className="text-xs font-semibold">MCP · / · @ · #</h3>
+          <h3 className="agentic-panel-title">MCP · / · @ · #</h3>
           {!sourceMetadataReady ? (
             <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               {sourceMetadataDeferred

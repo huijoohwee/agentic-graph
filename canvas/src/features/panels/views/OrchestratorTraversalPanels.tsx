@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import {
@@ -95,13 +96,7 @@ function GraphRagPathTraverseHelperSection({
 
   return (
     <section className={helperPanelClassName}>
-      <section
-        className={[
-          `font-semibold uppercase tracking-normal ${helperTitleClassName} mb-1`,
-          uiPanelKeyValueTextSizeClass,
-          uiPanelTextFontClass,
-        ].join(' ')}
-      >
+      <section className={`agentic-panel-title ${helperTitleClassName} mb-1`}>
         {UI_COPY.orchestratorGraphRagPathTraverseHelperTitle}
       </section>
       <section className="space-y-1">
@@ -252,13 +247,7 @@ function DuckDbQueryPresetsSection({
 
   return (
     <section className={helperPanelClassName}>
-      <section
-        className={[
-          `font-semibold uppercase tracking-normal ${helperTitleClassName} mb-1`,
-          uiPanelKeyValueTextSizeClass,
-          uiPanelTextFontClass,
-        ].join(' ')}
-      >
+      <section className={`agentic-panel-title ${helperTitleClassName} mb-1`}>
         <Tooltip
           content={DUCKDB_QUERY_PRESETS_TOOLTIP}
           maxWidthPx={260}
@@ -490,15 +479,11 @@ export function OrchestratorTraversalPresetsSection({
   selectNode,
   duckdbQueriesFromConfig,
 }: OrchestratorTraversalPresetsSectionProps) {
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const {
+    monospaceTextClass: uiPanelMonospaceTextClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    fontClass: uiPanelTextFontClass,
+  } = usePanelTypography()
   const presets: DuckDbQueryPreset[] = React.useMemo(() => {
     const list: DuckDbQueryPreset[] = []
     if (Array.isArray(duckdbQueriesFromConfig) && duckdbQueriesFromConfig.length > 0) {

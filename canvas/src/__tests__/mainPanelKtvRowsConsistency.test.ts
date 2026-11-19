@@ -469,14 +469,16 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   ) {
     throw new Error('Expected KTV typography hierarchy to come from the shared KTV row contract instead of local constant duplication')
   }
+  for (const consumer of [floatingPanelChat, mediaNodesSection, widgetPalette]) {
+    if (!consumer.includes("from '@/lib/ui/panelTypography'") || /useGraphStore\(\s*s => s\.uiPanel(?:TextFont|KeyValueTextSize|MicroLabelTextSize)Class/.test(consumer)) {
+      throw new Error('FloatingPanel consumers must read the panel typography owner')
+    }
+  }
   for (const [consumerName, consumerSource] of [
     ['Workspace actions', workspaceActionsPanel],
     ['Field settings panel', fieldSettingsPanel],
-    ['Floating chat', floatingPanelChat],
     ['Help command menu', helpCommandMenuSection],
     ['Settings runtime', settingsViewRuntime],
-    ['Media Nodes', mediaNodesSection],
-    ['Widget palette', widgetPalette],
     ['Field samples panel', fieldSamplesPanel],
     ['Graph fields list', graphFieldsListPanel],
     ['Help shortcuts', helpShortcutsSection],
@@ -597,14 +599,11 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Help Icons', helpIconsSection],
     ['Help Workflow Links', helpWorkflowLinksSection],
     ['Settings runtime', settingsViewRuntime],
-    ['Media Nodes', mediaNodesSection],
     ['Graph Fields header', mainPanelGraphFieldsHeader],
     ['Graph Fields settings', fieldSettingsPanel],
     ['Graph Fields list', graphFieldsListPanel],
     ['Graph Fields samples', fieldSamplesPanel],
     ['Workspace actions', workspaceActionsPanel],
-    ['Widget palette', widgetPalette],
-    ['Floating chat', floatingPanelChat],
   ] as const) {
     if (!(consumerSource.includes('KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME') || consumerSource.includes("from '@/features/panels/views/graph-fields/GraphFieldsPanelControls'"))) {
       throw new Error(`Expected ${consumerName} to reuse the shared KTV row text fallback`)
@@ -617,8 +616,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   }
   for (const [consumerName, consumerSource] of [
     ['Settings row', settingsEntryRow],
-    ['Media Nodes', mediaNodesSection],
-    ['Floating chat', floatingPanelChat],
     ['Default Value', graphFieldSettingSectionTexts.find(([fileName]) => fileName === 'DefaultValueSection.tsx')?.[1] || ''],
   ] as const) {
     if (!consumerSource.includes('KTV_STATUS_TEXT_SIZE_CLASS_NAME')) {
@@ -629,7 +626,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Settings runtime', settingsViewRuntime],
     ['Default Value', graphFieldSettingSectionTexts.find(([fileName]) => fileName === 'DefaultValueSection.tsx')?.[1] || ''],
   ] as const) {
-    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && consumerSource.includes('typography.keyValueInputClass'))) {
+    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && (consumerSource.includes('typography.keyValueInputClass') || consumerSource.includes('keyValueInputClass: uiPanelKeyValueInputClass')))) {
       throw new Error(`Expected ${consumerName} editable value inputs to reuse the shared panel typography input class`)
     }
   }
@@ -659,7 +656,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     ['Schema editor UI classes', schemaEditorUiClasses],
     ...graphFieldSharedInputClassSectionTexts.map(([fileName, text]) => [`Graph Fields ${fileName}`, text] as const),
   ] as const) {
-    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && consumerSource.includes('typography.keyValueInputClass'))) {
+    if (!(consumerSource.includes('PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass') || consumerSource.includes("from '@/lib/ui/panelTypography'") && (consumerSource.includes('typography.keyValueInputClass') || consumerSource.includes('keyValueInputClass: uiPanelKeyValueInputClass')))) {
       throw new Error(`Expected ${consumerName} editable value inputs to reuse the shared panel typography input class`)
     }
     if (

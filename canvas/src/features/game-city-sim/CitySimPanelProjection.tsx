@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import React from 'react'
 import {
   Aperture,
@@ -158,61 +159,54 @@ export function CitySimPanelProjection({
 
   return (
     <aside
-      className={cn(
-        'mx-1 mb-1 grid shrink-0 gap-1 rounded border p-2',
-        UI_THEME_TOKENS.panel.border,
-        UI_THEME_TOKENS.panel.bg,
-      )}
+      className="min-w-0 shrink-0"
       aria-label={`${copy.title} city simulation projection`}
       data-kg-city-sim-projection={surface}
       data-kg-city-sim-projection-active={snapshot.active || (surface === 'gameMode' && gameModeActive) ? '1' : '0'}
     >
-      <header className="flex items-start justify-between gap-2">
-        <span className="min-w-0">
-          <b className="flex items-center gap-1 text-xs">
-            <ProjectionIcon surface={surface} />
-            {copy.title}
-          </b>
-          <span className={cn('block text-xs', UI_THEME_TOKENS.text.tertiary)}>
-            Local-only · $0 default path
-          </span>
-        </span>
-        <button
-          type="button"
-          className="App-toolbar__btn shrink-0"
-          disabled={pending || (!snapshot.webglSupported && !snapshot.active)}
-          onClick={() => void run(action)}
-          data-kg-city-sim-projection-action={surface}
-        >
-          <ActionIcon className="h-3.5 w-3.5" aria-hidden="true" />
-          {actionLabel}
-        </button>
-      </header>
-      <p
-        className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
-        data-kg-city-sim-input-source={
-          surface === 'motionControl' ? snapshot.lastInput?.source : undefined
-        }
-        data-kg-city-sim-input-sequence={
-          surface === 'motionControl' ? snapshot.lastInput?.sequence : undefined
+      <CollapsibleSection
+        headingAs="h3" defaultCollapsed={false} stickyHeader={false}
+        title={<span className="inline-flex items-center gap-1"><ProjectionIcon surface={surface} />{copy.title}</span>}
+        actions={
+          <button
+            type="button"
+            className="App-toolbar__btn shrink-0"
+            disabled={pending || (!snapshot.webglSupported && !snapshot.active)}
+            onClick={() => void run(action)}
+            data-kg-city-sim-projection-action={surface}
+          >
+            <ActionIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            {actionLabel}
+          </button>
         }
       >
-        {surface === 'gameMode' && !gameModeActive
-          ? 'City POIs, zones, player, and route are available in the shared Geo+XR world.'
-          : projectionStatus(surface, snapshot)}
-      </p>
-      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
-        {copy.ownership}
-      </p>
-      {error ? (
+        <p className={UI_THEME_TOKENS.text.tertiary}>Local-only · $0 default path</p>
         <p
-          className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
-          role="alert"
-          data-kg-city-sim-projection-error="1"
+          className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
+          data-kg-city-sim-input-source={
+            surface === 'motionControl' ? snapshot.lastInput?.source : undefined
+          }
+          data-kg-city-sim-input-sequence={
+            surface === 'motionControl' ? snapshot.lastInput?.sequence : undefined
+          }
         >
-          {error}
+          {surface === 'gameMode' && !gameModeActive
+            ? 'City POIs, zones, player, and route are available in the shared Geo+XR world.'
+            : projectionStatus(surface, snapshot)}
         </p>
-      ) : null}
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+          {copy.ownership}
+        </p>
+        {error ? (
+          <p
+            className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
+            role="alert"
+            data-kg-city-sim-projection-error="1"
+          >
+            {error}
+          </p>
+        ) : null}
+      </CollapsibleSection>
     </aside>
   )
 }

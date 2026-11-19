@@ -271,7 +271,7 @@ export function GameModeFloatingPanelView() {
 
         <section className="grid gap-1" aria-label="Game Mode mission NPCs" data-kg-game-mode-npc-scores="1">
           <header className="grid gap-0.5 px-1">
-            <h3 className="text-xs font-semibold">Mission NPCs</h3>
+            <h3 className="agentic-panel-title">Mission NPCs</h3>
             <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Mission NPCs share the Geo+XR map. Scene subjects and props are managed in the existing Media panel.</p>
           </header>
           {npcRows.map(npc => (
@@ -309,7 +309,7 @@ export function GameModeFloatingPanelView() {
         </section>
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode companions">
-          <h3 className="text-xs font-semibold">Motion Control · XR Mode</h3>
+          <h3 className="agentic-panel-title">Motion Control · XR Mode</h3>
           <div className="flex flex-wrap gap-1">
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('motion-control')} data-kg-game-mode-open-companion="motion-control">Motion Control</button>
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('xr-3d')} data-kg-game-mode-open-companion="xr"><View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode</button>
@@ -323,7 +323,7 @@ export function GameModeFloatingPanelView() {
         <FlightSimTrainingSurfaceProjection surface="game-mode" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-game-mode-invocations="shared-catalog">
-          <h3 className="text-xs font-semibold">MCP · / · @ · #</h3>
+          <h3 className="agentic-panel-title">MCP · / · @ · #</h3>
           {!sourceMetadataReady ? <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Agentic OS Game Mode metadata is {grammarCatalog.hydration.status}; native invocation remains ready.</p> : null}
           <Invocation operation="open" />
           <Invocation operation="start" />

@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { JSONValue } from '@/lib/graph/types'
@@ -257,9 +258,7 @@ export function TraversalPresetSection({
   runTraversalQuery,
   selectedNodeId,
 }: TraversalPresetSectionProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-xs',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass } = usePanelTypography()
   const presetButtonClassName = `App-toolbar__btn text-xs px-2 py-1 border ${UI_THEME_TOKENS.input.border} ${uiToolbarButtonNeutralClassName}`
   const panelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1 ${UI_THEME_TOKENS.panel.bg}`
   const sectionHeadingClassName = `${uiPanelKeyValueTextSizeClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} mb-1`

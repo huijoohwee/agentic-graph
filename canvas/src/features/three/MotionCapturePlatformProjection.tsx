@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import 'agentic-design-system/collection-layout.css'
 import React from 'react'
 import type { CollectionLayout } from 'agentic-design-system/collection-layout'
@@ -226,88 +227,86 @@ export function MotionCapturePlatformProjection({
 
   return (
     <section
-      className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+      className="min-w-0"
       aria-label="Motion capture platform"
       data-kg-motion-capture-platform="1"
       data-kg-motion-capture-schema={session.schema}
       data-kg-motion-capture-runtime-ready={captureSurfaceActive ? '1' : '0'}
       data-kg-motion-capture-research-ready={evidence.researchReady ? '1' : '0'}
     >
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <span>
-          <h3 className="text-xs font-semibold">Capture platform</h3>
-          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Provider-neutral · derived landmarks only</p>
-        </span>
-        <span className={cn('rounded border px-1.5 py-0.5 text-xs', UI_THEME_TOKENS.panel.border, evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.status.warning)}>
+      <CollapsibleSection headingAs="h3" defaultCollapsed={false} stickyHeader={false}
+        title="Capture platform"
+        actions={<span className={evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.status.warning}>
           {evidence.researchReady ? 'Research-ready evidence' : 'Not research-ready'}
-        </span>
-      </header>
+        </span>}
+      >
+        <p className={UI_THEME_TOKENS.text.tertiary}>Provider-neutral · derived landmarks only</p>
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs" aria-label="Motion capture session evidence">
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Session</dt><dd>{shortOpaqueId(session.sessionId)}</dd>
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Quality tier</dt><dd>{tierLabel(evidence.tier)}</dd>
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Sources / synced</dt><dd>{evidence.activeSourceCount} / {evidence.synchronizedSourceCount}</dd>
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Max skew / jitter</dt><dd>{evidence.maxSkewMs === null ? '—' : `${evidence.maxSkewMs.toFixed(1)} ms`} / {evidence.maxJitterMs.toFixed(1)} ms</dd>
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Missing / drop rate</dt><dd>{evidence.missingSamples} / {(evidence.dropRate * 100).toFixed(1)}%</dd>
+          <dt className={UI_THEME_TOKENS.text.tertiary}>Recording budget</dt><dd>{recording.sampleCount} / {recording.maxSamples}</dd>
+        </dl>
 
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs" aria-label="Motion capture session evidence">
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Session</dt><dd>{shortOpaqueId(session.sessionId)}</dd>
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Quality tier</dt><dd>{tierLabel(evidence.tier)}</dd>
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Sources / synced</dt><dd>{evidence.activeSourceCount} / {evidence.synchronizedSourceCount}</dd>
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Max skew / jitter</dt><dd>{evidence.maxSkewMs === null ? '—' : `${evidence.maxSkewMs.toFixed(1)} ms`} / {evidence.maxJitterMs.toFixed(1)} ms</dd>
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Missing / drop rate</dt><dd>{evidence.missingSamples} / {(evidence.dropRate * 100).toFixed(1)}%</dd>
-        <dt className={UI_THEME_TOKENS.text.tertiary}>Recording budget</dt><dd>{recording.sampleCount} / {recording.maxSamples}</dd>
-      </dl>
+        <section className="grid gap-1" aria-label="Motion capture sources" data-kg-motion-capture-sources={session.sources.length}>
+          {session.sources.length === 0 ? (
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Start Motion Control to register the built-in, session-scoped source. Peer and hardware adapters register through the same runtime contract.</p>
+          ) : session.sources.map((source, index) => (
+            <article key={source.sourceId} className={cn('grid gap-1 rounded border p-1.5 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-motion-capture-source={index + 1}>
+              <span className="flex flex-wrap items-center justify-between gap-1">
+                <b>Source {index + 1} · {shortOpaqueId(source.sourceId)}</b>
+                <span>{source.calibration.status} · {source.clockAlignment.status}</span>
+              </span>
+              <p className={UI_THEME_TOKENS.text.tertiary}>{sourceDetail(source)}</p>
+              <p className={UI_THEME_TOKENS.text.tertiary}>Research window {source.quality.researchDurationMs.toFixed(0)} ms · manifest {source.calibration.researchValidation ? 'bound' : 'unbound'}</p>
+              <span className="flex flex-wrap gap-1">
+                <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'calibrating'} onClick={() => runAction(`calibrate:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'begin') }, 'Calibration evidence collection started.')} data-kg-motion-capture-calibration="begin">Begin calibration</button>
+                <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'uncalibrated'} onClick={() => runAction(`calibration-reset:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'reset') }, 'Calibration status reset.')} data-kg-motion-capture-calibration="reset">Reset</button>
+              </span>
+            </article>
+          ))}
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Research readiness requires a validated SI-frame manifest; manual calibration status never qualifies it.</p>
+        </section>
 
-      <section className="grid gap-1" aria-label="Motion capture sources" data-kg-motion-capture-sources={session.sources.length}>
-        {session.sources.length === 0 ? (
-          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Start Motion Control to register the built-in, session-scoped source. Peer and hardware adapters register through the same runtime contract.</p>
-        ) : session.sources.map((source, index) => (
-          <article key={source.sourceId} className={cn('grid gap-1 rounded border p-1.5 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-motion-capture-source={index + 1}>
-            <span className="flex flex-wrap items-center justify-between gap-1">
-              <b>Source {index + 1} · {shortOpaqueId(source.sourceId)}</b>
-              <span>{source.calibration.status} · {source.clockAlignment.status}</span>
-            </span>
-            <p className={UI_THEME_TOKENS.text.tertiary}>{sourceDetail(source)}</p>
-            <p className={UI_THEME_TOKENS.text.tertiary}>Research window {source.quality.researchDurationMs.toFixed(0)} ms · manifest {source.calibration.researchValidation ? 'bound' : 'unbound'}</p>
-            <span className="flex flex-wrap gap-1">
-              <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'calibrating'} onClick={() => runAction(`calibrate:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'begin') }, 'Calibration evidence collection started.')} data-kg-motion-capture-calibration="begin">Begin calibration</button>
-              <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'uncalibrated'} onClick={() => runAction(`calibration-reset:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'reset') }, 'Calibration status reset.')} data-kg-motion-capture-calibration="reset">Reset</button>
-            </span>
-          </article>
-        ))}
-        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Research readiness requires a validated SI-frame manifest; manual calibration status never qualifies it.</p>
-      </section>
+        <label className={cn('App-toolbar__btn w-fit cursor-pointer', recording.status === 'recording' || Boolean(pendingAction) ? 'pointer-events-none opacity-50' : '')} data-kg-motion-capture-research-evidence="import">
+          <Upload className="h-3 w-3" aria-hidden="true" /> Import research evidence
+          <input
+            type="file"
+            className="sr-only"
+            accept="application/json,.json"
+            disabled={recording.status === 'recording' || Boolean(pendingAction)}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0]
+              event.currentTarget.value = ''
+              if (file) void importResearchEvidence(file)
+            }}
+          />
+        </label>
 
-      <label className={cn('App-toolbar__btn w-fit cursor-pointer', recording.status === 'recording' || Boolean(pendingAction) ? 'pointer-events-none opacity-50' : '')} data-kg-motion-capture-research-evidence="import">
-        <Upload className="h-3 w-3" aria-hidden="true" /> Import research evidence
-        <input
-          type="file"
-          className="sr-only"
-          accept="application/json,.json"
-          disabled={recording.status === 'recording' || Boolean(pendingAction)}
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0]
-            event.currentTarget.value = ''
-            if (file) void importResearchEvidence(file)
-          }}
-        />
-      </label>
+        <section className="flex flex-wrap gap-1" aria-label="Motion capture recording controls" data-kg-motion-capture-recording={recording.status}>
+          <button type="button" className="App-toolbar__btn" disabled={!captureSurfaceActive || session.sources.length === 0 || recording.status !== 'idle'} onClick={() => runAction('record', motionCapturePlatformUiAdapter.startRecording, 'Bounded local recording started.')} data-kg-motion-capture-record="start">Record</button>
+          <button type="button" className="App-toolbar__btn" disabled={recording.status !== 'recording'} onClick={() => runAction('record-stop', motionCapturePlatformUiAdapter.stopRecording, 'Recording stopped and retained for local export.')} data-kg-motion-capture-record="stop">Finish</button>
+          <button type="button" className="App-toolbar__btn" disabled={recording.status === 'recording' || recording.status === 'idle'} onClick={() => runAction('record-clear', motionCapturePlatformUiAdapter.clearRecording, 'Local derived recording cleared.')} data-kg-motion-capture-record="clear">Clear</button>
+          <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('json')} data-kg-motion-capture-export="json"><Download className="h-3 w-3" aria-hidden="true" /> JSON</button>
+          <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('csv')} data-kg-motion-capture-export="csv"><Download className="h-3 w-3" aria-hidden="true" /> CSV</button>
+        </section>
 
-      <section className="flex flex-wrap gap-1" aria-label="Motion capture recording controls" data-kg-motion-capture-recording={recording.status}>
-        <button type="button" className="App-toolbar__btn" disabled={!captureSurfaceActive || session.sources.length === 0 || recording.status !== 'idle'} onClick={() => runAction('record', motionCapturePlatformUiAdapter.startRecording, 'Bounded local recording started.')} data-kg-motion-capture-record="start">Record</button>
-        <button type="button" className="App-toolbar__btn" disabled={recording.status !== 'recording'} onClick={() => runAction('record-stop', motionCapturePlatformUiAdapter.stopRecording, 'Recording stopped and retained for local export.')} data-kg-motion-capture-record="stop">Finish</button>
-        <button type="button" className="App-toolbar__btn" disabled={recording.status === 'recording' || recording.status === 'idle'} onClick={() => runAction('record-clear', motionCapturePlatformUiAdapter.clearRecording, 'Local derived recording cleared.')} data-kg-motion-capture-record="clear">Clear</button>
-        <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('json')} data-kg-motion-capture-export="json"><Download className="h-3 w-3" aria-hidden="true" /> JSON</button>
-        <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('csv')} data-kg-motion-capture-export="csv"><Download className="h-3 w-3" aria-hidden="true" /> CSV</button>
-      </section>
+        <label className={cn('flex items-start gap-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
+          <PanelCheckbox checked={peerSharing.enabled} disabled={!captureSurfaceActive || !peerSharing.available} onChange={event => {
+            const enabled = event.currentTarget.checked
+            runAction('peer-sharing', () => {
+              const next = motionCapturePlatformUiAdapter.setPeerSharingEnabled(enabled)
+              if (next.enabled !== enabled) throw new Error(next.lastError || 'Peer-derived sharing could not change state.')
+            }, `Peer-derived sharing ${enabled ? 'enabled' : 'disabled'}.`)
+          }} data-kg-motion-capture-peer-sharing="1" />
+          <span><b className="flex items-center gap-1"><Network className="h-3 w-3" aria-hidden="true" /> Peer-derived sharing</b>{peerStatus}. Derived observations only; no frames, raw tensors, stable device IDs, or endpoints.</span>
+        </label>
 
-      <label className={cn('flex items-start gap-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
-        <PanelCheckbox checked={peerSharing.enabled} disabled={!captureSurfaceActive || !peerSharing.available} onChange={event => {
-          const enabled = event.currentTarget.checked
-          runAction('peer-sharing', () => {
-            const next = motionCapturePlatformUiAdapter.setPeerSharingEnabled(enabled)
-            if (next.enabled !== enabled) throw new Error(next.lastError || 'Peer-derived sharing could not change state.')
-          }, `Peer-derived sharing ${enabled ? 'enabled' : 'disabled'}.`)
-        }} data-kg-motion-capture-peer-sharing="1" />
-        <span><b className="flex items-center gap-1"><Network className="h-3 w-3" aria-hidden="true" /> Peer-derived sharing</b>{peerStatus}. Derived observations only; no frames, raw tensors, stable device IDs, or endpoints.</span>
-      </label>
-
-      {evidence.warnings.length > 0 ? <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)} data-kg-motion-capture-warnings="1">Evidence: {evidence.warnings.map(warningLabel).join(' · ')}</p> : null}
-      <p className={cn('flex items-center gap-1 text-xs', UI_THEME_TOKENS.text.tertiary)}><ShieldCheck className="h-3 w-3" aria-hidden="true" /> Recording and export stay browser-local and bounded.</p>
+        {evidence.warnings.length > 0 ? <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)} data-kg-motion-capture-warnings="1">Evidence: {evidence.warnings.map(warningLabel).join(' · ')}</p> : null}
+        <p className={cn('flex items-center gap-1 text-xs', UI_THEME_TOKENS.text.tertiary)}><ShieldCheck className="h-3 w-3" aria-hidden="true" /> Recording and export stay browser-local and bounded.</p>
+      </CollapsibleSection>
     </section>
   )
 }

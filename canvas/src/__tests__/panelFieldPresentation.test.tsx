@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { PanelCode } from '@/features/panels/ui/PanelText'
+import { FloatingPanelTypographyContext } from '@/lib/ui/panelTypography'
+import { PanelCaption, PanelCode } from '@/features/panels/ui/PanelText'
 import { HelpKtvCode, HelpKtvMutedText } from '@/features/panels/views/HelpKtvLayout'
 import { useSchemaEditorUiClasses } from '@/features/schema-editor/useSchemaEditorUiClasses'
 import React, { act, useState } from 'react'
@@ -83,6 +84,17 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
     assert([...host.querySelectorAll('small, [data-role-code], [data-role-help-code]')].every(el => el.classList.contains('text-sm')), 'mounted supporting roles follow their shared preferences')
     assert(rows.every(row => row.classList.contains('agentic-ktv-row')), 'legacy appearance preferences cannot replace the central row owner')
     assert(host.querySelector('[data-kg-timeline-transport]')?.classList.contains('text-xs'), 'BottomPanel transport uses the same font owner')
+    await act(async () => {
+      useGraphStore.setState({ uiPanelTextFontClass: 'font-mono', uiPanelKeyValueTextSizeClass: 'text-xl', uiPanelMonospaceTextClass: 'font-serif text-lg' })
+      root.render(<FloatingPanelTypographyContext.Provider value>
+        <PanelTextInput aria-label="Name" /><PanelCaption>Hint</PanelCaption><PanelCode>revision</PanelCode>
+      </FloatingPanelTypographyContext.Provider>)
+    })
+    assert(host.querySelector('input')?.classList.contains('font-sans') && host.querySelector('input')?.classList.contains('text-sm'))
+    assert(host.querySelector('small')?.classList.contains('text-xs'))
+    assert(host.querySelector('code')?.classList.contains('font-mono'))
+    assert.equal(host.querySelector('.font-serif, .text-xl, .text-lg'), null)
+
   } finally {
     await act(async () => root.unmount())
     useGraphStore.setState({ uiPanelTextFontClass: previous.uiPanelTextFontClass, uiPanelKeyValueTextSizeClass: previous.uiPanelKeyValueTextSizeClass, uiPanelRowDensityDefaultClass: previous.uiPanelRowDensityDefaultClass, uiPanelMonospaceTextClass: previous.uiPanelMonospaceTextClass, uiPanelMicroLabelTextSizeClass: previous.uiPanelMicroLabelTextSizeClass })
@@ -101,7 +113,10 @@ export function testPanelFieldsForbidPresentationVariants() {
     const source = read(`src/features/panels/ui/${alias}`)
     assert(!/grid-cols-|gap-|text-(?:xs|sm|\[)|mt-|pt-/.test(source), `${alias} must remain a contract-only adapter`)
   }
-  for (const shell of ['src/features/panels/ui/MainPanelBody.tsx', 'src/lib/toolbar/ToolbarToolMenu.impl.tsx', 'src/features/strybldr/StrybldrTimelineBottomPanel.tsx']) assert(read(shell).includes('usePanelTypography'))
+  for (const shell of ['src/features/panels/ui/MainPanelBody.tsx', 'src/features/strybldr/StrybldrTimelineBottomPanel.tsx']) assert(read(shell).includes('usePanelTypography'))
+  const floating = read('src/lib/toolbar/ToolbarToolMenu.impl.tsx')
+  assert(floating.includes('<FloatingPanelTypographyContext.Provider value>'))
+  assert(!/uiPanel(?:TextFont|KeyValueTextSize)Class/.test(floating), 'the floating shell must inherit the pinned font')
   assert(read('src/features/graph-inspector/ui/GraphRecordInspector.tsx').includes('<CanvasEditableKeyTypeValueRow'))
   const controls = read('src/lib/ui/panelFormControls.tsx')
   assert(!controls.includes("layout === 'compact'"), 'old form variants cannot select a different layout')

@@ -1,3 +1,4 @@
+import { PanelDisclosure } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { Camera, Footprints, type LucideIcon } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
@@ -51,7 +52,7 @@ function ChoreographyCard({
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-xr-choreography-card-row="title">
-          <h3 className="truncate text-xs font-semibold" title={title}>{title}</h3>
+          <h3 className="truncate agentic-panel-title" title={title}>{title}</h3>
         </header>
         <section className="grid min-w-0 gap-0.5" data-kg-xr-choreography-card-row="meta">
           <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{description}</p>
@@ -101,6 +102,8 @@ export function XrChoreographyInspector({
   const physics = React.useSyncExternalStore(subscribeXrPhysicsRuntime, readXrPhysicsRuntime, readXrPhysicsRuntime)
   const exercises = React.useMemo(() => evaluateXrStudioExercises(runtime), [runtime, physics])
   const evaluatedSubject = studioScene.entities.find(entity => entity.id === exercises.subjectId && entity.kind === 'subject')
+  const sceneSectionId = React.useId()
+  const [sceneExpanded, setSceneExpanded] = React.useState(false)
   const [sceneCategory, setSceneCategory] = React.useState('all')
   const [areaRadiusMeters, setAreaRadiusMeters] = React.useState(2)
   const visibleEntities = sceneCategory === 'all'
@@ -139,7 +142,7 @@ export function XrChoreographyInspector({
     <section className="grid gap-2" aria-label="Choreography" data-kg-xr-choreography-inspector="shared-runtime">
       <header className="flex items-center justify-between gap-2">
         <section className="min-w-0">
-          <h2 className="text-xs font-semibold uppercase">Choreography</h2>
+          <h2 className="agentic-panel-title">Choreography</h2>
           <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>One mark model · Configure selected marks in Timeline</p>
         </section>
         <section className="grid shrink-0 justify-items-end gap-0.5">
@@ -180,8 +183,8 @@ export function XrChoreographyInspector({
       ) : (
         <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
       )}
-      <details className={cn('rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-xr-studio="authored-scene">
-        <summary className="cursor-pointer font-semibold">Scene and rehearsal exercises</summary>
+      <PanelDisclosure id={sceneSectionId} title="Scene and rehearsal exercises" expanded={sceneExpanded}
+        onExpandedChange={setSceneExpanded} stickyHeader={false} data-kg-xr-studio="authored-scene">
         <p className={cn('m-0 mt-1', UI_THEME_TOKENS.text.tertiary)}>
           Authored stage · {studioScene.timeSeconds.toFixed(2)} s · revision {studioScene.revision}
         </p>
@@ -228,7 +231,7 @@ export function XrChoreographyInspector({
           {evaluatedSubject ? `Evaluating ${evaluatedSubject.label} (${evaluatedSubject.id})` : 'No eligible moving subject'} · physics revision {physics.revision}
         </p>
         <LearningOfflineControls purpose="studio" />
-      </details>
+      </PanelDisclosure>
       {children}
     </section>
   )

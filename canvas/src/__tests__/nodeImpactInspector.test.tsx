@@ -14,8 +14,7 @@ import { getNodeRadiusFromSchema, defaultSchema } from '@/lib/graph/schema'
 import { buildAgentGraphCanvasProjection } from '@/features/agent-graph/agentGraphCanvasProjection'
 import { agentGraphResult } from './agentGraphWorkspaceArtifact.test'
 import NativeGraphStatsSection from '@/features/graph-inspector/ui/NativeGraphStatsSection'
-import GraphStatsPanel from '@/features/graph-stats/GraphStatsPanel'
-import OrchestratorSettingsSection from '@/features/panels/views/OrchestratorSettingsSection'
+import '../tests/lib/registerCssLoader'
 import * as d3 from 'd3'
 import { startAgentGraphObservation } from '../../../mcp/agent-graph/operation-observation.mjs'
 import { applyZoomRequest } from '@/components/GraphCanvas/zoomController'
@@ -269,6 +268,7 @@ test('FloatingPanel owns native inspection while Dashboard restores scoped stati
   try {
     useGraphStore.getState().resetAll()
     useGraphStore.setState({ graphData: data, graphDataRevision: 86, canvasRenderMode: '2d', canvas2dRenderer: 'd3', schema: defaultSchema })
+    const { default: GraphStatsPanel } = await import('@/features/graph-stats/GraphStatsPanel')
     await act(async () => root.render(<GraphStatsPanel />))
     for (const title of ['Dataset Inspector', 'Keywords', 'Word frequencies by node', 'Clusters', 'Edges (co-occurrence + similarity)']) {
       assert.ok(container.textContent?.includes(title), title)
@@ -291,9 +291,11 @@ test('FloatingPanel owns native inspection while Dashboard restores scoped stati
     assert.equal(keyword('Function')?.getAttribute('title'), '499 nodes')
     assert.equal(container.querySelectorAll('[aria-label="Stats scope"]').length, 1)
     assert.match(container.textContent || '', /No clusters detected/)
+    const { default: OrchestratorSettingsSection } = await import('@/features/panels/views/OrchestratorSettingsSection')
     const noop = () => {}
     await act(async () => root.render(<OrchestratorSettingsSection graphRagCollapsed presetsCollapsed editorCollapsed contextCollapsed indexingCollapsed tracingCollapsed
       setGraphRagCollapsed={noop} setPresetsCollapsed={noop} setEditorCollapsed={noop} setContextCollapsed={noop} setIndexingCollapsed={noop} setTracingCollapsed={noop} />))
+    await act(async () => { await import('@/features/graph-inspector/ui/NativeGraphStatsSection') })
     assert.equal(container.querySelectorAll('[aria-label="Native graph statistics"]').length, 1)
     assert.equal(Array.from(container.querySelectorAll('h3')).filter(heading => heading.textContent === 'Most connected').length, 1)
     assert.match(container.textContent || '', /Source groups/)

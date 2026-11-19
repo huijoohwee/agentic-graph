@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_COPY, LS_KEYS } from '@/lib/config'
@@ -58,10 +59,6 @@ import type {
   AgenticGraphStorageChatSessionMembership,
   AgenticGraphStorageChatSessionResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
-import {
-  KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  KTV_STATUS_TEXT_SIZE_CLASS_NAME,
-} from 'grph-shared/ui/keyTypeValueRows'
 import { resolveSharedChatModelSelect } from '@/features/chat/chatModelCredentialResolver'
 import { useFloatingPanelChatSurfaceModel } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSurfaceModel'
 import { flushFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
@@ -77,9 +74,11 @@ export default function FloatingPanelChat() {
   const graphDataRevision = useGraphStore(s => s.graphDataRevision || 0)
   const selectedNodeId = useGraphStore(s => s.selectedNodeId)
   const markdownText = useGraphStore(s => s.markdownDocumentText || null)
-  const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || 'font-sans')
-  const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || KTV_STATUS_TEXT_SIZE_CLASS_NAME)
+  const {
+    fontClass: uiPanelTextFontClass,
+    textSizeClass: uiPanelKeyValueTextSizeClass,
+    microLabelTextSizeClass: uiPanelMicroLabelTextSizeClass,
+  } = usePanelTypography()
 
   const chatProvider = useGraphStore(s => s.chatProvider)
   const chatAuthMode = useGraphStore(s => (s.chatAuthMode === 'byok' ? 'byok' : 'serverManaged'))

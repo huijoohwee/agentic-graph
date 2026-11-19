@@ -18,7 +18,7 @@ const actionClass = cn('min-h-11 rounded border px-3 py-2 text-xs', UI_THEME_TOK
 type ExportFormat = 'context-markdown' | 'context-json' | 'tokens-css' | 'tokens-json' | 'tokens-typescript'
 function TokenSection({ title, entries, inspect }: { title: string; entries: DesignTokenSummaryEntry[]; inspect: (id: string) => void }) {
   return <section className={cn('min-w-0 rounded border', UI_THEME_TOKENS.panel.border)} aria-label={title}>
-    <h3 className="m-0 px-2 py-2 text-xs font-semibold">{title}</h3>
+    <h3 className="m-0 px-2 py-2 agentic-panel-title">{title}</h3>
     <ul className={UI_RESPONSIVE_DESIGN_PANEL_TOKEN_LIST_CLASSNAME}>
       {entries.map(entry => <li key={entry.value} className="min-w-0 border-t px-2 py-2 text-xs">
         <span className="break-all font-mono">{entry.value}</span> <span>({entry.count})</span>
@@ -77,7 +77,7 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
   </section>
   return <section className={cn(UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME, 'min-w-0 space-y-3 px-3 py-2', panelTypography.panelTextClass)}
     aria-label="Design Tokens" data-main-panel-no-drag="true" data-design-context-key={context.semanticKey}>
-    <h2 className="m-0 text-sm font-semibold">Design token review</h2>
+    <h2 className="m-0 agentic-panel-title">Design token review</h2>
     <p className="m-0 text-xs">{context.theme} · {context.observed.scannedNodes}/{context.observed.totalNodes} nodes · {context.audit.checked} declared checks</p>
     <p className="m-0 text-xs">{context.audit.status === 'unassessed' ? 'No assessable checks yet.' : 'Review applies to declared properties.'}
       {context.audit.truncated ? ' Scan is incomplete; limits were reached.' : ''} Browser layout and accessibility still need review.</p>
@@ -104,7 +104,7 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
       <ul className="pl-4">{context.guidance.map(line => <li key={line}>{line}</li>)}</ul>
     </details>
     <section aria-label="Design findings" className="min-w-0 space-y-2 text-xs">
-      <h3 className="m-0 font-semibold">Findings ({context.audit.findingCount})</h3>
+      <h3 className="m-0 agentic-panel-title">Findings ({context.audit.findingCount})</h3>
       {context.audit.findings.map((finding, i) => <article key={`${finding.nodeId}:${finding.path}:${i}`} className="min-w-0 rounded border p-2">
         <strong>{finding.severity} · {finding.rule}</strong><p className="my-1 break-words">{finding.evidence}</p>
         <p className="my-1">{finding.action}</p><p className="my-1 break-all">{finding.nodeId} / {finding.path}</p>

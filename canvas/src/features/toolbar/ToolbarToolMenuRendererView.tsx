@@ -128,7 +128,7 @@ export function ToolbarToolMenuRendererView(props: {
   const showFlowchartUi = canvasRenderMode === '2d' && isFlowchartCanvas2dRenderer(canvas2dRenderer)
   const showRadarGalaxyUi = !inspectionGraph && canvasRenderMode === '2d' && isD3Like2dRenderer(canvas2dRenderer)
   const { allCollapsed, setAll, disclosure } = useRendererPanelState({
-    source: 'floatingPanel', tuning: !inspectionGraph, radar: showRadarGalaxyUi, flowchart: showFlowchartUi, design: showDesignWireframeUi,
+    source: 'floatingPanel', topology: Boolean(inspectionGraph || graphData), tuning: !inspectionGraph, radar: showRadarGalaxyUi, flowchart: showFlowchartUi, design: showDesignWireframeUi,
   })
   const allowLayoutModeSelection = !!inspectionGraph || isD3Like2dRenderer(canvas2dRenderer)
 
@@ -167,7 +167,7 @@ export function ToolbarToolMenuRendererView(props: {
       <SettingsSectionHeader headingAs="h2" title="Renderer" actions={
         <ExpandCollapseAllButton allCollapsed={allCollapsed} onExpandAll={() => setAll(false)} onCollapseAll={() => setAll(true)} />
       } />
-      <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} />
+      <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} {...disclosure('topology')} />
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <React.Suspense fallback={null}>
           <WorkspaceTableModeControlLazy />

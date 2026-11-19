@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import Tooltip from 'agentic-design-system/react/hover'
 import {
@@ -93,18 +94,14 @@ export function OrchestratorTraversalSection({
   presetsProps,
   editorProps,
 }: OrchestratorTraversalSectionProps) {
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || 'text-sm',
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass } = usePanelTypography()
   return (
     <>
       <CollapsibleSection
         headingAs="h3"
         title={(
           <Tooltip
+            interactive={false}
             content={AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
@@ -147,6 +144,7 @@ export function OrchestratorTraversalSection({
         headingAs="h3"
           title={(
           <Tooltip
+            interactive={false}
             content={TRAVERSAL_PRESETS_SECTION_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
@@ -193,6 +191,7 @@ export function OrchestratorTraversalSection({
         headingAs="h3"
           title={(
             <Tooltip
+              interactive={false}
               content={TRAVERSAL_EDITOR_AND_LAYERS_SECTION_TOOLTIP}
               maxWidthPx={260}
               contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
