@@ -70,7 +70,8 @@ export function assertPhase4(fixture: SourceFixture) {
     !uiSliceInitialStateText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !uiSliceCoreActionsText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !collapsibleSectionText.includes('UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME') ||
-    !mainPanelSettingsPanelShellText.includes('UI_RESPONSIVE_PANEL_HEADER_SECONDARY_CLASSNAME') ||
+    !mainPanelSettingsPanelShellText.includes('<SettingsPanelShell') ||
+    /(?:headerClassName|bodyClassName)=/.test(mainPanelSettingsPanelShellText) ||
     !graphFieldsSamplesPanelText.includes('UI_RESPONSIVE_WIDE_PANEL_HEADER_SECONDARY_CLASSNAME') ||
     !settingsEntryRowInputText.includes('UI_RESPONSIVE_SETTINGS_VALUE_WRAPPER_CLASSNAME') ||
     !settingsSpecialValueNodeText.includes('KTV_VALUE_ROW_INPUT_SHELL_CLASS_NAME') ||

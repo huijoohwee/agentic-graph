@@ -281,7 +281,6 @@ export default function FieldSettingsPanel({
   return (
     <MainPanelSettingsPanelShell
       ariaLabel={UI_LABELS.fieldSettings}
-      uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
       titleNode={
         <Tooltip
           content={UI_COPY.graphFieldsAgenticFieldSettingsDescription}
@@ -289,7 +288,7 @@ export default function FieldSettingsPanel({
 
           className="min-w-0"
         >
-          <section className={`${uiPanelKeyValueTextSizeClass} truncate`}>{UI_LABELS.fieldSettings}</section>
+          <span>{UI_LABELS.fieldSettings}</span>
         </Tooltip>
       }
       secondaryNode={secondaryLabel}
