@@ -173,7 +173,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
 
   return (
     <section
-      className="grid min-w-0 gap-3"
+      className="min-w-0"
       aria-label="Shared 3D for XR library"
       data-kg-media-xr-library="1"
       data-kg-media-xr-catalog-scope="shared"
@@ -250,13 +250,11 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       <XrSceneAppearanceControls disabled={!sceneReady} />
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate">Terrain / Environment Kits</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('environments')}
         onToggle={collapsed => setLibrarySectionCollapsed('environments', collapsed)}
         defaultCollapsed={false}
-        flushTop
-        headerClassName="px-0"
-        className="mt-1 border-t pt-1"
+        headingAs="h3"
         id="xr-media-environment-kits"
       >
         <section className="grid gap-2" aria-label="XR environment kits" data-kg-media-xr-environments="1">
@@ -285,11 +283,9 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
         </section>
       </CollapsibleSection>
       {visiblePoiDetailAssets.length ? <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Regional POI Details</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate">Regional POI Details</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output></span>}
         defaultCollapsed={false}
-        flushTop
-        headerClassName="px-0"
-        className="mt-1 border-t pt-1"
+        headingAs="h3"
         id="xr-media-regional-poi-detail-assets"
       >
         <section className="grid gap-2" aria-label="Regional procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
@@ -312,12 +308,11 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       </CollapsibleSection> : null}</>}
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('subjects-props')}
         onToggle={collapsed => setLibrarySectionCollapsed('subjects-props', collapsed)}
         defaultCollapsed={false}
-        headerClassName="px-0"
-        className="mt-1 border-t pt-1"
+        headingAs="h3"
         id="xr-media-subjects-props"
       >
         <section className="grid gap-2" aria-label="XR subject library" data-kg-media-xr-subject-library="1">
@@ -404,12 +399,11 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
         <CinemaReferenceAssetsPanel sourceText={markdownDocumentText} />
       </React.Suspense>
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('simulation')}
         onToggle={collapsed => setLibrarySectionCollapsed('simulation', collapsed)}
         defaultCollapsed={false}
-        headerClassName="px-0"
-        className="mt-1 border-t pt-1"
+        headingAs="h3"
         id="xr-media-simulation"
       >
         <XrSimulationWorkbench sceneReady={sceneReady} runControl={runControl} />

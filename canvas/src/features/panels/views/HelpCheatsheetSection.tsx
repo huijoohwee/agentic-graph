@@ -99,6 +99,7 @@ export function HelpCheatsheetSection({ collapsed, onToggle }: HelpCheatsheetSec
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={(
         <Tooltip
           content={HELP_CHEATSHEET_ALIGNMENT_TOOLTIP}

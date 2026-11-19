@@ -10,7 +10,6 @@ import {
   ResponsiveNumberRow as NumberRow,
   ResponsiveToggleRow as ToggleRow,
 } from '@/lib/ui/responsiveControlRows'
-import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 
 export function DesignWireframeSettings(props: { collapsed?: boolean; onToggle?: (collapsed: boolean) => void }) {
   const { settings, setSettings, resetSettings } = useDesignWireframeSettings()
@@ -19,7 +18,7 @@ export function DesignWireframeSettings(props: { collapsed?: boolean; onToggle?:
 
   return (
     <CollapsibleSection title="Design wireframe" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
-      <section className={uiToolbarSettingsPanelBodyClassName}>
+      <>
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Controls for webpage source-url wireframes (layout fidelity, grouping cues, label readability).
         </section>
@@ -52,7 +51,7 @@ export function DesignWireframeSettings(props: { collapsed?: boolean; onToggle?:
             Reset
           </button>
         </section>
-      </section>
+      </>
     </CollapsibleSection>
   )
 }

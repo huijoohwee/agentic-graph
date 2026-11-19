@@ -139,11 +139,11 @@ function TabHeaderImpl({
           })}
         </PanelViewTabs>
       )}
-      <section className={`${uiToolbarRowScrollJustifyEndClassName} ${collapsed ? 'w-auto shrink-0' : 'w-full sm:w-auto sm:shrink-0'} gap-1 sm:gap-2`} aria-label="Panel tools">
+      <section className={`${uiToolbarRowScrollJustifyEndClassName} shrink-0`} aria-label="Panel tools">
         {onSearchChange && (
           <section
             className={`overflow-hidden transition-[width,flex-basis,opacity] duration-200 ease-out ${
-              searchVisible ? 'basis-full w-full sm:basis-auto sm:w-72' : 'basis-0 w-0'
+              searchVisible ? 'w-[min(24vw,18rem)]' : 'basis-0 w-0'
             }`}
           >
             <label htmlFor={inputId} className="sr-only">

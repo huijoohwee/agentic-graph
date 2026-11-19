@@ -28,7 +28,7 @@ const CommerceRouteReadiness = () => (
     <KeyTypeValueHeader />
     <KeyTypeValueSectionStack>
       {AGENTIC_COMMERCE_MAIN_PANEL_READINESS.sections.map((section, index) => (
-        <CollapsibleSection key={section.id} title={section.title} defaultCollapsed={false} flushTop={index === 0}>
+        <CollapsibleSection headingAs="h3" key={section.id} title={section.title} defaultCollapsed={false} flushTop={index === 0}>
           <section data-kg-commerce-readiness-section={section.id}>
             {section.rows.map(row => <MainPanelField key={row.semanticKey} label={row.label} help={observedFieldHelp('Commerce operator', row.label, 'inspect source-owned route readiness before choosing an operation')}>
               <span className="min-w-0 break-words text-right">{row.value}</span>
@@ -69,7 +69,7 @@ export default function CommerceHubView({
       </nav>
       <CommerceRouteReadiness />
       <CommerceTransferRehearsal />
-      <h2 className={`mb-2 truncate font-semibold ${UI_THEME_TOKENS.text.primary}`}>Payments</h2>
+      <h2 className="agentic-panel-title">Payments</h2>
       <SettingsView
         searchQuery={searchQuery}
         requestedAnchorId={requestedAnchorId}
@@ -78,7 +78,7 @@ export default function CommerceHubView({
         onRegisterActions={onRegisterActions}
       />
       <section id="commerce-developer" aria-label="Commerce developer entry" className={`mt-3 border-t py-2 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
-        <h2 className={`font-semibold ${UI_THEME_TOKENS.text.primary}`}>Developer</h2>
+        <h2 className="agentic-panel-title">Developer</h2>
         <p className={`mt-1 ${UI_THEME_TOKENS.text.secondary}`}>Existing read-only discovery paths; the local rehearsal adds no transfer API or tool.</p>
         <MainPanelField label="ACP discovery" type="url" help={observedFieldHelp('Developer', 'ACP discovery', 'locate the source-owned discovery endpoint')}><code className={typography.monospaceTextClass}>{AGENTIC_COMMERCE_ROUTE_PATHS.acpDiscovery}</code></MainPanelField>
         <MainPanelField label="MPP OpenAPI" type="url" help={observedFieldHelp('Developer', 'MPP OpenAPI', 'locate the source-owned API contract')}><code className={typography.monospaceTextClass}>{AGENTIC_COMMERCE_ROUTE_PATHS.mppOpenApi}</code></MainPanelField>

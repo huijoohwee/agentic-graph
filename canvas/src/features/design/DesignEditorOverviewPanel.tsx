@@ -186,35 +186,37 @@ export function DesignEditorOverviewPanel(props: {
         </section>
       </section>
 
-      <section aria-label="Design tokens state">
-        <CollapsibleSection headingAs="h3" title="Tokens" defaultCollapsed={false} stickyHeader={false} actions={
-          <button
-            type="button"
-            className={cn('App-toolbar__btn', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg, panelTypography.microLabelClass)}
-            onClick={props.onOpenTokens}
-            disabled={!props.onOpenTokens}
-          >
-            <Palette className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-            <span className="hidden sm:inline">Open</span>
-          </button>
-        }>
-          <dl className={`mt-2 ${DESIGN_EDITOR_OVERVIEW_METRIC_GRID_CLASS_NAME}`}>
-            {[
-              ['Colors', tokenSummary.colorEntries.length],
-              ['Typography', tokenSummary.typographyEntries.length],
-              ['Spacing', tokenSummary.spacingEntries.length],
-              ['Types', tokenSummary.typeEntries.length],
-            ].map(([label, value]) => (
-              <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
-                <dt className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
-                <dd className={cn('m-0 mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
-              </section>
-            ))}
-          </dl>
-        </CollapsibleSection>
-      </section>
+      <section>
+        <section aria-label="Design tokens state">
+          <CollapsibleSection headingAs="h3" title="Tokens" defaultCollapsed={false} stickyHeader={false} actions={
+            <button
+              type="button"
+              className={cn('App-toolbar__btn', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'gap-1', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg, panelTypography.microLabelClass)}
+              onClick={props.onOpenTokens}
+              disabled={!props.onOpenTokens}
+            >
+              <Palette className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
+              <span className="hidden sm:inline">Open</span>
+            </button>
+          }>
+            <dl className={DESIGN_EDITOR_OVERVIEW_METRIC_GRID_CLASS_NAME}>
+              {[
+                ['Colors', tokenSummary.colorEntries.length],
+                ['Typography', tokenSummary.typographyEntries.length],
+                ['Spacing', tokenSummary.spacingEntries.length],
+                ['Types', tokenSummary.typeEntries.length],
+              ].map(([label, value]) => (
+                <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
+                  <dt className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
+                  <dd className={cn('m-0 mt-0.5 font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
+                </section>
+              ))}
+            </dl>
+          </CollapsibleSection>
+        </section>
 
-      <DesignAgentVideoPanel active={props.active} />
+        <DesignAgentVideoPanel active={props.active} />
+      </section>
 
       <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Design inspection shortcuts">
         <nav className={cn(uiToolbarRowScrollClassName, 'gap-1')}>

@@ -33,8 +33,11 @@ test('Activity projects existing logs and Mission selection, then clears revoked
     })
     assert.match(container.textContent || '', /Inspect scene/)
     assert.match(container.textContent || '', /partial coverage/)
+    const evidence = container.querySelector<HTMLButtonElement>('h3 button[aria-controls]')!
+    await act(async () => evidence.click())
+    assert.equal(evidence.getAttribute('aria-expanded'), 'true')
     assert.match(container.textContent || '', /Input and output payloads are not included/)
-    await act(async () => { container.querySelector<HTMLButtonElement>('button')!.click() })
+    await act(async () => { container.querySelector<HTMLButtonElement>('button[aria-pressed="false"]')!.click() })
     assert.equal(readAgentRunInspectionSnapshot()?.spanId, 'inspect')
     await act(async () => { closeAgentRunInspection() })
     assert.doesNotMatch(container.textContent || '', /Inspect scene/)

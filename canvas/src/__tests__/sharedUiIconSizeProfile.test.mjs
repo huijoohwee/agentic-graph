@@ -125,7 +125,7 @@ test('legacy renderer fields reuse the KTV adapter and palette and renderer sect
   assert.ok(!rows.includes('responsiveControlWidthClassName'))
   assert.ok(rows.includes("'aria-labelledby': labelId"), 'Original accessible control names must survive the adapter')
   const palette = fs.readFileSync(new URL('../features/toolbar/ui/RendererPaletteSettings.tsx', import.meta.url), 'utf8')
-  assert.ok(palette.includes('className={uiToolbarSettingsPanelBodyClassName}'))
+  assert.doesNotMatch(palette, /uiToolbarSettingsPanelBodyClassName|agentic-panel-section-body/)
   assert.ok(palette.includes('CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow'))
   assert.ok(!palette.includes('densityClassName='), 'Palette and legacy controls must use the same row runtime')
   const toolbarStyles = fs.readFileSync(new URL('../features/toolbar/ui/toolbarStyles.ts', import.meta.url), 'utf8')

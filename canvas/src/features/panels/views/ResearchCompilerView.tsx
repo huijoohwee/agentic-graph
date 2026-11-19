@@ -111,7 +111,7 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
     <section className={`h-full min-h-0 overflow-y-auto ${typography.panelTextClass}`} data-kg-research-compiler-panel="1" aria-label="Research compiler">
       <KeyTypeValueHeader />
       <KeyTypeValueSectionStack>
-        <CollapsibleSection title="Request" defaultCollapsed={false} flushTop>
+        <CollapsibleSection headingAs="h3" title="Request" defaultCollapsed={false} flushTop>
           <MainPanelField label="Thesis prompt" help={{ role: 'Researcher', actions: ['describe the thesis to evaluate'], outcome: 'scope compilation to a question grounded in the selected sources', value: { key: 'thesisPrompt', type: 'string', defaultValue: DEFAULT_RESEARCH_PROMPT, impact: 'Sets the question compiled from selected workspace sources.' } }}>
             <PanelTextarea aria-label="Thesis prompt" variant="transparent" className={`min-h-24 p-2 ${typography.panelTextClass}`} value={prompt} onChange={event => setPrompt(event.currentTarget.value)} data-kg-research-thesis-prompt="1" />
           </MainPanelField>
@@ -122,7 +122,7 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
             <MainPanelIconButton iconKey="action.run" label={pending ? 'Running' : 'Compile'} onClick={runCompile} disabled={pending || requestModel.issues.length > 0} data-kg-research-compile-action="1" />
           </MainPanelField>
         </CollapsibleSection>
-        <CollapsibleSection title="Source Files" defaultCollapsed={false} actions={<span className={typography.microLabelClass}>{requestModel.selectedSourceCount} selected</span>}>
+        <CollapsibleSection headingAs="h3" title="Source Files" defaultCollapsed={false} actions={<span className={typography.microLabelClass}>{requestModel.selectedSourceCount} selected</span>}>
           <section aria-label="Research source selection" data-kg-research-source-list="1">
             {filteredSourceFiles.slice(0, 12).map(file => {
               const id = String(file.id || '')
@@ -132,7 +132,7 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
             })}
           </section>
         </CollapsibleSection>
-        <CollapsibleSection title="Run" defaultCollapsed={false} actions={resultSummary.status !== 'idle' ? <MainPanelTypeIcon iconKey={resultSummary.status === 'ready' ? 'status.ready' : 'status.error'} className="size-4" /> : null}>
+        <CollapsibleSection headingAs="h3" title="Run" defaultCollapsed={false} actions={resultSummary.status !== 'idle' ? <MainPanelTypeIcon iconKey={resultSummary.status === 'ready' ? 'status.ready' : 'status.error'} className="size-4" /> : null}>
           <section aria-label="Research run status" data-kg-research-run-status="1">
             {observed('Run ID', resultSummary.runId || 'pending')}
             {observed('Claims', resultSummary.claimCount, 'number')}
@@ -143,7 +143,7 @@ export default function ResearchCompilerView({ searchQuery = '' }: { searchQuery
             {resultSummary.error ? <p role="alert" className="mt-2 text-red-600">{resultSummary.error}</p> : null}
           </section>
         </CollapsibleSection>
-        {candidateNodes.length > 0 ? <CollapsibleSection title="Review" defaultCollapsed={false} actions={<MainPanelIconButton iconKey="action.review" label="Stage" onClick={buildReview} />}>
+        {candidateNodes.length > 0 ? <CollapsibleSection headingAs="h3" title="Review" defaultCollapsed={false} actions={<MainPanelIconButton iconKey="action.review" label="Stage" onClick={buildReview} />}>
           <section aria-label="Candidate thesis graph review" data-kg-research-review-surface="1">
             {candidateNodes.slice(0, 8).map(node => <label key={node.id} className={`${uiToolbarRowScrollInlineClassName} gap-2 py-1 ${UI_THEME_TOKENS.text.secondary}`}>
               <input type="checkbox" checked={acceptedCandidateIds.has(node.id)} onChange={event => { const checked = event.currentTarget.checked; setAcceptedCandidateIds(prev => { const next = new Set(prev); if (checked) next.add(node.id); else next.delete(node.id); return next }) }} />

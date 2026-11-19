@@ -129,7 +129,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
           <span>{rendering ? 'Rendering' : 'Render MP4'}</span>
         </button>
       }>
-        <dl className={`mt-2 ${DESIGN_AGENT_VIDEO_METRIC_GRID_CLASS_NAME}`}>
+        <dl className={DESIGN_AGENT_VIDEO_METRIC_GRID_CLASS_NAME}>
           {[
             ['Engine', stagedArtifact.renderSpec.engineHint || 'canvas-2d'],
             ['Frames', Math.ceil((stagedArtifact.renderSpec.durationMs / 1000) * stagedArtifact.renderSpec.fps)],
@@ -144,7 +144,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
             </section>
           ))}
         </dl>
-        <section className="mt-2 grid min-w-0 gap-2 xl:grid-cols-2" aria-label="Agent video workspace">
+        <section className="grid min-w-0 gap-x-2 xl:grid-cols-2" aria-label="Agent video workspace">
           <CollapsibleSection headingAs="h4" defaultCollapsed={false} stickyHeader={false}
             title={<span className="inline-flex items-center gap-1"><FileCode className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden />Workspace files</span>}>
             <ol className="grid min-w-0 gap-1" aria-label="Design video workspace files">

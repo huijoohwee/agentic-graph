@@ -1,5 +1,6 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
+import { SharedPanelTypographyContext } from '@/lib/ui/panelTypography'
 import { usePanelStack } from '@/lib/ui/usePanelStack'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -8,7 +9,7 @@ import MainPanelContainer from './MainPanelContainer'
 import TabHeader, { type TabIconComponent } from './TabHeader'
 import HeaderActions from './HeaderActions'
 
-export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutRef<'section'>) {
+export function MainPanelLayer({ style, children, ...props }: React.ComponentPropsWithoutRef<'section'>) {
   const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
   const panelStack = usePanelStack('main', floatingPanelZIndex)
   const layer = <section
@@ -19,7 +20,9 @@ export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutR
     data-kg-canvas-pointer-ignore="1"
     data-kg-canvas-wheel-ignore="1"
     style={{ ...style, zIndex: panelStack.zIndex }}
-  />
+  >
+    <SharedPanelTypographyContext.Provider value>{children}</SharedPanelTypographyContext.Provider>
+  </section>
   return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
 }
 

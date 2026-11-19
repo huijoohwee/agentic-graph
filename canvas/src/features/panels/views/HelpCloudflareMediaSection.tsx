@@ -92,6 +92,7 @@ export function HelpCloudflareMediaSection({ collapsed, onToggle }: HelpCloudfla
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={HELP_STEP_COPY.cloudflareMedia.title}
       collapsed={collapsed}
       onToggle={onToggle}

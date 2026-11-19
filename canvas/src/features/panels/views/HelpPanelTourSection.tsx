@@ -39,6 +39,7 @@ export function HelpPanelTourSection({ collapsed, onToggle }: HelpPanelTourSecti
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={HELP_STEP_COPY.panelTour.title}
       collapsed={collapsed}
       onToggle={onToggle}

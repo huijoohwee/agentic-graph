@@ -22,7 +22,7 @@ export function testStrybldrBottomPanelUnpinDragReusesResizeRuntime() {
     "data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}",
     '<RichMediaPanelResizeHandle placement="panel"',
     "pinned && 'kg-canvas-bottom-panel--pinned'",
-    "!pinned && 'cursor-move'",
+    "!pinned && 'agentic-base-floating-panel-draggable'",
     'setPanelSizePx(clampPanelSize({ width: rect.width, height: rect.height }))',
   ]
   const missing = required.filter(token => !text.includes(token))

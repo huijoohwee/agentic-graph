@@ -31,7 +31,6 @@ import {
   UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_END_CLASSNAME,
   UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 
 type ThreeEdgeRendererType = 'mesh' | 'shaderLine' | 'tubeBridge'
 
@@ -156,7 +155,7 @@ export function EdgeTypesRendererSettings(props: {
 
   return (
     <CollapsibleSection title="Edge Types" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
-      <section className={uiToolbarSettingsPanelBodyClassName}>
+      <>
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Applies globally to Flowchart, Flow Canvas, Design, Storyboard Widget, document modes, 2D/3D/geospatial surfaces, and Text/Image/Video widgets. Default is Bezier with animated blue edges.
         </section>
@@ -214,7 +213,7 @@ export function EdgeTypesRendererSettings(props: {
             ))}
           </ResponsiveSelectRow>
         ) : null}
-      </section>
+      </>
     </CollapsibleSection>
   )
 }

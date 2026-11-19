@@ -14,7 +14,7 @@ import {
   UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
   UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { FloatingPanelTypographyContext } from '@/lib/ui/panelTypography'
+import { SharedPanelTypographyContext } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
 import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
@@ -317,7 +317,7 @@ export function ToolbarToolMenu({
       </>}
     >
           {!floatingPanelMinimized && <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
-            <FloatingPanelTypographyContext.Provider value>
+            <SharedPanelTypographyContext.Provider value>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
             {floatingPanelView === 'sequence' && <React.Suspense fallback={<p>Opening sequence…</p>}><SequenceInspectorLazy /></React.Suspense>}
@@ -416,7 +416,7 @@ export function ToolbarToolMenu({
               </section>
             )}
             </PanelFormDensityProvider>
-            </FloatingPanelTypographyContext.Provider>
+            </SharedPanelTypographyContext.Provider>
           </section>}
     </FloatingPanelShell>
   )

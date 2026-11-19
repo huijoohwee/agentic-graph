@@ -16,7 +16,7 @@ import ThreeViewTuningSection from '@/features/panels/views/ThreeViewTuningSecti
 import { LayoutModeRendererSettings } from '@/features/toolbar/ui/LayoutModeRendererSettings'
 import MediaNodesSection from '@/features/panels/views/MediaNodesSection'
 import { isVoxelModeApplicable } from '@/lib/canvas/canvas3dMode'
-import { uiToolbarButtonMutedClassName, uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { uiToolbarButtonMutedClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { UI_RESPONSIVE_BADGE_CHIP_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 type GraphSelectMode = NonNullable<GraphBehavior['selectMode']>
 type GraphCreateMode = NonNullable<GraphBehavior['createMode']>
@@ -307,7 +307,7 @@ export default function RenderSettingsSection({ layoutSettings, inspection = fal
       >
         <p>{RENDER_PANEL_SECTION_COPY.presetsAndTuning.descriptionShort}</p>
         <LayoutModeRendererSettings embedded {...layoutSettings} inspection={inspection} />
-        <section className={uiToolbarSettingsPanelBodyClassName}>
+        <section>
           <KeyTypeValueSectionStack>
             <ResponsiveSelectRow
               label="Render Mode"

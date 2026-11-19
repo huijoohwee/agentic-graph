@@ -15,7 +15,6 @@ import {
   ToggleRow,
   useCompactControls,
 } from './FlowchartRendererControls'
-import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 
 type ApiRuntimeRun = {
   id: string
@@ -364,8 +363,7 @@ export function FlowchartRendererSettings(props: { collapsed?: boolean; onToggle
   return (
     <CollapsibleSection title="Flowchart" headingAs="h3" collapsed={props.collapsed} onToggle={props.onToggle} defaultCollapsed={false} stickyHeader={false}>
       <section
-        className={uiToolbarSettingsPanelBodyClassName}
-        style={safeAreaAware ? { paddingBottom: 'max(var(--agentic-control-padding-inline), env(safe-area-inset-bottom))' } : undefined}
+        style={safeAreaAware ? { paddingBottom: 'max(0px, calc(env(safe-area-inset-bottom) - var(--agentic-control-padding-inline)))' } : undefined}
       >
         <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Maps the selected flowchart source into the existing 2D Flowchart scene without file-specific assumptions.

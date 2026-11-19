@@ -106,31 +106,31 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
   }
   try {
     useGraphStore.setState({ uiPanelTextFontClass: 'font-serif', uiPanelKeyValueTextSizeClass: 'text-[15px]', uiPanelRowDensityDefaultClass: 'py-2' })
-    await act(async () => root.render(<MainPanelBody header={null}>
+    await act(async () => root.render(<MainPanelLayer data-testid="main-layer"><MainPanelBody header={null}>
       <MainPanelField label="traversalMaxDepth" type="number" help={help}><input aria-label="Traversal max depth" type="number" defaultValue={2} min={1} max={8} step={1} /></MainPanelField>
       <MainPanelIconButton iconKey="action.run" label="Run traversal" onClick={() => activations++} />
       <MainPanelIconButton iconKey="action.import" label="Import selected (0)" disabled onClick={() => activations++} />
-    </MainPanelBody>))
-    const shell = host.querySelector('aside')!
-    assert(shell.className.includes('font-serif') && shell.className.includes('text-[15px]'))
-    const row = host.querySelector('dl')!
+    </MainPanelBody></MainPanelLayer>))
+    const shell = document.querySelector('[data-testid="main-layer"] aside')!
+    assert(shell.classList.contains('font-sans') && shell.classList.contains('text-sm'))
+    const row = shell.querySelector('dl')!
     assert(row.classList.contains('agentic-ktv-row'), 'shared row keeps the central geometry owner')
-    const descriptions = Array.from(host.querySelectorAll('[aria-description]')).map(node => node.getAttribute('aria-description'))
+    const descriptions = Array.from(shell.querySelectorAll('[aria-description]')).map(node => node.getAttribute('aria-description'))
     assert(descriptions.includes(buildMainPanelFieldHelp(help).key))
     assert(descriptions.includes('Default: 2; Min: 1; Max: 8; Interval: 1; More hops expands reach; fewer narrows scope.'))
-    const key = host.querySelector<HTMLElement>('dt [tabindex="0"]')!
+    const key = shell.querySelector<HTMLElement>('dt [tabindex="0"]')!
     await act(async () => key.focus())
     assert(document.querySelector('[role="tooltip"]')?.textContent?.includes('Orchestrator → cap maxDepth hops'))
     assert((document.querySelector('[role="tooltip"]')?.getBoundingClientRect().left ?? -1) >= 8, 'opening help keeps long text inside the viewport after effects settle')
-    const run = host.querySelector<HTMLButtonElement>('button[aria-label="Run traversal"]')!
+    const run = shell.querySelector<HTMLButtonElement>('button[aria-label="Run traversal"]')!
     const glyph = run.querySelector('svg')!
     assert.equal(glyph.getAttribute('role'), 'img')
     assert.equal(glyph.getAttribute('aria-hidden'), null)
     assert.equal(glyph.getAttribute('aria-label'), getMainPanelTypeIconMeta('action.run').label)
     assert.equal(run.querySelector('.sr-only')?.textContent, 'Run traversal')
-    await act(async () => { run.click(); host.querySelector<HTMLButtonElement>('button[disabled]')!.click() })
+    await act(async () => { run.click(); shell.querySelector<HTMLButtonElement>('button[disabled]')!.click() })
     assert.equal(activations, 1, 'named icon action activates once; disabled action cannot activate')
-    await act(async () => root.render(<CollapsibleSection title="Workspace" defaultCollapsed={false}>
+    await act(async () => root.render(<CollapsibleSection headingAs="h3" title="Workspace" defaultCollapsed={false}>
       <WorkspaceTableModeControl />
     </CollapsibleSection>))
     const select = host.querySelector<HTMLButtonElement>('button[data-kg-select][aria-label="Select panel position"]')!
@@ -140,10 +140,10 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
       selectMenuValue(select, nextPlacement)
     })
     assert.equal(workspaceTablePreferencesStore.getSnapshot().workspaceCellSelectPanelPlacement, nextPlacement, 'shared layout keeps the canonical preference handler')
-    const header = host.querySelector<HTMLElement>('header[role="button"]')!
-    await act(async () => header.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    const header = host.querySelector<HTMLButtonElement>('h3 > button[aria-controls]')!
+    await act(async () => header.click())
     assert.equal(header.getAttribute('aria-expanded'), 'false')
-    await act(async () => header.dispatchEvent(new window.KeyboardEvent('keydown', { key: ' ', bubbles: true })))
+    await act(async () => header.click())
     assert.equal(header.getAttribute('aria-expanded'), 'true')
     assert.equal(select.value, nextPlacement, 'collapse and expand preserve the field value')
   } finally {

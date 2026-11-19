@@ -8,16 +8,15 @@ import { coercePanelTypography, PANEL_TYPOGRAPHY_DEFAULTS, type PanelTypography 
 
 export type { PanelTypography } from 'grph-shared/ui/panelTypography'
 
-// FloatingPanelShell supplies the body font. Its descendants use the pinned
-// Design System roles even when other editors have custom typography saved.
-export const FloatingPanelTypographyContext = createContext(false)
+// Panel shells use Design System roles independently of saved editor typography.
+export const SharedPanelTypographyContext = createContext(false)
 const sharedPanelTypography = coercePanelTypography(null)
 
 export function usePanelTypography(): PanelTypography {
-  const floating = useContext(FloatingPanelTypographyContext)
+  const sharedPanel = useContext(SharedPanelTypographyContext)
   return useGraphStore(
     useShallow(state => {
-      if (floating) return sharedPanelTypography
+      if (sharedPanel) return sharedPanelTypography
       const fontClass = state.uiPanelTextFontClass || PANEL_TYPOGRAPHY_DEFAULTS.fontClass
       const textSizeClass = normalizeUiTextClasses(state.uiPanelKeyValueTextSizeClass || PANEL_TYPOGRAPHY_DEFAULTS.textSizeClass)
       const microLabelTextSizeClass =
