@@ -91,7 +91,8 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
   }, [props, structuredSourceValueColumnMode])
 
   const buildCollapsedState = React.useCallback(
-    (expandedPanel?: WorkspaceDataViewSettingsPanelKey | null): Record<WorkspaceDataViewSettingsPanelKey, boolean> => ({
+    (expandedPanel?: WorkspaceDataViewSettingsPanelKey | null): Record<WorkspaceDataViewSettingsPanelKey | 'query', boolean> => ({
+      query: expandedPanel == null,
       layout: expandedPanel !== 'layout',
       properties: expandedPanel !== 'properties',
       filter: expandedPanel !== 'filter',
@@ -101,7 +102,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
     }),
     [],
   )
-  const [collapsedByPanel, setCollapsedByPanel] = React.useState<Record<WorkspaceDataViewSettingsPanelKey, boolean>>(
+  const [collapsedByPanel, setCollapsedByPanel] = React.useState<Record<WorkspaceDataViewSettingsPanelKey | 'query', boolean>>(
     () => buildCollapsedState(props.activePanel),
   )
 
@@ -173,6 +174,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
   }, [buildCollapsedState])
   const expandAll = React.useCallback(() => {
     setCollapsedByPanel({
+      query: false,
       layout: false,
       properties: false,
       filter: false,
@@ -181,7 +183,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
       reset: false,
     })
   }, [])
-  const togglePanel = React.useCallback((panel: WorkspaceDataViewSettingsPanelKey, next: boolean) => {
+  const togglePanel = React.useCallback((panel: WorkspaceDataViewSettingsPanelKey | 'query', next: boolean) => {
     setCollapsedByPanel(prev => {
       if (prev[panel] === next) return prev
       return { ...prev, [panel]: next }
@@ -233,15 +235,14 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
         </div>
       )}
       className="kg-data-view-settings-panel h-full rounded-none border-0"
-      headerClassName={['px-3 py-3 border-b', UI_THEME_TOKENS.panel.divider].join(' ')}
-      bodyClassName="p-0"
     >
       {props.viewConfig.recoveryError && <p role="alert">{props.viewConfig.recoveryError} Settings are read-only until recovered.</p>}
       <fieldset disabled={!!props.viewConfig.recoveryError} className="min-w-0 border-0 p-0 m-0">
       <main className="kg-data-view-settings-layout flex h-full min-h-0 flex-col">
-        <section className="min-w-0 flex-1 overflow-y-auto px-3 pb-3" aria-label="View settings panel">
-          <section className={['mt-3 rounded border p-2', UI_THEME_TOKENS.panel.border].join(' ')} aria-label="View query workbench">
-            <section className="mt-2 space-y-2" aria-label="View query roles">
+        <section className="min-w-0 flex-1" aria-label="View settings panel">
+          <CollapsibleSection headingAs="h3" title="View query workbench" stickyHeader={false} flushTop
+            collapsed={collapsedByPanel.query} onToggle={next => togglePanel('query', next)}>
+            <section aria-label="View query roles" className="space-y-2">
               <PanelField
                 label="Projection"
                 variant="section"
@@ -288,7 +289,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                 />
               ) : null}
             </section>
-          </section>
+          </CollapsibleSection>
 
           <CollapsibleSection
             headingAs="h3"

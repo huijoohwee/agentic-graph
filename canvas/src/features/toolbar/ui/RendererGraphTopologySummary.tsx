@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { SimpleKeyValueRow } from '@/features/panels/ui/canvasSimpleKeyValueRow'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
@@ -216,7 +217,7 @@ export const readRendererHighlightTokens = (
     .slice(0, 8)
 }
 
-export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = {}) {
+export function RendererGraphTopologySummary({ graph, collapsed, onToggle }: { graph?: GraphData; collapsed?: boolean; onToggle?: (collapsed: boolean) => void } = {}) {
   const activeGraph = useActiveGraphRenderData()
   const graphData = graph ?? activeGraph
   const selectedNodeId = useGraphStore(s => s.selectedNodeId || null)
@@ -245,51 +246,52 @@ export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = 
   if (!summary) return null
 
   return (
-    <section className={`min-w-0 rounded ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.panel.headerBg} px-2 py-2`} aria-label="Graph topology">
-      <section className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>Graph topology</section>
-      <section className={RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME}>
-        <SimpleKeyValueRow label="Nodes">{formatCount(summary.nodeCount)}</SimpleKeyValueRow>
-        <SimpleKeyValueRow label="Edges">{formatCount(summary.edgeCount)}</SimpleKeyValueRow>
-        <SimpleKeyValueRow label="Connected">{formatCount(summary.connectedNodeCount)}</SimpleKeyValueRow>
-        <SimpleKeyValueRow label="Structural">{formatCount(summary.structuralEdgeCount)}</SimpleKeyValueRow>
-        {(prunedNodes > 0 || prunedEdges > 0) ? (
-          <SimpleKeyValueRow label="Pruned">{formatCount(prunedNodes)} nodes / {formatCount(prunedEdges)} edges</SimpleKeyValueRow>
-        ) : null}
-        <SimpleKeyValueRow label="Types"><span className="truncate" title={compactCounts(summary.topNodeTypes)}>{compactCounts(summary.topNodeTypes)}</span></SimpleKeyValueRow>
-        <SimpleKeyValueRow label="Labels"><span className="truncate" title={compactCounts(summary.topEdgeLabels)}>{compactCounts(summary.topEdgeLabels)}</span></SimpleKeyValueRow>
-      </section>
-      {rendererHighlights.length > 0 ? (
-        <section className="mt-2">
-          <section className={`mb-1 text-xs font-medium ${UI_THEME_TOKENS.text.secondary}`}>
-            Highlights{rendererHighlightCount > rendererHighlights.length ? ` ${formatCount(rendererHighlightCount)}` : ''}
-          </section>
-          <section className="flex flex-wrap gap-1">
-            {rendererHighlights.map(token => {
-              const style = buildSemanticHighlightChipStyle({
-                background: token.background,
-                color: token.color,
-                defaultHighlight: token.defaultHighlight,
-              })
-              const fallbackClass = token.background || token.color
-                ? `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.primary}`
-                : `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.secondary}`
-              return (
-                <span
-                  key={token.id}
-                  className={`${getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.renderer)} max-w-full truncate rounded-sm border px-1.5 py-0.5 text-xs leading-4 ${fallbackClass}`}
-                  style={style}
-                  title={`${token.source}: ${token.label}`}
-                  data-kg-renderer-highlight-chip="1"
-                  {...getSemanticHighlightSurfaceAttributes(SEMANTIC_HIGHLIGHT_SURFACES.renderer)}
-                >
-                  {renderMarkdownSigilInlineText(token.label)}
-                </span>
-              )
-            })}
-          </section>
+    <section aria-label="Graph topology">
+      <CollapsibleSection headingAs="h3" title="Graph topology" collapsed={collapsed} onToggle={onToggle} defaultCollapsed={false} stickyHeader={false}>
+        <section className={RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME}>
+          <SimpleKeyValueRow label="Nodes">{formatCount(summary.nodeCount)}</SimpleKeyValueRow>
+          <SimpleKeyValueRow label="Edges">{formatCount(summary.edgeCount)}</SimpleKeyValueRow>
+          <SimpleKeyValueRow label="Connected">{formatCount(summary.connectedNodeCount)}</SimpleKeyValueRow>
+          <SimpleKeyValueRow label="Structural">{formatCount(summary.structuralEdgeCount)}</SimpleKeyValueRow>
+          {(prunedNodes > 0 || prunedEdges > 0) ? (
+            <SimpleKeyValueRow label="Pruned">{formatCount(prunedNodes)} nodes / {formatCount(prunedEdges)} edges</SimpleKeyValueRow>
+          ) : null}
+          <SimpleKeyValueRow label="Types"><span className="truncate" title={compactCounts(summary.topNodeTypes)}>{compactCounts(summary.topNodeTypes)}</span></SimpleKeyValueRow>
+          <SimpleKeyValueRow label="Labels"><span className="truncate" title={compactCounts(summary.topEdgeLabels)}>{compactCounts(summary.topEdgeLabels)}</span></SimpleKeyValueRow>
         </section>
-      ) : null}
-      <RendererDocumentMetadataSummary entries={documentMetadataTokens} />
+        {rendererHighlights.length > 0 ? (
+          <section className="mt-2">
+            <section className={`mb-1 text-xs font-medium ${UI_THEME_TOKENS.text.secondary}`}>
+              Highlights{rendererHighlightCount > rendererHighlights.length ? ` ${formatCount(rendererHighlightCount)}` : ''}
+            </section>
+            <section className="flex flex-wrap gap-1">
+              {rendererHighlights.map(token => {
+                const style = buildSemanticHighlightChipStyle({
+                  background: token.background,
+                  color: token.color,
+                  defaultHighlight: token.defaultHighlight,
+                })
+                const fallbackClass = token.background || token.color
+                  ? `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.primary}`
+                  : `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.secondary}`
+                return (
+                  <span
+                    key={token.id}
+                    className={`${getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.renderer)} max-w-full truncate rounded-sm border px-1.5 py-0.5 text-xs leading-4 ${fallbackClass}`}
+                    style={style}
+                    title={`${token.source}: ${token.label}`}
+                    data-kg-renderer-highlight-chip="1"
+                    {...getSemanticHighlightSurfaceAttributes(SEMANTIC_HIGHLIGHT_SURFACES.renderer)}
+                  >
+                    {renderMarkdownSigilInlineText(token.label)}
+                  </span>
+                )
+              })}
+            </section>
+          </section>
+        ) : null}
+        <RendererDocumentMetadataSummary entries={documentMetadataTokens} />
+      </CollapsibleSection>
     </section>
   )
 }

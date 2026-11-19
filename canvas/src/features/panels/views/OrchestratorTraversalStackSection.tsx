@@ -101,6 +101,7 @@ export function OrchestratorTraversalSection({
         headingAs="h3"
         title={(
           <Tooltip
+            interactive={false}
             content={AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
@@ -143,6 +144,7 @@ export function OrchestratorTraversalSection({
         headingAs="h3"
           title={(
           <Tooltip
+            interactive={false}
             content={TRAVERSAL_PRESETS_SECTION_TOOLTIP}
             maxWidthPx={260}
             contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
@@ -189,6 +191,7 @@ export function OrchestratorTraversalSection({
         headingAs="h3"
           title={(
             <Tooltip
+              interactive={false}
               content={TRAVERSAL_EDITOR_AND_LAYERS_SECTION_TOOLTIP}
               maxWidthPx={260}
               contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}

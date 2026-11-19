@@ -1,3 +1,4 @@
+import { SettingsSectionHeader, PanelDisclosure } from 'agentic-design-system/react/panels'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import { SemanticSelect } from '@/lib/ui/SemanticSelect'
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -91,6 +92,9 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
   )
   const featureCollection = dataset?.featureCollection ?? sourcePreview
   const isSyntheticSourcePreview = !dataset && sourcePreview !== null
+  const importId = React.useId()
+  const [importExpanded, setImportExpanded] = useState(!isSyntheticSourcePreview)
+  useEffect(() => setImportExpanded(!isSyntheticSourcePreview), [isSyntheticSourcePreview])
 
   useEffect(() => () => {
     loadGeneration.current += 1
@@ -244,17 +248,14 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
       className={`p-2 space-y-3 text-xs ${UI_THEME_TOKENS.text.primary}`}
       aria-labelledby="local-poi-directory-title"
     >
-      <header>
-        <h3 id="local-poi-directory-title" className="agentic-panel-title mb-1">Local POI Directory</h3>
+      <SettingsSectionHeader title={<h3 id="local-poi-directory-title" className="agentic-panel-title">Local POI Directory</h3>} />
         <p className="opacity-70">
           {isSyntheticSourcePreview
             ? 'Showing the synthetic places embedded in the selected demo document. This read-only preview creates no operator attestations or release manifest.'
             : 'Load an operator-reviewed GeoJSON file locally. Accepted points appear on the shared Geo map and can be selected from this directory.'}
         </p>
-      </header>
-
-      <details open={!isSyntheticSourcePreview || Boolean(dataset)} className="rounded border border-white/15 p-2">
-        <summary className="cursor-pointer font-medium">Load operator-reviewed local GeoJSON</summary>
+      <PanelDisclosure id={importId} title="Load operator-reviewed local GeoJSON" expanded={importExpanded}
+        onExpandedChange={setImportExpanded} stickyHeader={false}>
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-1 gap-2">
             <label className="grid gap-1" htmlFor="local-poi-source">
@@ -308,7 +309,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
           </p>
           <p className="opacity-70">Metadata and approvals are captured when the file is loaded. Change them before selecting the file.</p>
         </div>
-      </details>
+      </PanelDisclosure>
 
       {loading ? <p role="status">Reading and validating locally…</p> : null}
       {error ? <p role="alert" className="text-red-300">{error}</p> : null}

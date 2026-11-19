@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { readAgenticGraphSourceRevision } from '../runtime-identity/agentic-graph-runtime-identity'
@@ -45,7 +46,7 @@ export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'l
     url.searchParams.set(purpose === 'learning' ? 'python-learning-offline' : 'studio-offline', evidence.revision)
     url.searchParams.set('openEditorWorkspace', '1'); location.assign(url.href)
   }
-  return <details className="min-w-0"><summary className={`${UI_THEME_TOKENS.control.singleLine} content-center cursor-pointer`}>Offline {label}</summary>
+  return <CollapsibleSection headingAs="h3" title={`Offline ${label}`} stickyHeader={false}>
     <p>{purpose === 'workspace' ? 'Install the application assets while connected. Save your editable source in this browser workspace before reopening, then verify the saved source after reopening offline. The previous complete installation is retained for recovery; browser storage can still be evicted.' : studio ? 'Install the application assets while connected. Save the editable scene source separately and verify it after reopening. The previous complete installation is retained for recovery; browser storage can still be evicted.' : 'Install the application assets while connected. Source and debriefs stay in this browser. The previous complete installation is retained for recovery; browser storage can still be evicted.'}</p>
     <nav aria-label="Offline installation controls" className="flex min-w-0 flex-wrap items-center gap-2 p-2">
       <button className={buttonClass} disabled={busy} onClick={() => void act('install')}>Install offline {label}</button>
@@ -54,5 +55,5 @@ export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'l
       <button className={buttonClass} disabled={busy || !evidence} onClick={open}>Open verified offline workspace</button>
     </nav>
     {notice ? <p role="status">{notice}</p> : null}
-  </details>
+  </CollapsibleSection>
 }

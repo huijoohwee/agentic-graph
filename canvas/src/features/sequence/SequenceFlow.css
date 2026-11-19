@@ -32,12 +32,9 @@
 .sequence-layout-controls button { min-height: 44px; padding: 6px 12px; border-radius: 5px; font-size: var(--kg-text-xs); }
 .sequence-layout-controls button:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: 1px; }
 .sequence-layout-controls button[aria-pressed='true'] { background: var(--kg-accent-soft-bg); }
-.sequence-inspector { height: 100%; overflow: auto; font-family: var(--kg-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
-.sequence-inspector h2 { font-weight: 600; margin-bottom: 8px; }
-.sequence-inspector > p { color: var(--sequence-muted); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body); }
+.sequence-inspector { height: 100%; }
 .sequence-inspector li button strong { font-size: var(--agentic-font-size-body); }
 .sequence-inspector li button span { font-size: var(--agentic-font-size-body); color: var(--sequence-muted); }
-.sequence-inspector p { margin: 8px 0; }
 .sequence-flow select { background: var(--sequence-surface); color: inherit; max-width: 100%; border: 1px solid var(--kg-border); border-radius: 5px; padding: 5px; }
 .sequence-inspector ol { display: grid; gap: 8px; margin-top: 12px; }
 .sequence-inspector li button { font: inherit; display: grid; text-align: left; width: 100%; padding: 10px; gap: 4px; border: 1px solid var(--kg-border); border-radius: 8px; }
@@ -53,7 +50,7 @@
 .sequence-svg-host[data-notation-theme]:not([data-notation-theme='dark']) { --sequence-ink: #243047; --sequence-surface: #fff; }
 .sequence-svg-host [data-sequence-participant][data-sequence-current='true'][data-et='life-line'],
 .sequence-svg-host [data-sequence-participant][data-sequence-current='true'][data-et='participant'] :is(rect, circle, line, path) { stroke: var(--kg-canvas-accent) !important; stroke-width: 3; }
-.sequence-inspector button, .sequence-flow select, .sequence-transport .timeline-transport-clip-controls select { min-height: 44px; }
+.sequence-inspector li button, .sequence-flow select, .sequence-transport .timeline-transport-clip-controls select { min-height: 44px; }
 .sequence-inspector li button { overflow-wrap: anywhere; }
 
 .sequence-canvas-chrome > [role="alert"] { position: relative; pointer-events: auto; margin: 8px; padding: 8px; background: var(--sequence-surface); }

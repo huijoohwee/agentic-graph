@@ -1,3 +1,4 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { XrRehearsalStatus } from './XrRehearsalStatus'
 import { Clapperboard, Eraser, Hand, Keyboard, MapPin, Pause, Play, Target } from 'lucide-react'
@@ -111,10 +112,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
 
   return (
     <section
-      className={cn(
-        embedded ? 'grid gap-2' : 'grid gap-2 rounded border p-2',
-        !embedded ? `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}` : '',
-      )}
+      className="min-w-0"
       aria-label="Shared 3D for XR asset controls"
       data-kg-xr-shared-asset-controls={surface}
       data-kg-xr-shared-asset-schema={snapshot.schema}
@@ -127,111 +125,109 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
       data-kg-xr-shared-asset-gesture-armed={snapshot.castMarkArmed ? '1' : '0'}
       data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
     >
-      <header className="flex min-w-0 items-center justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-1 agentic-panel-title">
-          <Target className="size-3.5 shrink-0" aria-hidden />
-          <span className="truncate">XR Asset Control</span>
-        </h3>
-        <output className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
-      </header>
-      <XrRehearsalStatus />
-      <section className={cn("grid min-w-0 gap-1", authorsMotion ? "grid-cols-2" : "grid-cols-1")}>
-        <label className="grid min-w-0 gap-0.5 text-xs">
-          <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>
-          <PanelSelect
-            value={snapshot.selectedActorId || snapshot.selectedTargetId}
-            disabled={!targetOptions.length}
-            onValueChange={selectedValueInput => run('select-target', { targetId: selectedValueInput })}
-            aria-label="Shared 3D for XR object, prop, subject, or NPC target"
-            data-kg-xr-shared-asset-target-selector={surface}
+      <CollapsibleSection headingAs="h3" defaultCollapsed={false} stickyHeader={false} flushTop={embedded}
+        title={<span className="inline-flex items-center gap-1"><Target className="size-3.5" aria-hidden />XR Asset Control</span>}
+        actions={<output className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{status}</output>}
+      >
+        <XrRehearsalStatus />
+        <section className={cn("grid min-w-0 gap-1", authorsMotion ? "grid-cols-2" : "grid-cols-1")}>
+          <label className="grid min-w-0 gap-0.5 text-xs">
+            <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>
+            <PanelSelect
+              value={snapshot.selectedActorId || snapshot.selectedTargetId}
+              disabled={!targetOptions.length}
+              onValueChange={selectedValueInput => run('select-target', { targetId: selectedValueInput })}
+              aria-label="Shared 3D for XR object, prop, subject, or NPC target"
+              data-kg-xr-shared-asset-target-selector={surface}
+            >
+              {!targetOptions.length ? <option value="">No 3D or NPC targets</option> : null}
+              {targetOptions.map(target => (
+                <option key={target.id} value={target.id}>{target.label}</option>
+              ))}
+            </PanelSelect>
+          </label>
+          {authorsMotion ? <label className="grid min-w-0 gap-0.5 text-xs">
+            <span className={UI_THEME_TOKENS.text.tertiary}>Motion</span>
+            <PanelSelect
+              value={selectedPreset}
+              disabled={!compatiblePresets.length}
+              onValueChange={selectedValueInput => setPresetId(selectedValueInput as XrAnimationPresetId)}
+              aria-label="Shared 3D for XR animation preset"
+              data-kg-xr-shared-asset-preset-selector={surface}
+            >
+              {!compatiblePresets.length ? <option value="">No compatible motion</option> : null}
+              {compatiblePresets.map(preset => (
+                <option key={preset.id} value={preset.id}>{preset.label}</option>
+              ))}
+            </PanelSelect>
+          </label> : surface !== 'animation' ? <button type="button" className="App-toolbar__btn justify-start" onClick={() => { const state = useGraphStore.getState(); state.setFloatingPanelView('animation'); state.setFloatingPanelOpen(true) }} data-kg-xr-animation-editor-link={surface}><Clapperboard className="size-3.5" aria-hidden /> Edit choreography and motions</button> : null}
+        </section>
+        <section className="flex min-w-0 flex-wrap items-center gap-1" aria-label="Shared XR asset actions">
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            onClick={() => emitMainPanelOpen({ tab: 'help', searchQuery: 'WASD' })}
+            title="Open MainPanel Help shortcuts for WASD, arrow, and Camera controls"
+            aria-label="Open WASD and Camera shortcuts in MainPanel Help"
+            data-kg-xr-shared-asset-shortcut-help={surface}
           >
-            {!targetOptions.length ? <option value="">No 3D or NPC targets</option> : null}
-            {targetOptions.map(target => (
-              <option key={target.id} value={target.id}>{target.label}</option>
-            ))}
-          </PanelSelect>
-        </label>
-        {authorsMotion ? <label className="grid min-w-0 gap-0.5 text-xs">
-          <span className={UI_THEME_TOKENS.text.tertiary}>Motion</span>
-          <PanelSelect
-            value={selectedPreset}
-            disabled={!compatiblePresets.length}
-            onValueChange={selectedValueInput => setPresetId(selectedValueInput as XrAnimationPresetId)}
-            aria-label="Shared 3D for XR animation preset"
-            data-kg-xr-shared-asset-preset-selector={surface}
+            <Keyboard className="size-3.5" aria-hidden /> Shortcuts
+          </button>
+          {authorsMotion ? <><button
+            type="button"
+            className="App-toolbar__btn"
+            disabled={!canApply}
+            onClick={() => run('apply-animation', { presetId: selectedPreset })}
+            title="Apply animation to the selected 3D for XR target"
+            data-kg-xr-shared-asset-animate={surface}
           >
-            {!compatiblePresets.length ? <option value="">No compatible motion</option> : null}
-            {compatiblePresets.map(preset => (
-              <option key={preset.id} value={preset.id}>{preset.label}</option>
-            ))}
-          </PanelSelect>
-        </label> : surface !== 'animation' ? <button type="button" className="App-toolbar__btn justify-start" onClick={() => { const state = useGraphStore.getState(); state.setFloatingPanelView('animation'); state.setFloatingPanelOpen(true) }} data-kg-xr-animation-editor-link={surface}><Clapperboard className="size-3.5" aria-hidden /> Edit choreography and motions</button> : null}
-      </section>
-      <section className="flex min-w-0 flex-wrap items-center gap-1" aria-label="Shared XR asset actions">
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          onClick={() => emitMainPanelOpen({ tab: 'help', searchQuery: 'WASD' })}
-          title="Open MainPanel Help shortcuts for WASD, arrow, and Camera controls"
-          aria-label="Open WASD and Camera shortcuts in MainPanel Help"
-          data-kg-xr-shared-asset-shortcut-help={surface}
-        >
-          <Keyboard className="size-3.5" aria-hidden /> Shortcuts
-        </button>
-        {authorsMotion ? <><button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={!canApply}
-          onClick={() => run('apply-animation', { presetId: selectedPreset })}
-          title="Apply animation to the selected 3D for XR target"
-          data-kg-xr-shared-asset-animate={surface}
-        >
-          <Clapperboard className="size-3.5" aria-hidden /> Animate
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={!canClear}
-          onClick={() => run('clear-animation')}
-          title="Clear animation from the selected 3D for XR target"
-          data-kg-xr-shared-asset-clear-animation={surface}
-        >
-          <Eraser className="size-3.5" aria-hidden /> Clear
-        </button></> : null}
-        <button
-          type="button"
-          className={cn('App-toolbar__btn', snapshot.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')}
-          disabled={!targetReady}
-          aria-pressed={snapshot.castMarkArmed}
-          onClick={() => run(snapshot.castMarkArmed ? 'disarm-gesture-mark' : 'arm-gesture-mark')}
-          title="Arm the selected target for gesture or canvas mark capture"
-          data-kg-xr-shared-asset-gesture-mark={surface}
-        >
-          <MapPin className="size-3.5" aria-hidden /> Mark
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn"
-          disabled={!canCaptureHandPose}
-          onClick={() => run('capture-hand-pose')}
-          title="Write the current hand pose into the selected cast mark"
-          data-kg-xr-shared-asset-hand-keyframe={surface}
-        >
-          <Hand className="size-3.5" aria-hidden /> Hand
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn ml-auto"
-          disabled={!snapshot.sceneReady || gameModeOwnsPlayback}
-          onClick={() => run(snapshot.timelinePlaying ? 'pause-timeline' : 'play-timeline')}
-          title={gameModeOwnsPlayback ? 'Use the BottomPanel Timeline while Game Mode owns gameplay playback.' : snapshot.timelinePlaying ? 'Pause the XR timeline' : 'Play the XR timeline'}
-          data-kg-xr-shared-asset-playback={surface}
-          data-kg-xr-shared-asset-playback-owner={gameModeOwnsPlayback ? 'bottom-panel-timeline' : surface}
-        >
-          {snapshot.timelinePlaying ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
-          {snapshot.timelinePlaying ? 'Pause' : 'Play'}
-        </button>
-      </section>
+            <Clapperboard className="size-3.5" aria-hidden /> Animate
+          </button>
+            <button
+              type="button"
+              className="App-toolbar__btn"
+              disabled={!canClear}
+              onClick={() => run('clear-animation')}
+              title="Clear animation from the selected 3D for XR target"
+              data-kg-xr-shared-asset-clear-animation={surface}
+            >
+              <Eraser className="size-3.5" aria-hidden /> Clear
+            </button></> : null}
+          <button
+            type="button"
+            className={cn('App-toolbar__btn', snapshot.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')}
+            disabled={!targetReady}
+            aria-pressed={snapshot.castMarkArmed}
+            onClick={() => run(snapshot.castMarkArmed ? 'disarm-gesture-mark' : 'arm-gesture-mark')}
+            title="Arm the selected target for gesture or canvas mark capture"
+            data-kg-xr-shared-asset-gesture-mark={surface}
+          >
+            <MapPin className="size-3.5" aria-hidden /> Mark
+          </button>
+          <button
+            type="button"
+            className="App-toolbar__btn"
+            disabled={!canCaptureHandPose}
+            onClick={() => run('capture-hand-pose')}
+            title="Write the current hand pose into the selected cast mark"
+            data-kg-xr-shared-asset-hand-keyframe={surface}
+          >
+            <Hand className="size-3.5" aria-hidden /> Hand
+          </button>
+          <button
+            type="button"
+            className="App-toolbar__btn ml-auto"
+            disabled={!snapshot.sceneReady || gameModeOwnsPlayback}
+            onClick={() => run(snapshot.timelinePlaying ? 'pause-timeline' : 'play-timeline')}
+            title={gameModeOwnsPlayback ? 'Use the BottomPanel Timeline while Game Mode owns gameplay playback.' : snapshot.timelinePlaying ? 'Pause the XR timeline' : 'Play the XR timeline'}
+            data-kg-xr-shared-asset-playback={surface}
+            data-kg-xr-shared-asset-playback-owner={gameModeOwnsPlayback ? 'bottom-panel-timeline' : surface}
+          >
+            {snapshot.timelinePlaying ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
+            {snapshot.timelinePlaying ? 'Pause' : 'Play'}
+          </button>
+        </section>
+      </CollapsibleSection>
     </section>
   )
 }

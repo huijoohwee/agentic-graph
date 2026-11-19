@@ -1,6 +1,6 @@
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
-import { ChevronDown } from 'lucide-react'
 import { type TraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
 import type { OrchestratorTraversalSectionViewModel } from '@/features/panels/views/OrchestratorTraversalSectionModel'
 import { SimpleKeyValueRow } from 'grph-shared/react/keyTypeValueRow'
@@ -11,10 +11,7 @@ import {
   MultiHopListEditor,
   AddHopInputs,
 } from '@/features/panels/views/TraversalSequenceGraphRagEditors'
-import IconButton from '@/components/IconButton'
-import Tooltip from 'agentic-design-system/react/hover'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getIconSizeClass } from '@/lib/ui/icons'
 import {
   TRAVERSAL_SEQUENCE_TOOLTIP,
   TRAVERSAL_SEQUENCE_MODE_LABEL_GRAPH_RAG,
@@ -23,7 +20,6 @@ import {
 } from '@/lib/config'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
-const traversalSectionPanelClassName = `mt-2 rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} px-2 py-1`
 
 interface TraversalSequenceSectionProps {
   graphNodesById: OrchestratorTraversalSectionViewModel['graphNodesById']
@@ -44,119 +40,77 @@ export function TraversalSequenceSection({
   editState,
   editPaths,
 }: TraversalSequenceSectionProps) {
-  const uiIconScale = useGraphStore(s => s.uiIconScale)
-  const iconSizeClass = getIconSizeClass(uiIconScale)
   const {
     textSizeClass: uiPanelKeyValueTextSizeClass,
     fontClass: uiPanelTextFontClass,
     monospaceTextClass: uiPanelMonospaceTextClass,
   } = usePanelTypography()
-  const [traversalExpanded, setTraversalExpanded] = React.useState(false)
   const graphRagTraversal =
     lastTraversal && lastTraversal.mode === 'graphRag' ? lastTraversal : null
   const genericTraversal =
     lastTraversal && lastTraversal.mode === 'generic' ? lastTraversal : null
 
   return (
-    <section className={traversalSectionPanelClassName}>
-      <section className="flex items-center justify-between mb-1">
-        <section className="flex flex-col">
-          <Tooltip
-            content={TRAVERSAL_SEQUENCE_TOOLTIP}
-            maxWidthPx={260}
-            contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
+    <>
+      <CollapsibleSection headingAs="h4" stickyHeader={false}
+        title={<span title={TRAVERSAL_SEQUENCE_TOOLTIP}>{UI_COPY.orchestratorTraversalSequenceTitle}</span>}
+        actions={lastTraversal && <span className={UI_THEME_TOKENS.text.tertiary}>
+          {lastTraversal.mode === 'graphRag' ? TRAVERSAL_SEQUENCE_MODE_LABEL_GRAPH_RAG : TRAVERSAL_SEQUENCE_MODE_LABEL_GENERIC}
+        </span>}
+      >
+        {lastTraversal && (
+          <section
+            className={[
+              `${UI_THEME_TOKENS.text.secondary} space-y-1`,
+              uiPanelKeyValueTextSizeClass,
+              uiPanelTextFontClass,
+            ].join(' ')}
           >
-            <section
-              className={`agentic-panel-title flex items-center gap-1 ${UI_THEME_TOKENS.text.tertiary}`}
-            >
-              <span>{UI_COPY.orchestratorTraversalSequenceTitle}</span>
-            </section>
-          </Tooltip>
-          {lastTraversal && (
-            <section
-              className={[
-                UI_THEME_TOKENS.text.tertiary,
-                uiPanelKeyValueTextSizeClass,
-                uiPanelTextFontClass,
-              ].join(' ')}
-            >
-              {lastTraversal.mode === 'graphRag'
-                ? TRAVERSAL_SEQUENCE_MODE_LABEL_GRAPH_RAG
-                : TRAVERSAL_SEQUENCE_MODE_LABEL_GENERIC}
-            </section>
-          )}
-        </section>
-        <IconButton
-          className="App-toolbar__btn flex items-center justify-center"
-          title={
-            traversalExpanded
-              ? UI_COPY.orchestratorTraversalSequenceCollapseTitle
-              : UI_COPY.orchestratorTraversalSequenceExpandTitle
-          }
-          onClick={() => setTraversalExpanded(prev => !prev)}
-          showTooltip
-        >
-          <ChevronDown
-            className={`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary} transition-transform ${
-              traversalExpanded ? 'rotate-180' : ''
-            }`}
-            aria-hidden="true"
-          />
-        </IconButton>
-      </section>
-      {!lastTraversal && traversalExpanded && null}
-      {lastTraversal && traversalExpanded && (
-        <section
-          className={[
-            `${UI_THEME_TOKENS.text.secondary} space-y-1`,
-            uiPanelKeyValueTextSizeClass,
-            uiPanelTextFontClass,
-          ].join(' ')}
-        >
-          {graphRagTraversal && (
-            <>
-              <TraversalQueryExampleEditor
-                lastTraversal={graphRagTraversal}
-                editState={editState}
-                setLastTraversal={setLastTraversal}
-              />
-              {graphRagTraversal.traverseNodeIds.length > 0 && (
-                <TraverseNodesListEditor
+            {graphRagTraversal && (
+              <>
+                <TraversalQueryExampleEditor
                   lastTraversal={graphRagTraversal}
-                  graphNodesById={graphNodesById}
-                  editPaths={editPaths}
-                  setLastTraversal={setLastTraversal}
-                  selectNode={selectNode}
-                />
-              )}
-              {graphRagTraversal.hops && graphRagTraversal.hops.length > 0 && (
-                <HopsListEditor
-                  lastTraversal={graphRagTraversal}
-                  editPaths={editPaths}
+                  editState={editState}
                   setLastTraversal={setLastTraversal}
                 />
-              )}
-              {graphRagTraversal.multiHop && graphRagTraversal.multiHop.length > 0 && (
-                <MultiHopListEditor
-                  lastTraversal={graphRagTraversal}
-                  editPaths={editPaths}
-                  setLastTraversal={setLastTraversal}
-                />
-              )}
-              {graphRagTraversal && (
-                <AddHopInputs
-                  lastTraversal={graphRagTraversal}
-                  editPaths={editPaths}
-                  setLastTraversal={setLastTraversal}
-                />
-              )}
-            </>
-          )}
-          {genericTraversal && (
-            <GenericTraversalDetails lastTraversal={genericTraversal} />
-          )}
-        </section>
-      )}
+                {graphRagTraversal.traverseNodeIds.length > 0 && (
+                  <TraverseNodesListEditor
+                    lastTraversal={graphRagTraversal}
+                    graphNodesById={graphNodesById}
+                    editPaths={editPaths}
+                    setLastTraversal={setLastTraversal}
+                    selectNode={selectNode}
+                  />
+                )}
+                {graphRagTraversal.hops && graphRagTraversal.hops.length > 0 && (
+                  <HopsListEditor
+                    lastTraversal={graphRagTraversal}
+                    editPaths={editPaths}
+                    setLastTraversal={setLastTraversal}
+                  />
+                )}
+                {graphRagTraversal.multiHop && graphRagTraversal.multiHop.length > 0 && (
+                  <MultiHopListEditor
+                    lastTraversal={graphRagTraversal}
+                    editPaths={editPaths}
+                    setLastTraversal={setLastTraversal}
+                  />
+                )}
+                {graphRagTraversal && (
+                  <AddHopInputs
+                    lastTraversal={graphRagTraversal}
+                    editPaths={editPaths}
+                    setLastTraversal={setLastTraversal}
+                  />
+                )}
+              </>
+            )}
+            {genericTraversal && (
+              <GenericTraversalDetails lastTraversal={genericTraversal} />
+            )}
+          </section>
+        )}
+      </CollapsibleSection>
       {previewEdgeIds.length > 0 && (
         <section
           className={[
@@ -171,7 +125,7 @@ export function TraversalSequenceSection({
         {UI_COPY.orchestratorTraversalSequencePreviewingSuffix}
       </section>
     )}
-  </section>
+    </>
   )
 }
 

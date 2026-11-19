@@ -34,8 +34,8 @@ function useRendererPreference(key: LsStorageKey, initial: boolean, id: RenderSe
 }
 
 /** Graph owns the preference keys and the sections available in each renderer. */
-export function useRendererPanelState({ source, tuning, radar, flowchart, design }: {
-  source: RenderSectionToggleSource; tuning: boolean; radar: boolean; flowchart: boolean; design: boolean
+export function useRendererPanelState({ source, tuning, radar, flowchart, design, topology }: {
+  source: RenderSectionToggleSource; tuning: boolean; radar: boolean; flowchart: boolean; design: boolean; topology?: boolean
 }) {
   const sections = {
     links: useRendererPreference(LS_KEYS.renderThreeLinksCollapsed, false, 'threeLinks', source),
@@ -54,8 +54,10 @@ export function useRendererPanelState({ source, tuning, radar, flowchart, design
     flowchart: useState(false),
     design: useState(false),
     richMedia: useState(false),
+    topology: useState(false),
   }
   const visible = [sections.appearance, sections.presets, sections.mediaNodes, sections.codebaseIndex, sections.edgeTypes, sections.richMedia]
+  if (topology) visible.push(sections.topology)
   if (radar) visible.push(sections.radar)
   if (flowchart) visible.push(sections.flowchart)
   if (design) visible.push(sections.design)

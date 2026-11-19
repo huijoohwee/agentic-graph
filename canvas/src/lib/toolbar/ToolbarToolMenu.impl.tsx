@@ -330,7 +330,7 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}
             {floatingPanelView === 'chat' && (
               <React.Suspense fallback={null}>
-                <h2 className="sr-only">Chat</h2>
+                <SettingsSectionHeader headingAs="h2" title="Chat" />
                 <FloatingPanelChatLazy />
               </React.Suspense>
             )}

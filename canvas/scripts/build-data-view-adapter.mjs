@@ -131,7 +131,7 @@ for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '
 }
 const toolbarCss = await read(`${designSystemPrefix}/site/toolbar.css`)
 const panelCss = await read(`${designSystemPrefix}/site/floating-panel.css`)
-nativeStyles.push(shadowScope(toolbarCss), shadowScope(panelCss), shadowScope(await read(`${designSystemPrefix}/site/hover.css`)))
+nativeStyles.push(shadowScope(toolbarCss), shadowScope(panelCss), shadowScope(await read(`${designSystemPrefix}/site/panel-section.css`)), shadowScope(await read(`${designSystemPrefix}/site/hover.css`)))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()
@@ -151,7 +151,7 @@ const shellSelectors = ['.App-toolbar__btn']
 nativeStyles.push(...projectRules(indexCss, selector => shellSelectors.includes(selector), shellSelectors))
 nativeStyles.push(...projectRules(postcss.parse(await read('canvas/src/features/sequence/SequenceFlow.css')),
   selector => selector === '.sequence-flow' || selector === '.sequence-flow select' || /^\.sequence-inspector(?:\s|$)/.test(selector),
-  ['.sequence-flow', '.sequence-inspector', '.sequence-inspector ol', '.sequence-inspector button', '.sequence-inspector li button']))
+  ['.sequence-flow', '.sequence-inspector', '.sequence-inspector ol', '.sequence-inspector li button']))
 const theme = (await read('canvas/src/styles/tailwind-theme.css'))
   .replace(/^@source[^\n]*\n/gm, '')
   .replace('@custom-variant dark (&:where(.dark, .dark *));', '@custom-variant dark (&:where(:host([data-theme="dark"]), :host([data-theme="dark"]) *));')
