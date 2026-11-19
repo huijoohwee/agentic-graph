@@ -505,7 +505,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   for (const marker of ['queueMicrotask(', 'useGraphStore.getState()', "state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'", 'stopMotionControlAfterXrUnmount']) {
     if (!xrStageLifecycle.includes(marker)) throw new Error(`expected XR cleanup to survive StrictMode remounts through ${marker}`)
   }
-  for (const marker of ['CollapsibleSection', 'ExpandCollapseAllButton', 'useCollapsibleSectionGroup', 'defaultCollapsed={false}', 'headerClassName="px-0"']) {
+  for (const marker of ['CollapsibleSection', 'ExpandCollapseAllButton', 'useCollapsibleSectionGroup', 'defaultCollapsed={false}', 'headingAs="h3"']) {
     if (!xrMediaLibrarySource.includes(marker)) throw new Error(`expected Media 3D sections to reuse shared disclosure behavior through ${marker}`)
   }
   if (existsSync(resolve(process.cwd(), 'src', 'components', 'toolbar', 'Canvas3dModeSelect.tsx'))) {

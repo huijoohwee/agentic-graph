@@ -163,7 +163,7 @@ export function ToolbarToolMenuRendererView(props: {
   }, [])
 
   return (
-    <section className="flex flex-col gap-2">
+    <section>
       <SettingsSectionHeader headingAs="h2" title="Renderer" actions={
         <ExpandCollapseAllButton allCollapsed={allCollapsed} onExpandAll={() => setAll(false)} onCollapseAll={() => setAll(true)} />
       } />
@@ -175,9 +175,7 @@ export function ToolbarToolMenuRendererView(props: {
       </section>
       <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
         <RendererPaletteSettings />
-        <section className={uiToolbarSettingsPanelBodyClassName}>
-          <RendererHoverSettings />
-        </section>
+        <RendererHoverSettings />
       </CollapsibleSection>
       <RenderSettingsSection
         inspection={!!inspectionGraph}

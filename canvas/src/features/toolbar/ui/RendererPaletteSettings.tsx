@@ -1,6 +1,5 @@
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
-import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { CanvasKeyTypeValueStaticRow as KeyTypeValueStaticRow } from '@/features/panels/ui/canvasKeyTypeValueStaticRow'
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react';
@@ -41,7 +40,7 @@ export function RendererPaletteSettings() {
   ] as const;
 
   return (
-    <section className={uiToolbarSettingsPanelBodyClassName}>
+    <>
       <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
         <Tooltip
           content={RENDERER_PALETTE_LIFECYCLE_TOOLTIP}
@@ -145,6 +144,6 @@ export function RendererPaletteSettings() {
         />
       ))}
       </section>
-    </section>
+    </>
   );
 }

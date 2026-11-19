@@ -48,13 +48,13 @@ export function FloatingPanelBlockLibraryView() {
         onCollapseAll={group.collapseAll} onExpandAll={group.expandAll} /> : null}
       searchControl={<FloatingPanelCatalogSearchControl id="block-library-search" buttonLabel="Search Block library"
         panelLabel="Search Block library" placeholder="Search blocks" state={search} />} />
-    <section className={floatingPanelCatalogBodyClassName('space-y-3 px-1.5 py-2')} aria-label="Block categories">
+    <section className={floatingPanelCatalogBodyClassName()} aria-label="Block categories">
       {visibleGroups.map(({ category, entries }) => {
         const tone = BLOCK_VISUAL_TONES[category]
         return <section key={category} aria-label={`${category} blocks`} data-block-category={category}>
           <CollapsibleSection headingAs="h3" title={`${category} (${entries.length})`}
             collapsed={group.collapsedKeys.has(category)} onToggle={collapsed => group.setCollapsed(category, collapsed)}>
-            <ul className="space-y-1.5 pt-1.5">{entries.map(item => <li key={item.id}>
+            <ul className="space-y-1.5">{entries.map(item => <li key={item.id}>
               <button type="button" onClick={() => { setSelectedId(item.id); setSelectedGeneration(session?.generation ?? null); setFeedback('') }} aria-pressed={selectedId === item.id}
                 className={`block w-full rounded-lg border border-transparent px-2.5 py-2 text-left shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--agentic-control-focus)] ${uiSelectedRowStateClassName(selectedId === item.id)}`}
                 style={{ background: `color-mix(in srgb, ${tone} 8%, var(--agentic-panel-background))`,

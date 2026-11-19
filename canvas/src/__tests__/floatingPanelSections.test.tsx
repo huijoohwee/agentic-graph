@@ -24,6 +24,10 @@ export async function testFloatingPanelSectionHeadingsAndBulkToggle() {
       assert.ok(body, toggle.textContent || 'controlled body')
       assert.equal(toggle.getAttribute('aria-expanded'), String(expanded), toggle.textContent || '')
       assert.equal(body.hidden, !expanded)
+      const section = toggle.closest('.agentic-panel-section')
+      const duplicateInsets = [...body.querySelectorAll('.agentic-panel-section-body')]
+        .filter(inner => inner.closest('.agentic-panel-section') === section)
+      assert.equal(duplicateInsets.length, 0, `One shared body inset for ${toggle.textContent}`)
     }
   }
   try {
@@ -35,6 +39,11 @@ export async function testFloatingPanelSectionHeadingsAndBulkToggle() {
       assert.equal(host.querySelector('h2')?.textContent, title)
       await clickBulk('Collapse All')
       assertSections(false)
+      // A parent's row gap stacks with the separator supplied by each disclosure.
+      const groups = Array.from(host.querySelectorAll('.agentic-panel-section'))
+      let stack = groups[0]!.parentElement!
+      while (!stack.contains(groups[1]!)) stack = stack.parentElement!
+      assert.doesNotMatch(stack.className, /(?:^|\s)(?:gap-(?!x-)|space-y-)\S+/, title)
       await clickBulk('Expand All')
       assertSections(true)
       const sw = host.querySelector<HTMLButtonElement>('h3 button[aria-controls]')!

@@ -88,9 +88,6 @@ export function StrybldrCameraFloatingPanelView() {
           collapsed={collapsedKeys.has('framing')}
           onToggle={collapsed => setCollapsed('framing', collapsed)}
           defaultCollapsed={false}
-          flushTop
-
-          className="mt-1"
           id="camera-framing-section"
         >
           <StrybldrCameraFramingSection />
@@ -103,8 +100,6 @@ export function StrybldrCameraFloatingPanelView() {
             collapsed={collapsedKeys.has('shoot')}
             onToggle={collapsed => setCollapsed('shoot', collapsed)}
             defaultCollapsed={false}
-
-            className="mt-1"
             id="camera-shoot-section"
           >
             <XrShootCameraSection />
@@ -117,8 +112,6 @@ export function StrybldrCameraFloatingPanelView() {
           collapsed={collapsedKeys.has('mcp-invocations')}
           onToggle={collapsed => setCollapsed('mcp-invocations', collapsed)}
           defaultCollapsed={false}
-
-          className="mt-1"
           id="camera-mcp-invocations-section"
         >
           <CameraMcpInvocationSection />

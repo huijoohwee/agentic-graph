@@ -1,4 +1,3 @@
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import {
@@ -29,7 +28,6 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import {
   uiToolbarSettingsPanelActionGroupClassName,
-  uiToolbarSettingsPanelBodyClassName,
   uiToolbarSettingsPanelFooterClassName,
   uiToolbarSettingsPanelSubsectionClassName,
   uiToolbarSettingsPanelTextActionClassName,
@@ -44,7 +42,6 @@ export function LayoutModeRendererSettings(props: {
   inspection?: boolean
 }) {
   const onSelectLayoutModeProp = props.onSelectLayoutMode
-  const { fontClass: uiPanelTextFontClass } = usePanelTypography()
   const schema = useGraphStore(s => s.schema)
   const setSchema = useGraphStore(s => s.setSchema)
   const canvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
@@ -138,7 +135,7 @@ export function LayoutModeRendererSettings(props: {
   }, [onSelectLayoutModeProp, setLayoutMode])
 
   const controls = (
-      <section className={uiToolbarSettingsPanelBodyClassName}>
+      <>
         <LayoutModeSelect value={selectedLayoutMode} disabled={disabled} onChange={onSelectLayoutMode}
           description={props.inspection
             ? 'Layout mode for the retained read-only D3 inspection.'
@@ -235,7 +232,7 @@ export function LayoutModeRendererSettings(props: {
             </section>
           </section>
         ) : null}
-      </section>
+      </>
   )
-  return props.embedded ? controls : <CollapsibleSection title="Layout" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>{controls}</CollapsibleSection>
+  return props.embedded ? controls : <CollapsibleSection title="Layout" defaultCollapsed={false} stickyHeader={false} headingAs="h3">{controls}</CollapsibleSection>
 }
