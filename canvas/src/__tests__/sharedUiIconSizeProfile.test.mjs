@@ -139,9 +139,10 @@ test('sequence inspector body and spacing consume the same shared roles', () => 
   assert.doesNotMatch(inspectorCss, /\.sequence-inspector > (?:h2|p)\s*\{/)
   assert.doesNotMatch(inspectorCss, /\.sequence-inspector[^{}]*\{[^}]*font-size: (?:12|13)px/)
   const inspector = fs.readFileSync(new URL('../features/sequence/SequenceInspectorView.tsx', import.meta.url), 'utf8')
-  assert.match(inspector, /<PanelScrollRegion\b/)
-  assert.match(inspector, /<SettingsSectionHeader\b/)
-  assert.match(inspector, /<section className="agentic-panel-section-body">/)
+  assert.ok(inspector.includes("import 'agentic-design-system/panel-tab-layout.css'"))
+  assert.match(inspector, /<section className="agentic-panel-tab-layout sequence-flow sequence-inspector"/)
+  assert.match(inspector, /<header className="agentic-panel-tab-header"><h2 className="agentic-panel-section-title"/)
+  assert.match(inspector, /<section className="agentic-panel-tab-body">/)
 })
 
 test('Graph styles cannot redeclare the shared control or dashboard styles', () => {
@@ -178,23 +179,23 @@ test('Preview and the Media library share the Design System layout picker and im
   assert.doesNotMatch(immersive, /function ToggleButton\b|className="agentic-toggle-group"/)
 })
 
-test('Mission dashboard composition uses the Base shell, card grid, primitives, board and layout helpers', () => {
+test('Mission uses the Design System dashboard renderer and Base widget board', () => {
   const source = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
   for (const [file, name] of [
     ['components/DashboardCanvas/index.tsx', 'DashboardCanvasLayout'],
     ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCanvasLayout'],
     ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardPrimitive'],
     ['features/agent-ready/AgentMissionDashboardView.tsx', 'DashboardCardGrid'],
-    ['components/DashboardCanvas/DashboardWidgetBoard.tsx', 'BaseWidgetBoard'],
   ]) {
-    assert.match(source(file), /from '@agentic-base\/views-react\/dashboard'/, file)
+    assert.ok(source(file).includes("from 'agentic-design-system/react/dashboard'"), file)
     assert.ok(source(file).includes('<' + name), file)
   }
+  assert.match(source('components/DashboardCanvas/DashboardWidgetBoard.tsx'), /<BaseWidgetBoard/)
   const missionView = source('features/agent-ready/AgentMissionDashboardView.tsx')
   assert.match(missionView, /className="agentic-dashboard-header"/)
   assert.match(missionView, /<details data-dashboard-primitive="disclosure"/)
   const missionOverview = source('features/agent-ready/AgentMissionOverview.tsx')
-  assert.match(missionOverview, /from '@agentic-base\/views-react\/dashboard'/)
+  assert.ok(missionOverview.includes("from 'agentic-design-system/react/dashboard'"))
   assert.match(missionOverview, /<DashboardPrimitive kind="text">Native mission source/)
   assert.match(missionOverview, /<pre data-dashboard-primitive="text"/)
   assert.match(source('components/DashboardCanvas/dashboardWidgetLayout.ts'), /export \{ dashboardWidgetRows, dashboardColumnStyle \} from '@agentic-base\/views-react\/dashboard'/)

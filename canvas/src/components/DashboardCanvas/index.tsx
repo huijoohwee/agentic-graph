@@ -1,5 +1,5 @@
 import React from 'react'
-import { DashboardCanvasLayout, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
+import { DashboardCanvasLayout, DashboardPrimitive } from 'agentic-design-system/react/dashboard'
 import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics } from './dashboardWidgetConfiguration'
 import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
