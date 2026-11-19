@@ -174,38 +174,40 @@ export function ToolbarToolMenuRendererView(props: {
             <WorkspaceTableModeControlLazy />
           </React.Suspense>
         </section>
-        <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
-          <RendererPaletteSettings />
-          <RendererHoverSettings />
-        </CollapsibleSection>
-        <RenderSettingsSection
-          inspection={!!inspectionGraph}
-          layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
-          disclosure={disclosure}
-        />
-        <EdgeTypesRendererSettings
-          {...disclosure('edgeTypes')}
-          selectedEdgeType={edgeTypeDraft}
-          onSelectEdgeType={handleSelectEdgeType}
-        />
-        {showRadarGalaxyUi ? <RadarGalaxyRendererSettings {...disclosure('radar')} /> : null}
-        {showFlowchartUi ? <FlowchartRendererSettings {...disclosure('flowchart')} /> : null}
-        <CollapsibleSection headingAs="h3" title="Rich media" {...disclosure('richMedia')}>
-          <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
-            <PanelSelect
-              className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
-              value={richMediaPanelMode}
-              onValueChange={selectedValueInput => {
-                const v = String(selectedValueInput || '')
-                setRichMediaPanelMode(v === 'embed' ? 'embed' : 'snapshot')
-              }}
-            >
-              <option value="snapshot">Snapshot preview</option>
-              <option value="embed">Interactive embed</option>
-            </PanelSelect>
-          </ResponsiveControlRow>
-        </CollapsibleSection>
-        {showDesignWireframeUi ? <DesignWireframeSettings {...disclosure('design')} /> : null}
+        <section aria-label="Renderer settings">
+          <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
+            <RendererPaletteSettings />
+            <RendererHoverSettings />
+          </CollapsibleSection>
+          <RenderSettingsSection
+            inspection={!!inspectionGraph}
+            layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
+            disclosure={disclosure}
+          />
+          <EdgeTypesRendererSettings
+            {...disclosure('edgeTypes')}
+            selectedEdgeType={edgeTypeDraft}
+            onSelectEdgeType={handleSelectEdgeType}
+          />
+          {showRadarGalaxyUi ? <RadarGalaxyRendererSettings {...disclosure('radar')} /> : null}
+          {showFlowchartUi ? <FlowchartRendererSettings {...disclosure('flowchart')} /> : null}
+          <CollapsibleSection headingAs="h3" title="Rich media" {...disclosure('richMedia')}>
+            <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
+              <PanelSelect
+                className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
+                value={richMediaPanelMode}
+                onValueChange={selectedValueInput => {
+                  const v = String(selectedValueInput || '')
+                  setRichMediaPanelMode(v === 'embed' ? 'embed' : 'snapshot')
+                }}
+              >
+                <option value="snapshot">Snapshot preview</option>
+                <option value="embed">Interactive embed</option>
+              </PanelSelect>
+            </ResponsiveControlRow>
+          </CollapsibleSection>
+          {showDesignWireframeUi ? <DesignWireframeSettings {...disclosure('design')} /> : null}
+        </section>
         {showGraphEditorUi ? (
           <section className="flex min-w-0 max-w-full flex-wrap gap-2" aria-label="Graph editor tools and inspector">
             <GraphEditorToolRail

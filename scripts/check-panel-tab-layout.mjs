@@ -48,9 +48,25 @@ function measure(tab) {
   }
 }
 
+async function readClosedRowGeometry(owner, key) {
+  const bulk = owner.getByRole('button', { name: /^collapse all$/i })
+  if (await bulk.isVisible()) await bulk.click()
+  const selector = key === 'skillsCommands'
+    ? '.agentic-skills-group-section h3 button[aria-expanded="false"]'
+    : '[aria-label="Renderer settings"] h3 button[aria-expanded="false"]'
+  const rows = owner.locator(selector)
+  await rows.nth(1).waitFor()
+  return rows.evaluateAll(([first, second]) => {
+    const body = first.closest('.agentic-skills-body,.agentic-panel-tab-body').getBoundingClientRect()
+    const a = first.getBoundingClientRect(), b = second.getBoundingClientRect()
+    return { left: a.left - body.left, right: body.right - a.right, height: a.height,
+      gap: b.top - a.bottom, weight: getComputedStyle(first).fontWeight }
+  })
+}
+
 try {
   for (const width of [1063, 390]) {
-    let reference
+    let reference, referenceRows
     for (const family of families) {
       const page = await browser.newPage({ viewport: { width, height: 951 }, hasTouch: width === 390, colorScheme: width === 390 ? 'dark' : 'light' })
       const nav = await openPanel(page, family)
@@ -74,6 +90,8 @@ try {
         assert(result.title && result.visible && result.fixed && result.overflow <= 1, JSON.stringify({ width, family, key, ...result }))
         if (key === 'skillsCommands') reference = result.layout
         assert.deepEqual(result.layout, reference, `${width}px ${family} ${key}`)
+        if (key === 'skillsCommands') referenceRows = await readClosedRowGeometry(owner, key)
+        if (key === 'renderer') assert.deepEqual(await readClosedRowGeometry(owner, key), referenceRows, 'Renderer disclosure geometry')
         const disclosure = owner.locator('h3 button.agentic-panel-section-toggle[aria-expanded]:visible').first()
         if (await disclosure.count()) {
           const before = await disclosure.getAttribute('aria-expanded')

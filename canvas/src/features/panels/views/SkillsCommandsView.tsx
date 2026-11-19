@@ -211,7 +211,7 @@ export default function SkillsCommandsView({
 
   return (
     <section
-      className="min-h-0 pr-1"
+      className="min-h-0"
       data-kg-floating-panel-skills-commands="true"
       data-kg-floating-panel-catalog-list="skills-commands"
       data-kg-floating-panel-skills-commands-prefix-filter={prefixFilter}

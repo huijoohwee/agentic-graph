@@ -40,10 +40,12 @@ export function FloatingPropsPanel() {
             Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
           </p>
         ) : null}
-        <GroupPanelPaletteAction active={storyboardRendererActive} />
-        <WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} dashboardActive={dashboardActive}>
-          {dashboardActive && <React.Suspense fallback={<li>Loading widgets…</li>}><DashboardWidgetPalette /></React.Suspense>}
-        </WidgetPalette>
+        <section aria-label="Props sections">
+          <GroupPanelPaletteAction active={storyboardRendererActive} />
+          <WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} dashboardActive={dashboardActive}>
+            {dashboardActive && <React.Suspense fallback={<li>Loading widgets…</li>}><DashboardWidgetPalette /></React.Suspense>}
+          </WidgetPalette>
+        </section>
       </div>
     </section>
   )
