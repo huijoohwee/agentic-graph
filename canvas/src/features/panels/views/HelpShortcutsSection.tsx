@@ -117,6 +117,7 @@ export function HelpShortcutsSection({
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={HELP_STEP_COPY.shortcuts.title}
       collapsed={collapsed}
       onToggle={onToggle}

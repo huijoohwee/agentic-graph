@@ -538,6 +538,7 @@ export default function SettingsView({
           />
           {mode === 'all' && (
             <CollapsibleSection
+              headingAs="h3"
               title="Resets and data"
               collapsed={false}
               onToggle={() => void 0}

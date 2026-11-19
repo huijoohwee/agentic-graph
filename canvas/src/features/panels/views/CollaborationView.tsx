@@ -516,6 +516,7 @@ export default function CollaborationView({ searchQuery, onRegisterActions }: Co
       <KeyTypeValueSectionStack>
         {sectionDescriptors.map((section, index) => (
           <CollapsibleSection
+            headingAs="h3"
             key={section.id}
             title={section.title}
             collapsed={normalizedQuery ? false : collapsedBySection[section.id]}

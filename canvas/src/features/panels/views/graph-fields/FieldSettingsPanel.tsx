@@ -453,54 +453,53 @@ export default function FieldSettingsPanel({
               ) : null}
 
               {schema ? (
-                <CollapsibleSection
-                  title={UI_COPY.graphFieldsStylesSectionTitle}
-                  collapsed={stylesCollapsed}
-                  onToggle={setStylesCollapsed}
-                  stickyHeader={false}
-                  className="mt-0 border-t-0 pt-0"
-                >
-                  <FieldStylesSection
-                    schema={schema}
-                    scope={selectedField.scope}
-                    ownerKey={schemaOwnerKey}
-                    uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
-                  />
-                </CollapsibleSection>
-              ) : null}
-
-              {schema ? (
-                <CollapsibleSection
-                  title={UI_COPY.graphFieldsSchemaExtrasSectionTitle}
-                  collapsed={schemaExtrasCollapsed}
-                  onToggle={setSchemaExtrasCollapsed}
-                  stickyHeader={false}
-                  className="mt-0 border-t-0 pt-0"
-                >
-                  <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3 space-y-3`}>
-                    <FieldGraphLayersSection
-                      schema={schema as GraphSchema}
-                      scope={selectedField.scope}
-                      ownerKey={schemaOwnerKey}
-                      fieldKey={selectedField.key}
-                      uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
-                    />
-
-                    <FieldLayoutSection
+                <section>
+                  <CollapsibleSection
+                    headingAs="h3"
+                    title={UI_COPY.graphFieldsStylesSectionTitle}
+                    collapsed={stylesCollapsed}
+                    onToggle={setStylesCollapsed}
+                    stickyHeader={false}
+                  >
+                    <FieldStylesSection
                       schema={schema}
                       scope={selectedField.scope}
                       ownerKey={schemaOwnerKey}
                       uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
                     />
+                  </CollapsibleSection>
+                  <CollapsibleSection
+                    headingAs="h3"
+                    title={UI_COPY.graphFieldsSchemaExtrasSectionTitle}
+                    collapsed={schemaExtrasCollapsed}
+                    onToggle={setSchemaExtrasCollapsed}
+                    stickyHeader={false}
+                  >
+                    <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3 space-y-3`}>
+                      <FieldGraphLayersSection
+                        schema={schema as GraphSchema}
+                        scope={selectedField.scope}
+                        ownerKey={schemaOwnerKey}
+                        fieldKey={selectedField.key}
+                        uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
+                      />
 
-                    <FieldEndpointsAndCardinalitySection
-                      schema={schema}
-                      scope={selectedField.scope}
-                      ownerKey={schemaOwnerKey}
-                      uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
-                    />
-                  </section>
-                </CollapsibleSection>
+                      <FieldLayoutSection
+                        schema={schema}
+                        scope={selectedField.scope}
+                        ownerKey={schemaOwnerKey}
+                        uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
+                      />
+
+                      <FieldEndpointsAndCardinalitySection
+                        schema={schema}
+                        scope={selectedField.scope}
+                        ownerKey={schemaOwnerKey}
+                        uiPanelKeyValueTextSizeClass={uiPanelKeyValueTextSizeClass}
+                      />
+                    </section>
+                  </CollapsibleSection>
+                </section>
               ) : null}
 
               <DefaultValueSection

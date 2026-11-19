@@ -132,6 +132,7 @@ export function HelpWorkflowLinksSection({
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={(
         <Tooltip
           content={WORKFLOW_LINKS_TOOLTIP}

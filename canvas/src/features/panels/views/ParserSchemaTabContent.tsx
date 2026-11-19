@@ -141,7 +141,7 @@ function SchemaTabContent({
   }
 
   return (
-    <section className="space-y-3">
+    <section>
       {schemaSidebarItems.map(item => {
         const collapsed = collapsedBySectionId[item.sectionId]
         const onToggle = toggleBySectionId[item.sectionId]
@@ -153,11 +153,11 @@ function SchemaTabContent({
 
         return (
           <CollapsibleSection
+            headingAs="h3"
             key={item.sectionId}
             title={title}
             collapsed={collapsed}
             onToggle={onToggle}
-            headerClassName="px-0"
           >
             {body}
           </CollapsibleSection>

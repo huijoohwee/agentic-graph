@@ -1,5 +1,6 @@
 import { usePanelStack } from '@/lib/ui/usePanelStack'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { PanelScrollRegion } from 'agentic-design-system/react/panels'
+import { SharedPanelTypographyContext } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
@@ -64,7 +65,6 @@ export function StrybldrTimelineBottomPanel({
     workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
     !workspaceEditorOverlayOpen,
   )
-  const { panelTextClass } = usePanelTypography()
   const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
   const rootLayerRef = React.useRef<HTMLElement | null>(null)
   const layerRef = React.useRef<HTMLElement | null>(null)
@@ -371,6 +371,7 @@ export function StrybldrTimelineBottomPanel({
         aria-label="Timeline bottom panel layer"
         data-kg-strybldr-bottom-timeline-layer="canvas-viewport"
       >
+        <SharedPanelTypographyContext.Provider value>
         <FloatingPanel
           ref={panelRef}
           as="aside"
@@ -485,8 +486,8 @@ export function StrybldrTimelineBottomPanel({
             />
           </header>
           {!minimized ? (
-            <section
-              className={cn("min-h-0 flex-1 overflow-y-auto px-2 pb-2 overscroll-contain", panelTextClass)}
+            <PanelScrollRegion
+              className="agentic-panel-body"
               aria-label="Timeline bottom panel body"
               data-kg-strybldr-bottom-timeline-scroll="body"
             >
@@ -532,12 +533,13 @@ export function StrybldrTimelineBottomPanel({
               ) : (
                 <StrybldrTimelinePanel active />
               )}
-            </section>
+            </PanelScrollRegion>
           ) : null}
           {!minimized ? (
             <RichMediaPanelResizeHandle placement="panel" onPointerDown={handleResizePointerDown} />
           ) : null}
         </FloatingPanel>
+        </SharedPanelTypographyContext.Provider>
       </section>
     </section>
   )

@@ -103,6 +103,7 @@ export function HelpIconsSection({ collapsed, onToggle, onOpenSettingsTab }: Hel
   return (
     <section data-kg-anchor={UI_ANCHORS.graphFieldsIcons}>
       <CollapsibleSection
+        headingAs="h3"
         title={HELP_STEP_COPY.icons.title}
         collapsed={collapsed}
         onToggle={onToggle}

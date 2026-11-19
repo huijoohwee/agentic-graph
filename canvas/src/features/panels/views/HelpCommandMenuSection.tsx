@@ -21,6 +21,7 @@ export function HelpCommandMenuSection({ collapsed, onToggle }: HelpCommandMenuS
 
   return (
     <CollapsibleSection
+      headingAs="h3"
       title={HELP_STEP_COPY.commandMenu.title}
       collapsed={collapsed}
       onToggle={onToggle}

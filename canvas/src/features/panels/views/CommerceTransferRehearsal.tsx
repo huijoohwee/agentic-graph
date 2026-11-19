@@ -23,11 +23,11 @@ export function CommerceTransferRehearsal({
   return (
     <>
       <section id="commerce-transfer" aria-label="Pay and transfer rehearsal" className={`mb-3 min-w-0 border-t py-2 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
-        <h2 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.primary}`}>Pay / transfer rehearsal</h2>
+        <h2 className="agentic-panel-title">Pay / transfer rehearsal</h2>
         <p className={`mt-1 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>
           Simulation only. Demo units and recipients have no monetary value. This view never contacts a provider or moves money.
         </p>
-        <h3 className={`mt-3 text-inherit font-semibold ${UI_THEME_TOKENS.text.primary}`}>Availability</h3>
+        <h3 className="agentic-panel-title">Availability</h3>
         <dl className="mt-1 grid min-w-0 grid-cols-1 gap-2 text-inherit sm:grid-cols-3">
           <section>
             <dt className={UI_THEME_TOKENS.text.tertiary}>Source configuration</dt>
@@ -73,7 +73,7 @@ export function CommerceTransferRehearsal({
         </section>
         {reviewed ? (
           <section aria-label="Simulation review" className={`mt-3 rounded border p-2 text-inherit ${UI_THEME_TOKENS.panel.border}`}>
-            <h3 className={`font-semibold ${UI_THEME_TOKENS.text.primary}`}>Review exact simulation</h3>
+            <h3 className="agentic-panel-title">Review exact simulation</h3>
             <p className={UI_THEME_TOKENS.text.secondary}>
               {draft.recipient} · {draft.amountMinor} minor units of {draft.asset} · {draft.network} · demo fee 0 minor units
             </p>
@@ -84,7 +84,7 @@ export function CommerceTransferRehearsal({
         <p role="status" aria-live="polite" className={`mt-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>{snapshot.message}</p>
       </section>
       <section id="commerce-activity" aria-label="Commerce activity" className={`mb-3 min-w-0 border-t py-2 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
-        <h2 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.primary}`}>Activity</h2>
+        <h2 className="agentic-panel-title">Activity</h2>
         <p className={`mt-1 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>
           Session-local demo records only. No payment receipt, provider event, or settlement evidence is represented here.
         </p>

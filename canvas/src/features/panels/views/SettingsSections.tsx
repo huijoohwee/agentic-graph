@@ -133,6 +133,7 @@ export function SettingsSections({
 
     return (
       <CollapsibleSection
+        headingAs="h3"
         key={area}
         title={
           <Tooltip

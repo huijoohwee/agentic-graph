@@ -372,7 +372,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
         {tab === 'projects' && <React.Suspense fallback={<p role="status">Loading projects…</p>}><WorkspaceProjectPanel /></React.Suspense>}
         {tab === 'history' && filteredRecent.length > 0 && (
           <section>
-            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
+            <h3 className="agentic-panel-title">
               Recent Files
             </h3>
             <ul className="space-y-1">
@@ -402,7 +402,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
 
         {tab === 'history' && (
           <section>
-          <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
+          <h3 className="agentic-panel-title">
             Edit History
           </h3>
           {filteredHistory.length === 0 ? (
@@ -451,7 +451,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
 
         {tab === 'log' && (
           <section>
-            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
+            <h3 className="agentic-panel-title">
               {UI_LABELS.log}
             </h3>
             {hasRelayLogEntries ? (
@@ -507,7 +507,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
         )}
         {tab === 'chat' && (
           <section>
-            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
+            <h3 className="agentic-panel-title">
               Chat
             </h3>
             {filteredChatLogs.length === 0 ? (
