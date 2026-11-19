@@ -480,7 +480,6 @@ type InteractionScene = {
 async function interactionScene(check: (scene: InteractionScene) => void, helpers = false, arrange = true) {
   const env = initJsdomHarness(), frames = new Map<number, FrameRequestCallback>()
   const { bindSequenceCanvasInteractions } = await import('../features/sequence/sequenceCanvasInteractions')
-  const { defaultSchema } = await import('../lib/graph/schema')
   let nextFrame = 0
   globalThis.requestAnimationFrame = env.dom.window.requestAnimationFrame = callback => { frames.set(++nextFrame, callback); return nextFrame }
   globalThis.cancelAnimationFrame = env.dom.window.cancelAnimationFrame = id => { frames.delete(id) }
@@ -568,7 +567,6 @@ test('replaced SVG cannot receive a stale participant gesture or commit', async 
 
 test('notation arrangement rebinds headers, lifelines, activations and frames without changing source IDs', async () => {
   const { bindSequenceCanvasInteractions } = await import('../features/sequence/sequenceCanvasInteractions')
-  const { defaultSchema } = await import('../lib/graph/schema')
   const model = parseSequence('sequenceDiagram\nparticipant A\nparticipant B\nA->>B: Read\nA->>A: Retry\nNote over A,B: Observe'), authored = JSON.stringify(model)
   const people = ['A', 'B'].map((id, index) => `<g data-et="participant" data-id="${id}"><rect x="${50 + index * 300}" width="100" height="20"/><text>${id}</text></g><line data-et="life-line" data-id="${id}" x1="${100 + index * 300}" x2="${100 + index * 300}"/><g class="actor-bottom" name="${id}"><rect/></g>`).join('')
   const messages = '<line class="messageLine0" x1="100" x2="400" y1="100" y2="100"/><text class="messageText">Read</text><path class="messageLine0" d="M100,140H130V160H100"/><text class="messageText">Retry</text><g data-et="note"><rect x="75" width="350" height="40"/><text>Observe</text></g>'
