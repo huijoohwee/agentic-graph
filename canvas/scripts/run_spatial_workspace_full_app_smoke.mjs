@@ -12,6 +12,7 @@ import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-f
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const revision = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}')
+const firstValueBudgetMs = 300_000
 assert.equal(git('status', '--porcelain'), '', 'Acceptance requires a clean, committed candidate')
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
 const output = resolve(process.env.SPATIAL_FULL_APP_PROOF_DIR || join(tmpdir(), `spatial-full-app-${revision.slice(0, 12)}`))
@@ -107,10 +108,13 @@ try {
     await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
     await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
+    // Cold file import also initializes the local workspace. Charge it to the same first-value deadline.
+    const importBudgetMs = Math.ceil(start + firstValueBudgetMs - performance.now())
+    assert.ok(importBudgetMs > 0, 'First-value deadline elapsed before local scene import')
     await page.waitForFunction(() => {
       const object = document.querySelector('[data-kg-spatial-review] [data-kg-select="true"][aria-label="Review object"]')
       return object?.getAttribute('data-value') === 'box'
-    }, undefined, { timeout: 60000 })
+    }, undefined, { timeout: importBudgetMs })
     await page.locator('[data-kg-canvas-viewport-root="1"][data-kg-source-authority-phase="ready"]').waitFor({ timeout: 60000 })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
@@ -135,7 +139,7 @@ try {
     await review.getByText('Change applied and verified in local storage.', { exact: true }).waitFor()
     const firstValueMs = Math.round(performance.now() - start), applied = await storedSource(page)
     const metadata = yaml.load(applied.split('---', 3)[1])
-    assert.equal(actions.length, 5); assert.ok(firstValueMs <= 300000)
+    assert.equal(actions.length, 5); assert.ok(firstValueMs <= firstValueBudgetMs)
     assert.deepEqual(metadata.kgXrMotionReference.subjects[0].position, [-2, 0, 0])
     assert.equal(metadata.kgSpatialWorkspaceReview.receipts.length, 1)
     assert.equal(metadata.kgSpatialWorkspaceReview.receipts[0].provenance.correspondence, 'unknown')
