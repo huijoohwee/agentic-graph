@@ -1,6 +1,6 @@
 import React from 'react'
 import { ViewerSurface } from 'agentic-design-system/react/viewer'
-import { DashboardCanvasLayout, DashboardCardGrid, DashboardPrimitive } from '@agentic-base/views-react/dashboard'
+import { DashboardCanvasLayout, DashboardCardGrid, DashboardPrimitive } from 'agentic-design-system/react/dashboard'
 import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
