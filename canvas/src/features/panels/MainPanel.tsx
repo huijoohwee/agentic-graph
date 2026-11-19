@@ -1,3 +1,4 @@
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import MainPanelFrame from '@/features/panels/ui/MainPanelFrame'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
@@ -362,7 +363,7 @@ export default function MainPanel({
         </footer>
       )}
     >
-      <section className={`agentic-panel-body h-full ${panelTypography.panelTextClass}`} aria-label="Main panel content">
+      <section className="agentic-panel-body h-full" aria-label="Main panel content">
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-help-panel" aria-labelledby="main-panel-help-tab" hidden={tab !== 'help'}>
           {tab === 'help' && (
             <React.Suspense fallback={null}>
@@ -382,9 +383,9 @@ export default function MainPanel({
               hidden={tab !== tabKey}
             >
               {tab === tabKey && (
-                <MainPanelBody header={null}>
+                <MainPanelBody header={<PanelTabHeader title={activeTabMeta.label} />}>
                   <section
-                    className={`h-full min-h-0 ${UI_THEME_TOKENS.text.secondary} ${panelTypography.panelTextClass}`}
+                    className={`h-full min-h-0 ${UI_THEME_TOKENS.text.secondary}`}
                     data-kg-anchor={UI_ANCHORS.settingsPanel}
                   >
                     <React.Suspense fallback={null}>
@@ -409,8 +410,8 @@ export default function MainPanel({
           hidden={tab !== 'research'}
         >
           {tab === 'research' && (
-            <MainPanelBody header={null}>
-              <section className={`h-full min-h-0 ${UI_THEME_TOKENS.text.secondary} ${panelTypography.panelTextClass}`}>
+            <MainPanelBody header={<PanelTabHeader title={activeTabMeta.label} />}>
+              <section className={`h-full min-h-0 ${UI_THEME_TOKENS.text.secondary}`}>
                 <React.Suspense fallback={null}>
                   <ResearchCompilerViewLazy searchQuery={search} />
                 </React.Suspense>

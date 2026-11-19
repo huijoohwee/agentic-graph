@@ -3,7 +3,7 @@ import { WorkspaceDataViewSettingsCalendarSection } from './WorkspaceDataViewSet
 import { WorkspaceDataViewSettingsLifecycle } from './WorkspaceDataViewSettingsLifecycle'
 import { filterRuleCount as countFilterRules } from './workspaceDataViewFilterTree'
 import React from 'react'
-import { SettingsPanelShell } from '@agentic-base/views-react/settings'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Filter, Globe2, LayoutGrid, RotateCcw, SlidersHorizontal, Table as TableIcon } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
@@ -28,7 +28,6 @@ import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import {
-  UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME,
   UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME,
   UI_RESPONSIVE_PANEL_FIELD_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
@@ -41,14 +40,6 @@ import { hasStructuredSourceValueColumnMode } from './workspaceStructuredSourceD
 type WorkspaceDataViewSettingsPanelProps = Omit<WorkspaceDataViewFloatingBinding, 'registrationId'> & {
   title?: string
 }
-
-const baseSettingsThemeStyle = {
-  '--agentic-base-settings-border': 'var(--agentic-panel-border-color)',
-  '--agentic-base-settings-text': 'var(--agentic-panel-foreground)',
-  '--agentic-base-settings-surface': 'var(--agentic-panel-background)',
-  '--agentic-base-settings-header': 'var(--agentic-panel-background)',
-  '--agentic-base-settings-muted': 'var(--agentic-base-muted, var(--kg-text-tertiary))',
-} as React.CSSProperties
 
 export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsPanelProps) {
   const layoutModeOptions = React.useMemo(
@@ -209,37 +200,9 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
     )
   }, [sectionSummaries])
 
-  return (
-    <div className="h-full min-h-0 min-w-0" style={baseSettingsThemeStyle}>
-    <SettingsPanelShell
-      ariaLabel={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}
-      title={(
-        <section className="flex min-w-0 max-w-full flex-col gap-1">
-          <h2 className={['agentic-panel-title min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
-            {title}
-          </h2>
-          <p className={['text-xs min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
-            {props.contextLabel}
-          </p>
-        </section>
-      )}
-      summary={(
-        <div className={`${UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME} flex shrink-0 items-center justify-end gap-1 text-right`}>
-          <ExpandCollapseAllButton
-            allCollapsed={allCollapsed}
-            onExpandAll={expandAll}
-            onCollapseAll={collapseAll}
-            titleExpand="Expand"
-            titleCollapse="Collapse (Default)"
-          />
-        </div>
-      )}
-      className="kg-data-view-settings-panel h-full rounded-none border-0"
-    >
-      {props.viewConfig.recoveryError && <p role="alert">{props.viewConfig.recoveryError} Settings are read-only until recovered.</p>}
-      <fieldset disabled={!!props.viewConfig.recoveryError} className="min-w-0 border-0 p-0 m-0">
-      <main className="kg-data-view-settings-layout flex h-full min-h-0 flex-col">
-        <section className="min-w-0 flex-1" aria-label="View settings panel">
+  const settings = (
+    <fieldset disabled={!!props.viewConfig.recoveryError} className="min-w-0 border-0 p-0 m-0">
+      <section className="kg-data-view-settings-layout" aria-label="View settings panel">
           <CollapsibleSection headingAs="h3" title="View query workbench" stickyHeader={false} flushTop
             collapsed={collapsedByPanel.query} onToggle={next => togglePanel('query', next)}>
             <section aria-label="View query roles" className="space-y-2">
@@ -535,10 +498,25 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
               </button>
             </section>
           </CollapsibleSection>
-        </section>
-      </main>
-      </fieldset>
-    </SettingsPanelShell>
-    </div>
+      </section>
+    </fieldset>
+  )
+
+  return (
+    <section className="agentic-panel-tab-layout kg-data-view-settings-panel" aria-label={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}>
+      <PanelTabHeader title={title} subtitle={props.contextLabel} actions={(
+        <ExpandCollapseAllButton
+          allCollapsed={allCollapsed}
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          titleExpand="Expand"
+          titleCollapse="Collapse (Default)"
+        />
+      )} />
+      <div className="agentic-panel-tab-body">
+        {props.viewConfig.recoveryError && <p role="alert">{props.viewConfig.recoveryError} Settings are read-only until recovered.</p>}
+        {settings}
+      </div>
+    </section>
   )
 }

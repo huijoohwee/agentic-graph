@@ -1,5 +1,5 @@
 import { usePanelStack } from '@/lib/ui/usePanelStack'
-import { PanelScrollRegion } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import { SharedPanelTypographyContext } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
@@ -40,6 +40,14 @@ type TimelineBottomPanelView =
   | 'gantt'
   | 'architecture'
   | 'eventModeling'
+const TRANSPORT_TITLES = {
+  timeline: 'Timeline',
+  strybldrTimeline: 'Storyboard',
+  flowchart: 'Flowchart',
+  gantt: 'Gantt-Timeline',
+  eventModeling: 'Event Model',
+  designTimeline: 'Timeline',
+} satisfies Partial<Record<TimelineBottomPanelView, string>>
 const WorkspaceActivityPanelLazy = React.lazy(() => import('@/features/agent-ready/WorkspaceActivityPanel'))
 const GitGraphBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphBottomPanelView').then(mod => ({ default: mod.GitGraphBottomPanelView })))
 const FlowchartBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartBottomPanelView').then(mod => ({ default: mod.FlowchartBottomPanelView })))
@@ -353,6 +361,49 @@ export function StrybldrTimelineBottomPanel({
         ...panelHeightStyle,
       }
 
+  const transportTitle = Object.hasOwn(TRANSPORT_TITLES, view) ? TRANSPORT_TITLES[view as keyof typeof TRANSPORT_TITLES] : undefined
+  const content = view === 'activity' ? <React.Suspense fallback={null}><WorkspaceActivityPanelLazy /></React.Suspense> : view === 'documentVersionGraph' ? (
+    <React.Suspense fallback={null}>
+      <DocumentVersionGitGraphPanelLazy
+        activePath={markdownDocumentName}
+        compact
+        emptyLabel="No document versions for the current document."
+        fallbackToLatest
+        themeMode={resolvedThemeMode}
+      />
+    </React.Suspense>
+  ) : view === 'flowchart' ? (
+    <React.Suspense fallback={null}>
+      <FlowchartBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'gitGraph' ? (
+    <React.Suspense fallback={null}>
+      <GitGraphBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'gantt' ? (
+    <React.Suspense fallback={null}>
+      <GanttBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'timeline' ? (
+    <React.Suspense fallback={null}>
+      <TimelineBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'designTimeline' ? (
+    <React.Suspense fallback={null}>
+      <DesignTimelineBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'architecture' ? (
+    <React.Suspense fallback={null}>
+      <ArchitectureBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : view === 'eventModeling' ? (
+    <React.Suspense fallback={null}>
+      <EventModelingBottomPanelViewLazy compact />
+    </React.Suspense>
+  ) : (
+    <StrybldrTimelinePanel active />
+  )
+
   return (
     <section
       ref={rootLayerRef}
@@ -406,7 +457,7 @@ export function StrybldrTimelineBottomPanel({
               <PanelViewTab tabKey="activity" title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity /></PanelViewTab>
               <PanelViewTab
                 tabKey="timeline"
-                title="Timeline"
+                title={TRANSPORT_TITLES.timeline}
                 aria-pressed={view === 'timeline' || view === 'designTimeline'}
                 onClick={showTimelineView}
                 data-kg-strybldr-bottom-timeline-timeline-toggle="1"
@@ -415,7 +466,7 @@ export function StrybldrTimelineBottomPanel({
               </PanelViewTab>
               <PanelViewTab
                 tabKey="strybldrTimeline"
-                title="Storyboard"
+                title={TRANSPORT_TITLES.strybldrTimeline}
                 aria-pressed={view === 'strybldrTimeline'}
                 onClick={showStrybldrTimelineView}
                 data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
@@ -433,7 +484,7 @@ export function StrybldrTimelineBottomPanel({
               </PanelViewTab>
               <PanelViewTab
                 tabKey="flowchart"
-                title="Flowchart"
+                title={TRANSPORT_TITLES.flowchart}
                 aria-pressed={view === 'flowchart'}
                 onClick={showFlowchartView}
                 data-kg-strybldr-bottom-timeline-flowchart-toggle="1"
@@ -451,7 +502,7 @@ export function StrybldrTimelineBottomPanel({
               </PanelViewTab>
               <PanelViewTab
                 tabKey="gantt"
-                title="Gantt-Timeline"
+                title={TRANSPORT_TITLES.gantt}
                 aria-pressed={view === 'gantt'}
                 onClick={showGanttView}
                 data-kg-strybldr-bottom-timeline-gantt-toggle="1"
@@ -469,7 +520,7 @@ export function StrybldrTimelineBottomPanel({
               </PanelViewTab>
               <PanelViewTab
                 tabKey="eventModeling"
-                title="Event Model"
+                title={TRANSPORT_TITLES.eventModeling}
                 aria-pressed={view === 'eventModeling'}
                 onClick={showEventModelingView}
                 data-kg-strybldr-bottom-timeline-event-modeling-toggle="1"
@@ -486,54 +537,17 @@ export function StrybldrTimelineBottomPanel({
             />
           </header>
           {!minimized ? (
-            <PanelScrollRegion
+            <section
               className="agentic-panel-body"
               aria-label="Timeline bottom panel body"
               data-kg-strybldr-bottom-timeline-scroll="body"
             >
               <GanttTimelineTransportPlaybackRuntime active={!warehouseInspectionActive} />
-              {view === 'activity' ? <React.Suspense fallback={null}><WorkspaceActivityPanelLazy /></React.Suspense> : view === 'documentVersionGraph' ? (
-                <React.Suspense fallback={null}>
-                  <DocumentVersionGitGraphPanelLazy
-                    activePath={markdownDocumentName}
-                    compact
-                    emptyLabel="No document versions for the current document."
-                    fallbackToLatest
-                    themeMode={resolvedThemeMode}
-                  />
-                </React.Suspense>
-              ) : view === 'flowchart' ? (
-                <React.Suspense fallback={null}>
-                  <FlowchartBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'gitGraph' ? (
-                <React.Suspense fallback={null}>
-                  <GitGraphBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'gantt' ? (
-                <React.Suspense fallback={null}>
-                  <GanttBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'timeline' ? (
-                <React.Suspense fallback={null}>
-                  <TimelineBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'designTimeline' ? (
-                <React.Suspense fallback={null}>
-                  <DesignTimelineBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'architecture' ? (
-                <React.Suspense fallback={null}>
-                  <ArchitectureBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : view === 'eventModeling' ? (
-                <React.Suspense fallback={null}>
-                  <EventModelingBottomPanelViewLazy compact />
-                </React.Suspense>
-              ) : (
-                <StrybldrTimelinePanel active />
-              )}
-            </PanelScrollRegion>
+              {transportTitle ? <section className="agentic-panel-tab-layout">
+                <PanelTabHeader title={transportTitle} />
+                <div className="agentic-panel-tab-body" data-agentic-tab-viewport="true">{content}</div>
+              </section> : content}
+            </section>
           ) : null}
           {!minimized ? (
             <RichMediaPanelResizeHandle placement="panel" onPointerDown={handleResizePointerDown} />

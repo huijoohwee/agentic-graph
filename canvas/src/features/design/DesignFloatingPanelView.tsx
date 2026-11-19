@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { FileCode, Film, Hand, Layers, ListTree, Maximize2, MonitorPlay, MousePointer, Palette, Redo, Ruler, Undo } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -9,7 +9,6 @@ import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { getIconSizeClass } from '@/lib/ui'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import {
-  UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
   UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
   UI_RESPONSIVE_NARROW_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
@@ -75,11 +74,8 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
   )
 
   return (
-    <section className="h-full flex flex-col" aria-label="Design panel">
-      <SettingsSectionHeader className="flex-wrap" title={<>
-        <h2 className="agentic-panel-title">2D Renderer: Design</h2>
-        {lastLabel && <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{lastLabel}</span>}
-      </>} actions={<>
+    <section className="agentic-panel-tab-layout" aria-label="Design panel">
+      <PanelTabHeader title="2D Renderer: Design" subtitle={lastLabel} actions={<>
         <nav className={`${uiToolbarRowScrollClassName} gap-1`} aria-label="Design panel controls">
           <button
             type="button"
@@ -225,7 +221,7 @@ export function DesignFloatingPanelView({ active }: { active: boolean }) {
           )
         })}
       </nav>
-      <section className={cn(UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME, 'mt-1', panelTypography.panelTextClass)}>
+      <section className="agentic-panel-tab-body">
         {tab === 'overview' && (
           <DesignEditorOverviewPanel
             active={active}

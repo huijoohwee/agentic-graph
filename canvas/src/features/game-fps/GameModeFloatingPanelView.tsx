@@ -81,7 +81,7 @@ function Invocation({ operation }: { operation: GameModeOperation }) {
   )
 }
 
-export function GameModeFloatingPanelView() {
+export function GameModeFloatingPanelView({ children }: React.PropsWithChildren = {}) {
   const graphData = useGraphStore(state => state.graphData)
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
@@ -220,7 +220,8 @@ export function GameModeFloatingPanelView() {
           </button>
         </>}
       />
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
+        {children}
         {!gameModeDocumentReady ? (
           <section className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} role="status" data-kg-game-mode-setup="1">
             <b>Open a workspace document to start Game Mode.</b>

@@ -215,6 +215,8 @@ export function testCitySimMediaProjectionRetainsVerticalScrollOwnership() {
     resolve(process.cwd(), 'src/lib/toolbar/FloatingPanelXrSceneViews.tsx'),
     'utf8',
   )
-  assert.ok(router.includes("view === 'media' ? 'overflow-auto' : 'overflow-hidden'"))
-  assert.ok(router.includes('data-kg-city-sim-panel-scroll-owner'))
+  const mediaView = readFileSync(resolve(process.cwd(), 'src/features/command-menu/MediaCatalogPanelView.tsx'), 'utf8')
+  assert.ok(router.includes('<MediaCatalogPanelLazy>{projections}</MediaCatalogPanelLazy>'))
+  assert.ok(!router.includes('<PanelScrollRegion'))
+  assert.match(mediaView, /floatingPanelCatalogBodyClassName\(\).*data-kg-city-sim-panel-scroll-owner="media">\s*\{children\}/)
 }

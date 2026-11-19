@@ -41,11 +41,11 @@ export async function testCommandMenuMediaLayoutSelectorTogglesGridAndList() {
       throw new Error(`expected Media layout to default to grid, got ${String(panel.getAttribute('data-kg-media-layout'))}`)
     }
     const mediaHeader = doc.querySelector('[data-kg-media-catalog-header="1"]') as HTMLElement | null
-    if (!mediaHeader || mediaHeader.getAttribute('data-kg-floating-panel-catalog-header-fixed') !== '1' || !mediaHeader.className.includes('shrink-0') || mediaHeader.className.includes('sticky')) {
+    if (!mediaHeader || mediaHeader.getAttribute('data-kg-floating-panel-catalog-header-fixed') !== '1' || !mediaHeader.classList.contains('agentic-panel-tab-header')) {
       throw new Error('expected Media header to reuse the fixed FloatingPanel catalog header')
     }
     const mediaBody = doc.querySelector('[data-kg-floating-panel-catalog-body="media"]') as HTMLElement | null
-    if (!mediaBody || !mediaBody.className.includes('overflow-auto')) {
+    if (!mediaBody || !mediaBody.classList.contains('agentic-panel-tab-body') || mediaHeader.nextElementSibling !== mediaBody) {
       throw new Error('expected Media body to own scrolling below the fixed header')
     }
     if (!doc.querySelector('[data-kg-media-layout-selector="1"]')) throw new Error('expected Media layout selector')

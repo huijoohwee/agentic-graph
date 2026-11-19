@@ -1,5 +1,5 @@
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelIconButton } from '../ui/MainPanelIconButton'
 import { getMainPanelTypeIconComponent } from '../ui/mainPanelHelpIconLibrary'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
@@ -150,7 +150,6 @@ function getFileIcon(type: RecentFileEntry['type']) {
 }
 
 export default function HistoryView({ searchQuery }: { searchQuery: string }) {
-  const typography = usePanelTypography()
   const {
     history: historyRaw,
     historyIndex,
@@ -315,9 +314,8 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
   // }, [])
 
   return (
-    <article className={`h-full min-h-0 flex flex-col ${typography.panelTextClass}`} aria-label="History">
-      <header className={`px-2 py-1 border-b ${UI_THEME_TOKENS.panel.border}`}>
-        <section className="flex items-center justify-between gap-2">
+    <article className="agentic-panel-tab-layout" aria-label="History">
+      <PanelTabHeader title={UI_LABELS.history} actions={<>
           <section className="flex items-center gap-2">
             <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
             <MainPanelIconButton iconKey="action.save" label="Snapshot" onClick={applySnapshot} />
@@ -361,13 +359,12 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
               })}
             </section>
           </nav>
-        </section>
-      </header>
+      </>} />
       <section
         id={`history-${tab}-panel`}
         role="tabpanel"
         aria-labelledby={`history-${tab}-tab`}
-        className="agentic-panel-scroll-region flex-1 space-y-6"
+        className="agentic-panel-tab-body"
       >
         {tab === 'projects' && <React.Suspense fallback={<p role="status">Loading projects…</p>}><WorkspaceProjectPanel /></React.Suspense>}
         {tab === 'history' && filteredRecent.length > 0 && (

@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { useShallow } from 'zustand/react/shallow'
@@ -299,7 +299,7 @@ export function MermaidDiagramPanelView({
   if (!code) {
     return (
       <section
-        className="flex h-full min-h-0 flex-col"
+        className="agentic-panel-tab-layout"
         aria-label={panelAriaLabel}
         data-kg-mermaid-diagram-panel="1"
         data-kg-mermaid-diagram-kind={kind}
@@ -307,129 +307,124 @@ export function MermaidDiagramPanelView({
         data-kg-mermaid-diagram-render-mode={renderMode}
         data-kg-mermaid-diagram-empty="1"
       >
-        <SettingsSectionHeader headingAs="h2" title={title} actions={headerActions} />
-        <section className={cn('px-1 text-xs', UI_THEME_TOKENS.text.secondary)}>{emptyLabel}</section>
+        <PanelTabHeader title={title} actions={headerActions} />
+        <section className="agentic-panel-tab-body">{emptyLabel}</section>
       </section>
     )
   }
 
   return (
     <section
-      className={cn('flex h-full min-h-0 min-w-0 flex-col gap-2', compact && 'gap-1')}
+      className="agentic-panel-tab-layout"
       aria-label={panelAriaLabel}
       data-kg-mermaid-diagram-panel="1"
       data-kg-mermaid-diagram-kind={kind}
       data-kg-mermaid-diagram-surface={surface}
       data-kg-mermaid-diagram-render-mode={renderMode}
     >
-      <SettingsSectionHeader title={<>
-          <h2 className="agentic-panel-title truncate">{title}</h2>
-          {showRowList ? (
-            <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
-              {rowEntries.length === model.rows.length
-                ? `${model.rows.length} parsed rows`
-                : `${rowEntries.length} / ${model.rows.length} parsed rows`}
-            </section>
-          ) : null}
-        </>} actions={headerActions} />
-      {showDiagram ? (
-        <MermaidDiagramRenderPreview
-          code={code}
-          model={model}
-          kind={kind}
-          rootThemeMode={rootThemeMode}
-          compact={compact && showRowList}
-          rows={model.rows}
-          selectedRowKey={selectedRowKey}
-          onSelectRowKey={setSelectedRowKey}
-        />
-      ) : null}
-      {showRowList ? (
-        <section
-          ref={rowListRef}
-          className={cn(
-            'min-h-0 overflow-auto rounded-md border',
-            compact ? 'max-h-24' : 'flex-1',
-            UI_THEME_TOKENS.panel.border,
-          )}
-          data-kg-mermaid-diagram-command-list="1"
-          data-kg-mermaid-diagram-command-tree={rowTree ? '1' : undefined}
-        >
-          {rowTree ? (
-            <ul className="flex flex-col" role="tree" aria-label={`${title} Mermaid row tree`}>
-              {rowEntries.map(({ index, key, row }) => {
-                const selected = key === selectedRowKey
-                const treeNode = rowTree({ row, index, key }) || { depth: 1 }
-                const rowClassName = [
-                  'flex w-full min-w-0 items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
-                  selected
-                    ? uiSelectedRowStateClassName(true)
-                    : selectedRowKey
-                      ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:opacity-90'
-                      : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
-                ].join(' ')
-                const depth = Math.max(1, Math.floor(Number(treeNode.depth || 1)))
-                return (
-                  <li key={key || row.key} role="none">
-                    <article
-                      role="treeitem"
-                      aria-level={depth}
-                      aria-selected={selected}
-                      aria-expanded={treeNode.hasChildren ? !!treeNode.expanded : undefined}
-                      tabIndex={0}
-                      className={rowClassName}
-                      style={{
-                        paddingLeft: `${8 + (depth - 1) * 18}px`,
-                      }}
-                      data-kg-mermaid-diagram-command-row="1"
-                      data-kg-mermaid-diagram-command-kind={row.kind}
-                      data-kg-mermaid-diagram-command-line={row.lineIndex}
-                      data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
-                      data-kg-mermaid-diagram-command-treeitem="1"
-                      onClick={() => setSelectedRowKey(key)}
-                      onKeyDown={event => {
-                        if (event.key !== 'Enter' && event.key !== ' ') return
-                        event.preventDefault()
-                        setSelectedRowKey(key)
-                      }}
-                    >
-                      {treeNode.leadingControl}
-                      <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
-                      <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
-                    </article>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : rowEntries.map(({ index, key, row }) => {
-            const selected = key === selectedRowKey
-            return (
-              <button
-                key={key || row.key}
-                type="button"
-                className={[
-                  'flex w-full min-w-0 items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
-                  selected
-                    ? uiSelectedRowStateClassName(true)
-                    : selectedRowKey
-                      ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:opacity-90'
-                      : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
-                ].join(' ')}
-                data-kg-mermaid-diagram-command-row="1"
-                data-kg-mermaid-diagram-command-kind={row.kind}
-                data-kg-mermaid-diagram-command-line={row.lineIndex}
-                data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
-                onClick={() => setSelectedRowKey(key)}
-              >
-                <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
-                <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
-              </button>
-            )
-          })}
-        </section>
-      ) : null}
+      <PanelTabHeader title={title} subtitle={showRowList
+        ? rowEntries.length === model.rows.length ? `${model.rows.length} parsed rows` : `${rowEntries.length} / ${model.rows.length} parsed rows`
+        : undefined} actions={headerActions} />
+      <div className="agentic-panel-tab-body">
+        {showDiagram ? (
+          <MermaidDiagramRenderPreview
+            code={code}
+            model={model}
+            kind={kind}
+            rootThemeMode={rootThemeMode}
+            compact={compact && showRowList}
+            rows={model.rows}
+            selectedRowKey={selectedRowKey}
+            onSelectRowKey={setSelectedRowKey}
+          />
+        ) : null}
+        {showRowList ? (
+          <section
+            ref={rowListRef}
+            className={cn(
+              'min-h-0 overflow-auto rounded-md border',
+              compact ? 'max-h-24' : 'flex-1',
+              UI_THEME_TOKENS.panel.border,
+            )}
+            data-kg-mermaid-diagram-command-list="1"
+            data-kg-mermaid-diagram-command-tree={rowTree ? '1' : undefined}
+          >
+            {rowTree ? (
+              <ul className="flex flex-col" role="tree" aria-label={`${title} Mermaid row tree`}>
+                {rowEntries.map(({ index, key, row }) => {
+                  const selected = key === selectedRowKey
+                  const treeNode = rowTree({ row, index, key }) || { depth: 1 }
+                  const rowClassName = [
+                    'flex w-full min-w-0 items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
+                    selected
+                      ? uiSelectedRowStateClassName(true)
+                      : selectedRowKey
+                        ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:opacity-90'
+                        : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
+                  ].join(' ')
+                  const depth = Math.max(1, Math.floor(Number(treeNode.depth || 1)))
+                  return (
+                    <li key={key || row.key} role="none">
+                      <article
+                        role="treeitem"
+                        aria-level={depth}
+                        aria-selected={selected}
+                        aria-expanded={treeNode.hasChildren ? !!treeNode.expanded : undefined}
+                        tabIndex={0}
+                        className={rowClassName}
+                        style={{
+                          paddingLeft: `${8 + (depth - 1) * 18}px`,
+                        }}
+                        data-kg-mermaid-diagram-command-row="1"
+                        data-kg-mermaid-diagram-command-kind={row.kind}
+                        data-kg-mermaid-diagram-command-line={row.lineIndex}
+                        data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
+                        data-kg-mermaid-diagram-command-treeitem="1"
+                        onClick={() => setSelectedRowKey(key)}
+                        onKeyDown={event => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return
+                          event.preventDefault()
+                          setSelectedRowKey(key)
+                        }}
+                      >
+                        {treeNode.leadingControl}
+                        <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                        <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                        <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                      </article>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : rowEntries.map(({ index, key, row }) => {
+              const selected = key === selectedRowKey
+              return (
+                <button
+                  key={key || row.key}
+                  type="button"
+                  className={[
+                    'flex w-full min-w-0 items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
+                    selected
+                      ? uiSelectedRowStateClassName(true)
+                      : selectedRowKey
+                        ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:opacity-90'
+                        : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
+                  ].join(' ')}
+                  data-kg-mermaid-diagram-command-row="1"
+                  data-kg-mermaid-diagram-command-kind={row.kind}
+                  data-kg-mermaid-diagram-command-line={row.lineIndex}
+                  data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
+                  onClick={() => setSelectedRowKey(key)}
+                >
+                  <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                  <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                </button>
+              )
+            })}
+          </section>
+        ) : null}
+      </div>
     </section>
   )
 }

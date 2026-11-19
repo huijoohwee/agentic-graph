@@ -225,7 +225,7 @@ function PresetGroup({
   )
 }
 
-export function XrAnimationFloatingPanelView() {
+export function XrAnimationFloatingPanelView({ children }: React.PropsWithChildren = {}) {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: XR_ANIMATION_GRAMMAR_SIGILS })
   const { graphData, markdownDocumentName, markdownDocumentText, pushUiToast, selectedNodeId, timelinePlaying } = useGraphStore(useShallow(state => ({
@@ -320,7 +320,8 @@ export function XrAnimationFloatingPanelView() {
           </p>
         ) : null}
       </section> : null}
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-3')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
+        {children}
         <XrSharedAssetControls surface="animation" />
         <XrChoreographyInspector
           cameraInvocation={animationInspection.invocationGrammar?.configureCameraMark || animationInspection.webMcpTools.control}

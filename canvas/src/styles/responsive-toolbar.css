@@ -1773,12 +1773,6 @@
     min-width: 0;
   }
 
-  .kg-data-view-header-actions {
-    max-width: min(var(--kg-data-view-header-actions-max-width, 45%), 100%);
-    max-inline-size: min(var(--kg-data-view-header-actions-max-width, 45%), 100%);
-    min-width: 0;
-  }
-
   .kg-workspace-data-view-main {
     min-width: 0;
     min-block-size: 0;

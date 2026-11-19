@@ -181,7 +181,7 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
 const readXrCanOfferUserActions = () => readXrV2WorkspaceReadiness().canOfferUserActions
 const readXrCapabilityTier = () => readXrV2WorkspaceReadiness().capabilityTier
 
-export function MotionControlFloatingPanelView() {
+export function MotionControlFloatingPanelView({ children }: React.PropsWithChildren = {}) {
   const documentName = useGraphStore(store => store.markdownDocumentName)
   const documentText = useGraphStore(store => store.markdownDocumentText)
   const xrV2DemoActive = isXrV2RunReadyDemoActive(documentName, documentText)
@@ -394,7 +394,8 @@ export function MotionControlFloatingPanelView() {
           </button>
         </>}
       />
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
+        {children}
         {xrV2DemoActive ? <XrV2WorkspaceReadinessPanel /> : null}
 
         <section className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-preview="local-only">

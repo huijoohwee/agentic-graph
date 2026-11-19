@@ -5,7 +5,6 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { FloatingPanelCatalogHeader } from '@/lib/ui/floatingPanelCatalogLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
-import { UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
@@ -29,7 +28,7 @@ function CameraSectionTitle({ label, value }: { label: string; value: string }) 
   )
 }
 
-export function StrybldrCameraFloatingPanelView() {
+export function StrybldrCameraFloatingPanelView({ children }: React.PropsWithChildren = {}) {
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: CAMERA_GRAMMAR_SIGILS })
   const xrActive = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const visibleSectionKeys = xrActive ? XR_CAMERA_SECTION_KEYS : CAMERA_SECTION_KEYS
@@ -43,7 +42,7 @@ export function StrybldrCameraFloatingPanelView() {
 
   return (
     <section
-      className="flex h-full flex-col"
+      className="agentic-panel-tab-layout"
       aria-label="Camera panel"
       data-kg-camera-panel-surface="floatingPanel"
       data-kg-camera-panel-metadata-status={grammarCatalog.hydration.status}
@@ -64,7 +63,8 @@ export function StrybldrCameraFloatingPanelView() {
           />
         </>}
       />
-      <section className={`${UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME} px-1 pb-2`} data-kg-camera-catalog-layout="3d-for-xr-shared">
+      <section className="agentic-panel-tab-body" data-kg-camera-catalog-layout="3d-for-xr-shared">
+        {children}
         <section data-kg-camera-catalog-summary="1">
           <CollapsibleSection headingAs="h3" title={<span className="inline-flex items-center gap-1"><Camera className="size-4" aria-hidden />Camera Runtime</span>}
             collapsed={collapsedKeys.has('runtime')} onToggle={value => setCollapsed('runtime', value)} defaultCollapsed={false}>

@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader, SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react'
 import { HorizontalResizeSeparatorHr } from '@/components/ui/VerticalResizeSeparatorHr'
@@ -262,20 +262,17 @@ export function StoryboardWidgetFloatingPanelView() {
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col gap-2"
+      className="agentic-panel-tab-layout"
       aria-label="Storyboard Widget inputs and outputs"
       data-kg-storyboard-widget-floating-panel="1"
       data-kg-storyboard-widget-port-count={totalCount}
       data-kg-storyboard-widget-input-count={summary.inputCount}
       data-kg-storyboard-widget-output-count={summary.outputCount}
     >
-      <SettingsSectionHeader title={<>
-        <h2 className="agentic-panel-title truncate">Storyboard Widget</h2>
-        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-storyboard-widget-port-summary="1">
-          {summary.inputCount} inputs, {summary.outputCount} outputs, {summary.connectedCount} connected
-        </p>
-      </>} />
-      <section className="flex min-h-0 flex-1 flex-col" data-kg-storyboard-widget-port-split="1">
+      <PanelTabHeader title="Storyboard Widget" subtitle={<span data-kg-storyboard-widget-port-summary="1">
+        {summary.inputCount} inputs, {summary.outputCount} outputs, {summary.connectedCount} connected
+      </span>} />
+      <section className="agentic-panel-tab-body" data-kg-storyboard-widget-port-split="1">
         <section
           ref={rowsPaneRef}
           className="min-h-0 overflow-hidden"

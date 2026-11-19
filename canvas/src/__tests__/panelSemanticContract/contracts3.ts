@@ -71,7 +71,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   if (!text.includes("floatingPanelView === 'view' && <WorkspaceDataViewFloatingPanelView />")) {
     throw new Error('Expected FloatingPanel to render the dedicated View settings surface')
   }
-  if (!xrSceneViewsText.includes("view === 'media'") || !xrSceneViewsText.includes('<MediaCatalogPanelLazy />')) {
+  if (!xrSceneViewsText.includes("view === 'media'") || !xrSceneViewsText.includes('<MediaCatalogPanelLazy>{projections}</MediaCatalogPanelLazy>')) {
     throw new Error('Expected FloatingPanel to render the Media view')
   }
   const mediaViewIndex = text.indexOf("view: 'media'")
@@ -79,7 +79,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   const cameraViewIndex = text.indexOf("view: 'camera'")
   if (!(mediaViewIndex >= 0 && mediaViewIndex < animationViewIndex && animationViewIndex < cameraViewIndex)
     || !xrSceneViewsText.includes("view === 'animation'")
-    || !xrSceneViewsText.includes('<XrAnimationFloatingPanelViewLazy />')) {
+    || !xrSceneViewsText.includes('<XrAnimationFloatingPanelViewLazy>{projections}</XrAnimationFloatingPanelViewLazy>')) {
     throw new Error('Expected FloatingPanel Animation immediately after Media and before Camera with a lazy first-class render branch')
   }
   if (!iconLibraryText.includes('floatingPanel.media') || !iconLibraryText.includes('media: \'floatingPanel.media\'') || !iconLibraryText.includes('floatingPanel.animation') || !iconLibraryText.includes('animation: \'floatingPanel.animation\'')) {

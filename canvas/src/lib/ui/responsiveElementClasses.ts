@@ -238,8 +238,6 @@ export const UI_RESPONSIVE_WORKSPACE_MODE_TAB_CLASSNAME = 'kg-workspace-mode-tab
 
 export const UI_RESPONSIVE_MARKDOWN_TOOLBAR_HIGHLIGHT_BADGE_CLASSNAME = 'kg-markdown-toolbar-highlight-badge'
 
-export const UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME = 'kg-data-view-header-actions'
-
 export const UI_RESPONSIVE_WORKSPACE_DATA_VIEW_ROOT_CLASSNAME = 'kg-workspace-data-view-root'
 
 export const UI_RESPONSIVE_WORKSPACE_DATA_VIEW_MAIN_CLASSNAME = 'kg-workspace-data-view-main'

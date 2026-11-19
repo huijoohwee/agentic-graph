@@ -32,7 +32,6 @@
 .sequence-layout-controls button { min-height: 44px; padding: 6px 12px; border-radius: 5px; font-size: var(--kg-text-xs); }
 .sequence-layout-controls button:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: 1px; }
 .sequence-layout-controls button[aria-pressed='true'] { background: var(--kg-accent-soft-bg); }
-.sequence-inspector { height: 100%; }
 .sequence-inspector li button strong { font-size: var(--agentic-font-size-body); }
 .sequence-inspector li button span { font-size: var(--agentic-font-size-body); color: var(--sequence-muted); }
 .sequence-flow select { background: var(--sequence-surface); color: inherit; max-width: 100%; border: 1px solid var(--kg-border); border-radius: 5px; padding: 5px; }

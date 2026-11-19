@@ -42,7 +42,14 @@ for (const [file, symbol] of [['CollapsibleSection.tsx', 'CollapsibleSection as 
   assert(source.includes(symbol) && source.includes("from 'agentic-design-system/react/panels'"))
   assert(!/function |useState|onKeyDown|onClick|position:|overflow-/.test(source), 'Graph section contracts cannot retain an implementation')
 }
-assert(read('canvas/src/features/panels/ui/MainPanelBody.tsx').includes('PanelScrollRegion'))
+for (const file of [
+  'canvas/src/features/panels/ui/MainPanelBody.tsx',
+  'canvas/src/features/toolbar/FloatingPropsPanel.tsx',
+  'canvas/src/features/strybldr/StrybldrTimelineBottomPanel.tsx',
+]) {
+  const source = read(file)
+  assert(source.includes('agentic-panel-tab-layout') && source.includes('agentic-panel-tab-body'), `Expected Design System tab layout in ${file}`)
+}
 assert(read('canvas/src/features/observability-workspace/ObservabilityWorkspace.tsx').includes('PanelScrollRegion'))
 console.log('PASS direct Design System section, collapse-group and scrolling ownership')
 

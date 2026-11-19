@@ -25,7 +25,7 @@ export default function FloatingPreviewPanel() {
   return (
     <section aria-label="Preview Panel" className={floatingPanelCatalogSurfaceClassName()}>
       <FloatingPanelCatalogHeader title="Preview Panel" subtitle={documentName || 'Current selection'} actionsLabel="Preview controls" />
-      <section className={floatingPanelCatalogBodyClassName('space-y-2')} aria-label="Preview Panel content">
+      <section className={floatingPanelCatalogBodyClassName()} aria-label="Preview Panel content">
         <MediaCatalogModeControls mode={mode} onChange={setMode} context="preview" />
         <React.Suspense fallback={<p role="status">Loading preview…</p>}>
           {mode === 'voice-studio' ? <PreviewVoicePanel key={documentName} documentText={documentText} selectionText={selectedItem?.alt || selectedItem?.label || ''} /> : <>

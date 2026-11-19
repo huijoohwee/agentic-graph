@@ -18,7 +18,7 @@ export function assertPhase1(fixture: SourceFixture) {
     !responsiveElementClasses.includes('UI_RESPONSIVE_DATA_VIEW_REORDER_INDICATOR_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_DATA_VIEW_SETTINGS_ROW_VALUE_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_DATA_VIEW_SETTINGS_LAYOUT_CHOICE_CLASSNAME') ||
-    !responsiveElementClasses.includes('UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME') ||
+
     !responsiveElementClasses.includes('UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
@@ -50,7 +50,7 @@ export function assertPhase1(fixture: SourceFixture) {
     throw new Error('Expected shared responsive CSS to own column filter actions, type menu, and data-view filter menu sizing')
   }
 
-  if (!responsiveCss.includes('.kg-data-view-settings-panel') || !responsiveCss.includes('.kg-data-view-settings-row-value') || !responsiveCss.includes('--kg-data-view-settings-row-value-max-width') || !responsiveCss.includes('.kg-data-view-settings-layout-choice') || !responsiveCss.includes('--kg-data-view-settings-layout-choice-min-width') || !responsiveCss.includes('.kg-data-view-table-frame') || !responsiveCss.includes('--kg-data-view-table-frame-max-height') || !responsiveCss.includes('.kg-data-view-kanban-group') || !responsiveCss.includes('.kg-kanban-drop-indicator') || !responsiveCss.includes('--kg-kanban-drop-indicator-thickness') || !responsiveCss.includes('.kg-data-view-kanban-card-list') || !responsiveCss.includes('--kg-data-view-kanban-card-list-max-height') || !responsiveCss.includes('.kg-data-view-kanban-status-row') || !responsiveCss.includes('--kg-data-view-kanban-status-row-min-height') || !responsiveCss.includes('.kg-data-view-reorder-indicator') || !responsiveCss.includes('--kg-data-view-reorder-indicator-thickness') || !responsiveCss.includes('.kg-data-view-header-actions') || !responsiveCss.includes('--kg-data-view-header-actions-max-width')) {
+  if (!responsiveCss.includes('.kg-data-view-settings-panel') || !responsiveCss.includes('.kg-data-view-settings-row-value') || !responsiveCss.includes('--kg-data-view-settings-row-value-max-width') || !responsiveCss.includes('.kg-data-view-settings-layout-choice') || !responsiveCss.includes('--kg-data-view-settings-layout-choice-min-width') || !responsiveCss.includes('.kg-data-view-table-frame') || !responsiveCss.includes('--kg-data-view-table-frame-max-height') || !responsiveCss.includes('.kg-data-view-kanban-group') || !responsiveCss.includes('.kg-kanban-drop-indicator') || !responsiveCss.includes('--kg-kanban-drop-indicator-thickness') || !responsiveCss.includes('.kg-data-view-kanban-card-list') || !responsiveCss.includes('--kg-data-view-kanban-card-list-max-height') || !responsiveCss.includes('.kg-data-view-kanban-status-row') || !responsiveCss.includes('--kg-data-view-kanban-status-row-min-height') || !responsiveCss.includes('.kg-data-view-reorder-indicator') || !responsiveCss.includes('--kg-data-view-reorder-indicator-thickness')) {
     throw new Error('Expected shared responsive CSS to bound data-view panels and kanban groups')
   }
 
@@ -143,7 +143,8 @@ export function assertPhase1(fixture: SourceFixture) {
   }
 
   if (
-    floatingSubpanels.some(text => !text.includes('UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME')) ||
+    !floatingSubpanels[0].includes('agentic-panel-tab-layout') ||
+    floatingSubpanels.slice(1).some(text => !text.includes('UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME')) ||
     floatingSubpanels.some(text => text.includes('min-w-56'))
   ) {
     throw new Error('Expected floating props and design subpanels to reuse the shared responsive subpanel width owner')
@@ -266,15 +267,15 @@ export function assertPhase1(fixture: SourceFixture) {
     throw new Error('Expected Data View header to remove the legacy local More dropdown after View-panel consolidation')
   }
 
-  if (!dataViewPanel.includes('kg-data-view-settings-layout flex h-full min-h-0 flex-col') || !dataViewPanel.includes("from '@agentic-base/views-react/settings'") || !dataViewPanel.includes('summary={(') || !dataViewPanel.includes('UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME') || dataViewPanel.includes('max-w-[45%]')) {
-    throw new Error('Expected Data View settings to use Base SettingsPanelShell and keep host actions in its shared header lane')
+  if (!dataViewPanel.includes('<PanelTabHeader') || !dataViewPanel.includes('agentic-panel-tab-body') || dataViewPanel.includes('SettingsPanelShell') || dataViewPanel.includes('kg-data-view-header-actions')) {
+    throw new Error('View settings must use the shared tab heading and scroll body without a nested settings frame or capped action width')
   }
 
   if (!dataViewPanel.includes('<ExpandCollapseAllButton') || !dataViewPanel.includes('titleCollapse="Collapse (Default)"') || !dataViewPanel.includes('<CollapsibleSection') || dataViewPanel.includes('kg-data-view-settings-nav') || dataViewPanel.includes('<ToolbarDropdownSelect') || dataViewPanel.includes('uiToolbarResponsiveRowScrollClassName') || dataViewPanel.includes('onMouseEnter={() => setActivePanel(') || dataViewPanel.includes('w-[220px]') || dataViewPanel.includes('border-r')) {
     throw new Error('Expected Data View settings panel to consolidate collapse/expand into the header and remove legacy chooser / side rail wrappers')
   }
 
-  if (!dataViewPanel.includes('overflow-y-auto px-3 pb-3') || !dataViewPanel.includes('flushTop')) {
+  if (!dataViewPanel.includes('className="agentic-panel-tab-body"') || !dataViewPanel.includes('flushTop')) {
     throw new Error('Expected Data View settings panel to remove the spacer between the header border and the first collapsible section')
   }
 

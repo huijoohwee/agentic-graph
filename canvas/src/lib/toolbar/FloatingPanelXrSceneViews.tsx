@@ -1,4 +1,3 @@
-import { PanelScrollRegion } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -34,15 +33,6 @@ const ImmersiveMediaPanelProjectionLazy = React.lazy(() =>
 export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) {
   const { available: warehouseAvailable } = useWarehouseInspectionMode()
   const xr = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
-  const panel = view === 'media' ? <MediaCatalogPanelLazy />
-    : view === 'animation' ? <XrAnimationFloatingPanelViewLazy />
-      : view === 'motionControl' ? <MotionControlFloatingPanelViewLazy />
-        : view === 'gameMode' ? <GameModeFloatingPanelViewLazy />
-          : view === 'flightSim' ? <FlightSimFloatingPanelViewLazy />
-            : view === 'cityBuilder' ? <CitySimFloatingPanelViewLazy />
-              : view === 'camera' ? <StrybldrCameraFloatingPanelViewLazy />
-                : null
-  if (!panel) return null
   const projectionSurface = (
     view === 'media'
     || view === 'animation'
@@ -52,23 +42,20 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
     || view === 'camera'
   ) ? view as CitySimProjectionSurface : null
   const immersiveMediaSurface = projectionSurface as ImmersiveMediaProjectionSurface | null
-  const content = (
-    <PanelScrollRegion
-      className="h-full min-h-0"
-      data-kg-city-sim-panel-composition={projectionSurface || undefined}
-      data-kg-immersive-media-panel-composition={immersiveMediaSurface || undefined}
-    >
-      {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
-      {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
-      <section
-        // Let the outer region scroll the projections past the full-height tab controls.
-        className="h-full min-h-0 overflow-auto"
-        data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
-      >
-        {panel}
-      </section>
-    </PanelScrollRegion>
-  )
+  const projections = projectionSurface && immersiveMediaSurface ? (
+    <div data-kg-city-sim-panel-composition={projectionSurface} data-kg-immersive-media-panel-composition={immersiveMediaSurface}>
+      <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} />
+      <CitySimPanelProjection surface={projectionSurface} />
+    </div>
+  ) : null
+  const panel = view === 'media' ? <MediaCatalogPanelLazy>{projections}</MediaCatalogPanelLazy>
+    : view === 'animation' ? <XrAnimationFloatingPanelViewLazy>{projections}</XrAnimationFloatingPanelViewLazy>
+      : view === 'motionControl' ? <MotionControlFloatingPanelViewLazy>{projections}</MotionControlFloatingPanelViewLazy>
+        : view === 'gameMode' ? <GameModeFloatingPanelViewLazy>{projections}</GameModeFloatingPanelViewLazy>
+          : view === 'flightSim' ? <FlightSimFloatingPanelViewLazy>{projections}</FlightSimFloatingPanelViewLazy>
+            : view === 'cityBuilder' ? <CitySimFloatingPanelViewLazy />
+              : view === 'camera' ? <StrybldrCameraFloatingPanelViewLazy>{projections}</StrybldrCameraFloatingPanelViewLazy>
+                : null
   return <React.Suspense fallback={null}>{view === 'media' && (xr || warehouseAvailable)
-    ? <XrWorkspaceMediaPanelLazy>{content}</XrWorkspaceMediaPanelLazy> : content}</React.Suspense>
+    ? <XrWorkspaceMediaPanelLazy>{panel}</XrWorkspaceMediaPanelLazy> : panel}</React.Suspense>
 }

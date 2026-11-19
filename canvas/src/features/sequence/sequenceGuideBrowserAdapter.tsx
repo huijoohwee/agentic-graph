@@ -1,7 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
-import { coercePanelTypography } from 'grph-shared/ui/panelTypography'
 import { FloatingPanelShell, FloatingPanelCloseButton } from 'agentic-design-system/react/panels'
 import { SequenceInspectorView } from './SequenceInspectorView'
 
@@ -96,7 +95,7 @@ function mountSequenceGuideView(target: HTMLElement, initial: SequenceGuideBrows
     const content = <section className="mt-1 flex-1 min-h-0 overflow-hidden" aria-label="Guide steps">
       <SequenceInspectorView title={state.title} summary={state.summary} status={state.status}
         items={state.items} selectedId={state.selectedId} onSelect={select} disabled={state.busy}
-        ariaLabel={`${state.title} steps`} textClassName={coercePanelTypography(null).panelTextClass} headingRef={heading}
+        ariaLabel={`${state.title} steps`} headingRef={heading}
         selectedAction={<button type="button" data-sequence-guide-action="true" disabled={state.busy || selected.actionDisabled} onClick={action}>{selected.actionLabel}</button>}
         footer={state.notice ? <p>{state.notice}</p> : undefined} />
     </section>
