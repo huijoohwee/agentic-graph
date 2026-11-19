@@ -12,7 +12,7 @@ export const FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT = 'compact-list'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT = 'media-3-rows'
 
 export function floatingPanelCatalogSurfaceClassName(extraClassName?: string): string {
-  return cn('flex h-full min-h-0 flex-col overflow-hidden px-1 pb-2', extraClassName)
+  return cn('flex h-full min-h-0 flex-col overflow-hidden', extraClassName)
 }
 
 export function floatingPanelCatalogBodyClassName(extraClassName?: string): string {
@@ -113,7 +113,7 @@ export function FloatingPanelCatalogHeader({
   return (
     <SettingsSectionHeader
       ariaLabel={`${title} header`}
-      className="z-30 mb-1 shrink-0 flex-wrap"
+      className="z-30 shrink-0 flex-wrap"
       stickyHeader
       data-kg-floating-panel-catalog-header="1"
       data-kg-floating-panel-catalog-header-fixed="1"

@@ -23,6 +23,14 @@ export function testFloatingPanelScrollBodiesUseSharedResponsiveOwner() {
     return source + readUtf8('src/components/StoryboardWidget/WidgetEditorFormContent.tsx')
   })
 
+  const controller = readUtf8('src/lib/toolbar/ToolbarToolMenu.impl.tsx')
+  const catalog = readUtf8('src/lib/ui/floatingPanelCatalogLayout.tsx')
+  const tabLayout = controller.match(/const floatingPanelBodyClassName = cn\(([\s\S]*?)\n  \)/)?.[1]
+  const catalogLayout = catalog.match(/function floatingPanelCatalogSurfaceClassName[^{]+\{([^}]+)/)?.[1]
+  if (!tabLayout || !catalogLayout || /(?:^|[\s'"])-?[mp][trblxyse]?-[^\s'"]+/.test(tabLayout + catalogLayout)) {
+    throw new Error('The Design System panel body must be the only tab frame inset owner')
+  }
+
   if (!classText.includes('UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME')) {
     throw new Error('expected floating panel scroll body owner to be exported from the shared responsive class registry')
   }

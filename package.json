@@ -369,7 +369,7 @@
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#9a1ec581124c9fb7868903c0d42581e151c59fe6"
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#4b903d0ec44d2a9eaee7a64c3842fea3ce36c145"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",

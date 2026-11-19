@@ -107,7 +107,7 @@
     "@turf/helpers": "^7.2.0",
     "@types/d3": "^7.4.3",
     "@vladmandic/human": "^3.3.6",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#9a1ec581124c9fb7868903c0d42581e151c59fe6",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#4b903d0ec44d2a9eaee7a64c3842fea3ce36c145",
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
