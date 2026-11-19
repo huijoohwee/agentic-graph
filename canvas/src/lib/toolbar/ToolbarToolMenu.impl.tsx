@@ -11,12 +11,11 @@ import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-ch
 import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
-  UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
   UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { SharedPanelTypographyContext } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { cn } from '@/lib/utils'
 import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
@@ -67,7 +66,6 @@ const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/g
 
 const FloatingPreviewPanelLazy = React.lazy(() => import('@/features/panels/views/FloatingPreviewPanel'))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling', 'sequence'])
 
 export function ToolbarToolMenu({
   pipelineStatus,
@@ -223,9 +221,7 @@ export function ToolbarToolMenu({
     floatingPanelView === 'renderer' ? floatingPanelView : null
   const floatingPanelBodyClassName = cn(
     UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
-    FLOATING_PANEL_FULL_HEIGHT_VIEWS.has(floatingPanelView)
-      ? 'flex-1 min-h-0 overflow-hidden'
-      : UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
+    'flex-1 min-h-0 overflow-hidden',
     UI_THEME_TOKENS.text.primary,
   )
 
@@ -329,8 +325,10 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}
             {floatingPanelView === 'chat' && (
               <React.Suspense fallback={null}>
-                <SettingsSectionHeader headingAs="h2" title="Chat" />
-                <FloatingPanelChatLazy />
+                <section className="agentic-panel-tab-layout">
+                  <PanelTabHeader title="Chat" />
+                  <div className="agentic-panel-tab-body"><FloatingPanelChatLazy /></div>
+                </section>
               </React.Suspense>
             )}
             {floatingPanelView === 'console' && (
@@ -385,8 +383,8 @@ export function ToolbarToolMenu({
               </React.Suspense>
             )}
             {floatingPanelView === 'graphTraversal' && (
-              <section aria-label="Graph traversal">
-                <SettingsSectionHeader headingAs="h2" title="Graph traversal" ariaLabel="Graph traversal actions" className="flex-wrap" actions={<>
+              <section className="agentic-panel-tab-layout" aria-label="Graph traversal">
+                <PanelTabHeader title="Graph traversal" actionsLabel="Graph traversal actions" actions={<>
                   <nav className={`${uiToolbarRowScrollClassName} gap-2`} aria-label="Traversal tools">
                     <button
                       type="button"
@@ -398,20 +396,22 @@ export function ToolbarToolMenu({
                   </nav>
                   <p className={UI_THEME_TOKENS.text.tertiary}>Geospatial</p>
                 </>} />
-                <OrchestratorSettingsSection
-                  graphRagCollapsed={orchestratorGraphRagCollapsed}
-                  presetsCollapsed={orchestratorPresetsCollapsed}
-                  editorCollapsed={orchestratorEditorCollapsed}
-                  contextCollapsed={orchestratorContextCollapsed}
-                  setGraphRagCollapsed={setOrchestratorGraphRagCollapsed}
-                  setPresetsCollapsed={setOrchestratorPresetsCollapsed}
-                  setEditorCollapsed={setOrchestratorEditorCollapsed}
-                  setContextCollapsed={setOrchestratorContextCollapsed}
-                  indexingCollapsed={orchestratorWorkflowIndexingCollapsed}
-                  setIndexingCollapsed={setOrchestratorWorkflowIndexingCollapsed}
-                  tracingCollapsed={orchestratorWorkflowTracingCollapsed}
-                  setTracingCollapsed={setOrchestratorWorkflowTracingCollapsed}
-                />
+                <div className="agentic-panel-tab-body">
+                  <OrchestratorSettingsSection
+                    graphRagCollapsed={orchestratorGraphRagCollapsed}
+                    presetsCollapsed={orchestratorPresetsCollapsed}
+                    editorCollapsed={orchestratorEditorCollapsed}
+                    contextCollapsed={orchestratorContextCollapsed}
+                    setGraphRagCollapsed={setOrchestratorGraphRagCollapsed}
+                    setPresetsCollapsed={setOrchestratorPresetsCollapsed}
+                    setEditorCollapsed={setOrchestratorEditorCollapsed}
+                    setContextCollapsed={setOrchestratorContextCollapsed}
+                    indexingCollapsed={orchestratorWorkflowIndexingCollapsed}
+                    setIndexingCollapsed={setOrchestratorWorkflowIndexingCollapsed}
+                    tracingCollapsed={orchestratorWorkflowTracingCollapsed}
+                    setTracingCollapsed={setOrchestratorWorkflowTracingCollapsed}
+                  />
+                </div>
               </section>
             )}
             </PanelFormDensityProvider>

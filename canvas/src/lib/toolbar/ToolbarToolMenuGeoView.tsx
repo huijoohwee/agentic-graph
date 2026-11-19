@@ -1,3 +1,4 @@
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import { useShallow } from 'zustand/react/shallow'
@@ -212,88 +213,91 @@ export const GeoView = React.memo(function GeoView(props: {
   }, [iconSizeClass, uiIconStrokeWidth])
 
   return (
-    <section className="h-full flex flex-col" aria-label="Geospatial panel">
-      <section
-        aria-label="Selected XR environment"
-        data-kg-geo-xr-environment={selectedEnvironment.id}
-        data-kg-geo-xr-environment-source="xr-motion-reference-runtime"
-      >
-        <CollapsibleSection title="XR environment" headingAs="h2" defaultCollapsed={false} flushTop>
-          <div className="grid">
-            <strong>{selectedEnvironment.label}</strong>
-            <span className={UI_THEME_TOKENS.text.secondary}>
-              {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
-            </span>
-            {selectedEnvironment.geospatialContext?.purpose === 'regional-viewport-only' ? (
-              <span className={UI_THEME_TOKENS.text.tertiary} data-kg-geo-xr-context="regional-viewport-only">
-                {selectedEnvironment.geospatialContext.label} · local blockout preview only · no shot or structure geotags
+    <section className="agentic-panel-tab-layout" aria-label="Geospatial panel">
+      <PanelTabHeader title="Geospatial" />
+      <div className="agentic-panel-tab-body">
+        <section
+          aria-label="Selected XR environment"
+          data-kg-geo-xr-environment={selectedEnvironment.id}
+          data-kg-geo-xr-environment-source="xr-motion-reference-runtime"
+        >
+          <CollapsibleSection title="XR environment" headingAs="h3" defaultCollapsed={false} flushTop>
+            <div className="grid">
+              <strong>{selectedEnvironment.label}</strong>
+              <span className={UI_THEME_TOKENS.text.secondary}>
+                {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
               </span>
-            ) : null}
-          </div>
-        </CollapsibleSection>
-      </section>
-      {geospatialModeEnabled ? (
-        <ErrorBoundary>
-          <React.Suspense
-            fallback={
-              <section className={`p-3 text-xs ${UI_THEME_TOKENS.text.secondary}`}>
-                Loading geospatial panel...
-              </section>
-            }
-          >
-            <section className={cn('min-h-0 flex-1', UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME)}>
-              <NearbyPlacesPanelLazy
-                onSelectMapFeature={selectActiveMapFeature}
-                selectedMapFeatureId={selectedMapFeatureId}
-                selectionSource={gympgrphBridge.selectionSource}
-              />
-              <GeospatialPanelHostLazy
-                active
-                enhancedLayerCatalog={<EnhancedLayerCatalogPanel />}
-                panelTypography={panelTypography}
-                renderTypeIcon={renderGeospatialTypeIcon}
-                snapshot={{
-                  graphData: activeGraphData,
-                  zoomState: gympgrphBridge.zoomState,
-                  canvasRenderMode: gympgrphBridge.canvasRenderMode,
-                  selectedNodeId: gympgrphBridge.selectedNodeId,
-                  selectedNodeIds: gympgrphBridge.selectedNodeIds,
-                  selectedEdgeId: gympgrphBridge.selectedEdgeId,
-                }}
-                handlers={{
-                  selectNode: gympgrphBridge.selectNode,
-                  selectEdge: gympgrphBridge.selectEdge,
-                  setSelectionSource: gympgrphBridge.setSelectionSource,
-                  requestZoom: gympgrphBridge.requestZoom,
-                  requestThreeCamera: gympgrphBridge.requestThreeCamera,
-                  pushUiToast: gympgrphBridge.pushUiToast,
-                  upsertUiToast: gympgrphBridge.upsertUiToast,
-                  dismissUiToast: gympgrphBridge.dismissUiToast,
-                }}
-              />
-            </section>
-          </React.Suspense>
-        </ErrorBoundary>
-      ) : (
-        <section className="flex min-h-0 flex-1 flex-col items-start justify-center gap-3 p-3">
-          <p className={cn('text-sm', UI_THEME_TOKENS.text.secondary)}>
-            {isEnablingGeospatial
-              ? 'Enabling Geospatial Mode...'
-              : 'Enable Geospatial Mode to view this panel.'}
-          </p>
-          <button
-            type="button"
-            className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-            onClick={onEnableGeospatial}
-            disabled={isEnablingGeospatial}
-          >
-            {isEnablingGeospatial ? 'Enabling Geo...' : 'Enable Geospatial Mode'}
-          </button>
-          {geospatialEnableError ? (
-            <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{geospatialEnableError}</p>
-          ) : null}
+              {selectedEnvironment.geospatialContext?.purpose === 'regional-viewport-only' ? (
+                <span className={UI_THEME_TOKENS.text.tertiary} data-kg-geo-xr-context="regional-viewport-only">
+                  {selectedEnvironment.geospatialContext.label} · local blockout preview only · no shot or structure geotags
+                </span>
+              ) : null}
+            </div>
+          </CollapsibleSection>
         </section>
-      )}
+        {geospatialModeEnabled ? (
+          <ErrorBoundary>
+            <React.Suspense
+              fallback={
+                <section className={`p-3 text-xs ${UI_THEME_TOKENS.text.secondary}`}>
+                  Loading geospatial panel...
+                </section>
+              }
+            >
+              <section className={cn('min-h-0 flex-1', UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME)}>
+                <NearbyPlacesPanelLazy
+                  onSelectMapFeature={selectActiveMapFeature}
+                  selectedMapFeatureId={selectedMapFeatureId}
+                  selectionSource={gympgrphBridge.selectionSource}
+                />
+                <GeospatialPanelHostLazy
+                  active
+                  enhancedLayerCatalog={<EnhancedLayerCatalogPanel />}
+                  panelTypography={panelTypography}
+                  renderTypeIcon={renderGeospatialTypeIcon}
+                  snapshot={{
+                    graphData: activeGraphData,
+                    zoomState: gympgrphBridge.zoomState,
+                    canvasRenderMode: gympgrphBridge.canvasRenderMode,
+                    selectedNodeId: gympgrphBridge.selectedNodeId,
+                    selectedNodeIds: gympgrphBridge.selectedNodeIds,
+                    selectedEdgeId: gympgrphBridge.selectedEdgeId,
+                  }}
+                  handlers={{
+                    selectNode: gympgrphBridge.selectNode,
+                    selectEdge: gympgrphBridge.selectEdge,
+                    setSelectionSource: gympgrphBridge.setSelectionSource,
+                    requestZoom: gympgrphBridge.requestZoom,
+                    requestThreeCamera: gympgrphBridge.requestThreeCamera,
+                    pushUiToast: gympgrphBridge.pushUiToast,
+                    upsertUiToast: gympgrphBridge.upsertUiToast,
+                    dismissUiToast: gympgrphBridge.dismissUiToast,
+                  }}
+                />
+              </section>
+            </React.Suspense>
+          </ErrorBoundary>
+        ) : (
+          <section className="flex min-h-0 flex-1 flex-col items-start justify-center gap-3 p-3">
+            <p className={cn('text-sm', UI_THEME_TOKENS.text.secondary)}>
+              {isEnablingGeospatial
+                ? 'Enabling Geospatial Mode...'
+                : 'Enable Geospatial Mode to view this panel.'}
+            </p>
+            <button
+              type="button"
+              className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+              onClick={onEnableGeospatial}
+              disabled={isEnablingGeospatial}
+            >
+              {isEnablingGeospatial ? 'Enabling Geo...' : 'Enable Geospatial Mode'}
+            </button>
+            {geospatialEnableError ? (
+              <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{geospatialEnableError}</p>
+            ) : null}
+          </section>
+        )}
+      </div>
     </section>
   )
 })

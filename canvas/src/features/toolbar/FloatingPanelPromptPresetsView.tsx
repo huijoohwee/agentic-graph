@@ -163,7 +163,7 @@ export function FloatingPanelPromptPresetsView({
         )}
       />
       <section
-        className={floatingPanelCatalogBodyClassName('pr-1')}
+        className={floatingPanelCatalogBodyClassName()}
         tabIndex={-1}
         data-kg-floating-panel-catalog-body="prompt-presets"
         aria-label="Prompt Presets catalog"

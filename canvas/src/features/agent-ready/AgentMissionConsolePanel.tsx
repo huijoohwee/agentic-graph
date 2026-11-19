@@ -1,4 +1,4 @@
-import { CollapsibleSection, PanelScrollRegion, SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { CollapsibleSection, PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { AgentRunSpanViews } from './AgentRunSpanViews'
 import { selectAgentRunInspection, useAgentRunInspection } from './agentRunInspectionStore'
@@ -10,9 +10,9 @@ export default function AgentMissionConsolePanel() {
   const trace = inspection?.trace
   const rows = React.useMemo(() => visibleSpanTree(trace?.spans ?? [], inspection?.search ?? ''), [trace, inspection?.search])
   const selected = trace?.spans.find(span => span.spanId === inspection?.spanId)
-  return <PanelScrollRegion aria-label="Console" className="h-full">
-    <SettingsSectionHeader headingAs="h2" title="Console" />
-    <section className="agentic-panel-section-body">
+  return <section aria-label="Console" className="agentic-panel-tab-layout">
+    <PanelTabHeader title="Console" />
+    <section className="agentic-panel-tab-body">
       <p>Selected Agent Mission observation · inspection only</p>
       {!trace ? <p role="status">No Mission observation is selected. Open Agent Mission in Dashboard to inspect its Span tree.</p> : <>
         <p role="status" className="mb-3 text-xs">Run {trace.runId} · {trace.status} · {trace.spans.length}/{trace.total} retained spans{trace.partial ? ' · partial coverage' : ''}</p>
@@ -30,5 +30,5 @@ export default function AgentMissionConsolePanel() {
         </CollapsibleSection>
       </>}
     </section>
-  </PanelScrollRegion>
+  </section>
 }

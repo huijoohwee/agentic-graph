@@ -110,7 +110,7 @@ function airspeed(velocity: readonly number[]): string {
   return Math.hypot(...velocity).toFixed(1)
 }
 
-export function FlightSimFloatingPanelView() {
+export function FlightSimFloatingPanelView({ children }: React.PropsWithChildren = {}) {
   const sourceContext = useSourceGeospatialContext()
   const flight = React.useSyncExternalStore(
     subscribeFlightSimSnapshot,
@@ -216,7 +216,8 @@ export function FlightSimFloatingPanelView() {
   if (sourceContext) return (
     <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Recorded flight evidence">
       <FloatingPanelCatalogHeader title="Recorded flight evidence" subtitle="Source observations · shared map and Timeline" actionsLabel="Recorded evidence actions" />
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
+        {children}
         <p className="text-xs">Select a map feature to inspect its source and observation time. Closing Timeline keeps the recorded map active.</p>
         <React.Suspense fallback={<p role="status">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense>
       </section>
@@ -273,7 +274,8 @@ export function FlightSimFloatingPanelView() {
         </>}
       />
 
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
+        {children}
         <PanelDisclosure id={evidenceId} expanded={evidenceOpen} data-kg-flight-evidence="1"
           onExpandedChange={open => { setEvidenceOpen(open); if (open) setEvidenceLoaded(true) }}
           title={<h3 className="agentic-panel-title inline">Evidence and analysis</h3>}>

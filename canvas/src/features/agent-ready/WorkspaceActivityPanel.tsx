@@ -1,3 +1,4 @@
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { CollapsibleSection, PanelDisclosure } from 'agentic-design-system/react/panels'
@@ -19,9 +20,8 @@ export default function WorkspaceActivityPanel() {
   const query = filter.trim().toLowerCase()
   const rows = logs.filter(row => severity === 'all' || (severity === 'checks' ? row.kind === 'error' || row.kind === 'warning' : row.source === 'Warehouse layout')).filter(row => `${row.message} ${row.source || ''} ${row.kind}`.toLowerCase().includes(query))
   const spans = inspection?.trace.spans.filter(span => `${span.operation} ${span.kind} ${span.status}`.toLowerCase().includes(query)) ?? []
-  return <section className="grid min-w-0 gap-2" aria-label="Activity">
-    <header className="flex flex-wrap items-center gap-2">
-      <h2 className="agentic-panel-title">Activity</h2>
+  return <section className="agentic-panel-tab-layout" aria-label="Activity">
+    <PanelTabHeader title="Activity" actions={<>
       <label className="flex min-w-0 flex-[1_1_14rem] items-center gap-2"><span className={fieldLabel}>Source</span><PanelSelect variant="transparent" value={source}
         onValueChange={selectedValueInput => setSource(selectedValueInput as typeof source)} aria-label="Activity source">
         <option value="workspace">Workspace events</option><option value="mission">Mission spans</option>
@@ -29,25 +29,27 @@ export default function WorkspaceActivityPanel() {
       <label className="flex min-w-0 flex-[1_1_14rem] items-center gap-2"><span className={fieldLabel}>Find</span><PanelTextInput variant="transparent" type="search" aria-label="Find activity" maxLength={160}
         className="flex-1" value={filter} onChange={event => setFilter(event.currentTarget.value)} /></label>
       {source === 'workspace' && <label className="flex min-w-0 flex-[1_1_11rem] items-center gap-2"><span className={fieldLabel}>Show</span><PanelSelect variant="transparent" aria-label="Activity filter" value={severity} onValueChange={selectedValueInput => setSeverity(selectedValueInput)}><option value="all">All events</option><option value="checks">Warnings / errors</option><option value="warehouse">Warehouse layout</option></PanelSelect></label>}
-    </header>
-    {source === 'workspace' ? <>
-      <p className="opacity-70">{logs.length} retained workspace events · newest first · current session</p>
-      <ul className="m-0 grid list-none gap-1 p-0" aria-label="Workspace events">{rows.map(row => <li key={row.id} className={`min-w-0 rounded p-2 ${outline}`} style={{ borderLeft: `3px solid ${row.kind === 'error' ? '#cf655a' : row.kind === 'warning' ? '#c69a4c' : row.kind === 'success' ? '#399a85' : 'var(--kg-border)'}` }}>
-        <header className="flex min-w-0 flex-wrap gap-2 opacity-70"><time dateTime={new Date(row.tsMs).toISOString()}>{new Date(row.tsMs).toLocaleTimeString()}</time>
-          <span>{row.source || 'Workspace'}</span><span>{row.kind}</span></header><p className="whitespace-pre-wrap break-words">{row.message}</p>
-      </li>)}</ul>{!rows.length && <p role="status">No matching workspace events.</p>}
-    </> : inspection ? <>
-      <p className="min-w-0 truncate" title={inspection.trace.runId}>{inspection.trace.runId} · {inspection.trace.status} · {inspection.trace.spans.length}/{inspection.trace.total} retained spans{inspection.trace.partial ? ' · partial coverage' : ''}</p>
-      <ul className="m-0 grid list-none gap-1 p-0" aria-label="Mission activity">{spans.map(span => <li key={span.spanId} className={`min-w-0 rounded p-2 ${outline}`}>
-        <button type="button" className={`${UI_THEME_TOKENS.control.singleLine} w-full text-left`} aria-pressed={inspection.spanId === span.spanId}
-          onClick={() => selectAgentRunInspection(span.spanId)}>{span.operation} · {span.status} · {durationLabel(span.timing.inclusive)}</button>
-        <CollapsibleSection headingAs="h3" title="Recorded evidence">
-          <dl className="grid gap-1 break-words"><dt>Span</dt><dd>{span.spanId}</dd><dt>Component</dt><dd>{span.component.id || 'Unreported'}</dd>
-            <dt>Evaluation</dt><dd>{span.evaluation.status}{span.evaluation.reason ? ` · ${span.evaluation.reason}` : ''}</dd></dl>
-          <p>Input and output payloads are not included in this observation.</p>
-        </CollapsibleSection>
-      </li>)}</ul>{!spans.length && <p role="status">No matching Mission spans.</p>}
-    </> : <p role="status">No Mission observation is selected. Open Agents in Media to inspect an authorized run.</p>}
+    </>} />
+    <div className="agentic-panel-tab-body">
+      {source === 'workspace' ? <>
+        <p className="opacity-70">{logs.length} retained workspace events · newest first · current session</p>
+        <ul className="m-0 grid list-none gap-1 p-0" aria-label="Workspace events">{rows.map(row => <li key={row.id} className={`min-w-0 rounded p-2 ${outline}`} style={{ borderLeft: `3px solid ${row.kind === 'error' ? '#cf655a' : row.kind === 'warning' ? '#c69a4c' : row.kind === 'success' ? '#399a85' : 'var(--kg-border)'}` }}>
+          <header className="flex min-w-0 flex-wrap gap-2 opacity-70"><time dateTime={new Date(row.tsMs).toISOString()}>{new Date(row.tsMs).toLocaleTimeString()}</time>
+            <span>{row.source || 'Workspace'}</span><span>{row.kind}</span></header><p className="whitespace-pre-wrap break-words">{row.message}</p>
+        </li>)}</ul>{!rows.length && <p role="status">No matching workspace events.</p>}
+      </> : inspection ? <>
+        <p className="min-w-0 truncate" title={inspection.trace.runId}>{inspection.trace.runId} · {inspection.trace.status} · {inspection.trace.spans.length}/{inspection.trace.total} retained spans{inspection.trace.partial ? ' · partial coverage' : ''}</p>
+        <ul className="m-0 grid list-none gap-1 p-0" aria-label="Mission activity">{spans.map(span => <li key={span.spanId} className={`min-w-0 rounded p-2 ${outline}`}>
+          <button type="button" className={`${UI_THEME_TOKENS.control.singleLine} w-full text-left`} aria-pressed={inspection.spanId === span.spanId}
+            onClick={() => selectAgentRunInspection(span.spanId)}>{span.operation} · {span.status} · {durationLabel(span.timing.inclusive)}</button>
+          <CollapsibleSection headingAs="h3" title="Recorded evidence">
+            <dl className="grid gap-1 break-words"><dt>Span</dt><dd>{span.spanId}</dd><dt>Component</dt><dd>{span.component.id || 'Unreported'}</dd>
+              <dt>Evaluation</dt><dd>{span.evaluation.status}{span.evaluation.reason ? ` · ${span.evaluation.reason}` : ''}</dd></dl>
+            <p>Input and output payloads are not included in this observation.</p>
+          </CollapsibleSection>
+        </li>)}</ul>{!spans.length && <p role="status">No matching Mission spans.</p>}
+      </> : <p role="status">No Mission observation is selected. Open Agents in Media to inspect an authorized run.</p>}
+    </div>
   </section>
 }
 

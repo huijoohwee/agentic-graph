@@ -41,16 +41,16 @@ test('native shell and inspector keep their markup and optional controller slots
     header={<button>Native controls</button>}>
     <SequenceInspectorView title="Sequence Diagram" summary="Authored rehearsal" status="Selected step 7"
       items={[{ id: 'event', ordinal: 7, label: 'Request', detail: 'Buyer → Store · request', meta: 'Source line 9' }]}
-      selectedId="event" onSelect={() => {}} textClassName="font-sans text-sm"
+      selectedId="event" onSelect={() => {}}
       beforeItems={<p>Branch selector</p>} footer={<p>Offline controls</p>} />
   </FloatingPanelShell>)
   assert.match(markup, /data-agentic-base-floating-panel="true"/)
   assert.match(markup, /agentic-base-floating-panel-inner/)
   assert.match(markup, /agentic-base-floating-panel-header/)
   assert.match(markup, /agentic-base-floating-panel-draggable/)
-  assert.match(markup, /agentic-panel-scroll-region sequence-flow sequence-inspector font-sans text-sm/)
-  assert.match(markup, /<h2 class="agentic-panel-title">Sequence Diagram<\/h2>/)
-  assert.match(markup, /class="agentic-panel-section-body"/)
+  assert.match(markup, /agentic-panel-tab-layout sequence-flow sequence-inspector/)
+  assert.match(markup, /<h2 class="agentic-panel-section-title">Sequence Diagram<\/h2>/)
+  assert.match(markup, /class="agentic-panel-tab-body"/)
   assert.match(markup, /<strong>7\. Request<\/strong>/)
   assert.match(markup, /aria-pressed="true"/)
   assert.match(markup, /Branch selector/)

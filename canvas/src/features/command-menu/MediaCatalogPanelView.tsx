@@ -61,7 +61,7 @@ type MediaCatalogPanelViewProps = {
   mediaListRef: React.RefObject<HTMLElement | null>
   mediaNameDrafts: CommandMenuMediaNameDrafts
   panelRef: React.RefObject<HTMLElement | null>
-  panelTextClass: string
+  children?: React.ReactNode
   sourceMetadataItem: MediaCatalogSourceMetadataItem | null
   uploadInputRef: React.RefObject<HTMLInputElement | null>
   uploadedMediaItems: UploadedMediaPanelItem[]
@@ -108,7 +108,7 @@ export function MediaCatalogPanelView({
   mediaListRef,
   mediaNameDrafts,
   panelRef,
-  panelTextClass,
+  children,
   sourceMetadataItem,
   uploadInputRef,
   uploadedMediaItems,
@@ -179,7 +179,7 @@ export function MediaCatalogPanelView({
   const { style: animationStyle, ...animationAttributes } = animationState.attributes
   return (
     <section
-      className={floatingPanelCatalogSurfaceClassName(panelTextClass)}
+      className={floatingPanelCatalogSurfaceClassName()}
       aria-label="Media"
       data-kg-floating-panel-catalog-list="media"
       data-kg-media-layout={catalogLayout}
@@ -268,7 +268,8 @@ export function MediaCatalogPanelView({
           />
         )}
       />
-      <section ref={panelRef} className={floatingPanelCatalogBodyClassName(catalogMode === 'media' && previewItem ? 'overflow-hidden' : undefined)} data-kg-floating-panel-catalog-body="media">
+      <section ref={panelRef} className={floatingPanelCatalogBodyClassName()} data-kg-floating-panel-catalog-body="media" data-kg-city-sim-panel-scroll-owner="media">
+        {children}
         {catalogMode !== 'voice-studio' ? <><FlightSimTrainingSurfaceProjection surface="media" /><MotionCapturePlatformProjection variant="media" /></> : null}
         {catalogMode === 'voice-studio' ? (
           <VoiceStudioPanel />

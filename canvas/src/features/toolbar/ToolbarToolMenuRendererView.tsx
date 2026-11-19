@@ -5,7 +5,7 @@ import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRendererPanelState } from '@/features/panels/hooks/useRendererPanelState'
 import RenderSettingsSection from '@/lib/panels/views/RenderSettingsSection.impl'
-import { CollapsibleSection, ExpandCollapseAllButton, SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { CollapsibleSection, ExpandCollapseAllButton, PanelTabHeader } from 'agentic-design-system/react/panels'
 import { RendererPaletteSettings } from '@/features/toolbar/ui/RendererPaletteSettings'
 import { RendererHoverSettings } from '@/features/toolbar/ui/RendererHoverSettings'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -163,60 +163,62 @@ export function ToolbarToolMenuRendererView(props: {
   }, [])
 
   return (
-    <section>
-      <SettingsSectionHeader headingAs="h2" title="Renderer" actions={
+    <section className="agentic-panel-tab-layout">
+      <PanelTabHeader title="Renderer" actions={
         <ExpandCollapseAllButton allCollapsed={allCollapsed} onExpandAll={() => setAll(false)} onCollapseAll={() => setAll(true)} />
       } />
-      <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} {...disclosure('topology')} />
-      <section className={uiToolbarSettingsPanelBodyClassName}>
-        <React.Suspense fallback={null}>
-          <WorkspaceTableModeControlLazy />
-        </React.Suspense>
-      </section>
-      <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
-        <RendererPaletteSettings />
-        <RendererHoverSettings />
-      </CollapsibleSection>
-      <RenderSettingsSection
-        inspection={!!inspectionGraph}
-        layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
-        disclosure={disclosure}
-      />
-      <EdgeTypesRendererSettings
-        {...disclosure('edgeTypes')}
-        selectedEdgeType={edgeTypeDraft}
-        onSelectEdgeType={handleSelectEdgeType}
-      />
-      {showRadarGalaxyUi ? <RadarGalaxyRendererSettings {...disclosure('radar')} /> : null}
-      {showFlowchartUi ? <FlowchartRendererSettings {...disclosure('flowchart')} /> : null}
-      <CollapsibleSection headingAs="h3" title="Rich media" {...disclosure('richMedia')}>
-        <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
-          <PanelSelect
-            className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
-            value={richMediaPanelMode}
-            onValueChange={selectedValueInput => {
-              const v = String(selectedValueInput || '')
-              setRichMediaPanelMode(v === 'embed' ? 'embed' : 'snapshot')
-            }}
-          >
-            <option value="snapshot">Snapshot preview</option>
-            <option value="embed">Interactive embed</option>
-          </PanelSelect>
-        </ResponsiveControlRow>
-      </CollapsibleSection>
-      {showDesignWireframeUi ? <DesignWireframeSettings {...disclosure('design')} /> : null}
-      {showGraphEditorUi ? (
-        <section className="flex min-w-0 max-w-full flex-wrap gap-2" aria-label="Graph editor tools and inspector">
-          <GraphEditorToolRail
-            activeToolId={toolId}
-            onSelectTool={setToolId}
-            disabled={!graphData}
-          />
-          <section className="flex-1 basis-64 min-w-0 max-w-full">
-            <GraphEditorRightPanel />
-          </section>
+      <div className="agentic-panel-tab-body">
+        <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} {...disclosure('topology')} />
+        <section className={uiToolbarSettingsPanelBodyClassName}>
+          <React.Suspense fallback={null}>
+            <WorkspaceTableModeControlLazy />
+          </React.Suspense>
         </section>
-      ) : null}
+        <CollapsibleSection headingAs="h3" title="Appearance" {...disclosure('appearance')}>
+          <RendererPaletteSettings />
+          <RendererHoverSettings />
+        </CollapsibleSection>
+        <RenderSettingsSection
+          inspection={!!inspectionGraph}
+          layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
+          disclosure={disclosure}
+        />
+        <EdgeTypesRendererSettings
+          {...disclosure('edgeTypes')}
+          selectedEdgeType={edgeTypeDraft}
+          onSelectEdgeType={handleSelectEdgeType}
+        />
+        {showRadarGalaxyUi ? <RadarGalaxyRendererSettings {...disclosure('radar')} /> : null}
+        {showFlowchartUi ? <FlowchartRendererSettings {...disclosure('flowchart')} /> : null}
+        <CollapsibleSection headingAs="h3" title="Rich media" {...disclosure('richMedia')}>
+          <ResponsiveControlRow label="Panel mode" typeNode={<MainPanelTypeIcon iconKey="setting.text" />}>
+            <PanelSelect
+              className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
+              value={richMediaPanelMode}
+              onValueChange={selectedValueInput => {
+                const v = String(selectedValueInput || '')
+                setRichMediaPanelMode(v === 'embed' ? 'embed' : 'snapshot')
+              }}
+            >
+              <option value="snapshot">Snapshot preview</option>
+              <option value="embed">Interactive embed</option>
+            </PanelSelect>
+          </ResponsiveControlRow>
+        </CollapsibleSection>
+        {showDesignWireframeUi ? <DesignWireframeSettings {...disclosure('design')} /> : null}
+        {showGraphEditorUi ? (
+          <section className="flex min-w-0 max-w-full flex-wrap gap-2" aria-label="Graph editor tools and inspector">
+            <GraphEditorToolRail
+              activeToolId={toolId}
+              onSelectTool={setToolId}
+              disabled={!graphData}
+            />
+            <section className="flex-1 basis-64 min-w-0 max-w-full">
+              <GraphEditorRightPanel />
+            </section>
+          </section>
+        ) : null}
+      </div>
     </section>
   )
 }

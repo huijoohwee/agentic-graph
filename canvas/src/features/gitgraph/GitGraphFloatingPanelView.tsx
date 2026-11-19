@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 import { GitBranch, GitCommitHorizontal, GitMerge, PencilLine, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -173,50 +173,47 @@ export function GitGraphFloatingPanelView() {
 
   if (!code) {
     return (
-      <section className="flex h-full flex-col" aria-label="GitGraph command editor" data-kg-gitgraph-floating-panel="1">
-        <SettingsSectionHeader headingAs="h2" title="GitGraph" actions={<HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />} />
-        {documentHistory.length ? (
-          <ol className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]" aria-label="Version history list">
-            {documentHistory.map(({ entry, index }, versionIndex) => (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left text-xs last:border-b-0',
-                    index === historyIndex ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.button.hoverBg,
-                  )}
-                  aria-current={index === historyIndex ? 'step' : undefined}
-                  onClick={() => restoreHistory(index)}
-                  data-kg-version-history-index={index}
-                >
-                  <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                  <span className={UI_THEME_TOKENS.text.tertiary}>v{versionIndex + 1}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <section className={cn('px-1 text-xs', UI_THEME_TOKENS.text.secondary)}>No version history yet.</section>
-        )}
+      <section className="agentic-panel-tab-layout" aria-label="GitGraph command editor" data-kg-gitgraph-floating-panel="1">
+        <PanelTabHeader title="GitGraph" actions={<HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />} />
+        <div className="agentic-panel-tab-body">
+          {documentHistory.length ? (
+            <ol className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]" aria-label="Version history list">
+              {documentHistory.map(({ entry, index }, versionIndex) => (
+                <li key={entry.id}>
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center justify-between gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left text-xs last:border-b-0',
+                      index === historyIndex ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.button.hoverBg,
+                    )}
+                    aria-current={index === historyIndex ? 'step' : undefined}
+                    onClick={() => restoreHistory(index)}
+                    data-kg-version-history-index={index}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                    <span className={UI_THEME_TOKENS.text.tertiary}>v{versionIndex + 1}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <section className={cn('px-1 text-xs', UI_THEME_TOKENS.text.secondary)}>No version history yet.</section>
+          )}
+        </div>
       </section>
     )
   }
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col gap-2"
+      className="agentic-panel-tab-layout"
       aria-label="GitGraph command editor"
       data-kg-gitgraph-floating-panel="1"
       data-kg-mermaid-diagram-render-mode="list"
       data-kg-gitgraph-selected-row-key={selectedCommandKey || undefined}
       data-kg-gitgraph-selected-command={selectedCommand?.kind || undefined}
     >
-      <SettingsSectionHeader title={<>
-          <h2 className="agentic-panel-title truncate">GitGraph</h2>
-          <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
-            {buildCommandDescription(selectedCommand)}
-          </section>
-        </>} actions={
+      <PanelTabHeader title="GitGraph" subtitle={<span data-kg-gitgraph-selected-command-label="1">{buildCommandDescription(selectedCommand)}</span>} actions={
         <nav className="flex items-center gap-1" aria-label="GitGraph version and edit controls">
           <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
           <button
@@ -231,98 +228,100 @@ export function GitGraphFloatingPanelView() {
           </button>
         </nav>
       } />
-      <section className={GITGRAPH_CREATE_ACTION_GRID_CLASS_NAME} data-kg-gitgraph-create-actions="1">
-        <button
-          type="button"
-          className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-          aria-label="Add GitGraph commit"
-          title="Add GitGraph commit"
-          onClick={() => addCommand('commit')}
+      <div className="agentic-panel-tab-body">
+        <section className={GITGRAPH_CREATE_ACTION_GRID_CLASS_NAME} data-kg-gitgraph-create-actions="1">
+          <button
+            type="button"
+            className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+            aria-label="Add GitGraph commit"
+            title="Add GitGraph commit"
+            onClick={() => addCommand('commit')}
+          >
+            <GitCommitHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+            aria-label="Add GitGraph branch"
+            title="Add GitGraph branch"
+            onClick={() => addCommand('branch')}
+          >
+            <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+            aria-label="Add GitGraph merge"
+            title="Add GitGraph merge"
+            onClick={() => addCommand('merge')}
+          >
+            <GitMerge className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="App-toolbar__btn justify-center border-red-300/70 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-700/70 dark:bg-red-950/30 dark:text-red-300"
+            aria-label="Delete selected GitGraph command"
+            title="Delete selected GitGraph command"
+            disabled={!selectedCommand}
+            onClick={deleteSelectedCommand}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </section>
+        <section className="px-1">
+          <CardInlineTextEditor
+            id="kg-gitgraph-command-inline-editor"
+            value={selectedCommand?.raw || ''}
+            ariaLabel="Edit GitGraph command"
+            placeholder="Select a GitGraph command"
+            canEdit={!!selectedCommand}
+            editActivation="click"
+            editRequestKey={editRequestKey}
+            displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
+            editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
+            emptyClassName="text-[var(--kg-text-secondary)]"
+            onCommit={updateSelectedCommand}
+          />
+        </section>
+        <section
+          ref={commandListRef}
+          className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]"
+          data-kg-gitgraph-command-list="1"
         >
-          <GitCommitHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-          aria-label="Add GitGraph branch"
-          title="Add GitGraph branch"
-          onClick={() => addCommand('branch')}
-        >
-          <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className={cn('App-toolbar__btn justify-center', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-          aria-label="Add GitGraph merge"
-          title="Add GitGraph merge"
-          onClick={() => addCommand('merge')}
-        >
-          <GitMerge className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="App-toolbar__btn justify-center border-red-300/70 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-700/70 dark:bg-red-950/30 dark:text-red-300"
-          aria-label="Delete selected GitGraph command"
-          title="Delete selected GitGraph command"
-          disabled={!selectedCommand}
-          onClick={deleteSelectedCommand}
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      </section>
-      <section className="px-1">
-        <CardInlineTextEditor
-          id="kg-gitgraph-command-inline-editor"
-          value={selectedCommand?.raw || ''}
-          ariaLabel="Edit GitGraph command"
-          placeholder="Select a GitGraph command"
-          canEdit={!!selectedCommand}
-          editActivation="click"
-          editRequestKey={editRequestKey}
-          displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
-          editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
-          emptyClassName="text-[var(--kg-text-secondary)]"
-          onCommit={updateSelectedCommand}
-        />
-      </section>
-      <section
-        ref={commandListRef}
-        className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]"
-        data-kg-gitgraph-command-list="1"
-      >
-        {gitGraphModel.commands.map((command, index) => {
-          const selected = selectedCommand?.lineIndex === command.lineIndex
-          const rowKey = resolveCommandSelectionKey(command, index)
-          return (
-            <button
-              key={command.key}
-              type="button"
-              className={[
-                'flex w-full items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
-                selected
-                  ? uiSelectedRowStateClassName(true)
-                  : selectedCommand
-                    ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:bg-[var(--kg-panel-bg-hover)] hover:opacity-90'
-                    : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
-              ].join(' ')}
-              data-kg-gitgraph-command-row="1"
-              data-kg-gitgraph-command-kind={command.kind}
-              data-kg-gitgraph-command-line={command.lineIndex}
-              data-kg-gitgraph-command-row-key={rowKey || undefined}
-              data-kg-gitgraph-command-selected={selected ? '1' : undefined}
-              data-kg-gitgraph-command-dimmed={selectedCommand && !selected ? '1' : undefined}
-              onClick={() => selectCommand(command)}
-            >
-              <span className="w-16 shrink-0 text-xs uppercase tracking-normal">{command.kind}</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-xs">{command.label}</span>
-              <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
-            </button>
-          )
-        })}
-      </section>
-      <section className="truncate px-1 text-xs text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
-        {editStatus || `${gitGraphModel.commands.length} commands`}
-      </section>
+          {gitGraphModel.commands.map((command, index) => {
+            const selected = selectedCommand?.lineIndex === command.lineIndex
+            const rowKey = resolveCommandSelectionKey(command, index)
+            return (
+              <button
+                key={command.key}
+                type="button"
+                className={[
+                  'flex w-full items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
+                  selected
+                    ? uiSelectedRowStateClassName(true)
+                    : selectedCommand
+                      ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:bg-[var(--kg-panel-bg-hover)] hover:opacity-90'
+                      : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
+                ].join(' ')}
+                data-kg-gitgraph-command-row="1"
+                data-kg-gitgraph-command-kind={command.kind}
+                data-kg-gitgraph-command-line={command.lineIndex}
+                data-kg-gitgraph-command-row-key={rowKey || undefined}
+                data-kg-gitgraph-command-selected={selected ? '1' : undefined}
+                data-kg-gitgraph-command-dimmed={selectedCommand && !selected ? '1' : undefined}
+                onClick={() => selectCommand(command)}
+              >
+                <span className="w-16 shrink-0 text-xs uppercase tracking-normal">{command.kind}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">{command.label}</span>
+                <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
+              </button>
+            )
+          })}
+        </section>
+        <section className="truncate px-1 text-xs text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
+          {editStatus || `${gitGraphModel.commands.length} commands`}
+        </section>
+      </div>
     </section>
   )
 }

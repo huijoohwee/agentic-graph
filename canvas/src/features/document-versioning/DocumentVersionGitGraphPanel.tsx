@@ -1,5 +1,5 @@
 import React from 'react'
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader, SettingsSectionHeader } from 'agentic-design-system/react/panels'
 import { formatTimestamp } from '@/features/panels/utils/time'
 import { InteractiveMermaidDiagram, type InteractiveMermaidSelectionRow } from '@/lib/diagram/InteractiveMermaidDiagram'
 import {
@@ -137,73 +137,76 @@ export function DocumentVersionGitGraphPanel({
   if (!selectedVersions.length || !selectedSummary) {
     return (
       <section
-        className={`min-w-0 rounded px-3 py-2 text-xs ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.text.tertiary} ${className}`.trim()}
+        className={`agentic-panel-tab-layout ${className}`.trim()}
         data-kg-document-version-gitgraph-panel="1"
         data-kg-document-version-gitgraph-empty="1"
       >
-        {emptyLabel}
+        <PanelTabHeader title="Version Graph" />
+        <div className="agentic-panel-tab-body">{emptyLabel}</div>
       </section>
     )
   }
 
   return (
     <section
-      className={`flex h-full max-h-full min-h-0 min-w-0 flex-col overflow-hidden rounded ${UI_THEME_TOKENS.border.outline} ${className}`.trim()}
+      className={`agentic-panel-tab-layout ${className}`.trim()}
       data-kg-document-version-gitgraph-panel="1"
       data-kg-document-version-gitgraph-path={selectedPath}
       data-kg-document-version-gitgraph-selected-version={selectedVersion?.id || ''}
     >
-      <SettingsSectionHeader headingAs="h2" title="Version Graph" actionsClassName="max-w-[70%]" actions={<>
+      <PanelTabHeader title="Version Graph" actions={<>
         <span className={`min-w-0 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedPath}>{selectedPath}</span>
         <span className={UI_THEME_TOKENS.text.tertiary}>{`v${selectedSummary.count}`}</span>
         <time className={`min-w-0 truncate ${UI_THEME_TOKENS.text.tertiary}`} title={formatTimestamp(selectedSummary.latest.timestamp)}>{formatTimestamp(selectedSummary.latest.timestamp)}</time>
       </>} />
-      <section
-        className={compact ? UI_RESPONSIVE_COMPACT_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME : UI_RESPONSIVE_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME}
-        data-kg-document-version-gitgraph-viewport="1"
-      >
+      <div className="agentic-panel-tab-body">
         <section
-          className={UI_RESPONSIVE_DOCUMENT_VERSION_GITGRAPH_SURFACE_CLASSNAME}
-          role="group"
-          aria-label="Document version graph"
-          data-kg-document-version-gitgraph-surface="1"
-          data-kg-document-version-gitgraph-direct-selection="1"
+          className={compact ? UI_RESPONSIVE_COMPACT_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME : UI_RESPONSIVE_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME}
+          data-kg-document-version-gitgraph-viewport="1"
         >
-          <InteractiveMermaidDiagram
-            code={gitGraphCode}
-            ariaLabel="Document version graph"
-            rootThemeMode={themeMode}
-            svgSurfaceKey="document-version-graph"
-            selectedLabels={selectedDiagramLabels}
-            selectionRows={selectionRows}
-            selectedRowKey={selectedVersion?.id || ''}
-            dimUnselected={!!selectedRow}
-            onSelectedLabelChange={handleSvgSelectedLabelChange}
-            onSelectedRowKeyChange={handleSelectedVersionRowKeyChange}
-          />
+          <section
+            className={UI_RESPONSIVE_DOCUMENT_VERSION_GITGRAPH_SURFACE_CLASSNAME}
+            role="group"
+            aria-label="Document version graph"
+            data-kg-document-version-gitgraph-surface="1"
+            data-kg-document-version-gitgraph-direct-selection="1"
+          >
+            <InteractiveMermaidDiagram
+              code={gitGraphCode}
+              ariaLabel="Document version graph"
+              rootThemeMode={themeMode}
+              svgSurfaceKey="document-version-graph"
+              selectedLabels={selectedDiagramLabels}
+              selectionRows={selectionRows}
+              selectedRowKey={selectedVersion?.id || ''}
+              dimUnselected={!!selectedRow}
+              onSelectedLabelChange={handleSvgSelectedLabelChange}
+              onSelectedRowKeyChange={handleSelectedVersionRowKeyChange}
+            />
+          </section>
         </section>
-      </section>
-      {selectedReview && selectedVersion ? (
-        <section
-          className={`min-h-0 min-w-0 flex-1 overflow-auto border-t ${UI_THEME_TOKENS.panel.divider}`}
-          data-kg-document-version-gitgraph-selected-review="1"
-          data-kg-document-version-gitgraph-selected-review-version={selectedVersion.id}
-        >
-          <SettingsSectionHeader stickyHeader headingAs="h3" actionsClassName="max-w-[70%]"
-            title={selectedRow ? `v${selectedRow.versionNumber}` : 'Selected'} actions={<>
-            <span className={selectedReview.diff.changed ? 'text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary}>
-              {selectedReview.summary}
-            </span>
-            <span className={`min-w-0 flex-1 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedVersion.label}>
-              {selectedVersion.label}
-            </span>
-            <time className={`min-w-0 truncate ${UI_THEME_TOKENS.text.tertiary}`} title={formatTimestamp(selectedVersion.timestamp)}>{formatTimestamp(selectedVersion.timestamp)}</time>
-          </>} />
-          <pre className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] px-3 pb-2 font-mono text-xs leading-4 ${UI_THEME_TOKENS.text.primary}`}>
-            {selectedPatchText}
-          </pre>
-        </section>
-      ) : null}
+        {selectedReview && selectedVersion ? (
+          <section
+            className={`min-h-0 min-w-0 flex-1 overflow-auto border-t ${UI_THEME_TOKENS.panel.divider}`}
+            data-kg-document-version-gitgraph-selected-review="1"
+            data-kg-document-version-gitgraph-selected-review-version={selectedVersion.id}
+          >
+            <SettingsSectionHeader stickyHeader headingAs="h3" actionsClassName="max-w-[70%]"
+              title={selectedRow ? `v${selectedRow.versionNumber}` : 'Selected'} actions={<>
+              <span className={selectedReview.diff.changed ? 'text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary}>
+                {selectedReview.summary}
+              </span>
+              <span className={`min-w-0 flex-1 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedVersion.label}>
+                {selectedVersion.label}
+              </span>
+              <time className={`min-w-0 truncate ${UI_THEME_TOKENS.text.tertiary}`} title={formatTimestamp(selectedVersion.timestamp)}>{formatTimestamp(selectedVersion.timestamp)}</time>
+            </>} />
+            <pre className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] px-3 pb-2 font-mono text-xs leading-4 ${UI_THEME_TOKENS.text.primary}`}>
+              {selectedPatchText}
+            </pre>
+          </section>
+        ) : null}
+      </div>
     </section>
   )
 }

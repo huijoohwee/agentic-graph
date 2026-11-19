@@ -1,6 +1,6 @@
 import React from 'react'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
-import MainPanelSectionHeader from '@/features/panels/ui/MainPanelSectionHeader'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import Tooltip from 'agentic-design-system/react/hover'
 import { HELP_TAB_HEADER_TOOLTIP, UI_LABELS } from '@/lib/config'
 
@@ -16,8 +16,8 @@ export default function MainPanelHelpHeader({
   onExpandAll,
 }: MainPanelHelpHeaderProps) {
   return (
-    <MainPanelSectionHeader
-      ariaLabel={UI_LABELS.help}
+    <PanelTabHeader
+      aria-label={UI_LABELS.help}
       title={(
         <Tooltip
           content={HELP_TAB_HEADER_TOOLTIP}

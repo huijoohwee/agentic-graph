@@ -183,7 +183,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       data-kg-media-xr-metadata-status={grammarCatalog.hydration.status}
       data-kg-media-xr-metadata-version={String(grammarCatalog.version)}
     >
-      {presentation === 'full' && <><header className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+      {presentation === 'full' && <><header className={cn('grid grid-cols-1 gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
         <CinematicControlModeSelect />
         <section className="flex items-start gap-2">
           <XrMediaLibrarySummary metadataReady={sourceMetadataReady} metadataStatus={grammarCatalog.hydration.status} />
@@ -257,8 +257,8 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
         headingAs="h3"
         id="xr-media-environment-kits"
       >
-        <section className="grid gap-2" aria-label="XR environment kits" data-kg-media-xr-environments="1">
-          <section className="grid gap-1">
+        <section className="grid grid-cols-1 gap-2" aria-label="XR environment kits" data-kg-media-xr-environments="1">
+          <section className="grid grid-cols-1 gap-1">
             {visibleEnvironments.map(stage => {
               const active = runtime.plan.stageId === stage.id
               return (
@@ -328,7 +328,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
               })}
             </nav>
           </header>
-          {presentation === 'full' && subjectView === 'catalog' ? <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section> : null}
+          {presentation === 'full' && subjectView === 'catalog' ? <section className="grid grid-cols-1 gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section> : null}
           {(presentation === 'outliner' || subjectView === 'scene') ? (
             <section className="grid gap-2 border-t pt-2" aria-label="Placed XR subjects" data-kg-media-xr-placed-subjects="subjects-props">
               {!visibleSubjects.length && !stageObjects.length ? <p className="text-xs opacity-70">No matching subjects in this scene. Add from the library or change the filter.</p> : null}

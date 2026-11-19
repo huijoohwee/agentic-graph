@@ -745,7 +745,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   if (!mainPanelSectionHeader.includes('actionsClassName={panelFieldDecorationClassName(props.actionsClassName)}') || !mainPanelSectionHeader.includes('titleClassName={panelFieldDecorationClassName(props.titleClassName)}')) {
     throw new Error('Expected MainPanel section header title and action slots to be centralized')
   }
-  if (!helpHeader.includes('MainPanelSectionHeader')) {
+  if (!helpHeader.includes('PanelTabHeader')) {
     throw new Error('Expected Help header to reuse the shared MainPanel section header')
   }
   if (helpHeader.includes('border-t') || helpHeader.includes('mt-4')) {

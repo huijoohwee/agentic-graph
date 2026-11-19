@@ -12,7 +12,6 @@ import { buildUploadedMediaPanelItemFromStorage, buildUploadedMediaPanelItemId, 
 import { uploadFilesToUploadedMediaPanel } from '@/lib/storage/uploadedMediaPanelUpload'
 import { importUrlToUploadedMediaPanel } from '@/lib/storage/uploadedMediaPanelImportUrl'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { MediaLightboxPromptParameters } from '@/lib/ui/MediaLightbox'
 import { buildMediaLightboxPromptParameters } from '@/lib/ui/mediaLightboxPromptParameters'
 import { insertMediaIntoActiveCardInlineTextEditor } from '@/lib/cards/cardInlineTextExternalCommands'
@@ -31,8 +30,7 @@ const MEDIA_INLINE_INSERT_ACTIONS = MEDIA_INLINE_INSERT_ACTION_IDS
   .map(actionId => INLINE_VARIABLE_COMMAND_ACTIONS.find(action => action.id === actionId))
   .filter((action): action is MediaInlineInsertAction => !!action)
 
-export function MediaCatalogPanel() {
-  const panelTypography = usePanelTypography()
+export function MediaCatalogPanel({ children }: React.PropsWithChildren = {}) {
   const panelRef = React.useRef<HTMLElement | null>(null)
   const mediaListRef = React.useRef<HTMLElement | null>(null)
   const uploadInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -563,7 +561,7 @@ export function MediaCatalogPanel() {
       mediaListRef={mediaListRef}
       mediaNameDrafts={mediaNameDrafts}
       panelRef={panelRef}
-      panelTextClass={panelTypography.panelTextClass}
+      children={children}
       sourceMetadataItem={sourceMetadataItem}
       uploadInputRef={uploadInputRef}
       uploadedMediaItems={uploadedMediaItems}

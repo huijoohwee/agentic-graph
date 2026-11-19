@@ -363,7 +363,7 @@ export function CitySimFloatingPanelView() {
           </button>
         )}
       />
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+      <section className={floatingPanelCatalogBodyClassName()}>
         {!cityContentReady ? (
           <section
             className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}

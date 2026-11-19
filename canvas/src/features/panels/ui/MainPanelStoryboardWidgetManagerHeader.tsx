@@ -1,3 +1,4 @@
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 
 import Tooltip from 'agentic-design-system/react/hover'
@@ -10,7 +11,6 @@ import { getUiSectionActionClassName, getUiSectionChipClassName } from '@/lib/ui
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
 import {
-  UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
   UI_RESPONSIVE_SLIM_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
@@ -23,12 +23,6 @@ export default function MainPanelStoryboardWidgetManagerHeader(props: {
 }) {
   const { workflowMode, activeTab, onTabChange } = props
 
-  const uiSectionHeaderRowHeightClass = useGraphStore(
-    s => s.uiSectionHeaderRowHeightClass || UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
-  )
-  const uiSectionHeaderRowPaddingClass = useGraphStore(
-    s => s.uiSectionHeaderRowPaddingClass || 'py-1',
-  )
   const uiPanelMicroLabelTextSizeClass = useGraphStore(
     s => s.uiPanelMicroLabelTextSizeClass || 'text-xs',
   )
@@ -70,21 +64,7 @@ export default function MainPanelStoryboardWidgetManagerHeader(props: {
   )
 
   return (
-    <header
-      className={[
-        `mt-4 border-t ${UI_THEME_TOKENS.panel.divider} flex items-center justify-between mb-1`,
-        uiSectionHeaderRowHeightClass,
-        uiSectionHeaderRowPaddingClass,
-      ].join(' ')}
-      aria-label={UI_LABELS.workflowManager}
-    >
-      <section
-        className={[
-          `text-left flex items-center gap-1 ${UI_THEME_TOKENS.text.secondary}`,
-          uiPanelMicroLabelTextSizeClass,
-        ].join(' ')}
-        aria-label="Title"
-      >
+    <PanelTabHeader aria-label={UI_LABELS.workflowManager} title={(
         <Tooltip
           content={
             workflowMode
@@ -96,9 +76,7 @@ export default function MainPanelStoryboardWidgetManagerHeader(props: {
         >
           <span>{UI_LABELS.workflowManager}</span>
         </Tooltip>
-      </section>
-
-      <section className="flex items-center gap-2">
+      )} actions={<>
         {!workflowMode ? (
           <button
             type="button"
@@ -132,7 +110,6 @@ export default function MainPanelStoryboardWidgetManagerHeader(props: {
             menuWidthClass={UI_RESPONSIVE_SLIM_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
           />
         )}
-      </section>
-    </header>
+      </>} />
   )
 }

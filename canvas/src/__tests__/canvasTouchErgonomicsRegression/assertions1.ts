@@ -151,7 +151,7 @@ export function assertPhase1(fixture: SourceFixture) {
     !responsiveElementClassesText.includes('UI_RESPONSIVE_DATA_VIEW_SEARCH_INPUT_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_WORKSPACE_MODE_TAB_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_MARKDOWN_TOOLBAR_HIGHLIGHT_BADGE_CLASSNAME') ||
-    !responsiveElementClassesText.includes('UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME') ||
+
     !responsiveElementClassesText.includes('UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME') ||
@@ -393,8 +393,6 @@ export function assertPhase1(fixture: SourceFixture) {
     !responsiveToolbarCssText.includes('--kg-workspace-mode-tab-max-width') ||
     !responsiveToolbarCssText.includes('.kg-markdown-toolbar-highlight-badge') ||
     !responsiveToolbarCssText.includes('--kg-markdown-toolbar-highlight-badge-min-width') ||
-    !responsiveToolbarCssText.includes('.kg-data-view-header-actions') ||
-    !responsiveToolbarCssText.includes('--kg-data-view-header-actions-max-width') ||
     !responsiveToolbarCssText.includes('.kg-data-view-action--sm') ||
     !responsiveToolbarCssText.includes('--kg-data-view-action-sm-height') ||
     !responsiveToolbarCssText.includes('--kg-data-view-action-sm-padding-inline') ||

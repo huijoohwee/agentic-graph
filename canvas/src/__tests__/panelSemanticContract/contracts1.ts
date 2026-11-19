@@ -417,8 +417,8 @@ export const testResponsiveWorkspaceAndTableSurfacesStayBounded = () => {
   if (!markdownToolbar.includes('kg-workspace-toolbar-controls') || !markdownToolbar.includes('uiToolbarRowScrollClassName')) {
     throw new Error('Expected MarkdownWorkspaceToolbar controls to scroll on one mobile row')
   }
-  if (!markdownToolbar.includes('UI_TEXT_TRUNCATE')) {
-    throw new Error('Expected MarkdownWorkspaceToolbar labels to use shared ellipsis')
+  if (!markdownToolbar.includes('<ToggleButtonGroup') || !markdownToolbar.includes('pressed={effectivePaneVisibility.viewer}') || !markdownToolbar.includes('aria-label="Show Viewer preview pane"')) {
+    throw new Error('Expected the scrollable pane selector to present labelled and pressed shared toggle buttons')
   }
   if (
     !markdownToolbar.includes('UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME') ||
@@ -464,8 +464,8 @@ export const testResponsiveWorkspaceAndTableSurfacesStayBounded = () => {
   }
 
   const workspaceTableModeControl = readUtf8(workspaceTableModeControlPath)
-  if (!workspaceTableModeControl.includes('UI_TEXT_TRUNCATE') || !workspaceTableModeControl.includes('uiToolbarRowScrollJustifyBetweenClassName')) {
-    throw new Error('Expected WorkspaceTableModeControl rows to stay bounded with one-row scrolling')
+  if (!workspaceTableModeControl.includes('<MainPanelField') || !readUtf8(path.resolve(root, 'src/features/panels/ui/MainPanelField.tsx')).includes('<CanvasEditableKeyTypeValueRow')) {
+    throw new Error('WorkspaceTableModeControl should inherit bounded rows from the shared editable Key / Type / Value control')
   }
 }
 

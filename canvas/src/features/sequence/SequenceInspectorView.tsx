@@ -1,5 +1,5 @@
 import React from 'react'
-import { SettingsSectionHeader, PanelScrollRegion } from 'agentic-design-system/react/panels'
+import 'agentic-design-system/panel-tab-layout.css'
 
 export type SequenceInspectorItem = {
   id: string
@@ -18,7 +18,6 @@ export type SequenceInspectorViewProps = {
   onSelect: (id: string) => void
   disabled?: boolean
   ariaLabel?: string
-  textClassName?: string
   headingRef?: React.Ref<HTMLHeadingElement>
   beforeItems?: React.ReactNode
   selectedAction?: React.ReactNode
@@ -28,11 +27,11 @@ export type SequenceInspectorViewProps = {
 /** The native sequence inspector presentation, without document or playback ownership. */
 export function SequenceInspectorView({
   title, summary, status, items, selectedId, onSelect, disabled = false,
-  ariaLabel = 'Sequence inspector', textClassName = '', headingRef, beforeItems, selectedAction, footer,
+  ariaLabel = 'Sequence inspector', headingRef, beforeItems, selectedAction, footer,
 }: SequenceInspectorViewProps) {
-  return <PanelScrollRegion className={`sequence-flow sequence-inspector ${textClassName}`} aria-label={ariaLabel} aria-busy={disabled || undefined}>
-    <SettingsSectionHeader title={<h2 className="agentic-panel-title" ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2>} />
-    <section className="agentic-panel-section-body">
+  return <section className="agentic-panel-tab-layout sequence-flow sequence-inspector" aria-label={ariaLabel} aria-busy={disabled || undefined}>
+    <header className="agentic-panel-tab-header"><h2 className="agentic-panel-section-title" ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2></header>
+    <section className="agentic-panel-tab-body">
       <p>{summary}</p>
       {beforeItems}
       <ol>{items.map((item, index) => <li key={item.id}>
@@ -44,5 +43,5 @@ export function SequenceInspectorView({
       <p role="status">{status}</p>
       {footer}
     </section>
-  </PanelScrollRegion>
+  </section>
 }

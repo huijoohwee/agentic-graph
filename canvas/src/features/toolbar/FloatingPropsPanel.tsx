@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import React from 'react'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -6,7 +6,6 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import { isPropsPanelWidgetPaletteEntry } from '@/features/storyboard-widget-manager/registryTemplates'
 import WidgetPalette from '@/features/toolbar/WidgetPalette'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { GroupPanelPaletteAction } from '@/features/toolbar/GroupPanelPaletteAction'
 
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
@@ -30,20 +29,22 @@ export function FloatingPropsPanel() {
 
   return (
     <section
-      className={UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME}
+      className="agentic-panel-tab-layout"
       aria-label="Props Panel"
       data-kg-props-panel-surface="widget-palette"
     >
-      <SettingsSectionHeader headingAs="h2" title="Props Panel" />
-      {!storyboardRendererActive && !dashboardActive ? (
-        <p className={`px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`} role="status">
-          Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
-        </p>
-      ) : null}
-      <GroupPanelPaletteAction active={storyboardRendererActive} />
-      <WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} dashboardActive={dashboardActive}>
-        {dashboardActive && <React.Suspense fallback={<li>Loading widgets…</li>}><DashboardWidgetPalette /></React.Suspense>}
-      </WidgetPalette>
+      <PanelTabHeader title="Props Panel" />
+      <div className="agentic-panel-tab-body">
+        {!storyboardRendererActive && !dashboardActive ? (
+          <p className={UI_THEME_TOKENS.text.secondary} role="status">
+            Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
+          </p>
+        ) : null}
+        <GroupPanelPaletteAction active={storyboardRendererActive} />
+        <WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} dashboardActive={dashboardActive}>
+          {dashboardActive && <React.Suspense fallback={<li>Loading widgets…</li>}><DashboardWidgetPalette /></React.Suspense>}
+        </WidgetPalette>
+      </div>
     </section>
   )
 }

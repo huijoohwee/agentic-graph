@@ -1,4 +1,4 @@
-import { SettingsSectionHeader } from 'agentic-design-system/react/panels'
+import { PanelTabHeader } from 'agentic-design-system/react/panels'
 import 'agentic-design-system/collection-layout.css'
 import { useToolbarIconClass } from '@/hooks/useToolbarIconClass'
 import React from 'react'
@@ -11,12 +11,12 @@ type DataAttributes = Record<`data-${string}`, string | undefined>
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT = 'compact-list'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT = 'media-3-rows'
 
-export function floatingPanelCatalogSurfaceClassName(extraClassName?: string): string {
-  return cn('flex h-full min-h-0 flex-col overflow-hidden', extraClassName)
+export function floatingPanelCatalogSurfaceClassName(): string {
+  return 'agentic-panel-tab-layout'
 }
 
-export function floatingPanelCatalogBodyClassName(extraClassName?: string): string {
-  return cn('min-h-0 flex-1 overflow-auto', extraClassName)
+export function floatingPanelCatalogBodyClassName(): string {
+  return 'agentic-panel-tab-body'
 }
 
 export function normalizeFloatingPanelCatalogSearchText(value: string): string {
@@ -111,23 +111,15 @@ export function FloatingPanelCatalogHeader({
   trailingActions?: React.ReactNode
 }) {
   return (
-    <SettingsSectionHeader
-      ariaLabel={`${title} header`}
-      className="z-30 shrink-0 flex-wrap"
-      stickyHeader
+    <PanelTabHeader
+      aria-label={`${title} header`}
       data-kg-floating-panel-catalog-header="1"
       data-kg-floating-panel-catalog-header-fixed="1"
       {...dataAttributes}
-      title={<>
-        <h2 className="agentic-panel-title truncate">{title}</h2>
-        <p className={cn('truncate text-xs font-normal', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
-      </>}
-      actionsClassName="min-w-0 max-w-full"
-      actions={(actions || searchControl || trailingActions) && <section className="contents" aria-label={actionsLabel}>
-        {actions}
-        {searchControl}
-        {trailingActions}
-      </section>}
+      title={title}
+      subtitle={subtitle}
+      actionsLabel={actionsLabel}
+      actions={(actions || searchControl || trailingActions) && <>{actions}{searchControl}{trailingActions}</>}
     />
   )
 }
