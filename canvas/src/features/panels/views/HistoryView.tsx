@@ -367,7 +367,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
         id={`history-${tab}-panel`}
         role="tabpanel"
         aria-labelledby={`history-${tab}-tab`}
-        className="flex-1 overflow-auto px-3 py-2 space-y-6"
+        className="agentic-panel-scroll-region flex-1 space-y-6"
       >
         {tab === 'projects' && <React.Suspense fallback={<p role="status">Loading projects…</p>}><WorkspaceProjectPanel /></React.Suspense>}
         {tab === 'history' && filteredRecent.length > 0 && (

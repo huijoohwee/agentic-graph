@@ -9,7 +9,7 @@ export function WorkspaceDataViewFloatingPanelView() {
 
   if (!binding) {
     return (
-      <section className="flex h-full items-center justify-center p-4" aria-label={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}>
+      <section className="flex h-full items-center justify-center" aria-label={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}>
         <p className={['max-w-sm text-center text-sm', UI_THEME_TOKENS.text.secondary].join(' ')}>
           Open a table, multi-dimensional table, kanban, Calendar, or geospatial Viewer surface to edit View settings here.
         </p>

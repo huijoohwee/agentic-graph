@@ -222,7 +222,6 @@ export function ToolbarToolMenu({
   const managedHeaderActionsView: FloatingManagedHeaderActionsView | null =
     floatingPanelView === 'renderer' ? floatingPanelView : null
   const floatingPanelBodyClassName = cn(
-    'mt-1',
     UI_RESPONSIVE_FLOATING_PANEL_CONTENT_CLASSNAME,
     FLOATING_PANEL_FULL_HEIGHT_VIEWS.has(floatingPanelView)
       ? 'flex-1 min-h-0 overflow-hidden'
@@ -386,7 +385,7 @@ export function ToolbarToolMenu({
               </React.Suspense>
             )}
             {floatingPanelView === 'graphTraversal' && (
-              <section className="space-y-2" aria-label="Graph traversal">
+              <section aria-label="Graph traversal">
                 <SettingsSectionHeader headingAs="h2" title="Graph traversal" ariaLabel="Graph traversal actions" className="flex-wrap" actions={<>
                   <nav className={`${uiToolbarRowScrollClassName} gap-2`} aria-label="Traversal tools">
                     <button

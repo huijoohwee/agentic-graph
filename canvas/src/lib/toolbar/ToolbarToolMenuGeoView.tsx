@@ -1,4 +1,5 @@
 import React from 'react'
+import { CollapsibleSection } from 'agentic-design-system/react/panels'
 import { useShallow } from 'zustand/react/shallow'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
@@ -213,21 +214,23 @@ export const GeoView = React.memo(function GeoView(props: {
   return (
     <section className="h-full flex flex-col" aria-label="Geospatial panel">
       <section
-        className={cn('grid gap-0.5 border-b px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
         aria-label="Selected XR environment"
         data-kg-geo-xr-environment={selectedEnvironment.id}
         data-kg-geo-xr-environment-source="xr-motion-reference-runtime"
       >
-        <span className={UI_THEME_TOKENS.text.tertiary}>XR environment</span>
-        <strong className="text-xs">{selectedEnvironment.label}</strong>
-        <span className={UI_THEME_TOKENS.text.secondary}>
-          {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
-        </span>
-        {selectedEnvironment.geospatialContext?.purpose === 'regional-viewport-only' ? (
-          <span className={UI_THEME_TOKENS.text.tertiary} data-kg-geo-xr-context="regional-viewport-only">
-            {selectedEnvironment.geospatialContext.label} · local blockout preview only · no shot or structure geotags
-          </span>
-        ) : null}
+        <CollapsibleSection title="XR environment" headingAs="h2" defaultCollapsed={false} flushTop>
+          <div className="grid">
+            <strong>{selectedEnvironment.label}</strong>
+            <span className={UI_THEME_TOKENS.text.secondary}>
+              {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
+            </span>
+            {selectedEnvironment.geospatialContext?.purpose === 'regional-viewport-only' ? (
+              <span className={UI_THEME_TOKENS.text.tertiary} data-kg-geo-xr-context="regional-viewport-only">
+                {selectedEnvironment.geospatialContext.label} · local blockout preview only · no shot or structure geotags
+              </span>
+            ) : null}
+          </div>
+        </CollapsibleSection>
       </section>
       {geospatialModeEnabled ? (
         <ErrorBoundary>

@@ -10,7 +10,11 @@ assert(geo.includes("from 'agentic-design-system/react/ktv'"));assert(!geo.inclu
 assert(!form.includes('KTV_FIELD_GRID_CLASS_NAME'),'form fields must use the same renderer')
 const base=read('node_modules/@agentic-base/views-react/packages/views-react/src/controls/MenuControls.tsx')
 assert(!base.includes('function KeyTypeValueRow'),'the installed Base source cannot retain the row renderer')
-for(const p of ['package.json','canvas/package.json'])assert.equal(JSON.parse(read(p)).dependencies['agentic-design-system'],'github:huijoohwee/agentic-design-system#9a1ec581124c9fb7868903c0d42581e151c59fe6')
+const designSystemRevision = JSON.parse(read('canvas/src/styles/shared-ui-profile.pin.json')).profile.registryRevision
+assert.match(designSystemRevision, /^[a-f0-9]{40}$/u)
+for (const manifest of ['package.json', 'canvas/package.json']) {
+  assert.equal(JSON.parse(read(manifest)).dependencies['agentic-design-system'], `github:huijoohwee/agentic-design-system#${designSystemRevision}`)
+}
 console.log('PASS direct Design System KTV ownership; no Base, form or geospatial row variant')
 
 assert(read('canvas/src/features/panels/views/graph-fields/GraphFieldsPanelControls.tsx').includes("from '@/lib/ui/panelFormControls'"))
