@@ -48,8 +48,8 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   if (!tabHeader.includes('uiToolbarRowScrollClassName') || !tabHeader.includes('uiToolbarRowScrollJustifyEndClassName')) {
     throw new Error('Expected TabHeader shell to use the toolbar row-scroll SSOT')
   }
-  if (!tabHeader.includes('basis-full w-full sm:basis-auto sm:w-72')) {
-    throw new Error('Expected TabHeader search shell to expand full-width on narrow widths')
+  if (!tabHeader.includes('w-[min(') || tabHeader.includes('w-full sm:w-auto sm:shrink-0')) {
+    throw new Error('Expected the search field and panel tools to leave room for the mobile tab strip')
   }
   const designSystemRoot = path.resolve(root, '..', 'node_modules/agentic-design-system')
   const designSystemPanelTabs = readUtf8(path.resolve(designSystemRoot, 'packages/react-panels/src/FloatingPanelTabs.tsx'))
