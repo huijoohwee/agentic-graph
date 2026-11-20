@@ -78,7 +78,7 @@ const readFrameTranscriptSegments = (value: unknown): VideoAgentTranscriptSegmen
   return [...byIndex.values()].sort((left, right) => left.startMs - right.startMs || left.index - right.index)
 }
 
-function buildSourceUrlAtTime(sourceUrl: string, timeSeconds: number): string {
+export function buildSourceUrlAtTime(sourceUrl: string, timeSeconds: number): string {
   const raw = String(sourceUrl || '').trim()
   if (!raw) return ''
   try {
@@ -125,7 +125,7 @@ export function buildVideoAgentTranscriptPanelSrcDoc(args: {
   }))).replace(/</g, '\\u003c')
 
   return [
-    '<main data-kg-video-agent-transcript-panel="1" data-kg-rich-media-panel-size="viewport" aria-label="Timeline-synchronized source transcript">',
+    `<main data-kg-video-agent-transcript-panel="1"${readObject(args.sourceTranscript)?.preview === true ? ' data-kg-workspace-transcript="1"' : ''} data-kg-rich-media-panel-size="viewport" aria-label="Timeline-synchronized source transcript">`,
     '<header><p>Source transcript</p><h1>Timeline transcript</h1></header>',
     `<section aria-label="Transcript cues"><ol>${cueItems}</ol>${emptyState}</section>`,
     '</main>',

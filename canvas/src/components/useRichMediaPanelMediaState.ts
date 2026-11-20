@@ -72,6 +72,7 @@ export type RichMediaPanelMediaState = {
   panelSelectedTab: string
   proxiedUrl: string
   rawUrl: string
+  workspaceTranscriptTimeMs: number | null
   ready: boolean
   richMediaPanelMode: string
   safeOpenUrl: string
@@ -141,13 +142,9 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
       void 0
     }
   }, [safeOpenUrl])
-  const iframeEmbed = React.useMemo(() => (
-    kind === 'iframe' ? resolveIframeEmbed({ url: rawUrl }) : null
-  ), [kind, rawUrl])
+  const iframeEmbed = React.useMemo(() => kind === 'iframe' ? resolveIframeEmbed({ url: rawUrl }) : null, [kind, rawUrl])
   const versionedTextOutputActive = (props.panel?.outputVersions?.length || 0) > 0
-  const inlineSrcDoc = React.useMemo(() => (
-    versionedTextOutputActive ? '' : typeof props.srcDoc === 'string' ? props.srcDoc.trim() : ''
-  ), [props.srcDoc, versionedTextOutputActive])
+  const inlineSrcDoc = React.useMemo(() => typeof props.srcDoc === 'string' && !versionedTextOutputActive ? props.srcDoc.trim() : '', [props.srcDoc, versionedTextOutputActive])
   const [grabMapsPoiPreviewSrcDoc, setGrabMapsPoiPreviewSrcDoc] = React.useState<string>(() => {
     const payload = readLatestGrabMapsPoiRichMediaPreview()
     if (!payload) return ''
@@ -180,6 +177,8 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     return subscribeGrabMapsPoiRichMediaPreview(payload => applyPayload(payload))
   }, [props.overlayId])
   const effectiveInlineSrcDoc = inlineSrcDoc || grabMapsPoiPreviewSrcDoc
+  const isWorkspaceTranscript = effectiveInlineSrcDoc.startsWith('<main data-kg-video-agent-transcript-panel="1" data-kg-workspace-transcript="1"')
+  const [transcriptTimeMs, setTranscriptTimeMs] = React.useState(0)
   const inlineSrcDocRequestsPanelScroll = React.useMemo(() => shouldUsePanelOwnedRichMediaPanelSrcDocScroll(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
   const inlineSrcDocRequestsMediaScroll = React.useMemo(() => shouldUseMediaOwnedRichMediaPanelSrcDocScroll(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
   const inlineSrcDocUsesViewportSize = React.useMemo(() => shouldUseViewportRichMediaPanelSrcDocSize(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
@@ -339,7 +338,10 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
       override,
     })
   }, [effectiveInlineSrcDoc, normalizedInlineSrcDoc, props.overlayId, timelineDocumentKey, timelineDurationUnits])
-  React.useEffect(() => { resolveTimelineTransportFrame() }, [resolveTimelineTransportFrame, timelineTransportPlaying, timelineTransportPosition, graphDataRevision])
+  React.useEffect(() => {
+    const frame = resolveTimelineTransportFrame()
+    if (isWorkspaceTranscript && frame) setTranscriptTimeMs(frame.timeMs)
+  }, [isWorkspaceTranscript, resolveTimelineTransportFrame, timelineTransportPlaying, timelineTransportPosition, graphDataRevision])
   const deliverTimelineFrameToSrcDocPreview = React.useCallback((
     frame: HTMLIFrameElement | null,
     payload: RichMediaTimelineTransportFrame,
@@ -364,6 +366,10 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
       void 0
     }
   }, [props.sourcePlayback, props.mapTimelineTransportFrame])
+  const deliverPreviewFrame = React.useCallback((payload: RichMediaTimelineTransportFrame) => {
+    if (isWorkspaceTranscript) setTranscriptTimeMs(payload.timeMs)
+    for (const frame of [inlineSrcDocFrameRef.current, directVideoFallbackFrameRef.current]) deliverTimelineFrameToSrcDocPreview(frame, payload)
+  }, [deliverTimelineFrameToSrcDocPreview, isWorkspaceTranscript])
   const syncInlineSrcDocTheme = React.useCallback(() => {
     const payload = { type: RICH_MEDIA_PANEL_SRCDOC_THEME_MESSAGE, theme: resolvedThemeMode }
     try {
@@ -387,8 +393,8 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     const payload = resolveTimelineTransportFrame(override)
     if (!payload) return
     if (!payload.targetOverlayId && timelineDurationUnits <= 0) publishRichMediaTimelineTransportFrame(payload)
-    for (const frame of [inlineSrcDocFrameRef.current, directVideoFallbackFrameRef.current]) deliverTimelineFrameToSrcDocPreview(frame, payload)
-  }, [deliverTimelineFrameToSrcDocPreview, resolveTimelineTransportFrame, timelineDurationUnits])
+    deliverPreviewFrame(payload)
+  }, [deliverPreviewFrame, resolveTimelineTransportFrame, timelineDurationUnits])
   const clearInlineSrcDocTimelineFrameBurst = React.useCallback(() => {
     inlineSrcDocTimelineBurstGenerationRef.current += 1
     inlineSrcDocTimelineFrameBurstTimeoutsRef.current.forEach(timeoutId => window.clearTimeout(timeoutId))
@@ -417,19 +423,16 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
       if (!payload || payload.type !== 'agentic-graph:timeline-transport-frame' || payload.targetOverlayId) return
       if (payload.documentKey !== timelineDocumentKey) return
       if (payload.playing) {
-        const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
-          ? performance.now()
-          : Date.now()
+        const now = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now()
         if (now - inlineSrcDocTimelineDeliveryNowRef.current < 70) return
         inlineSrcDocTimelineDeliveryNowRef.current = now
       }
       const next = resolveTimelineTransportFrame() || payload
-      deliverTimelineFrameToSrcDocPreview(inlineSrcDocFrameRef.current, next.targetOverlayId ? next : payload)
-      deliverTimelineFrameToSrcDocPreview(directVideoFallbackFrameRef.current, next.targetOverlayId ? next : payload)
+      deliverPreviewFrame(next.targetOverlayId ? next : payload)
     }
     window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, handleTimelineFrame)
     return () => window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, handleTimelineFrame)
-  }, [deliverTimelineFrameToSrcDocPreview, resolveTimelineTransportFrame, timelineDocumentKey])
+  }, [deliverPreviewFrame, resolveTimelineTransportFrame, timelineDocumentKey])
   React.useEffect(() => {
     if (typeof window === 'undefined') return
     const handleSrcDocReady = (event: MessageEvent) => {
@@ -576,6 +579,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     proxiedUrl,
     rawUrl,
     ready,
+    workspaceTranscriptTimeMs: isWorkspaceTranscript ? transcriptTimeMs : null,
     richMediaPanelMode,
     safeOpenUrl,
     scheduleInlineSrcDocTimelineFrameBurst,

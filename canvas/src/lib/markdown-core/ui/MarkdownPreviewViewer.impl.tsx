@@ -13,10 +13,7 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_COPY } from '@/lib/config'
-import {
-  normalizeLooseKey,
-  parseMarkdownWikiHref,
-} from 'grph-shared/markdown/wikiLinks'
+import { normalizeLooseKey, parseMarkdownWikiHref } from 'grph-shared/markdown/wikiLinks'
 import type { MarkdownSourceFilesPanelIntegration } from '@/features/markdown/ui/markdownSourceFilesPanelTypes'
 import { useMarkdownExplorerControls } from '@/features/markdown/ui/useMarkdownExplorerControls'
 import { encodeUtf8ToBase64 } from '@/features/markdown/markdownRoundTrip'
@@ -37,6 +34,7 @@ import {
 } from './markdownPreviewViewerMode'
 import { useMarkdownVariablePreviewSource } from './markdownInlineVariableMediaPreview'
 import { MarkdownPreviewScrollSurface } from './MarkdownPreviewScrollSurface'
+const WorkspaceSourceTranscript = React.lazy(() => import('@/features/video-agent/WorkspaceSourceTranscript'))
 const MARKDOWN_INLINE_EMBED_MAX_CHARS = 120_000
 const MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS = 120_000
 const MARKDOWN_MERMAID_DEFER_DOC_CHARS = 90_000
@@ -166,7 +164,6 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     () => deriveMarkdownPreviewDocumentMode({ sourceMarkdownText, tokens }),
     [sourceMarkdownText, tokens],
   )
-
   const embeddedMarkdownBase64 = React.useMemo(() => {
     const src = typeof sourceMarkdownText === 'string' ? sourceMarkdownText : ''
     if (!src) return ''
@@ -244,7 +241,6 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     }
     return out
   }, [variableSsotEntries])
-
   const frontmatterModeEnabled = useGraphStore(s => s.frontmatterModeEnabled || false)
 
   const explorerControls = useMarkdownExplorerControls({
@@ -506,6 +502,9 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     markdownViewerMediaMode,
   ])
 
+  const transcript = frontmatterMeta.kgVideoAgentTranscriptPreview === true && <React.Suspense fallback={<p>Loading transcript…</p>}>
+    <WorkspaceSourceTranscript key={activeDocumentPath} documentPath={activeDocumentPath} collapsible={frontmatterMeta.kgVideoAgentInlineSourceText === true} />
+  </React.Suspense>
   const previewContent = (
     <MarkdownPreviewScrollSurface
       forbidCopy={forbidCopy}
@@ -565,7 +564,8 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
           getMarkdownViewerWidthWrapperClassName(markdownViewerWidthMode || 'standard')
         }
       >
-         {body}
+        {body}
+        {transcript}
       </ViewerSurface>
     </MarkdownPreviewScrollSurface>
   )

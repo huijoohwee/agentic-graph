@@ -85,6 +85,7 @@ async function acceptsSavedVideoAgentImport(fs: WorkspaceFs, saved: SavedUrlImpo
   const header = extractYamlFrontmatterHeaderBlock(saved.text)
   if (!header || readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentImport') !== 'true') return !requireOwned
   if (!fitsVideoImportFile(saved.text)) return false
+  if (!readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentSourceDurationMs')) return false
   if (readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentTranscriptPreview') === 'true') {
     const folder = saved.path.slice(0, saved.path.lastIndexOf('/') + 1)
     const manifest = await fs.readFileText(folder + 'source.json')

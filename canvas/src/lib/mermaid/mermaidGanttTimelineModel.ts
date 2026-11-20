@@ -86,7 +86,7 @@ function resolveGanttTimelineTickStep(totalMinutes: number): number {
   const targetTickCount = 6
   const rawStep = Math.max(1, totalMinutes / targetTickCount)
   const candidates = [1, 2, 5, 10, 15, 30, 60, 120, 240, 480]
-  return candidates.find(candidate => candidate >= rawStep) || 480
+  return candidates.find(candidate => candidate >= rawStep) ?? Math.ceil(rawStep)
 }
 
 export function formatMermaidGanttTimelineOffset(value: number): string {

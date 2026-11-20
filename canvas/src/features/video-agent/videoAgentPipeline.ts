@@ -63,6 +63,7 @@ export type VideoAgentPipelineInput = {
   height?: number
   fps?: number
   durationMs?: number
+  sourceDurationMs?: number
   maxFrameSamples?: number
   engineHint?: string
   workspaceOutputRoot?: string
@@ -110,6 +111,7 @@ export type VideoAgentPipeline = {
   source: {
     sourceUrl: string
     sourceKey: string
+    durationMs: number
     externalDependency: false
   }
   referenceBoundary: typeof VIDEO_AGENT_REFERENCE_BOUNDARY
@@ -409,6 +411,7 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
   if (!Array.isArray(capabilities)) return capabilities
 
   const durationMs = clampInteger(input.durationMs, 7000, 1000, 600000)
+  const sourceDurationMs = clampInteger(input.sourceDurationMs, durationMs, 1, Number.MAX_SAFE_INTEGER)
   const fps = clampInteger(input.fps, 24, 1, 120)
   const width = clampInteger(input.width, 1280, 1, 7680)
   const height = clampInteger(input.height, 720, 1, 4320)
@@ -416,16 +419,16 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
   const workspaceOutputRoot = normalizeVideoAgentWorkspaceOutputRootPath(input.workspaceOutputRoot)
   const stages = buildStages(capabilities, durationMs)
   const reasoningArtifacts = buildReasoningArtifacts(capabilities, workspaceOutputRoot)
-  const frameBoundingBoxes = buildVideoAgentFrameBoundingBoxes(durationMs, sourceUrl, input.maxFrameSamples)
+  const frameBoundingBoxes = buildVideoAgentFrameBoundingBoxes(sourceDurationMs, sourceUrl, input.maxFrameSamples)
   const datasetRuntime = buildVideoAgentDatasetRuntime({
     frameBoundingBoxes,
     saveFilename: buildVideoAgentWorkspaceOutputPath('visual-dataset.json', workspaceOutputRoot),
     schemaVersion: VIDEO_AGENT_SCHEMA_VERSION,
     sourceUrl,
   })
-  const sourceVideoTimelineTrack = buildSourceVideoTimelineTrack(durationMs, frameBoundingBoxes)
-  const frameByFrameTimelineTrack = buildFrameByFrameTimelineTrack(durationMs, frameBoundingBoxes)
-  const audioTimelineTrack = buildAudioTimelineTrack(durationMs)
+  const sourceVideoTimelineTrack = buildSourceVideoTimelineTrack(sourceDurationMs, frameBoundingBoxes)
+  const frameByFrameTimelineTrack = buildFrameByFrameTimelineTrack(sourceDurationMs, frameBoundingBoxes)
+  const audioTimelineTrack = buildAudioTimelineTrack(sourceDurationMs)
   const timelineTracks = [sourceVideoTimelineTrack, frameByFrameTimelineTrack, audioTimelineTrack]
   const stream = {
     primary: 'video/mp4',
@@ -486,6 +489,7 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
     sourceVideo: {
       url: sourceUrl,
       sourceKey: buildSourceKey(sourceUrl),
+      durationMs: sourceDurationMs,
       externalDependency: false,
       playbackEmbedUrl: buildVideoAgentSourcePlaybackUrl(sourceUrl),
     },
@@ -565,6 +569,7 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
       source: {
         sourceUrl,
         sourceKey: data.sourceVideo.sourceKey,
+        durationMs: sourceDurationMs,
         externalDependency: false,
       },
       referenceBoundary: VIDEO_AGENT_REFERENCE_BOUNDARY,

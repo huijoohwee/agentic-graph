@@ -25,7 +25,8 @@ export function* videoImportTextParts(text: string): Generator<string> {
 export function buildBoundedVideoImportPreview(
   transcript: Transcript,
   sourceText: string,
-  render: (transcript: Transcript, body: string, sampled: boolean) => string,
+  sourceDurationMs: number,
+  render: (transcript: Transcript, body: string, sampled: boolean, inlineSource?: boolean) => string,
 ): { markdown: string; sampled: boolean; storedGraph?: string } {
   const { sourceTranscript, frameByFrameTranscript } = transcript
   const segments = sourceTranscript.segments
@@ -56,15 +57,44 @@ export function buildBoundedVideoImportPreview(
       },
       frameByFrameTranscript: frameByFrameTranscript.map(row => ({ ...row, text: excerpt(row.text) })),
     }
-    const body = `Transcript preview with ${sampled.length} sampled cues from ${segments.length}. [Full source text](./transcript.md) · [Source manifest](./source.json) · [Parsed transcript](./parse.json)`
+    const body = `${segments.length} transcript cues. [Full source text](./transcript.md) · [Source manifest](./source.json) · [Parsed transcript](./parse.json)`
     const markdown = render(preview, body, true)
-    if (fitsVideoImportFile(markdown)) return { markdown, sampled: true }
+    if (fitsVideoImportFile(markdown)) {
+      if (sourceText && fitsVideoImportFile(sourceText) && markdown.length - body.length + sourceText.length < FILE_BYTE_LIMIT) {
+        const inline = render(preview, sourceText, true, true)
+        if (fitsVideoImportFile(inline)) return { markdown: inline, sampled: true }
+      }
+      return { markdown, sampled: true }
+    }
     if (!storedGraph) storedGraph = markdown
   }
   // Long source URLs and other graph metadata can exceed the budget independently of cues.
   return { sampled: true, storedGraph, markdown: [
-    '---', 'kgVideoAgentImport: true', 'kgVideoAgentTranscriptPreview: true', 'kgVideoAgentStoredGraph: true', '---',
+    '---', 'kgVideoAgentImport: true', 'kgVideoAgentTranscriptPreview: true', 'kgVideoAgentStoredGraph: true',
+    `kgVideoAgentSourceDurationMs: ${sourceDurationMs}`, '---',
     '', '# Video import', '', 'The graph is stored in parts because it exceeds the preview size limit.', '',
     '[Graph parts](./graph.md) · [Full source text](./transcript.md) · [Source manifest](./source.json) · [Parsed transcript](./parse.json)', '',
   ].join('\n') }
+}
+
+// YAML scalar aliases keep connected nodes independently readable after parsing while
+// storing identical HTML and JSON only once in a bounded graph.
+export function createVideoImportScalarWriter(compact: boolean) {
+  const first = new Map<string, { line: number; anchor: string }>()
+  return (lines: string[], indent: string, key: string, value: string) => {
+    const text = value.replace(/\r/g, '').trim()
+    if (!text) return
+    const previous = first.get(text)
+    if (previous) {
+      if (!previous.anchor) {
+        previous.anchor = `value${previous.line}`
+        lines[previous.line] = lines[previous.line].replace(/\|-$/, `&${previous.anchor} |-`)
+      }
+      lines.push(`${indent}${key}: *${previous.anchor}`)
+      return
+    }
+    if (compact) first.set(text, { line: lines.length, anchor: '' })
+    lines.push(`${indent}${key}: |-`)
+    for (const line of text.split('\n')) lines.push(`${indent}  ${line}`)
+  }
 }

@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom'
+import { readWorkspaceTranscript } from '@/features/video-agent/WorkspaceSourceTranscript'
 import { buildVideoAgentPipeline } from '@/features/video-agent/videoAgentPipeline'
 import { buildVideoAgentFrameBoundingBoxes } from '@/features/video-agent/videoAgentFrameBoxes'
 import { projectVideoAgentFrameAnalysisSrcDoc } from '@/features/video-agent/videoAgentFrameAnalysisProjection'
@@ -8,6 +9,7 @@ import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemo
 import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport/urlImport'
 import { readVideoSequenceSourceAnnotations } from '@/components/timeline/videoSequenceSourceAnnotations'
+import { buildMermaidGanttTimelineModel, buildMermaidGanttTimelineTicks } from '@/lib/mermaid/mermaidGanttTimelineModel'
 import { formatMermaidGanttFrameSamplesToken } from '@/lib/mermaid/mermaidGanttFrameThumbnailToken'
 
 const sourceUrl = ['https://', 'youtu.be/', 'BudgetFrame01'].join('')
@@ -130,6 +132,28 @@ async function verifyImportDocumentBudget(): Promise<void> {
   assert(nodes.length === expectedIds.length && expectedIds.every(id => nodes.some(node => node.id === id)), 'Bounded URL preview lost source, renderer, or rich-media panels')
   assert(markdown.includes('Beginning of the source transcript.') && markdown.includes('Ending of the source transcript.'), 'Bounded preview lost source transcript content')
 
+  const cueCount = 777
+  const cues = Array.from({ length: cueCount }, (_, i) => ({ start: i * 7.5, duration: 3.125, text: `Spoken passage ${i}` }))
+  const duration = cues[cueCount - 1].start + cues[cueCount - 1].duration + 2
+  const completeText = cues.map(cue => cue.text).join('\n\n')
+  const completeFs = createMemoryWorkspaceFs()
+  const imported = await importWorkspaceUrl({ fs: completeFs, urlRaw: sourceUrl, mirrorToHost: false,
+    fetchUrlContent: async () => ({ normalizedUrl: sourceUrl, name: 'timed.md', sourceMediaKind: 'video',
+      text: completeText, transcriptJsonText: JSON.stringify({ segments: cues, end_s: duration }) }) })
+  const selected = (await completeFs.readFileText(imported.createdPaths[0])) || ''
+  const projected = await readWorkspaceTranscript(completeFs, imported.createdPaths[0])
+  assert(selected.includes(completeText) && selected.includes('kgVideoAgentInlineSourceText: true'), 'The selected document lost the original transcript body')
+  assert(projected.cues.every((cue, i) => cue.text === cues[i].text && cue.startMs === cues[i].start * 1000)
+    && projected.cues.length === cueCount, 'Workspace transcript pages lost cue order, timing, or text')
+  assert(readVideoSequenceSourceAnnotations(selected)[0]?.sourceEndSeconds === duration, 'Source timeline stopped at the render job duration')
+  const timelineText = await completeFs.readFileText(imported.createdPaths[0].replace(/[^/]+$/, 'timeline.json'))
+  const tracks = JSON.parse(timelineText!).timelineTracks
+  assert(tracks.every((t: { durationMs: number }) => t.durationMs === duration * 1000)
+    && tracks[0].frameSamples.at(-1).timestampMs === duration * 1000 - 1, 'Track or final frame stopped before the last cue')
+
+  const longTimeline = buildMermaidGanttTimelineModel('gantt\nsection Video\nSource video : source, 00:00, 100000m')
+  assert(buildMermaidGanttTimelineTicks(longTimeline).length <= 8, 'Timeline ruler grew with source duration')
+
   const longCue = '引🌍'.repeat(80_000)
   const rawText = '# Source transcript\n\n' + longCue + '\r\n'
   const transcriptJsonText = JSON.stringify({ segments: [{ start: 0, duration: 600, text: longCue }] })
@@ -161,6 +185,7 @@ async function verifyImportDocumentBudget(): Promise<void> {
   }
   assert(await readJson(manifest.sourceTranscriptJsonPath) === transcriptJsonText, 'Structured transcript changed during import')
   assert(JSON.parse(await readJson('parse.json')).sourceTranscript.segments[0].text === longCue, 'Parsed transcript lost the full cue')
+  assert((await readWorkspaceTranscript(fs, path)).cues[0].text === longCue, 'The transcript viewer lost multipart source text')
   const repeated = await importWorkspaceUrl({ fs, urlRaw: sourceUrl,
     fetchUrlContent: async () => { throw new Error('Bounded preview should be reusable offline') } })
   assert(repeated.createdPaths[0] === path, 'Repeated import created a duplicate')
@@ -216,6 +241,7 @@ async function verifySavedImportUpgrade(): Promise<void> {
     current.replace(frameSrcDoc, ''), current.replace(frameSrcDoc, '\n        srcDoc: "<main>Unusable frame preview</main>"\n'),
     current.replace(frameSrcDoc, frameSrcDoc.replace(/<script>[\s\S]*?<\/script>/g, ''))]
   assert(stale[3].length < 500_000 && new TextEncoder().encode(stale[3]).byteLength > 500_000, 'UTF8 budget fixture did not cross the byte-only boundary')
+  stale.push(current.replace(/^kgVideoAgentSourceDurationMs:.*\n/m, ''))
   const oldPaths = stale.map((_, index) => `/docs_/20200101T00000${index}Z/old.video-agent.md`)
   const currentPath = '/docs_/20260101T000001Z/current.video-agent.md'
   const makeFs = (includeCurrent: boolean) => createMemoryWorkspaceFs({ initialEntries: [
