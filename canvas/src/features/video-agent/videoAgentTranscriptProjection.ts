@@ -1,6 +1,13 @@
 import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { formatMediaTimestampSeconds } from 'grph-shared/rich-media/providers'
 
+const TRANSCRIPT_MAIN = '<main data-kg-video-agent-transcript-panel="1"'
+const WORKSPACE_TRANSCRIPT_MAIN = TRANSCRIPT_MAIN + ' data-kg-workspace-transcript="1"'
+
+export function usesWorkspaceTranscript(srcDoc: string): boolean {
+  return srcDoc.includes(WORKSPACE_TRANSCRIPT_MAIN)
+}
+
 export type VideoAgentTranscriptSegment = {
   durationMs: number
   endMs: number
@@ -125,7 +132,7 @@ export function buildVideoAgentTranscriptPanelSrcDoc(args: {
   }))).replace(/</g, '\\u003c')
 
   return [
-    `<main data-kg-video-agent-transcript-panel="1"${readObject(args.sourceTranscript)?.preview === true ? ' data-kg-workspace-transcript="1"' : ''} data-kg-rich-media-panel-size="viewport" aria-label="Timeline-synchronized source transcript">`,
+    `${readObject(args.sourceTranscript)?.preview === true ? WORKSPACE_TRANSCRIPT_MAIN : TRANSCRIPT_MAIN} data-kg-rich-media-panel-size="viewport" aria-label="Timeline-synchronized source transcript">`,
     '<header><p>Source transcript</p><h1>Timeline transcript</h1></header>',
     `<section aria-label="Transcript cues"><ol>${cueItems}</ol>${emptyState}</section>`,
     '</main>',
