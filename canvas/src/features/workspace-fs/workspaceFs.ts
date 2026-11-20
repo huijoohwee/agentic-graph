@@ -130,7 +130,6 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           updatedAtMs: Date.now(),
         })
       }
-      // A conditional save must never degrade into a shadow-memory write.
       return options && Object.hasOwn(options, 'expectedText') ? write(inner) : run('writeFileText', write)
     },
     createFile: args => {
@@ -147,11 +146,10 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
         })
         return path
       }
-      // Exact creation preserves durable collision results without a shadow copy.
       return args.requireExactPath ? create(inner) : run('createFile', create)
     },
-    createFolder: args =>
-      run('createFolder', async fs => {
+    createFolder: args => {
+      const create = async (fs: WorkspaceFs) => {
         const path = await fs.createFolder(args)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -162,12 +160,16 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           updatedAtMs: Date.now(),
         })
         return path
-      }),
-    deleteEntry: (path: WorkspacePath, options) =>
-      run('deleteEntry', async fs => {
+      }
+      return args.requireExactPath ? create(inner) : run('createFolder', create)
+    },
+    deleteEntry: (path: WorkspacePath, options) => {
+      const remove = async (fs: WorkspaceFs) => {
         await fs.deleteEntry(path, options)
         deleteShadowEntry(path)
-      }),
+      }
+      return options && Object.hasOwn(options, 'expectedText') ? remove(inner) : run('deleteEntry', remove)
+    },
   }
 }
 

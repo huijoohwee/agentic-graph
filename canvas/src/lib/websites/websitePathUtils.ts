@@ -9,7 +9,8 @@ export const safeWebsitePathSegment = (raw: string): string => {
     .replace(/-+/g, '-')
     .replace(/^[-.]+/, '')
     .replace(/[-.]+$/, '')
-  return cleaned.slice(0, 64) || 'item'
+  const segment = cleaned.slice(0, 64).replace(/[.-]+$/, '') || 'item'
+  return /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(segment) ? '_' + segment : segment
 }
 
 export const hostFromUrl = (url: string): string => {
@@ -43,4 +44,14 @@ export const resolveWebsiteImportNodeRelativeDocumentPath = (args: {
   try { query = new URL(args.nodeUrl).search } catch { /* Local imports have no URL query. */ }
   const suffix = query ? `--${hashStringToHex(query)}` : ''
   return [...folderParts, `${nameBase}${suffix}.md`].join('/')
+}
+
+/** One portable bundle per HTTP source, independent of provider, title and import time. */
+export function websiteSourceBundlePath(sourceUrl: string, parent = '/'): string {
+  const url = new URL(sourceUrl)
+  if (!['https:', 'http:'].includes(url.protocol)) throw new Error('A website source requires an HTTP URL.')
+  url.hash = ''
+  const leaf = safeWebsitePathSegment(url.pathname.split('/').filter(Boolean).pop() || 'index')
+  const root = parent === '/' ? `/websites/${safeWebsitePathSegment(url.host)}` : parent
+  return `${root}/${leaf}--${hashStringToHex(url.href)}`
 }

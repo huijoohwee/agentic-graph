@@ -9,18 +9,13 @@ import {
   buildVideoAgentTranscriptPanelSrcDoc,
 } from '@/features/video-agent'
 import { projectVideoAgentFrameAnalysisSrcDoc } from '@/features/video-agent/videoAgentFrameAnalysisProjection'
-import {
-  VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH,
-  buildVideoAgentTimestampedWorkspaceOutputFolderPath,
-  resolveVideoAgentImportOutputParentPath,
-} from '@/features/video-agent/videoAgentWorkspaceOutput'
+import { VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH } from '@/features/video-agent/videoAgentWorkspaceOutput'
+import { safeWebsitePathSegment, websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
+import { persistVideoSourceBundle } from './videoSourceBundle'
 import { buildMermaidGanttCodeFromNeutralTimelinePayload } from '@/lib/mermaid/mermaidDiagramCode'
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
-import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
-import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
-import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
-import { workspaceBasename, joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import {
   buildFrameAnalysisPanelBaseSrcDoc,
@@ -101,7 +96,7 @@ export function buildVideoAgentUrlImportDocumentName(args: { sourceName?: string
   const sourceName = cleanInline(args.sourceName).replace(/\.source\.md$/i, '').replace(/\.(md|markdown)$/i, '')
   const youtubeId = getYouTubeId(args.sourceUrl)
   const base = sanitizeFilenamePart(sourceName || youtubeId || args.sourceUrl)
-  return `${base}.video-agent.md`
+  return `${safeWebsitePathSegment(base)}.video-agent.md`
 }
 
 function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
@@ -225,7 +220,7 @@ function renderPreview(
     '  sourceUrls:',
     `    - ${yamlQuote(sourceUrl)}`,
     '  outputStore:',
-    `    workspaceRoot: ${yamlQuote(VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH)}`,
+    `    workspaceRoot: ${yamlQuote('/' + workspaceOutputRoot.split('/')[1])}`,
     `    workspacePath: ${yamlQuote(workspaceOutputRoot)}`,
     '  dependencyPolicy:',
     '    - "no-external-video-agent-runtime"',
@@ -558,33 +553,15 @@ export async function materializeVideoAgentUrlImportDocument(args: {
   sourceTranscriptJsonText?: string | null
   sourceUrl: string
 }): Promise<WorkspacePath> {
-  const parentPath = resolveVideoAgentImportOutputParentPath(args.parentPath)
-  await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: parentPath })
-  const { outputFolderPath, createdPath, files } = await runWorkspaceFsChangedBatch(async () => {
-    const outputFolderPath = await args.fs.createFolder({
-      parentPath, name: workspaceBasename(buildVideoAgentTimestampedWorkspaceOutputFolderPath(parentPath)), mirrorToHost: false,
-    })
-    try {
-      const prepared = prepareVideoImport({ ...args, workspaceOutputRoot: outputFolderPath })
-      const name = buildVideoAgentUrlImportDocumentName(args)
-      const createdPath = joinWorkspacePath(outputFolderPath, prepared.storedGraph ? name.replace(/\.md$/, '.source.md') : name)
-      const files = buildVideoAgentImportSidecars({
-        ...prepared, youtubeId: getYouTubeId(prepared.sourceUrl), sourceName: cleanInline(args.sourceName),
-        sourceText: args.sourceText ?? '', sourceTranscriptJsonText: args.sourceTranscriptJsonText ?? '',
-      })
-      files.push({ path: createdPath, text: prepared.markdown })
-      for (const { path, text } of files) await args.fs.createFile({
-        parentPath: outputFolderPath, name: workspaceBasename(path), text, requireExactPath: true, mirrorToHost: false,
-      })
-      return { outputFolderPath, createdPath, files }
-    } catch (error) {
-      await args.fs.deleteEntry(outputFolderPath, { mirrorToHost: false })
-      throw error
-    }
+  const outputFolderPath = websiteSourceBundlePath(args.sourceUrl, normalizeWorkspacePath(args.parentPath || '/'))
+  const prepared = prepareVideoImport({ ...args, workspaceOutputRoot: outputFolderPath })
+  const name = buildVideoAgentUrlImportDocumentName(args)
+  const createdPath = joinWorkspacePath(outputFolderPath, prepared.storedGraph ? name.replace(/\.md$/, '.source.md') : name)
+  const files = buildVideoAgentImportSidecars({
+    ...prepared, youtubeId: getYouTubeId(prepared.sourceUrl), sourceName: cleanInline(args.sourceName),
+    sourceText: args.sourceText ?? '', sourceTranscriptJsonText: args.sourceTranscriptJsonText ?? '',
   })
-  if (args.mirrorToHost !== false) {
-    await ensureWorkspaceDocsMirrorFolder({ workspacePath: outputFolderPath })
-    for (const { path, text } of files) await upsertWorkspaceDocsMirrorText({ workspacePath: path, text })
-  }
+  files.push({ path: createdPath, text: prepared.markdown })
+  await persistVideoSourceBundle(args.fs, outputFolderPath, files, args.mirrorToHost)
   return createdPath
 }

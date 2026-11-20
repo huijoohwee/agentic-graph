@@ -1,3 +1,4 @@
+import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 import { JSDOM } from 'jsdom'
 import { buildVideoAgentTranscriptPanelSrcDoc, usesWorkspaceTranscript } from '@/features/video-agent/videoAgentTranscriptProjection'
 import { normalizeRichMediaPanelInlineSrcDoc } from '@/lib/render/richMediaPanelSrcDoc'
@@ -199,7 +200,7 @@ async function verifyImportDocumentBudget(): Promise<void> {
   assert(await fs.readFileText('/large.md') === null, 'Import left a duplicate intake document')
   await fs.deleteEntry(folder + sourceParts[0])
   const repaired = await importWorkspaceUrl({ fs, urlRaw: sourceUrl, fetchUrlContent, mirrorToHost: false })
-  assert(repaired.createdPaths[0] !== path && await fs.readFileText(path) === preview, 'Incomplete saved import hid or overwrote the original')
+  assert(repaired.createdPaths[0] === path && await fs.readFileText(path) === preview && !!await read(sourceParts[0]), 'Repair did not restore the missing part in place')
 
   const longUrl = new URL(sourceUrl)
   longUrl.searchParams.set('context', 'x'.repeat(4096))
@@ -250,11 +251,11 @@ async function verifySavedImportUpgrade(): Promise<void> {
   assert(stale[3].length < 500_000 && new TextEncoder().encode(stale[3]).byteLength > 500_000, 'UTF8 budget fixture did not cross the byte-only boundary')
   stale.push(current.replace(/^kgVideoAgentSourceDurationMs:.*\n/m, ''))
   const oldPaths = stale.map((_, index) => `/docs_/20200101T00000${index}Z/old.video-agent.md`)
-  const currentPath = '/docs_/20260101T000001Z/current.video-agent.md'
+  const currentPath = websiteSourceBundlePath(url) + '/current.video-agent.md'
   const makeFs = (includeCurrent: boolean) => createMemoryWorkspaceFs({ initialEntries: [
     ...oldPaths.map((path, index) => ({ path, parentPath: path.slice(0, path.lastIndexOf('/')), kind: 'file' as const,
       name: 'old.video-agent.md', text: stale[index], updatedAtMs: 1 })),
-    ...(includeCurrent ? [{ path: currentPath, parentPath: '/docs_/20260101T000001Z', kind: 'file' as const,
+    ...(includeCurrent ? [{ path: currentPath, parentPath: websiteSourceBundlePath(url), kind: 'file' as const,
       name: 'current.video-agent.md', text: current, updatedAtMs: 2 }] : []),
   ] })
   for (const path of [...oldPaths, currentPath]) setWorkspaceEntrySource(path, { kind: 'url', url,
@@ -275,7 +276,7 @@ async function verifySavedImportUpgrade(): Promise<void> {
   }
   const fresh = await importWorkspaceUrl({ fs: freshFs, urlRaw: url, fetchUrlContent, mirrorToHost: false })
   const path = fresh.createdPaths[0], text = await freshFs.readFileText(path)
-  assert(fetches === 1 && !!text && !oldPaths.includes(path) && /^\/docs_\/\d{8}T\d{6}Z\//.test(path), 'Default import did not create a fresh timestamped preview')
+  assert(fetches === 1 && !!text && !oldPaths.includes(path) && path.startsWith(websiteSourceBundlePath(url) + '/'), 'Default import did not use the source bundle')
   assert(new TextEncoder().encode(text || '').byteLength < 500_000 && readVideoSequenceSourceAnnotations(text || '').length === 1, 'Fresh preview lacks bounded current source annotations')
   assert((text || '').includes(sourceText.trim()), 'Fresh preview lost the retained transcript')
   const parsed = await loadGraphDataFromTextViaParser('cache-preview.video-agent.md', text || '', { applyToStore: false })
