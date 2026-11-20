@@ -1,4 +1,14 @@
 /* Generated from agentic-design-system@0e1a21ff98a02604b7f733c6705380133c3d7d1c; profile sha256 bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3. Do not edit. */
+:where([data-agentic-typography]) {
+  font: var(--agentic-font-size-body, 0.875rem)/var(--agentic-line-height-body, 1.25rem) var(--agentic-font-sans, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji);
+}
+.agentic-mono, .agentic-mono-detail, [data-agentic-typography] :where(dd, code, pre, samp, kbd, time) {
+  font-family: var(--agentic-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace); font-variant-numeric: tabular-nums;
+}
+.agentic-text-detail, .agentic-mono-detail, [data-agentic-typography] :where(dd, code, pre, samp, kbd, time),
+.agentic-dashboard-eyebrow, .agentic-dashboard-description, .agentic-dashboard-detail {
+  font-size: .75rem; line-height: 1rem;
+}
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -265,7 +275,6 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 .agentic-dashboard-card[data-accent="secondary"] { --agentic-dashboard-accent: var(--agentic-dashboard-secondary); }
 .agentic-dashboard-card[data-accent="success"] { --agentic-dashboard-accent: var(--agentic-dashboard-success); }
 .agentic-dashboard-card[data-accent]:where(:not([data-accent="neutral"],[data-accent="warning"])) { border-color: color-mix(in srgb, var(--agentic-dashboard-accent) 48%, transparent); }
-.agentic-dashboard-eyebrow, .agentic-dashboard-description, .agentic-dashboard-detail { font-size: .75rem; line-height: 1rem; }
 .agentic-dashboard-eyebrow { color: var(--agentic-dashboard-accent); }
 .agentic-dashboard-description { padding-block: var(--agentic-control-padding-block); }
 .agentic-dashboard-detail { padding-block-end: var(--agentic-control-padding-inline); }
