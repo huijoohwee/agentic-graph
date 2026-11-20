@@ -19,24 +19,21 @@ const secondsToMs = (value: unknown): number | null => {
   return n === null ? null : Math.max(0, Math.round(n * 1000))
 }
 
-export const readTranscriptSegmentsFromJson = (text: string): VideoAgentTranscriptSegment[] => {
-  if (!text.trim()) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(text)
-  } catch {
-    return []
-  }
-  const rawSegments = Array.isArray((parsed as { segments?: unknown })?.segments)
-    ? (parsed as { segments?: unknown[] }).segments || []
-    : []
-  return rawSegments.map((segment, index) => {
-    const record = segment as Record<string, unknown>
+export function readVideoAgentImportTranscript(text: string, hasRemoteVideoSource: boolean) {
+  let parsed: Record<string, unknown> | null = null
+  try { parsed = JSON.parse(text) } catch { /* Markdown-only sources use the document fallback. */ }
+  const rawSegments: unknown[] = Array.isArray(parsed?.segments) ? parsed.segments : []
+  const segments = rawSegments.map((segment, index) => {
+    const record = (segment ?? {}) as Record<string, unknown>
     const startMs = secondsToMs(record.start) ?? secondsToMs(record.start_seconds) ?? readNumber(record.startMs) ?? 0
     const durationMs = Math.max(1, secondsToMs(record.duration) ?? readNumber(record.durationMs) ?? 1000)
     const endMs = Math.max(startMs + 1, secondsToMs(record.end) ?? readNumber(record.endMs) ?? startMs + durationMs)
     return { durationMs, endMs, index, startMs, text: cleanInline(record.text) }
   }).filter(segment => !!segment.text)
+  const declaredEndMs = Math.max(secondsToMs(parsed?.end_s) ?? 0,
+    (secondsToMs(parsed?.start_s) ?? 0) + (secondsToMs(parsed?.duration_s) ?? 0))
+  const durationMs = segments.reduce((end, cue) => Math.max(end, cue.endMs), declaredEndMs)
+  return { segments, durationMs: durationMs || (hasRemoteVideoSource ? TRANSCRIPT_UNAVAILABLE_REMOTE_VIDEO_FALLBACK_DURATION_MS : 0) }
 }
 
 const readTranscriptSegmentsFromMarkdown = (text: string, durationMs: number): VideoAgentTranscriptSegment[] => {
@@ -51,14 +48,6 @@ const readTranscriptSegmentsFromMarkdown = (text: string, durationMs: number): V
     const endMs = index === lines.length - 1 ? Math.max(startMs + 1, durationMs) : startMs + stepMs
     return { durationMs: Math.max(1, endMs - startMs), endMs, index, startMs, text: line.replace(/^#+\s*/, '') }
   }).filter(segment => !!segment.text)
-}
-
-export const readVideoAgentTranscriptDurationMs = (args: {
-  hasRemoteVideoSource: boolean
-  segments: VideoAgentTranscriptSegment[]
-}): number => {
-  const transcriptDurationMs = args.segments.reduce((durationMs, segment) => Math.max(durationMs, segment.endMs), 0)
-  return transcriptDurationMs || (args.hasRemoteVideoSource ? TRANSCRIPT_UNAVAILABLE_REMOTE_VIDEO_FALLBACK_DURATION_MS : 0)
 }
 
 export const buildVideoAgentTranscriptImportArtifacts = (args: {

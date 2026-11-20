@@ -29,10 +29,9 @@ import {
 } from './videoAgentImportPanels'
 import {
   buildVideoAgentTranscriptImportArtifacts,
-  readVideoAgentTranscriptDurationMs,
-  readTranscriptSegmentsFromJson,
+  readVideoAgentImportTranscript,
 } from './videoAgentTranscriptImportArtifacts'
-import { buildBoundedVideoImportPreview, VIDEO_IMPORT_SAMPLE_LIMIT } from './videoAgentImportPreview'
+import { buildBoundedVideoImportPreview, createVideoImportScalarWriter, VIDEO_IMPORT_SAMPLE_LIMIT } from './videoAgentImportPreview'
 import { buildVideoAgentImportSidecars } from './videoAgentImportSidecars'
 import { yamlQuote } from './yaml'
 
@@ -65,13 +64,6 @@ const sanitizeFilenamePart = (value: unknown): string => {
 }
 
 const jsonBlock = (value: unknown): string => JSON.stringify(value)
-
-const pushBlockScalar = (lines: string[], indent: string, key: string, value: string): void => {
-  const text = String(value || '').replace(/\r/g, '').trim()
-  if (!text) return
-  lines.push(`${indent}${key}: |-`)
-  for (const line of text.split('\n')) lines.push(`${indent}  ${line}`)
-}
 
 const pushStringList = (lines: string[], indent: string, key: string, values: readonly string[]): void => {
   const cleaned = values.map(cleanInline).filter(Boolean)
@@ -115,13 +107,14 @@ export function buildVideoAgentUrlImportDocumentName(args: { sourceName?: string
 function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
   const sourceUrl = cleanInline(args.sourceUrl)
   const workspaceOutputRoot = normalizeWorkspacePath(args.workspaceOutputRoot || VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH)
-  const jsonSegments = readTranscriptSegmentsFromJson(args.sourceTranscriptJsonText || '')
-  const transcriptDurationMs = readVideoAgentTranscriptDurationMs({ segments: jsonSegments, hasRemoteVideoSource: !!getYouTubeId(sourceUrl) })
+  const { segments: jsonSegments, durationMs: transcriptDurationMs } = readVideoAgentImportTranscript(
+    args.sourceTranscriptJsonText || '', !!getYouTubeId(sourceUrl))
   const prepare = (maxFrameSamples: number) => {
     const result = buildVideoAgentPipeline({
       sourceUrl,
       intent: 'Load, parse, annotate, count zones, compile, generate, and stream the imported video.',
       durationMs: transcriptDurationMs || undefined,
+      sourceDurationMs: transcriptDurationMs || undefined,
       maxFrameSamples,
       workspaceOutputRoot,
     })
@@ -131,15 +124,15 @@ function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
     const renderSpec = pipeline.renderSpec
     const sourceText = String(args.sourceText || '').trim()
     const transcriptArtifacts = buildVideoAgentTranscriptImportArtifacts({
-      durationMs: renderSpec.durationMs,
+      durationMs: pipeline.source.durationMs,
       frameBoundingBoxes: pipeline.frameBoundingBoxes,
       sourceText,
       jsonSegments,
     })
     const renderData = renderSpec.data as Record<string, unknown>
     const sourcePlaybackUrl = String((renderData.sourceVideo as { playbackEmbedUrl?: unknown })?.playbackEmbedUrl || sourceUrl)
-    const preview = buildBoundedVideoImportPreview(transcriptArtifacts, sourceText, (transcript, body, sampled) =>
-      renderPreview(pipeline, workspaceOutputRoot, sourceUrl, sourcePlaybackUrl, transcript, body, sampled))
+    const preview = buildBoundedVideoImportPreview(transcriptArtifacts, sourceText, pipeline.source.durationMs, (transcript, body, sampled, inlineSource) =>
+      renderPreview(pipeline, workspaceOutputRoot, sourceUrl, sourcePlaybackUrl, transcript, body, sampled, inlineSource))
     return { ...preview, pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl }
   }
   const initial = prepare(VIDEO_IMPORT_SAMPLE_LIMIT)
@@ -149,10 +142,11 @@ function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
 
 function renderPreview(
   pipeline: VideoAgentPipeline, workspaceOutputRoot: WorkspacePath, sourceUrl: string, sourcePlaybackUrl: string,
-  transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>, sourceText: string, sampled: boolean,
+  transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>, sourceText: string, sampled: boolean, inlineSource = false,
 ): string {
   const renderSpec = pipeline.renderSpec
   const renderData = { ...renderSpec.data as Record<string, unknown>, ...transcriptArtifacts }
+  const pushBlockScalar = createVideoImportScalarWriter(sampled)
   const dataJson = jsonBlock(renderData)
   const frameBoundingBoxesJson = jsonBlock(pipeline.frameBoundingBoxes)
   const sourceTranscriptJson = jsonBlock(transcriptArtifacts.sourceTranscript)
@@ -198,7 +192,9 @@ function renderPreview(
     'kgDocumentSemanticMode: "document"',
     'kgFrontmatterModeEnabled: true',
     'kgVideoAgentImport: true',
+    `kgVideoAgentSourceDurationMs: ${sourceVideoTrack.durationMs}`,
     ...(sampled ? ['kgVideoAgentTranscriptPreview: true'] : []),
+    ...(inlineSource ? ['kgVideoAgentInlineSourceText: true'] : []),
     `kgVideoAgentPreviewSampleLimit: ${VIDEO_IMPORT_SAMPLE_LIMIT}`,
     `kgWorkspaceOutputRoot: ${yamlQuote(workspaceOutputRoot)}`,
   ]
@@ -210,7 +206,7 @@ function renderPreview(
     '    originalName: "Video agent source"',
     `    sourceUrl: ${yamlQuote(sourceUrl)}`,
     '    importMode: "url"',
-    `    durationSeconds: ${Math.max(1, renderSpec.durationMs / 1000)}`,
+    `    durationSeconds: ${sourceVideoTrack.durationMs / 1000}`,
     `    frameRate: ${renderSpec.fps}`,
     `    displayWidth: ${renderSpec.width}`,
     `    displayHeight: ${renderSpec.height}`,
@@ -223,7 +219,7 @@ function renderPreview(
     `    annotationStartMinutes: ${annotationSpan.startMinutes}`,
     `    annotationDurationMinutes: ${annotationSpan.durationMinutes}`,
     '    sourceStartSeconds: 0',
-    `    sourceEndSeconds: ${renderSpec.durationMs / 1000}`,
+    `    sourceEndSeconds: ${sourceVideoTrack.durationMs / 1000}`,
     'videoAgentRuntimeContract:',
     `  schema: ${yamlQuote(VIDEO_AGENT_SCHEMA_VERSION)}`,
     '  sourceUrls:',

@@ -1,3 +1,4 @@
+import React from 'react'
 import RichMediaIframe from '@/components/RichMediaIframe'
 import { SharedWebpageSurface } from '@/components/SharedWebpageSurface'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
@@ -6,10 +7,20 @@ import { shouldUseDirectRichMediaPanelSrcDocSandbox } from '@/lib/render/richMed
 import { resolveIframeSandbox } from 'grph-shared/rich-media/iframe'
 import type { RichMediaPanelModel } from './useRichMediaPanelModel'
 
+const WorkspaceSourceTranscript = React.lazy(() => import('@/features/video-agent/WorkspaceSourceTranscript'))
+
 export function RichMediaPanelIframeSurface(args: {
   model: RichMediaPanelModel
 }) {
   const { model } = args
+  if (model.workspaceTranscriptTimeMs != null) {
+    return <section className="h-full overflow-auto p-2" aria-label="Timeline-synchronized source transcript">
+      <React.Suspense fallback={<p>Loading transcript…</p>}>
+        <WorkspaceSourceTranscript key={model.markdownDocumentName} documentPath={model.markdownDocumentName}
+          timeMs={model.workspaceTranscriptTimeMs} onReady={model.setReady} />
+      </React.Suspense>
+    </section>
+  }
   if (model.effectiveInlineSrcDoc) {
     return (
       <section

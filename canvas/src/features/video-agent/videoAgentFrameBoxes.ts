@@ -62,7 +62,6 @@ export const buildVideoAgentFrameBoundingBoxes = (durationMs: number, sourceUrl:
     ? Math.max(10, Math.min(120, Math.floor(maxFrameSamples)))
     : 120
   const sampleCount = clampInteger(Math.ceil(durationMs / 700), 10, 10, sampleLimit)
-  const frameStepMs = Math.max(1, Math.floor(durationMs / sampleCount))
   return Array.from({ length: sampleCount }, (_, index) => {
     const progress = index / Math.max(1, sampleCount - 1)
     const phase = progress * Math.PI * 2
@@ -79,7 +78,7 @@ export const buildVideoAgentFrameBoundingBoxes = (durationMs: number, sourceUrl:
       0.18 + progress * 0.055,
       0.22 + Math.cos(phase * 0.8) * 0.04,
     )
-    const timestampMs = Math.min(durationMs - 1, index * frameStepMs)
+    const timestampMs = Math.round(progress * (durationMs - 1))
     const primaryLabel = index % 2 === 0 ? 'tracked subject' : 'context object'
     const secondaryLabel = index % 2 === 0 ? 'context object' : 'tracked subject'
     const primaryConfidence = Number((0.82 + progress * 0.08).toFixed(2))
