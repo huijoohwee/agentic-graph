@@ -11,8 +11,8 @@ import {
   normalizeRemoteVideoFrameSeconds,
   parseYouTubeStartSeconds,
 } from 'grph-shared/rich-media/providers'
-import { websiteSourceBundlePath } from '../../websites/websitePathUtils'
 import { resolveDocumentOutputRootFromWorkspace } from '../../websites/server/websiteImportStorage'
+import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, SAVED_FRAME_PAGE_SIZE, VIDEO_FRAME_FILE_RE, savedFrameRelativeDirectory } from '../videoFrameAssets'
 import { videoFrameWorkerPool, type VideoFrameWorkerPool } from './videoFrameWorker'
 
 type NextHandleFunction = (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void
@@ -42,11 +42,10 @@ type VideoFrameResult =
   | { ok: true; publicUrl: string; outputPath: string; semanticKey: string; cached: boolean; bytes: number; timeSeconds: number; format: 'png' | 'jpg' }
   | { ok: false; error: string }
 
-export const REMOTE_VIDEO_FRAME_PUBLIC_PREFIX = '/image/video-frame'
+export { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX } from '../videoFrameAssets'
 
 const MAX_VIDEO_FRAME_URL_LENGTH = 4096
 const MAX_VIDEO_FRAME_TIME_SECONDS = 12 * 60 * 60
-const VIDEO_FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+(?:_\d+)?\.(?:png|jpg)$/i
 type FrameInflight = { contextKey: string; promise: Promise<VideoFrameResult>; controller: AbortController; subscribers: number }
 const inflightVideoFrameByOutputPath = new Map<string, FrameInflight>()
 
@@ -57,7 +56,7 @@ const resolveCacheRoot = (opts: CacheOptions): string => path.resolve(explicitCa
   || path.join(resolveDocumentOutputRootFromWorkspace(opts.workspaceRoot), 'websites'))
 
 export const frameStorageRelativePath = (sourceUrl: string, fileName: string): string =>
-  websiteSourceBundlePath(sourceUrl).slice('/websites/'.length) + '/frames/' + fileName
+  savedFrameRelativeDirectory(sourceUrl) + '/' + fileName
 
 const normalizePublicPrefix = (value: unknown): string => {
   const raw = String(value || '').trim() || REMOTE_VIDEO_FRAME_PUBLIC_PREFIX
@@ -364,6 +363,35 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
   }
 }
 
+/** Enumerate existing public images without starting a decoder or reading any image bytes. */
+async function listSavedFrames(opts: CacheOptions, source: string, after: string) {
+  const root = resolveCacheRoot(opts)
+  const flat = Boolean(explicitCacheRoot(opts))
+  const relative = flat ? '' : savedFrameRelativeDirectory(source)
+  const directory = path.join(root, relative)
+  let names: string[]
+  try {
+    const realRoot = await fs.realpath(root)
+    if (!flat && realRoot !== path.join(await fs.realpath(path.dirname(root)), path.basename(root))) throw new Error('Invalid website root')
+    if (await fs.realpath(directory) !== path.join(realRoot, relative)) throw new Error('Invalid frame directory')
+    const files = await fs.readdir(directory, { withFileTypes: true })
+    names = files.filter(file => {
+      if (!file.isFile() || file.name <= after) return false
+      const match = VIDEO_FRAME_FILE_RE.exec(file.name)
+      if (!match) return false
+      return !flat || buildRemoteVideoFrameFileName({
+        sourceUrl: source, timeSeconds: Number(match[2]!.replace('_', '.')), format: match[3],
+      }) === file.name
+    }).map(file => file.name).sort()
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    names = []
+  }
+  const page = names.slice(0, SAVED_FRAME_PAGE_SIZE)
+  return { directory: [REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, relative].filter(Boolean).join('/'),
+    files: page, next: names.length > page.length ? page[page.length - 1] : null }
+}
+
 export function createRemoteVideoFramePublicAssetHandler(opts: Pick<VideoFrameServerOptions, 'workspaceRoot' | 'cacheRoot'>): NextHandleFunction {
   return async (req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -371,6 +399,18 @@ export function createRemoteVideoFramePublicAssetHandler(opts: Pick<VideoFrameSe
       return
     }
     const parsed = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+    if (req.method === 'GET' && parsed.pathname === '/' && parsed.searchParams.has('source')) {
+      const source = parsed.searchParams.get('source') || ''
+      const after = parsed.searchParams.get('after') || ''
+      let valid = false
+      try { valid = ['http:', 'https:'].includes(new URL(source).protocol) } catch { /* invalid input */ }
+      if (!valid || source.length > MAX_VIDEO_FRAME_URL_LENGTH || (after && !VIDEO_FRAME_FILE_RE.test(after))) {
+        return writeJson(res, 400, { error: 'Invalid saved frame request' })
+      }
+      try { writeJson(res, 200, await listSavedFrames(opts, source, after)) }
+      catch { writeJson(res, 500, { error: 'Could not read the saved frame directory' }) }
+      return
+    }
     const parts = parsed.pathname.slice(1).split('/')
     const fileName = parts.at(-1) || ''
     const nested = parts.length === 4 && parts[2] === 'frames'

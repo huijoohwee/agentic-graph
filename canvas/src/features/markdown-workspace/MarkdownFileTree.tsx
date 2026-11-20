@@ -20,6 +20,8 @@ import {
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
+const MediaLightbox = React.lazy(() => import('@/lib/ui/MediaLightbox').then(module => ({ default: module.MediaLightbox })))
+
 const contextIcons = { shareUrl: Share2, shareCanvasEmbed: CodeXml, reveal: FolderOpen, copyPath: Copy, copyRelativePath: TextSelect, newFile: FilePlus, clear: Eraser, rename: Pencil, delete: Trash2 }
 
 type Node = {
@@ -97,6 +99,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     renderEntryLeading,
     isEntrySaved,
   } = props
+  const [preview, setPreview] = React.useState<{ name: string; path: string; url: string } | null>(null)
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; entry: WorkspaceEntry; detailsOpen?: boolean } | null>(null)
@@ -166,7 +169,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onDeleteEntry,
             confirmDelete,
             closeContextMenu,
-          })
+          }).filter(item => !contextMenu.entry.savedAsset || item.key === 'copyPath' || item.key === 'copyRelativePath')
         : [],
     [props.readOnly, isEntrySaved, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady, confirmDelete],
   )
@@ -199,12 +202,18 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isFolder = entry.kind === 'folder'
     const contentUnavailable = !isFolder && isEntrySaved?.(entry) === false
     const isExpanded = expandedPaths.has(entry.path)
-    const isActive = activePath === entry.path
-    const entryLeading = renderEntryLeading?.(entry)
+    const isActive = (preview?.path || activePath) === entry.path
+    const entryLeading = !entry.savedAsset && renderEntryLeading?.(entry)
     const selectionFolder = isFolder && Boolean(entryLeading)
-    const fileRight = renderFileRight?.({ entry, isActive })
+    const fileRight = !entry.savedAsset && renderFileRight?.({ entry, isActive })
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
-    const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
+    const selectEntry = () => {
+      if (entry.savedAsset) {
+        if ('url' in entry.savedAsset) setPreview({ path: entry.path, name: entry.name, url: entry.savedAsset.url })
+        else toggleExpanded(entry.path)
+      } else if (isFolder) onSelectFolder(entry.path)
+      else onSelectFile(entry.path)
+    }
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
@@ -238,6 +247,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           </MarkdownFileTreeRowButton>
           {fileRight ? <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>{fileRight}</span> : null}
         </DirectoryTreeRow>
+        {isFolder && isExpanded && entry.savedAsset && 'status' in entry.savedAsset && entry.savedAsset.status &&
+          <p role="status" className={panelTypography.panelTextClass}>{entry.savedAsset.status}</p>}
         {isFolder && isExpanded && node.children.length > 0 ? (
           <DirectoryTreeChildren name={entry.name} path={entry.path} depth={depth} onSelect={selectEntry}>
             <ul className="list-none m-0 p-0">{node.children.map(child => renderNode(child, depth + 1))}</ul>
@@ -250,6 +261,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   return (
     <nav className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME} aria-label="Source files">
       {renderNode(tree, 0)}
+      {preview && <React.Suspense fallback={null}><MediaLightbox open kind="image" src={preview.url}
+        alt={preview.name} title={preview.path} onClose={() => setPreview(null)} /></React.Suspense>}
       {deleteTarget && <dialog ref={deleteDialog} aria-labelledby="workspace-delete-title"
         className={`w-[min(90vw,28rem)] rounded border p-4 shadow-[var(--kg-shadow-overlay)] backdrop:bg-black/60 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
         onCancel={event => { event.preventDefault(); answerDelete(false) }} onPointerDown={event => event.stopPropagation()}>
@@ -269,6 +282,9 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           <section role="toolbar" aria-label={`Actions for ${contextMenu.entry.name}`} data-source-file-actions
             className="flex flex-wrap items-center gap-0.5 max-w-full" style={{ width: 'max-content' }}>
             {(() => {
+              const asset = contextMenu.entry.savedAsset
+              if (asset) return 'url' in asset ? <a href={asset.url} target="_blank" rel="noopener noreferrer"
+                aria-label={`Open image ${contextMenu.entry.name}`} title="Open image"><LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /></a> : null
               const source = sourcesByPath?.[contextMenu.entry.path]
               const url = normalizeImportUrlInput(props.resolveSourceUrl?.(contextMenu.entry) ?? (source?.kind === 'url' ? source.url : ''))
               return url ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${contextMenu.entry.name}`}
@@ -279,7 +295,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 <LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
               </button>
             })()}
-            {props.renderContextActions?.(contextMenu.entry, {
+            {!contextMenu.entry.savedAsset && props.renderContextActions?.(contextMenu.entry, {
               open: !!contextMenu.detailsOpen,
               show: () => setContextMenu(current => current ? { ...current, detailsOpen: true } : null),
               toggle: () => setContextMenu(current => current ? { ...current, detailsOpen: !current.detailsOpen } : null),

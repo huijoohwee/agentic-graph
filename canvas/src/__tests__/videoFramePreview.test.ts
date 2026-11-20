@@ -74,7 +74,7 @@ export async function testRemoteVideoFrameFileNameIsStableAndNeutral() {
   }
 }
 
-export function testRemoteVideoFrameCacheRootUsesSourceBundle() {
+export async function testRemoteVideoFrameCacheRootUsesSourceBundle() {
   const source = new URL('/media/player?clip=one', 'https://example.test')
   const file = buildRemoteVideoFrameFileName({ sourceUrl: source.href, timeSeconds: 42 })
   const expected = websiteSourceBundlePath(source.href) + '/frames/' + file
@@ -82,6 +82,7 @@ export function testRemoteVideoFrameCacheRootUsesSourceBundle() {
   if (websiteSourceBundlePath(source.href + '#play') !== websiteSourceBundlePath(source.href)) throw new Error('Fragment split source storage')
   source.searchParams.set('clip', 'two')
   if ('/websites/' + frameStorageRelativePath(source.href, file) === expected) throw new Error('Two source URLs shared a bundle')
+  await (await import('./savedFrameEntries.test')).testSavedFrameDirectory()
 }
 
 const assertFrame = (value: unknown, message: string) => { if (!value) throw new Error(message) }
