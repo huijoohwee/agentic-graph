@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import test, { before } from 'node:test'
 import { readFileSync } from 'node:fs'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -8,8 +8,11 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { captureEvidenceSource, isEvidenceSourceCurrent, validateEvidenceConfiguration } from '../evidenceSource'
 import { JsonDetails, VolumeResult, ReplayResult, RecordResult } from './EvidenceResults'
-import EvidencePanel from '../EvidencePanel'
+import '@/tests/lib/registerCssLoader'
 import { dispatchEvidence, executeEvidence } from '../tools/executeEvidence.mjs'
+
+let EvidencePanel: typeof import('../EvidencePanel').default
+before(async () => { EvidencePanel = (await import('../EvidencePanel')).default })
 
 const config = {
   schema: 'evidence-workspace/v1', title: 'Evidence example', description: 'Authored study data.',
