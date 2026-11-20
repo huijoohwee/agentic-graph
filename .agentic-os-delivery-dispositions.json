@@ -594,5 +594,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "50be15272d74aa42419e4e089390877fefc15ccc5e3a1b0d643c58a4f2a7aa42"
+  "receiptDigest": "78cb8617c069803dd1bf45a8126ec8373484f3f992037d961b2919c9088f3be1"
 }
