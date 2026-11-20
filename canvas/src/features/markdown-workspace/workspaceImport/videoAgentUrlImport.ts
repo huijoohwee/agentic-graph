@@ -5,6 +5,7 @@ import {
   buildVideoAgentDatasetPanelSrcDoc,
   buildVideoAgentFrameTableMarkdown,
   buildVideoAgentPipeline,
+  type VideoAgentPipeline,
   buildVideoAgentTranscriptPanelSrcDoc,
 } from '@/features/video-agent'
 import { projectVideoAgentFrameAnalysisSrcDoc } from '@/features/video-agent/videoAgentFrameAnalysisProjection'
@@ -13,12 +14,13 @@ import {
   buildVideoAgentTimestampedWorkspaceOutputFolderPath,
   resolveVideoAgentImportOutputParentPath,
 } from '@/features/video-agent/videoAgentWorkspaceOutput'
-import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
-import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
 import { buildMermaidGanttCodeFromNeutralTimelinePayload } from '@/lib/mermaid/mermaidDiagramCode'
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
-import { joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
+import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
+import { workspaceBasename, joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import {
   buildFrameAnalysisPanelBaseSrcDoc,
@@ -28,7 +30,9 @@ import {
 import {
   buildVideoAgentTranscriptImportArtifacts,
   readVideoAgentTranscriptDurationMs,
+  readTranscriptSegmentsFromJson,
 } from './videoAgentTranscriptImportArtifacts'
+import { buildBoundedVideoImportPreview, VIDEO_IMPORT_SAMPLE_LIMIT } from './videoAgentImportPreview'
 import { buildVideoAgentImportSidecars } from './videoAgentImportSidecars'
 import { yamlQuote } from './yaml'
 
@@ -40,11 +44,6 @@ type VideoAgentUrlImportDocumentArgs = {
   workspaceOutputRoot?: WorkspacePath | null
 }
 
-type VideoAgentUrlImportBundle = {
-  markdown: string
-  workspaceFiles: Array<{ path: WorkspacePath; text: string }>
-}
-
 const SOURCE_SPEC_NODE_ID = 'html_video_source_spec'
 const RENDERER_NODE_ID = 'html_video_renderer_node'
 const STREAM_PANEL_NODE_ID = 'html_video_stream_panel'
@@ -53,8 +52,6 @@ const TRANSCRIPT_PANEL_NODE_ID = 'video_agent_transcript_panel'
 const FRAME_ANALYSIS_PANEL_NODE_ID = 'video_agent_frame_analysis_panel'
 const FRAME_TABLE_PANEL_NODE_ID = 'video_agent_multi_dimensional_table_panel'
 const DATASET_PANEL_NODE_ID = 'video_agent_dataset_panel'
-const URL_IMPORT_PREVIEW_SAMPLE_LIMIT = 16
-const URL_IMPORT_DOCUMENT_BYTE_LIMIT = 500_000
 
 const cleanInline = (value: unknown): string => String(value || '').replace(/\s+/g, ' ').trim()
 
@@ -68,13 +65,6 @@ const sanitizeFilenamePart = (value: unknown): string => {
 }
 
 const jsonBlock = (value: unknown): string => JSON.stringify(value)
-
-const readTranscriptDurationMs = (args: Pick<VideoAgentUrlImportDocumentArgs, 'sourceTranscriptJsonText' | 'sourceUrl'>): number => {
-  return readVideoAgentTranscriptDurationMs({
-    hasRemoteVideoSource: !!getYouTubeId(args.sourceUrl),
-    sourceTranscriptJsonText: args.sourceTranscriptJsonText,
-  })
-}
 
 const pushBlockScalar = (lines: string[], indent: string, key: string, value: string): void => {
   const text = String(value || '').replace(/\r/g, '').trim()
@@ -122,34 +112,47 @@ export function buildVideoAgentUrlImportDocumentName(args: { sourceName?: string
   return `${base}.video-agent.md`
 }
 
-function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): VideoAgentUrlImportBundle {
+function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
   const sourceUrl = cleanInline(args.sourceUrl)
   const workspaceOutputRoot = normalizeWorkspacePath(args.workspaceOutputRoot || VIDEO_AGENT_WORKSPACE_OUTPUT_ROOT_PATH)
-  const transcriptDurationMs = readTranscriptDurationMs(args)
-  const result = buildVideoAgentPipeline({
-    sourceUrl,
-    intent: 'Load, parse, annotate, count zones, compile, generate, and stream the imported video.',
-    durationMs: transcriptDurationMs || undefined,
-    maxFrameSamples: URL_IMPORT_PREVIEW_SAMPLE_LIMIT,
-    workspaceOutputRoot,
-  })
-  if (result.ok === false) throw new Error(result.reason)
+  const jsonSegments = readTranscriptSegmentsFromJson(args.sourceTranscriptJsonText || '')
+  const transcriptDurationMs = readVideoAgentTranscriptDurationMs({ segments: jsonSegments, hasRemoteVideoSource: !!getYouTubeId(sourceUrl) })
+  const prepare = (maxFrameSamples: number) => {
+    const result = buildVideoAgentPipeline({
+      sourceUrl,
+      intent: 'Load, parse, annotate, count zones, compile, generate, and stream the imported video.',
+      durationMs: transcriptDurationMs || undefined,
+      maxFrameSamples,
+      workspaceOutputRoot,
+    })
+    if (result.ok === false) throw new Error(result.reason)
 
-  const pipeline = result.pipeline
-  const renderSpec = pipeline.renderSpec
-  const sourceText = String(args.sourceText || '').trim()
-  const transcriptArtifacts = buildVideoAgentTranscriptImportArtifacts({
-    durationMs: renderSpec.durationMs,
-    frameBoundingBoxes: pipeline.frameBoundingBoxes,
-    sourceText,
-    sourceTranscriptJsonText: args.sourceTranscriptJsonText,
-  })
-  const renderData: Record<string, unknown> = {
-    ...(renderSpec.data as Record<string, unknown>),
-    sourceTranscript: transcriptArtifacts.sourceTranscript,
-    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
+    const pipeline = result.pipeline
+    const renderSpec = pipeline.renderSpec
+    const sourceText = String(args.sourceText || '').trim()
+    const transcriptArtifacts = buildVideoAgentTranscriptImportArtifacts({
+      durationMs: renderSpec.durationMs,
+      frameBoundingBoxes: pipeline.frameBoundingBoxes,
+      sourceText,
+      jsonSegments,
+    })
+    const renderData = renderSpec.data as Record<string, unknown>
+    const sourcePlaybackUrl = String((renderData.sourceVideo as { playbackEmbedUrl?: unknown })?.playbackEmbedUrl || sourceUrl)
+    const preview = buildBoundedVideoImportPreview(transcriptArtifacts, sourceText, (transcript, body, sampled) =>
+      renderPreview(pipeline, workspaceOutputRoot, sourceUrl, sourcePlaybackUrl, transcript, body, sampled))
+    return { ...preview, pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl }
   }
-  const sourcePlaybackUrl = String((renderData.sourceVideo as { playbackEmbedUrl?: unknown })?.playbackEmbedUrl || sourceUrl)
+  const initial = prepare(VIDEO_IMPORT_SAMPLE_LIMIT)
+  // Let the pipeline apply its own minimum sample count before falling back to the source index.
+  return initial.storedGraph ? prepare(1) : initial
+}
+
+function renderPreview(
+  pipeline: VideoAgentPipeline, workspaceOutputRoot: WorkspacePath, sourceUrl: string, sourcePlaybackUrl: string,
+  transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>, sourceText: string, sampled: boolean,
+): string {
+  const renderSpec = pipeline.renderSpec
+  const renderData = { ...renderSpec.data as Record<string, unknown>, ...transcriptArtifacts }
   const dataJson = jsonBlock(renderData)
   const frameBoundingBoxesJson = jsonBlock(pipeline.frameBoundingBoxes)
   const sourceTranscriptJson = jsonBlock(transcriptArtifacts.sourceTranscript)
@@ -195,7 +198,8 @@ function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): 
     'kgDocumentSemanticMode: "document"',
     'kgFrontmatterModeEnabled: true',
     'kgVideoAgentImport: true',
-    `kgVideoAgentPreviewSampleLimit: ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}`,
+    ...(sampled ? ['kgVideoAgentTranscriptPreview: true'] : []),
+    `kgVideoAgentPreviewSampleLimit: ${VIDEO_IMPORT_SAMPLE_LIMIT}`,
     `kgWorkspaceOutputRoot: ${yamlQuote(workspaceOutputRoot)}`,
   ]
   if (youtubeId) lines.push(`kgYoutubeVideoId: ${yamlQuote(youtubeId)}`)
@@ -528,7 +532,7 @@ function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): 
     '',
     '## Parsed Outputs',
     '',
-    `- Preview frame samples: ${pipeline.frameBoundingBoxes.length} (maximum ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}; full source duration retained)`,
+    `- Preview frame samples: ${pipeline.frameBoundingBoxes.length} (maximum ${VIDEO_IMPORT_SAMPLE_LIMIT})`,
     `- Transcript segments: ${transcriptArtifacts.sourceTranscript.segmentCount}`,
     `- Frame transcript rows: ${transcriptArtifacts.frameByFrameTranscript.length}`,
     `- Visual dataset samples: ${pipeline.datasetRuntime.visualDataset.samples.length}`,
@@ -542,26 +546,16 @@ function buildVideoAgentUrlImportBundle(args: VideoAgentUrlImportDocumentArgs): 
   if (sourceText) {
     lines.push('## Source Transcript', '', sourceText, '')
   }
-  const markdown = lines.join('\n')
-  if (new TextEncoder().encode(markdown).byteLength > URL_IMPORT_DOCUMENT_BYTE_LIMIT) {
-    throw new Error('Video import exceeds the 500 KB preview document limit. Import a shorter transcript or segment.')
-  }
-  return {
-    markdown,
-    workspaceFiles: buildVideoAgentImportSidecars({
-      pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl, youtubeId,
-      sourceName: cleanInline(args.sourceName), sourceText: String(args.sourceText || ''),
-      sourceTranscriptJsonText: String(args.sourceTranscriptJsonText || ''),
-    }),
-  }
+  return lines.join('\n')
 }
 
 export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocumentArgs): string {
-  return buildVideoAgentUrlImportBundle(args).markdown
+  return prepareVideoImport(args).markdown
 }
 
 export async function materializeVideoAgentUrlImportDocument(args: {
   fs: WorkspaceFs
+  mirrorToHost?: boolean
   parentPath?: WorkspacePath | null
   sourceName?: string | null
   sourceText?: string | null
@@ -569,27 +563,32 @@ export async function materializeVideoAgentUrlImportDocument(args: {
   sourceUrl: string
 }): Promise<WorkspacePath> {
   const parentPath = resolveVideoAgentImportOutputParentPath(args.parentPath)
-  const outputFolderPath = buildVideoAgentTimestampedWorkspaceOutputFolderPath(parentPath)
-  const createdPath = joinWorkspacePath(
-    outputFolderPath,
-    buildVideoAgentUrlImportDocumentName(args),
-  )
-  const bundle = buildVideoAgentUrlImportBundle({ ...args, workspaceOutputRoot: outputFolderPath })
-  const text = bundle.markdown
-  await writeWorkspaceFileTextEnsuringFile({
-    fs: args.fs,
-    path: createdPath,
-    text,
-  })
-  await ensureWorkspaceDocsMirrorFolder({ workspacePath: outputFolderPath })
-  await upsertWorkspaceDocsMirrorText({ workspacePath: createdPath, text })
-  for (const file of bundle.workspaceFiles) {
-    await writeWorkspaceFileTextEnsuringFile({
-      fs: args.fs,
-      path: file.path,
-      text: file.text,
+  await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: parentPath })
+  const { outputFolderPath, createdPath, files } = await runWorkspaceFsChangedBatch(async () => {
+    const outputFolderPath = await args.fs.createFolder({
+      parentPath, name: workspaceBasename(buildVideoAgentTimestampedWorkspaceOutputFolderPath(parentPath)), mirrorToHost: false,
     })
-    await upsertWorkspaceDocsMirrorText({ workspacePath: file.path, text: file.text })
+    try {
+      const prepared = prepareVideoImport({ ...args, workspaceOutputRoot: outputFolderPath })
+      const name = buildVideoAgentUrlImportDocumentName(args)
+      const createdPath = joinWorkspacePath(outputFolderPath, prepared.storedGraph ? name.replace(/\.md$/, '.source.md') : name)
+      const files = buildVideoAgentImportSidecars({
+        ...prepared, youtubeId: getYouTubeId(prepared.sourceUrl), sourceName: cleanInline(args.sourceName),
+        sourceText: args.sourceText ?? '', sourceTranscriptJsonText: args.sourceTranscriptJsonText ?? '',
+      })
+      files.push({ path: createdPath, text: prepared.markdown })
+      for (const { path, text } of files) await args.fs.createFile({
+        parentPath: outputFolderPath, name: workspaceBasename(path), text, requireExactPath: true, mirrorToHost: false,
+      })
+      return { outputFolderPath, createdPath, files }
+    } catch (error) {
+      await args.fs.deleteEntry(outputFolderPath, { mirrorToHost: false })
+      throw error
+    }
+  })
+  if (args.mirrorToHost !== false) {
+    await ensureWorkspaceDocsMirrorFolder({ workspacePath: outputFolderPath })
+    for (const { path, text } of files) await upsertWorkspaceDocsMirrorText({ workspacePath: path, text })
   }
-  return normalizeWorkspacePath(createdPath)
+  return createdPath
 }

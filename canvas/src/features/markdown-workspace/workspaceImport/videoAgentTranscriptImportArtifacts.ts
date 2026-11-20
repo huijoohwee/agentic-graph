@@ -19,7 +19,7 @@ const secondsToMs = (value: unknown): number | null => {
   return n === null ? null : Math.max(0, Math.round(n * 1000))
 }
 
-const readTranscriptSegmentsFromJson = (text: string): VideoAgentTranscriptSegment[] => {
+export const readTranscriptSegmentsFromJson = (text: string): VideoAgentTranscriptSegment[] => {
   if (!text.trim()) return []
   let parsed: unknown
   try {
@@ -55,10 +55,9 @@ const readTranscriptSegmentsFromMarkdown = (text: string, durationMs: number): V
 
 export const readVideoAgentTranscriptDurationMs = (args: {
   hasRemoteVideoSource: boolean
-  sourceTranscriptJsonText?: string | null
+  segments: VideoAgentTranscriptSegment[]
 }): number => {
-  const segments = readTranscriptSegmentsFromJson(String(args.sourceTranscriptJsonText || ''))
-  const transcriptDurationMs = segments.reduce((durationMs, segment) => Math.max(durationMs, segment.endMs), 0)
+  const transcriptDurationMs = args.segments.reduce((durationMs, segment) => Math.max(durationMs, segment.endMs), 0)
   return transcriptDurationMs || (args.hasRemoteVideoSource ? TRANSCRIPT_UNAVAILABLE_REMOTE_VIDEO_FALLBACK_DURATION_MS : 0)
 }
 
@@ -66,9 +65,9 @@ export const buildVideoAgentTranscriptImportArtifacts = (args: {
   durationMs: number
   frameBoundingBoxes: ReadonlyArray<{ frameIndex: number; timestampMs: number }>
   sourceText: string
-  sourceTranscriptJsonText?: string | null
+  jsonSegments: VideoAgentTranscriptSegment[]
 }) => {
-  const jsonSegments = readTranscriptSegmentsFromJson(String(args.sourceTranscriptJsonText || ''))
+  const { jsonSegments } = args
   const segments = jsonSegments.length > 0
     ? jsonSegments
     : readTranscriptSegmentsFromMarkdown(args.sourceText, args.durationMs)
