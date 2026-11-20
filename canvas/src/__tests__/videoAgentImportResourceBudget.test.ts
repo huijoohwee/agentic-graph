@@ -1,4 +1,6 @@
 import { JSDOM } from 'jsdom'
+import { buildVideoAgentTranscriptPanelSrcDoc, usesWorkspaceTranscript } from '@/features/video-agent/videoAgentTranscriptProjection'
+import { normalizeRichMediaPanelInlineSrcDoc } from '@/lib/render/richMediaPanelSrcDoc'
 import { readWorkspaceTranscript } from '@/features/video-agent/WorkspaceSourceTranscript'
 import { buildVideoAgentPipeline } from '@/features/video-agent/videoAgentPipeline'
 import { buildVideoAgentFrameBoundingBoxes } from '@/features/video-agent/videoAgentFrameBoxes'
@@ -150,6 +152,11 @@ async function verifyImportDocumentBudget(): Promise<void> {
   const tracks = JSON.parse(timelineText!).timelineTracks
   assert(tracks.every((t: { durationMs: number }) => t.durationMs === duration * 1000)
     && tracks[0].frameSamples.at(-1).timestampMs === duration * 1000 - 1, 'Track or final frame stopped before the last cue')
+
+  const previewPanel = buildVideoAgentTranscriptPanelSrcDoc({ sourceTranscript: { preview: true } })
+  const wrap = (srcDoc: string) => normalizeRichMediaPanelInlineSrcDoc({ srcDoc, title: 'Transcript', scrollOwner: 'media' })
+  assert(usesWorkspaceTranscript(previewPanel) && usesWorkspaceTranscript(wrap(previewPanel)), 'Wrapped storyboard transcript lost the workspace reader')
+  assert(!usesWorkspaceTranscript(wrap(buildVideoAgentTranscriptPanelSrcDoc({}))), 'An inline transcript incorrectly requested workspace files')
 
   const longTimeline = buildMermaidGanttTimelineModel('gantt\nsection Video\nSource video : source, 00:00, 100000m')
   assert(buildMermaidGanttTimelineTicks(longTimeline).length <= 8, 'Timeline ruler grew with source duration')

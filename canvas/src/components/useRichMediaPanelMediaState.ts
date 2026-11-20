@@ -36,6 +36,7 @@ import {
   resolveRichMediaTimelineMediaTargetSeconds,
   applyRichMediaTimelinePlaybackRate,
 } from '@/lib/render/richMediaTimelineSync'
+import { usesWorkspaceTranscript } from '@/features/video-agent/videoAgentTranscriptProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveIframeEmbed, shouldForceSnapshotIframeUrl } from 'grph-shared/rich-media/iframe'
 import type { RichMediaKind, RichMediaPanelProps } from './RichMediaPanel.types'
@@ -177,7 +178,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     return subscribeGrabMapsPoiRichMediaPreview(payload => applyPayload(payload))
   }, [props.overlayId])
   const effectiveInlineSrcDoc = inlineSrcDoc || grabMapsPoiPreviewSrcDoc
-  const isWorkspaceTranscript = effectiveInlineSrcDoc.startsWith('<main data-kg-video-agent-transcript-panel="1" data-kg-workspace-transcript="1"')
+  const isWorkspaceTranscript = React.useMemo(() => usesWorkspaceTranscript(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
   const [transcriptTimeMs, setTranscriptTimeMs] = React.useState(0)
   const inlineSrcDocRequestsPanelScroll = React.useMemo(() => shouldUsePanelOwnedRichMediaPanelSrcDocScroll(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
   const inlineSrcDocRequestsMediaScroll = React.useMemo(() => shouldUseMediaOwnedRichMediaPanelSrcDocScroll(effectiveInlineSrcDoc), [effectiveInlineSrcDoc])
