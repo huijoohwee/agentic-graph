@@ -104,6 +104,7 @@ export function testApplicationTypographyForbidsLegacyVariants() {
   for (const root of ['src', '../grph-shared/src', '../gympgrph/src']) for (const file of sources(path.resolve(root))) {
     if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.js') || file.endsWith('/kgTokens.generated.css') || file.endsWith('/styles/shared-ui-profile.css')) continue
     const content = fs.readFileSync(file, 'utf8')
+    if (/<dt\b[^>]*(?:font-(?:bold|semibold|medium|normal)|microLabelClass|text-(?:xs|sm|base)\b|leading-|tracking-|uppercase)/u.test(content)) violations.push(`${file}: use shared fact label typography`)
     if (/text-\[\d+(?:\.\d+)?(?:px|rem)\]/.test(content)) violations.push(`${file}: use the shared text scale`)
     if (/tracking-(?:wide|wider|widest|tight|tighter)\b|tracking-\[[^\]]+\]/.test(content)) violations.push(`${file}: use normal letter spacing`)
     if (/(?:-apple-system|SFMono-Regular|BlinkMacSystemFont|system-ui|sans-serif)/.test(content)) violations.push(`${file}: import the shared font stack`)

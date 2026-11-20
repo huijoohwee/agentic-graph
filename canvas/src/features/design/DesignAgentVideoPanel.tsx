@@ -139,7 +139,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
             ['Output', previewUrl ? 'video/mp4' : 'staged'],
           ].map(([label, value]) => (
             <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
-              <dt className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
+              <dt className={UI_THEME_TOKENS.text.tertiary}>{label}</dt>
               <dd className={cn('m-0 mt-0.5 truncate font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
             </section>
           ))}

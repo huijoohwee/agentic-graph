@@ -407,13 +407,13 @@ export function RichMediaBrowserSmokePage() {
 
       <aside className="mx-auto mt-6 w-full max-w-7xl rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4" aria-label="Rich media smoke diagnostics">
         <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <dt className="font-semibold">Editable Text</dt>
+          <dt>Editable Text</dt>
           <dd data-kg-smoke-edit-value="1" className="text-[var(--kg-text-secondary)]">{editableText}</dd>
-          <dt className="font-semibold">Flow Drag Count</dt>
+          <dt>Flow Drag Count</dt>
           <dd data-kg-smoke-flow-drag-count="1" className="text-[var(--kg-text-secondary)]">{flowPanelState.dragCount}</dd>
-          <dt className="font-semibold">Flow Resize Count</dt>
+          <dt>Flow Resize Count</dt>
           <dd data-kg-smoke-flow-resize-count="1" className="text-[var(--kg-text-secondary)]">{flowPanelState.resizeCount}</dd>
-          <dt className="font-semibold">Flow Size</dt>
+          <dt>Flow Size</dt>
           <dd data-kg-smoke-flow-size="1" className="text-[var(--kg-text-secondary)]">{`${flowPanelState.width}x${flowPanelState.height}`}</dd>
         </dl>
       </aside>

@@ -1,0 +1,13 @@
+:where([data-agentic-typography]) {
+  font: var(--agentic-font-size-body, 0.875rem)/var(--agentic-line-height-body, 1.25rem) var(--agentic-font-sans, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji);
+}
+:where(dt), .agentic-fact-label {
+  font-family: var(--agentic-font-sans, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji); font-weight: normal;
+}
+.agentic-mono, .agentic-mono-detail, [data-agentic-typography] :where(dd, code, pre, samp, kbd, time) {
+  font-family: var(--agentic-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace); font-variant-numeric: tabular-nums;
+}
+:where(dt), .agentic-fact-label, .agentic-text-detail, .agentic-mono-detail, [data-agentic-typography] :where(dd, code, pre, samp, kbd, time),
+.agentic-dashboard-eyebrow, .agentic-dashboard-description, .agentic-dashboard-detail {
+  font-size: var(--kg-text-xs, 0.75rem); line-height: var(--kg-text-xs-line, 1rem);
+}

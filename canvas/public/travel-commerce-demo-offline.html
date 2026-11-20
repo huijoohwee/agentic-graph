@@ -4,8 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agentic Travel Commerce · Offline</title>
+    <link rel="stylesheet" href="./typography.css" />
     <style>
-      :root { color-scheme: dark; font: 16px/1.45 ui-sans-serif, system-ui, sans-serif; background: #101214; color: #f7f7f2; }
+      :root { color-scheme: dark; background: #101214; color: #f7f7f2; }
       * { box-sizing: border-box; }
       body { margin: 0; min-width: 0; overflow-x: hidden; background: #101214; }
       main { width: 100%; min-height: 100vh; padding: 20px 12px; overflow-x: hidden; }
@@ -13,19 +14,20 @@
       .panel { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #42474e; border-radius: 24px; background: #1a1e22; }
       h1, h2, h3, p, dd, pre { margin: 0; overflow-wrap: anywhere; }
       h1 { font-size: 1.5rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1rem; }
-      .eyebrow, dt { color: #b7bdc6; font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+      .eyebrow { color: #b7bdc6; font-size: .75rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+      dt { color: #b7bdc6; }
       output { display: block; padding: 12px; border: 1px solid #626a74; border-radius: 16px; }
       nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       button { min-width: 44px; min-height: 44px; padding: 8px 10px; border: 1px solid #626a74; border-radius: 16px; background: #20252a; color: inherit; font: inherit; text-align: left; }
       button[aria-pressed="true"] { border-color: #ecbd5b; box-shadow: inset 0 0 0 1px #ecbd5b; }
       dl, ul, ol { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; }
       dl > div, li, .evidence { min-width: 0; padding: 12px; border: 1px solid #42474e; border-radius: 16px; }
-      dd { margin-top: 4px; } ul, ol { list-style: none; } pre { white-space: pre-wrap; font-size: .75rem; }
+      dd { margin-top: 4px; } ul, ol { list-style: none; } pre { white-space: pre-wrap; }
       .muted { color: #b7bdc6; }
       @media (min-width: 560px) { nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     </style>
   </head>
-  <body>
+  <body data-agentic-typography>
     <main aria-label="Travel commerce deterministic local demo" data-kg-travel-commerce-demo="v1" data-kg-travel-commerce-demo-mode="deterministic-local-service-doubles" data-kg-travel-commerce-offline-ready="true" data-kg-travel-commerce-execution="loading">
       <div class="stack">
         <header class="panel">

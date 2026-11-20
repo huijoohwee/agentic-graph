@@ -127,12 +127,12 @@ export function XrV2WorkspaceReadinessPanelView({
       <XrV2DeliveryValidationPanel actionsEnabled={snapshot.canOfferUserActions} />
 
       <dl className={cn('m-0 grid grid-cols-2 gap-x-2 gap-y-1 text-xs', UI_THEME_TOKENS.text.secondary)}>
-        <div><dt className="font-semibold">Viewer</dt><dd className="m-0" data-kg-xr-v2-progressive-viewer={viewerTier}>{viewerTier}</dd></div>
-        <div><dt className="font-semibold">Physical proof</dt><dd className="m-0">external required</dd></div>
-        <div><dt className="font-semibold">Asset tier</dt><dd className="m-0">{metadata?.xr_capability_tier || 'pending'}</dd></div>
-        <div><dt className="font-semibold">Synthesis</dt><dd className="m-0">{metadata?.synthesis_mode || 'pending'}</dd></div>
-        <div><dt className="font-semibold">Depth metadata</dt><dd className="m-0">{metadata?.depth_metadata_ref || 'null'}</dd></div>
-        <div><dt className="font-semibold">Fallback triggered</dt><dd className="m-0">{String(metadata?.fallback_triggered ?? false)}</dd></div>
+        <div><dt>Viewer</dt><dd className="m-0" data-kg-xr-v2-progressive-viewer={viewerTier}>{viewerTier}</dd></div>
+        <div><dt>Physical proof</dt><dd className="m-0">external required</dd></div>
+        <div><dt>Asset tier</dt><dd className="m-0">{metadata?.xr_capability_tier || 'pending'}</dd></div>
+        <div><dt>Synthesis</dt><dd className="m-0">{metadata?.synthesis_mode || 'pending'}</dd></div>
+        <div><dt>Depth metadata</dt><dd className="m-0">{metadata?.depth_metadata_ref || 'null'}</dd></div>
+        <div><dt>Fallback triggered</dt><dd className="m-0">{String(metadata?.fallback_triggered ?? false)}</dd></div>
       </dl>
 
       <section aria-label="XR browser API probes" className="flex flex-wrap gap-1 text-xs">

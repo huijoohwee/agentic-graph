@@ -442,15 +442,15 @@ export function LaunchSpotlightStatusCard({
                       Viewport
                     </h3>
                     <dl className={LAUNCH_SPOTLIGHT_VIEWPORT_STATUS_GRID_CLASS_NAME}>
-                      <dt className="font-semibold">Zoom</dt>
+                      <dt>Zoom</dt>
                       <dd className="font-mono">{formatZoomPercent(zoomState?.k)}</dd>
-                      <dt className="font-semibold">Pan</dt>
+                      <dt>Pan</dt>
                       <dd className="font-mono">
                         {formatSignedPx(zoomState?.x)} {formatSignedPx(zoomState?.y)}
                       </dd>
-                      <dt className="font-semibold">Selection</dt>
+                      <dt>Selection</dt>
                       <dd className="font-mono">{selectionCount.toLocaleString()}</dd>
-                      <dt className="font-semibold">Renderer</dt>
+                      <dt>Renderer</dt>
                       <dd className="font-mono">{rendererLabel}</dd>
                     </dl>
                   </section>
