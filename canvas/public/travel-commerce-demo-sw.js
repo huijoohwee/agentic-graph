@@ -1,11 +1,11 @@
-const CACHE_NAME = 'agentic-graph-travel-commerce-demo-v2'
+const CACHE_NAME = 'agentic-graph-travel-commerce-demo-v3'
 const DEMO_PATH = '/__demo__/travel-commerce'
 const OFFLINE_SHELL_PATH = '/travel-commerce-demo-offline.html'
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll([DEMO_PATH, OFFLINE_SHELL_PATH]))
+      .then(cache => cache.addAll([DEMO_PATH, OFFLINE_SHELL_PATH, '/typography.css']))
       .then(() => self.skipWaiting()),
   )
 })

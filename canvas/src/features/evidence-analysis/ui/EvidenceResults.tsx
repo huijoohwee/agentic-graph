@@ -14,7 +14,7 @@ export function VolumeResult({ value }: { value: any }) {
     <dl className="grid grid-cols-2 gap-2 text-xs">
       {Object.entries({ Floor: `${value.floorMetres} m`, Ceiling: `${value.ceilingMetres} m`, Datum: value.datum,
         'Query UTC': value.atUtc, 'Valid from': value.validFromUtc, 'Valid to': value.validToUtc,
-        'Within interval': String(value.active) }).map(([key, text]) => <div className={box} key={key}><dt className="font-semibold">{key}</dt><dd className="m-0 break-all">{text}</dd></div>)}
+        'Within interval': String(value.active) }).map(([key, text]) => <div className={box} key={key}><dt>{key}</dt><dd className="m-0 break-all">{text}</dd></div>)}
     </dl>
     <svg role="img" aria-label="Schematic volume; exact source coordinates and bounds remain in the record." viewBox={`0 0 ${value.size.width} ${value.size.height}`} className="w-full min-w-0 rounded border" data-evidence-volume-svg="1">
       {value.screen.sides.map((face: number[][], index: number) => <polygon key={index} points={face.map(point => point.join(',')).join(' ')} fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeWidth="1" />)}

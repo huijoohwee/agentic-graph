@@ -15,7 +15,7 @@
     },
     "esbuild": "^0.25.12",
     "fast-uri": "3.1.9",
-    "qs": "6.16.0",
+    "qs": "6.17.1",
     "sharp": "0.35.5",
     "tsx": {
       "esbuild": "^0.28.1"
@@ -46,7 +46,10 @@
     "mermaid@12.2.0": {
       "dompurify": "3.4.17"
     },
-    "markdown-it": "14.3.3"
+    "markdown-it": "14.3.3",
+    "workbox-build": {
+      "glob": "14.0.6"
+    }
   },
   "scripts": {
     "agent-mission:check": "node --test scripts/__tests__/workflow-archive-bridge.test.mjs scripts/__tests__/agent-mission-stages.test.mjs && npm -C canvas run test:ci:unit -- agentReady.missionControl.projection agentReady.webMcpRuntime.durableRun && node canvas/scripts/run_agent_mission_browser_smoke.mjs",
@@ -357,7 +360,7 @@
     "spatial-workspace:full-app": "node canvas/scripts/run_spatial_workspace_full_app_smoke.mjs --build"
   },
   "dependencies": {
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#d72306491d1b9b6cd5fdfddbecdff85263354c3e",
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#801e7923daa87516a8c694cae535801881168ef8",
     "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
@@ -369,7 +372,7 @@
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#ce2f38074ae86846e68f86808693727114f3436b"
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#cb062fec5d0923f8da74a9fae3dcabb73e608aa1"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",

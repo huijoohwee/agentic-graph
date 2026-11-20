@@ -13,6 +13,24 @@ const centralGraphCss = fs.readFileSync(new URL('kgTokens.generated.css', styles
 const applicationCss = fs.readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 const sha256 = value => `sha256:${createHash('sha256').update(value).digest('hex')}`
 
+test('static Graph surfaces ship the pinned offline fact-label stylesheet', () => {
+  const typography = fs.readFileSync(fileURLToPath(import.meta.resolve('agentic-design-system/typography.css')))
+  for (const [directory, page, servedAt] of [
+    ['canvas/public', 'travel-commerce-demo-offline.html', '/__demo__/travel-commerce'],
+    ['cloudflare/workers/miaoxyz/public', 'index.html', '/'],
+    ['cloudflare/pages/pitch/agentic-drone-as-a-service', 'index.html', '/pitch/agentic-drone-as-a-service/'],
+  ]) {
+    const root = new URL('../../../' + directory + '/', import.meta.url)
+    assert.deepEqual(fs.readFileSync(new URL('typography.css', root)), typography)
+    const html = fs.readFileSync(new URL(page, root), 'utf8')
+    const href = html.match(/<link rel="stylesheet" href="([^"]*typography\.css)"/u)?.[1]
+    assert.ok(href)
+    const asset = new URL(href, 'https://example.test' + servedAt)
+    const expected = servedAt.startsWith('/__demo__/') ? '/typography.css' : servedAt + 'typography.css'
+    assert.equal(asset.pathname, expected)
+  }
+})
+
 test('Graph glyph roles consume the pinned Design System icon-size projection', () => {
   assert.equal(pin.schema, 'agentic-design-system/consumer-pin/v1')
   assert.equal(pin.profile.id, 'shared-ui')

@@ -416,23 +416,23 @@ export function StoryboardRichMediaDropSmokePage() {
             <h2 className="text-sm font-semibold">Runtime Readout</h2>
             <dl className="mt-3 grid gap-2 text-xs">
               <div className="flex items-start justify-between gap-3">
-                <dt className="font-semibold">Graph Revision</dt>
+                <dt>Graph Revision</dt>
                 <dd data-kg-storyboard-drop-smoke-graph-revision="1" className="text-[var(--kg-text-secondary)]">{graphRevision}</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="font-semibold">Dropped Count</dt>
+                <dt>Dropped Count</dt>
                 <dd data-kg-storyboard-drop-smoke-drop-count="1" className="text-[var(--kg-text-secondary)]">{smokeState.dropCount}</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="font-semibold">Dropped Kinds</dt>
+                <dt>Dropped Kinds</dt>
                 <dd data-kg-storyboard-drop-smoke-drop-kinds="1" className="text-right text-[var(--kg-text-secondary)]">{smokeState.droppedKinds.join(', ') || 'none'}</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="font-semibold">Dropped Node IDs</dt>
+                <dt>Dropped Node IDs</dt>
                 <dd data-kg-storyboard-drop-smoke-drop-node-ids="1" className="text-right text-[var(--kg-text-secondary)]">{smokeState.droppedNodeIds.join(', ') || 'none'}</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="font-semibold">Shifted Existing IDs</dt>
+                <dt>Shifted Existing IDs</dt>
                 <dd data-kg-storyboard-drop-smoke-shifted="1" className="text-right text-[var(--kg-text-secondary)]">{smokeState.shiftedNodeIds.join(', ') || 'none'}</dd>
               </div>
             </dl>

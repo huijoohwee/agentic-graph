@@ -99,7 +99,7 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
     </details>
     <details className="min-w-0 text-xs"><summary className={actionClass}>Document design context</summary>
       <p>Optional document frontmatter: a <code>design</code> mapping with the text fields below. Missing fields stay unresolved.</p>
-      <dl>{DESIGN_INTENT_FIELDS.map(key => <React.Fragment key={key}><dt className="font-semibold">{key}</dt>
+      <dl>{DESIGN_INTENT_FIELDS.map(key => <React.Fragment key={key}><dt>{key}</dt>
         <dd className="m-0 mb-2 break-words">{context.intent[key] ?? 'Unresolved'}</dd></React.Fragment>)}</dl>
       <ul className="pl-4">{context.guidance.map(line => <li key={line}>{line}</li>)}</ul>
     </details>

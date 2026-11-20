@@ -223,7 +223,7 @@ export function TravelCommerceDemoPage() {
                 <dl className="grid min-w-0 gap-2">
                   {detail.rows.map(row => (
                     <div key={row.label} className="grid min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--kg-text-secondary)]">{row.label}</dt>
+                      <dt className="text-[var(--kg-text-secondary)]">{row.label}</dt>
                       <dd className="m-0 break-words text-sm">{row.value}</dd>
                     </div>
                   ))}

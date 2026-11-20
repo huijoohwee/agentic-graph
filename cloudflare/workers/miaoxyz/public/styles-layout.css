@@ -220,7 +220,7 @@
 .request-summary-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1rem; min-width: 0; margin: 0; }
 .request-summary-details div { min-width: 0; }
 .request-summary-details > div:last-child { grid-column: 1 / -1; }
-.request-summary-details dt { color: var(--muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.request-summary-details dt { color: var(--muted); }
 .request-summary-details dd { margin: 0.16rem 0 0; color: var(--ink); font-size: 0.76rem; line-height: 1.45; overflow-wrap: anywhere; }
 .request-summary .small-note { margin: 0.7rem 0 0; }
 .request-service-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; }
@@ -478,7 +478,6 @@
   .request-summary-body { grid-template-columns: 78px minmax(0, 1fr); gap: 0.65rem; }
   .request-summary-art { width: 78px; height: 100px; }
   .request-summary-details { gap: 0.45rem 0.55rem; }
-  .request-summary-details dt { font-size: 0.55rem; }
   .request-summary-details dd { font-size: 0.68rem; }
   .request-service-fields { grid-template-columns: 1fr; }
   .request-service-fields #delivery-address-wrap { grid-column: auto; }
