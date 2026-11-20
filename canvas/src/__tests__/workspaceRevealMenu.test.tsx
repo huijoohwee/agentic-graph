@@ -3,11 +3,14 @@ import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { useMarkdownWorkspaceViewShell } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceViewShell'
-import { buildMarkdownFileTreeContextMenuItems } from '@/features/markdown-workspace/markdownFileTreeContextMenuItems'
+import '../tests/lib/registerCssLoader'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 test('Explorer reveal saves the current selected document and reports failure without opening a URL or changing selection', async () => {
+  const [{ useMarkdownWorkspaceViewShell }, { buildMarkdownFileTreeContextMenuItems }] = await Promise.all([
+    import('@/lib/markdown-workspace-runtime/useMarkdownWorkspaceViewShell'),
+    import('@/features/markdown-workspace/markdownFileTreeContextMenuItems'),
+  ])
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   let entry = { kind: 'file', path: '/websites/example/article.md', name: 'article.md', parentPath: '/websites/example',
     text: '---\nkgWebsiteImportId: "20260928T034028Z"\nkgWebsiteNodeId: "a123"\n---\nBody' } as WorkspaceEntry

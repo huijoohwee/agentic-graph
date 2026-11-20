@@ -1,3 +1,4 @@
+import { consolidateDuplicateVideoImports } from './videoImportDuplicates'
 import type { WorkspaceEntry } from './types'
 import type { PersistedCollectionDb } from '@/lib/storage/persistedCollectionStore'
 import { parseWebpageFrontmatterMeta, parseWebsiteImportFrontmatterMeta } from '@/lib/markdown/frontmatter'
@@ -85,6 +86,7 @@ export function planWebsiteCollectionConsolidation(observed: readonly WorkspaceE
       return `](./${target.slice(entry.parentPath!.length + 1)})`
     })
   }
+  consolidateDuplicateVideoImports(next, moved)
   return { entries: [...next.values()], moved }
 }
 

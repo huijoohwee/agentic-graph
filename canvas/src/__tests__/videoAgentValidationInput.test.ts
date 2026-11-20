@@ -341,7 +341,7 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
     if (imported.applyToGraph !== true) {
       throw new Error(`expected imported video-agent document to apply to graph, got ${String(imported.applyToGraph)}`)
     }
-    if (imported.createdPaths.length !== 1 || !/^\/docs_\/\d{8}T\d{6}Z\/.+\.video-agent\.md$/.test(String(imported.createdPaths[0] || ''))) {
+    if (imported.createdPaths.length !== 1 || !/^\/websites\/[^/]+\/[^/]+\/.+\.video-agent\.md$/.test(String(imported.createdPaths[0] || ''))) {
       throw new Error(`expected Import URL to focus a single video-agent document, got ${imported.createdPaths.join(', ')}`)
     }
     const sourceUnit = imported.corpusManifest?.sourceUnits?.[0] || null
@@ -351,10 +351,10 @@ export async function testVideoAgentImportUrlMaterializesCompleteParsedGraph() {
     const importedText = String((await fs.readFileText(imported.createdPaths[0] || '')) || '')
     const outputRoot = String(imported.createdPaths[0] || '').replace(/\/[^/]+$/, '')
     for (const token of [
-      'kgVideoAgentImport: true', 'kgWorkspaceOutputRoot: "/docs_/', `kgYoutubeVideoId: "${videoId}"`, 'kgVideoSequenceTimeline: true', 'kgVideoSequenceSources:',
+      'kgVideoAgentImport: true', `kgWorkspaceOutputRoot: "${outputRoot}"`, `kgYoutubeVideoId: "${videoId}"`, 'kgVideoSequenceTimeline: true', 'kgVideoSequenceSources:',
       'videoAgentRuntimeContract:', 'frameBoundingBoxes:', 'frameByFrameSamples', 'sourcePlaybackUrl', 'sourceTranscript', 'frameByFrameTranscript',
       'richMediaPanels', 'visualAnnotationE2E', 'datasetOperationSummary', 'visualDataset', 'mergedVisualDataset', 'datasetSplitSummary',
-      'savedDatasetArtifact', 'zoneCounting', 'workspace output store /docs_/', 'html_video_source_spec', 'video_agent_transcript_panel', 'data-kg-video-agent-transcript-panel', 'video_agent_dataset_panel', 'data-kg-video-agent-dataset-panel',
+      'savedDatasetArtifact', 'zoneCounting', `workspace output store ${outputRoot}`, 'html_video_source_spec', 'video_agent_transcript_panel', 'data-kg-video-agent-transcript-panel', 'video_agent_dataset_panel', 'data-kg-video-agent-dataset-panel',
       'HtmlVideoRenderer', 'RichMediaPanel', 'type: "mermaid_gantt"', sourceUrl,
     ]) {
       if (!importedText.includes(token)) {

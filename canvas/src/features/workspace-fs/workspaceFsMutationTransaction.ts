@@ -57,9 +57,9 @@ export function createWorkspaceFsMutationTransaction(inner: WorkspaceFs): Worksp
       if (!beforeByPath.has(path)) beforeByPath.set(path, null)
       return path
     },
-    deleteEntry: async path => {
+    deleteEntry: async (path, options) => {
       await capturePath(path, true)
-      await inner.deleteEntry(path, { mirrorToHost: false })
+      await inner.deleteEntry(path, { ...options, mirrorToHost: false })
     },
   }
 

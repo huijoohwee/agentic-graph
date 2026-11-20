@@ -1,4 +1,4 @@
-import { WorkspaceSourceTextConflictError, type WorkspaceEntry, type WorkspaceFs, type WorkspaceFsMutationOptions, type WorkspaceFsWriteOptions, type WorkspacePath } from './types'
+import { WorkspaceSourceTextConflictError, type WorkspaceEntry, type WorkspaceFs, type WorkspaceFsWriteOptions, type WorkspacePath } from './types'
 import { WORKSPACE_ROOT_PATH, joinWorkspacePath, normalizeWorkspacePath } from './path'
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
@@ -495,12 +495,12 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     throw new Error('No available workspace name after 999 attempts; existing files were retained.')
   }
 
-  const createFolder = async (args: { parentPath: WorkspacePath; name: string; mirrorToHost?: boolean }) => {
+  const createFolder = async (args: Parameters<WorkspaceFs['createFolder']>[0]) => {
     await ensureRoot()
     const { path } = await createEntry({
       path: '', parentPath: normalizeWorkspacePath(args.parentPath), kind: 'folder',
       name: String(args.name ?? '').trim() || 'folder', updatedAtMs: Date.now(),
-    })
+    }, args.requireExactPath)
     if (args.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(path)) {
       scheduleWorkspaceDocsMirrorFolderEnsure(path)
     } else if (args.mirrorToHost !== false && isWorkspaceChatMirrorPath(path)) {
@@ -535,17 +535,23 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     return path
   }
 
-  const deleteEntry = async (path: WorkspacePath, options?: WorkspaceFsMutationOptions) => {
+  const deleteEntry = async (path: WorkspacePath, options?: WorkspaceFsWriteOptions) => {
     await ensureRoot()
-    const { collections } = await resolveDb()
+    const db = await resolveDb()
+    const { collections } = db
     const p = normalizeWorkspacePath(path)
     if (p === WORKSPACE_ROOT_PATH || isInitializationWorkspacePath(p)) return
     const row = await collections.entries.findOne(p).exec()
     if (!row) return
+    const conditional = !!options && Object.hasOwn(options, 'expectedText')
+    if (conditional && (row.get('kind') !== 'file' || row.get('text') !== options.expectedText)) throw new WorkspaceSourceTextConflictError()
     const shouldMirrorCanonicalSeedDelete = options?.mirrorToHost !== false && isAgenticGraphWorkspaceSeedsPath(p)
     if (shouldMirrorCanonicalSeedDelete) cancelWorkspaceDocsMirrorMutationsUnderPath(p)
     if (row.get('kind') === 'file') {
-      await row.remove()
+      if (conditional) {
+        if (!await db.compareAndWrite([{ kind: 'remove', collectionName: 'entries', id: p }],
+          [{ collectionName: 'entries', selector: { path: p }, records: [row.toJSON()] }])) throw new WorkspaceSourceTextConflictError()
+      } else await row.remove()
       if (shouldMirrorCanonicalSeedDelete) void deleteWorkspaceDocsMirrorEntry({ workspacePath: p })
       const remaining = await collections.entries.find({ selector: { kind: 'file' } }).exec().then(rows => rows.length)
       if (remaining === 0) lsSetBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, true)

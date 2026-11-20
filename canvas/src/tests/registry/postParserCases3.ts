@@ -183,6 +183,8 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.importUrl.youtubeTranscriptConversion.timestampMarkdown","@/__tests__/youtubeTranscriptConversion.test","testYouTubeTranscriptConversionPreservesTimestampRowsAsMarkdownLinks"],
   ["workspace.importUrl.videoFramePreview.endpointDescriptor","@/__tests__/videoFramePreview.test","testYouTubeTimestampFramePreviewUsesSharedVideoFrameEndpoint"],
   ["workspace.importUrl.videoFramePreview.videoThumbnail","@/__tests__/videoFramePreview.test","testVideoThumbnailPrefersTimestampFrameBeforeGenericYouTubeThumbnail"],
+  ["workspace.importUrl.videoSourceLocations","@/__tests__/videoSourceLocation.test","testVideoSourceLocations"],
+  ["workspace.importUrl.videoFramePreview.sourceFolder","@/__tests__/videoFramePreview.test","testRemoteVideoFrameCacheRootUsesSourceBundle"],
   ["workspace.importUrl.videoFramePreview.cacheFileName","@/__tests__/videoFramePreview.test","testRemoteVideoFrameFileNameIsStableAndNeutral"],
   ["workspace.importUrl.csvJson.sourceJsonPanePreview","@/__tests__/csvJsonConversion.test","testWorkspaceUrlCsvImportShowsJsonPanePreviewWithoutSeparateJsonFile"],
   ["workspace.importUrl.csvJson.jsonToCsv","@/__tests__/csvJsonConversion.test","testWorkspaceUrlJsonImportWritesFormulaSafeCsv"],

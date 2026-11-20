@@ -4,7 +4,7 @@ import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource, type WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { isPendingLocalImportStubText } from './pendingLocalImport'
 import { parseWebpageFrontmatterMeta } from '@/lib/markdown/frontmatter'
-import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
+import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment, websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 
 /** Bounded-memory input identity, including every byte (never trust name/mtime/size alone). */
 export async function importFileDigest(file: File): Promise<string | undefined> {
@@ -24,6 +24,7 @@ type SavedUrlImportAcceptance = (saved: SavedUrlImport) => boolean | Promise<boo
 export async function indexSavedUrlImports(fs: WorkspaceFs, accept?: SavedUrlImportAcceptance) {
   const index = loadWorkspaceSourceIndex()
   const saved = new Map<string, SavedUrlImport>()
+  const priority = new Map<string, number>()
   for (const entry of (await fs.listEntries()).sort((a, b) => Number(/-\d+\.md$/.test(a.path)) - Number(/-\d+\.md$/.test(b.path)) || a.path.localeCompare(b.path))) {
     if (entry.kind !== 'file') continue
     const source = index[entry.path]
@@ -33,12 +34,16 @@ export async function indexSavedUrlImports(fs: WorkspaceFs, accept?: SavedUrlImp
     let key: string
     try { const parsed = new URL(candidate); parsed.hash = ''; key = parsed.href } catch { continue }
     const canonicalPath = `/websites/${safeWebsitePathSegment(new URL(key).host)}/${resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: key })}`
-    if (saved.has(key) && entry.path !== canonicalPath) continue
+    const videoBundle = /^https?:/.test(key) && entry.parentPath === websiteSourceBundlePath(key)
+      && /\.(?:video-agent(?:\.source)?|video-sequence\.timeline)\.md$/.test(entry.name)
+    const rank = videoBundle ? 2 : entry.path === canonicalPath ? 1 : 0
+    if (rank <= (priority.get(key) ?? -1)) continue
     const text = await fs.readFileText(entry.path)
     if (!text?.trim() || /Markdown conversion is unavailable for this page|kgPendingLocalImport/.test(text)) continue
     const candidateImport: SavedUrlImport = { path: entry.path, text, source: { kind: 'url', url: key }, state: source?.importState }
     if (accept && !await accept(candidateImport)) continue
     saved.set(key, candidateImport)
+    priority.set(key, rank)
   }
   return saved
 }

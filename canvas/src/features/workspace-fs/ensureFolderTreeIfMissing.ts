@@ -18,7 +18,12 @@ export async function createWorkspaceFolderTreeEnsurer(injected?: WorkspaceFs, i
       for (const name of normalizeWorkspacePath(folderPath).split('/').map(part => part.trim()).filter(Boolean)) {
         const next = normalizeWorkspacePath(`${parent === '/' ? '' : parent}/${name}`)
         if (!folders.has(next)) {
-          const created = normalizeWorkspacePath(await fs.createFolder({ parentPath: parent, name }))
+          let created: string
+          try { created = normalizeWorkspacePath(await fs.createFolder({ parentPath: parent, name, requireExactPath: true })) }
+          catch (error) {
+            if (!(await fs.listEntries()).some(entry => entry.path === next && entry.kind === 'folder')) throw error
+            created = next
+          }
           if (created !== next) throw new Error(`Workspace folder changed while creating ${next}`)
           folders.add(next)
         }
