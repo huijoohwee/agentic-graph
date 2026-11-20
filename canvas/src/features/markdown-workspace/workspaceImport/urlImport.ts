@@ -184,7 +184,8 @@ export async function importWorkspaceUrl(args: {
       async candidate => {
         if (!workspaceImportSourceUrlsMatch(candidate.source.url, rawUrl)) return false
         const folder = candidate.path.slice(0, candidate.path.lastIndexOf('/'))
-        if (/^kgVideoAgentImport: true$/m.test(candidate.text) && folder !== expectedFolder) {
+        const header = folder === expectedFolder ? null : extractYamlFrontmatterHeaderBlock(candidate.text)
+        if (header && readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentImport') === 'true') {
           if (isLegacyVideoImportFolder(folder)) legacyFolders.add(folder)
           return false
         }
