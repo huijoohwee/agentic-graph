@@ -14,7 +14,8 @@ import {
   buildYouTubeTimestampFramePreviewDescriptor,
 } from 'grph-shared/rich-media/providers'
 import { getOrCreateVideoThumbnail } from 'grph-shared/rich-media/videoThumbnail'
-import { buildRemoteVideoFrameDefaultCacheRoot, buildRemoteVideoFrameDefaultPublicPrefix, readRemoteVideoFrameOutputFolderName } from '@/lib/rich-media/server/videoFrameServer'
+import { frameStorageRelativePath } from '@/lib/rich-media/server/videoFrameServer'
+import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 
 export async function testYouTubeTimestampFramePreviewUsesSharedVideoFrameEndpoint() {
   const url = 'https://www.youtube.com/watch?v=aBcD123xYz9&t=421'
@@ -73,19 +74,15 @@ export async function testRemoteVideoFrameFileNameIsStableAndNeutral() {
   }
 }
 
-export function testRemoteVideoFrameCacheRootUsesTimestampedSiblingImageFolder() {
-  const workspaceRoot = '/workspace'
-  const folderName = readRemoteVideoFrameOutputFolderName()
-  const cacheRoot = buildRemoteVideoFrameDefaultCacheRoot(workspaceRoot)
-  const publicPrefix = buildRemoteVideoFrameDefaultPublicPrefix()
-  if (!/^\d{8}T\d{6}Z$/.test(folderName)) throw new Error(`expected docs_-style timestamp folder, got ${folderName}`)
-  if (cacheRoot !== `${workspaceRoot}/huijoohwee/image/video-frame/${folderName}`) {
-    throw new Error(`expected sibling image/video-frame timestamp root, got ${cacheRoot}`)
-  }
-  if (cacheRoot.split('/image/video-frame/').length !== 2) throw new Error(`expected one sibling image/video-frame root segment, got ${cacheRoot}`)
-  if (publicPrefix !== `/image/video-frame/${folderName}`) throw new Error(`expected timestamped public prefix, got ${publicPrefix}`)
+export function testRemoteVideoFrameCacheRootUsesSourceBundle() {
+  const source = new URL('/media/player?clip=one', 'https://example.test')
+  const file = buildRemoteVideoFrameFileName({ sourceUrl: source.href, timeSeconds: 42 })
+  const expected = websiteSourceBundlePath(source.href) + '/frames/' + file
+  if ('/websites/' + frameStorageRelativePath(source.href, file) !== expected) throw new Error('Frame escaped its source bundle')
+  if (websiteSourceBundlePath(source.href + '#play') !== websiteSourceBundlePath(source.href)) throw new Error('Fragment split source storage')
+  source.searchParams.set('clip', 'two')
+  if ('/websites/' + frameStorageRelativePath(source.href, file) === expected) throw new Error('Two source URLs shared a bundle')
 }
-
 
 const assertFrame = (value: unknown, message: string) => { if (!value) throw new Error(message) }
 const pauseFrame = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

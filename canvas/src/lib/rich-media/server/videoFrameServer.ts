@@ -11,7 +11,8 @@ import {
   normalizeRemoteVideoFrameSeconds,
   parseYouTubeStartSeconds,
 } from 'grph-shared/rich-media/providers'
-import { buildWorkspaceTimestampedOutputFolderName } from '../../workspace/timestampedOutput'
+import { websiteSourceBundlePath } from '../../websites/websitePathUtils'
+import { resolveDocumentOutputRootFromWorkspace } from '../../websites/server/websiteImportStorage'
 import { videoFrameWorkerPool, type VideoFrameWorkerPool } from './videoFrameWorker'
 
 type NextHandleFunction = (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void
@@ -46,27 +47,21 @@ export const REMOTE_VIDEO_FRAME_PUBLIC_PREFIX = '/image/video-frame'
 const MAX_VIDEO_FRAME_URL_LENGTH = 4096
 const MAX_VIDEO_FRAME_TIME_SECONDS = 12 * 60 * 60
 const VIDEO_FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+(?:_\d+)?\.(?:png|jpg)$/i
-const remoteVideoFrameOutputFolderName = buildWorkspaceTimestampedOutputFolderName()
 type FrameInflight = { contextKey: string; promise: Promise<VideoFrameResult>; controller: AbortController; subscribers: number }
 const inflightVideoFrameByOutputPath = new Map<string, FrameInflight>()
 
-export const readRemoteVideoFrameOutputFolderName = (): string => remoteVideoFrameOutputFolderName
+type CacheOptions = Pick<VideoFrameServerOptions, 'workspaceRoot' | 'cacheRoot'>
 
-export const buildRemoteVideoFrameDefaultPublicPrefix = (): string =>
-  `${REMOTE_VIDEO_FRAME_PUBLIC_PREFIX}/${remoteVideoFrameOutputFolderName}`
+const explicitCacheRoot = (opts: CacheOptions) => opts.cacheRoot || process.env.AG_VIDEO_FRAME_CACHE_ROOT?.trim()
+const resolveCacheRoot = (opts: CacheOptions): string => path.resolve(explicitCacheRoot(opts)
+  || path.join(resolveDocumentOutputRootFromWorkspace(opts.workspaceRoot), 'websites'))
 
-export const buildRemoteVideoFrameDefaultCacheRoot = (workspaceRoot: string): string =>
-  path.resolve(workspaceRoot, 'huijoohwee', 'image', 'video-frame', remoteVideoFrameOutputFolderName)
+export const frameStorageRelativePath = (sourceUrl: string, fileName: string): string =>
+  websiteSourceBundlePath(sourceUrl).slice('/websites/'.length) + '/frames/' + fileName
 
 const normalizePublicPrefix = (value: unknown): string => {
-  const raw = String(value || '').trim() || buildRemoteVideoFrameDefaultPublicPrefix()
-  const withLead = raw.startsWith('/') ? raw : `/${raw}`
-  return withLead.replace(/\/+$/g, '')
-}
-
-const resolveCacheRoot = (opts: VideoFrameServerOptions): string => {
-  const fromEnv = String(process.env.AG_VIDEO_FRAME_CACHE_ROOT || '').trim()
-  return path.resolve(opts.cacheRoot || fromEnv || buildRemoteVideoFrameDefaultCacheRoot(opts.workspaceRoot))
+  const raw = String(value || '').trim() || REMOTE_VIDEO_FRAME_PUBLIC_PREFIX
+  return (raw.startsWith('/') ? raw : '/' + raw).replace(/\/+$/g, '')
 }
 
 const isWithinRoot = (root: string, filePath: string): boolean => {
@@ -124,7 +119,8 @@ const readRequest = (req: IncomingMessage, opts: VideoFrameServerOptions): Video
   if (!VIDEO_FRAME_FILE_RE.test(fileName)) return { error: 'Invalid frame cache key' }
 
   const cacheRoot = resolveCacheRoot(opts)
-  const outputPath = path.resolve(cacheRoot, fileName)
+  const relative = explicitCacheRoot(opts) ? fileName : frameStorageRelativePath(sourceUrl, fileName)
+  const outputPath = path.resolve(cacheRoot, relative)
   if (!isWithinRoot(cacheRoot, outputPath)) return { error: 'Invalid frame cache path' }
   const publicPrefix = normalizePublicPrefix(opts.publicPrefix || process.env.AG_VIDEO_FRAME_PUBLIC_PREFIX)
   const semanticKey = buildRemoteVideoFrameSemanticKey({ sourceUrl, timeSeconds, format })
@@ -134,9 +130,22 @@ const readRequest = (req: IncomingMessage, opts: VideoFrameServerOptions): Video
     format,
     fileName,
     outputPath,
-    publicUrl: `${publicPrefix}/${fileName}`,
+    publicUrl: `${publicPrefix}/${relative}`,
     semanticKey,
   }
+}
+
+const legacyRun = /^\d{8}T\d{6}Z$/
+const legacyFrameRoot = (opts: CacheOptions): string =>
+  path.join(path.dirname(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || resolveDocumentOutputRootFromWorkspace(opts.workspaceRoot)), 'image', 'video-frame')
+
+async function findLegacyFrame(root: string, run: string, file: string) {
+  if (!legacyRun.test(run) || !VIDEO_FRAME_FILE_RE.test(file)) return null
+  const target = path.join(root, run, file)
+  const actual = await fs.realpath(target).catch(() => '')
+  if (!actual || actual !== path.join(await fs.realpath(root), run, file)) return null
+  const stat = await fs.stat(actual)
+  return stat.isFile() && stat.size > 0 ? actual : null
 }
 
 const readFileSize = async (filePath: string): Promise<number> => {
@@ -201,8 +210,34 @@ const subscribeFrame = (entry: FrameInflight, signal: AbortSignal): Promise<Vide
 
 const runFrameExtraction = async (req: VideoFrameRequest, opts: VideoFrameServerOptions, signal: AbortSignal): Promise<VideoFrameResult> => {
   try {
+    if (!explicitCacheRoot(opts)) {
+      const root = resolveCacheRoot(opts)
+      await fs.mkdir(root, { recursive: true })
+      const realRoot = await fs.realpath(root)
+      if (realRoot !== path.join(await fs.realpath(path.dirname(root)), path.basename(root))) throw new Error('Invalid website root')
+      let directory = realRoot
+      for (const part of path.relative(root, path.dirname(req.outputPath)).split(path.sep)) {
+        directory = path.join(directory, part)
+        await fs.mkdir(directory).catch(error => { if (error.code !== 'EEXIST') throw error })
+        if (await fs.realpath(directory) !== directory) throw new Error('Invalid frame bundle directory')
+      }
+      if ((await fs.lstat(req.outputPath).catch(() => null))?.isSymbolicLink()) throw new Error('Invalid frame file')
+    }
     const existingBytes = await readFileSize(req.outputPath)
     if (existingBytes > 0) return frameResult(req, existingBytes, true)
+    if (!explicitCacheRoot(opts)) {
+      const legacy = legacyFrameRoot(opts)
+      const runs = await fs.readdir(legacy).catch(() => [] as string[])
+      for (const run of runs.filter(name => legacyRun.test(name)).sort().reverse()) {
+        const previous = await findLegacyFrame(legacy, run, req.fileName)
+        if (!previous) continue
+        try { await fs.link(previous, req.outputPath) } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'EXDEV') break
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        }
+        return frameResult(req, await readFileSize(req.outputPath), true)
+      }
+    }
     const context = await prepareContext(req, opts, signal)
     const outputKey = path.join(context.outputRoot, req.fileName)
     if (signal.aborted) return { ok: false, error: 'Video frame request cancelled' }
@@ -336,23 +371,20 @@ export function createRemoteVideoFramePublicAssetHandler(opts: Pick<VideoFrameSe
       return
     }
     const parsed = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
-    const fileName = decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop() || '').trim()
-    if (!VIDEO_FRAME_FILE_RE.test(fileName)) {
-      next()
-      return
-    }
-    const cacheRoot = resolveCacheRoot({
-      repoRoot: '',
-      workspaceRoot: opts.workspaceRoot,
-      getPythonBin: async () => '',
-      withRepoPythonPath: env => env,
-      cacheRoot: opts.cacheRoot,
-    })
-    const filePath = path.resolve(cacheRoot, fileName)
-    if (!isWithinRoot(cacheRoot, filePath)) {
-      next()
-      return
-    }
+    const parts = parsed.pathname.slice(1).split('/')
+    const fileName = parts.at(-1) || ''
+    const nested = parts.length === 4 && parts[2] === 'frames'
+      && parts.slice(0, 2).every(part => /^[a-z0-9_-][a-z0-9._-]*$/i.test(part))
+    const legacy = parts.length === 2 && legacyRun.test(parts[0]!)
+    if (!VIDEO_FRAME_FILE_RE.test(fileName) || (!legacy && (explicitCacheRoot(opts) ? parts.length !== 1 : !nested))) return next()
+    const cacheRoot = resolveCacheRoot(opts)
+    const root = legacy && !explicitCacheRoot(opts) ? legacyFrameRoot(opts) : cacheRoot
+    const segments = legacy && explicitCacheRoot(opts) ? [fileName] : parts
+    const filePath = path.resolve(root, ...segments)
+    const realRoot = await fs.realpath(root).catch(() => '')
+    const realPath = await fs.realpath(filePath).catch(() => '')
+    if (!realRoot || realPath !== path.join(realRoot, ...segments)) return next()
+    if (!legacy && !explicitCacheRoot(opts) && realRoot !== path.join(await fs.realpath(path.dirname(root)), path.basename(root))) return next()
     const bytes = await readFileSize(filePath)
     if (bytes <= 0) {
       next()

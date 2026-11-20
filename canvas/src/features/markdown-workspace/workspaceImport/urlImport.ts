@@ -5,7 +5,7 @@ import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { parseGitHubRepoUrl } from '../githubRepoApi'
 import { importGitHubFolder } from '../githubRepoImport'
-import type { WorkspaceImportProgress, WorkspaceImportResult } from './types'
+import type { WorkspaceImportProgress, WorkspaceImportResult, WorkspaceUrlContent } from './types'
 import { fetchWorkspaceUrlContent } from './urlContent'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { WorkspaceUrlImportDocumentModeId } from './canvasPresets'
@@ -27,8 +27,10 @@ import {
 } from '@/features/strybldr/strybldrStoryboard'
 import { importXrImageWorkspaceAssetsFromUrl, isXrImageAssetUrl } from './xrImageAssets'
 import { materializeCsvJsonImportArtifacts } from './csvJsonConversion'
-import { materializeVideoSequenceTimelineImportDocument } from './videoSequenceTimelineImport'
+import { isVideoSequenceImportAsset, buildVideoSequenceWorkspaceDocumentName, buildVideoSequenceTimelineImportMarkdown, materializeVideoSequenceTimelineImportDocument } from './videoSequenceTimelineImport'
 import { fitsVideoImportFile, VIDEO_IMPORT_SAMPLE_LIMIT } from './videoAgentImportPreview'
+import { isLegacyVideoImportFolder } from '@/features/workspace-fs/videoImportDuplicates'
+import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
 
 /**
@@ -81,25 +83,36 @@ async function writeImportedPageToExactDestination(args: {
 }
 
 async function acceptsSavedVideoAgentImport(fs: WorkspaceFs, saved: SavedUrlImport, requestedUrl: string, requireOwned: boolean): Promise<boolean> {
-  if (!workspaceImportSourceUrlsMatch(saved.source.url, requestedUrl)) return true
   const header = extractYamlFrontmatterHeaderBlock(saved.text)
   if (!header || readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentImport') !== 'true') return !requireOwned
   if (!fitsVideoImportFile(saved.text)) return false
   if (!readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentSourceDurationMs')) return false
-  if (readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentTranscriptPreview') === 'true') {
-    const folder = saved.path.slice(0, saved.path.lastIndexOf('/') + 1)
-    const manifest = await fs.readFileText(folder + 'source.json')
-    if (!manifest) return false
+  const sampled = readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentTranscriptPreview') === 'true'
+  const folder = saved.path.slice(0, saved.path.lastIndexOf('/') + 1)
+  const manifest = await fs.readFileText(folder + 'source.json')
+  if (!manifest && sampled) return false
+  if (manifest) {
     let requiredFiles: unknown
     try {
       const parsed = JSON.parse(manifest)
       if (!workspaceImportSourceUrlsMatch(parsed.sourceUrl, requestedUrl)) return false
       requiredFiles = parsed.requiredFiles
     } catch { return false }
-    if (!Array.isArray(requiredFiles) || !requiredFiles.includes('transcript.md') || !requiredFiles.includes('parse.json')) return false
-    const present = new Set((await fs.listEntries()).filter(entry => entry.kind === 'file').map(entry => entry.path))
-    if (!requiredFiles.every(name => typeof name === 'string' && !name.includes('/') && present.has(folder + name))) return false
-    if (readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentStoredGraph') === 'true') return requiredFiles.includes('graph.md')
+    if (sampled || requiredFiles !== undefined) {
+      if (!Array.isArray(requiredFiles) || !requiredFiles.includes('parse.json') || (sampled && !requiredFiles.includes('transcript.md'))) return false
+      const present = new Set((await fs.listEntries()).filter(entry => entry.kind === 'file').map(entry => entry.path))
+      if (!requiredFiles.every(name => typeof name === 'string' && !name.includes('/') && present.has(folder + name))) return false
+      if (readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentStoredGraph') === 'true') return requiredFiles.includes('graph.md')
+      // Sources without a frame adapter still own a complete, offline transcript document.
+      try {
+        const boxes = JSON.parse(await fs.readFileText(folder + 'frame-boxes.json') || 'null')
+        if (Array.isArray(boxes) && boxes.length && boxes.every(box => box?.frameImageUrl === '')
+          && /^kgVideoSequenceAnnotations:/m.test(header.rawBlock) && saved.state?.outputDigest) {
+          const { importContentDigest } = await import('@/features/workspace-fs/sourceIndex')
+          return saved.state.outputDigest === await importContentDigest(saved.text)
+        }
+      } catch { return false }
+    }
   }
   if (!/^kgVideoSequenceAnnotations:[ \t]*(?:\r?$|\[)/m.test(header.rawBlock)) return false
   const [{ readVideoSequenceSourceAnnotations, resolveVideoSequenceSourceAnnotations },
@@ -163,9 +176,27 @@ export async function importWorkspaceUrl(args: {
   if (!rawUrl) return { createdPaths: [], sources: [], skipped: [], failed: [] }
   const parentPath = args.parentPath || WORKSPACE_ROOT_PATH
 
+  let legacySource: WorkspaceUrlContent | null = null
   if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
+    const expectedFolder = websiteSourceBundlePath(rawUrl, normalizeWorkspacePath(parentPath))
+    const legacyFolders = new Set<string>()
     const saved = await findSavedUrlImport(args.fs, rawUrl,
-      saved => acceptsSavedVideoAgentImport(args.fs, saved, rawUrl, !!getYouTubeId(rawUrl)))
+      async candidate => {
+        if (!workspaceImportSourceUrlsMatch(candidate.source.url, rawUrl)) return false
+        const folder = candidate.path.slice(0, candidate.path.lastIndexOf('/'))
+        if (/^kgVideoAgentImport: true$/m.test(candidate.text) && folder !== expectedFolder) {
+          if (isLegacyVideoImportFolder(folder)) legacyFolders.add(folder)
+          return false
+        }
+        return acceptsSavedVideoAgentImport(args.fs, candidate, rawUrl, !!getYouTubeId(rawUrl))
+      })
+    if (!saved && legacyFolders.size) {
+      const { readLegacyVideoSource } = await import('./videoSourceBundle')
+      for (const folder of [...legacyFolders].sort().reverse()) {
+        legacySource = await readLegacyVideoSource(args.fs, folder, rawUrl)
+        if (legacySource) break
+      }
+    }
     if (saved) {
       args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Reused saved source; Refresh from source checks for updates' })
       return { createdPaths: [saved.path], sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
@@ -226,7 +257,7 @@ export async function importWorkspaceUrl(args: {
     void 0
   }
   const fetchUrlContentImpl = args.fetchUrlContent || fetchWorkspaceUrlContent
-  const fetched = await fetchUrlContentImpl(rawUrl, {
+  const fetched = legacySource ?? await fetchUrlContentImpl(rawUrl, {
     mode: 'import',
     viewHint: args.viewHint === 'json' ? 'json' : args.viewHint === 'html' ? 'html' : 'markdown',
     canvas2dRenderer: args.canvas2dRenderer,
@@ -267,10 +298,20 @@ export async function importWorkspaceUrl(args: {
       sourceTranscriptJsonText: fetched.transcriptJsonText, sourceUrl, mirrorToHost: args.mirrorToHost,
     })
   }
-  const preferVideoAgent = args.canvas2dRenderer !== 'storyboard' && !!getYouTubeId(sourceUrl)
-  const videoAgentPrimary = preferVideoAgent && fetched.sourceMediaKind === 'video' && !sharePrimaryPath
+  const asset = { originalName: fetched.name.replace(/\.source\.md$/i, ''), relativePath: sourceUrl, sourceUrl,
+    mimeHint: fetched.sourceMimeHint, byteSize: fetched.sourceMediaKind === 'video' ? new TextEncoder().encode(fetched.text).length : undefined, importMode: 'url' as const }
+  const preferVideoAgent = args.canvas2dRenderer !== 'storyboard' && (!!fetched.transcriptJsonText || !isVideoSequenceImportAsset(asset))
+  const primaryVideo = args.canvas2dRenderer !== 'storyboard' && fetched.sourceMediaKind === 'video' && !sharePrimaryPath
+  const materializePrimaryVideo = async () => {
+    if (preferVideoAgent) return materializeVideo()
+    const { persistVideoSourceBundle } = await import('./videoSourceBundle')
+    const folder = websiteSourceBundlePath(sourceUrl, normalizeWorkspacePath(parentPath))
+    const path = folder + '/' + buildVideoSequenceWorkspaceDocumentName([asset])
+    await persistVideoSourceBundle(args.fs, folder, [{ path, text: buildVideoSequenceTimelineImportMarkdown([asset]) }], args.mirrorToHost)
+    return path
+  }
   const exactDestinationPath = args.destinationPath ? normalizeWorkspacePath(args.destinationPath) : ''
-  const webpageUrlArtifact = sharePrimaryPath || videoAgentPrimary
+  const webpageUrlArtifact = sharePrimaryPath || primaryVideo
     ? null
     : exactDestinationPath
       ? null
@@ -291,7 +332,7 @@ export async function importWorkspaceUrl(args: {
         mirrorToHost: args.mirrorToHost,
       })
     : null
-  const createdPath = videoAgentPrimary ? await materializeVideo() : sharePrimaryPath
+  const createdPath = primaryVideo ? await materializePrimaryVideo() : sharePrimaryPath
     ? (await writeWorkspaceFileTextEnsuringFile({
         fs: args.fs,
         path: sharePrimaryPath,
@@ -365,9 +406,9 @@ export async function importWorkspaceUrl(args: {
     sources.push(...csvJsonDerived.sources)
     jsonSourceDocuments.push(...csvJsonDerived.jsonSourceDocuments)
   }
-  let effectiveApplyToGraph = videoAgentPrimary ? !normalized.endsWith('.video-agent.source.md') : applyToGraph
+  let effectiveApplyToGraph = primaryVideo ? !normalized.endsWith('.video-agent.source.md') : applyToGraph
   const removedVideoSourcePaths: WorkspacePath[] = []
-  if (sourceUnit.mediaKind === 'video' && !videoAgentPrimary) {
+  if (sourceUnit.mediaKind === 'video' && !primaryVideo) {
     let videoPath = preferVideoAgent ? await materializeVideo() : await materializeVideoSequenceTimelineImportDocument({
       fs: args.fs, parentPath,
       assets: [{

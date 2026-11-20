@@ -115,7 +115,7 @@ export function buildVideoSequenceTimelineImportMarkdown(assetsRaw: ReadonlyArra
       `    relativePath: ${yamlQuote(cleanPath(asset.relativePath || asset.originalName || asset.sourceUrl || clip.label))}`,
       `    importMode: ${yamlQuote(asset.importMode)}`,
     ]
-    const workspacePath = normalizeWorkspacePath(asset.workspacePath || '')
+    const workspacePath = asset.workspacePath ? normalizeWorkspacePath(asset.workspacePath) : ''
     if (workspacePath) lines.push(`    workspacePath: ${yamlQuote(workspacePath)}`)
     const sourceUrl = cleanInline(asset.sourceUrl)
     if (sourceUrl) lines.push(`    sourceUrl: ${yamlQuote(sourceUrl)}`)

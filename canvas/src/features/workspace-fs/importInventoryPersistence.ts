@@ -3,6 +3,8 @@ import { createWorkspaceFolderTreeEnsurer } from './ensureFolderTreeIfMissing'
 import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource } from './sourceIndex'
 import { parseWebpageFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { extractMarkdownLinks } from '@/lib/websites/webpageMarkdownArtifactUtils'
+import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
+import { isLegacyVideoImportFolder } from './videoImportDuplicates'
 import { IMPORT_INDEX_NAME, importInventoryPath, importInventorySource, readImportInventory, replaceImportInventory, type ImportInventoryItem } from './importInventory'
 
 const queues = new WeakMap<WorkspaceFs, Promise<unknown>>()
@@ -85,6 +87,18 @@ export function persistImportInventory(fs: WorkspaceFs, known: ImportInventoryIt
       for (const item of incoming) rows.set(item.source, mergeItem(rows.get(item.source), item))
       for (const [key, item] of rows) {
         if (!item.outputs?.length) continue
+        // A dated projection remains accessible as history; the inventory links the current video bundle.
+        if (!key.startsWith('local:')) {
+          const folder = websiteSourceBundlePath(key)
+          if (item.outputs.some(output => files.get(output.path)?.parentPath === folder && /\.video-agent(?:\.source)?\.md$/.test(output.path))) {
+            item.outputs = item.outputs.filter(output => {
+              const entry = files.get(output.path)
+              const parent = output.path.slice(0, output.path.lastIndexOf('/'))
+              return !isLegacyVideoImportFolder(parent) || !/\.video-agent(?:\.source)?\.md$/.test(output.path)
+                || !!entry && !/^kgVideoAgentImport: true$/m.test(entry.text || '')
+            })
+          }
+        }
         const present = item.outputs.filter(output => files.has(output.path))
         const status = present.length !== item.outputs.length ? 'missing' : present.some(output => pendingText(files.get(output.path)?.text || '')) ? 'pending' : 'imported'
         rows.set(key, { ...item, status })

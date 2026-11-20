@@ -1,3 +1,4 @@
+import { isDuplicateVideoMirror } from './videoImportDuplicates'
 import { RETIRED_XR_WORKSPACE_SEED_PATHS, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
 import type { PersistedCollectionMap } from '@/lib/storage/persistedCollectionStore'
 import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
@@ -331,6 +332,12 @@ const reconcileWorkspaceDocsMirrorEntries = async (
   const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(docsEntries)
   if (desiredEntriesByPath.size === 0) return false
   const existingRows = await collections.entries.find().exec()
+  for (const row of existingRows) {
+    for (const old of row.get('previousPaths') || []) {
+      const mirror = desiredEntriesByPath.get(old)
+      if (mirror && isDuplicateVideoMirror(row.toJSON(), mirror)) desiredEntriesByPath.delete(old)
+    }
+  }
   const workspaceSourceIndex = loadWorkspaceSourceIndex()
   for (const desiredPath of desiredEntriesByPath.keys()) {
     if (isMigratedAuthoredMarkdownNoteMirrorPath(desiredPath, workspaceSourceIndex)) {

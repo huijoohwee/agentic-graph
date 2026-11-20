@@ -346,12 +346,13 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: p })
   }
 
-  const createFolder = async (args: { parentPath: WorkspacePath; name: string }) => {
+  const createFolder = async (args: { parentPath: WorkspacePath; name: string; requireExactPath?: boolean }) => {
     ensureRoot()
     const parent = normalizeWorkspacePath(args.parentPath)
     const desired = String(args.name ?? '').trim() || 'folder'
     let name = desired
     let path = joinWorkspacePath(parent, name)
+    if (args.requireExactPath && entriesByPath.has(path)) throw new WorkspaceSourceTextConflictError()
     for (let i = 2; i <= 999 && entriesByPath.has(path); i += 1) {
       name = `${desired}-${i}`
       path = joinWorkspacePath(parent, name)
@@ -396,9 +397,13 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     return path
   }
 
-  const deleteEntry = async (path: WorkspacePath) => {
+  const deleteEntry = async (path: WorkspacePath, options?: WorkspaceFsWriteOptions) => {
     ensureRoot()
     const p = normalizeWorkspacePath(path)
+    if (options && Object.hasOwn(options, 'expectedText')) {
+      const entry = entriesByPath.get(p)
+      if (entry && (entry.kind !== 'file' || entry.text !== options.expectedText)) throw new WorkspaceSourceTextConflictError()
+    }
     if (p === WORKSPACE_ROOT_PATH || isInitializationWorkspacePath(p)) return
     const target = entriesByPath.get(p)
     if (!target) return

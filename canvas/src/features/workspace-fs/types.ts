@@ -28,8 +28,8 @@ export type WorkspaceFs = {
   readFileText: (path: WorkspacePath) => Promise<string | null>
   writeFileText: (path: WorkspacePath, text: string, options?: WorkspaceFsWriteOptions) => Promise<void>
   createFile: (args: { parentPath: WorkspacePath; name: string; text: string; requireExactPath?: boolean } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
-  createFolder: (args: { parentPath: WorkspacePath; name: string } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
-  deleteEntry: (path: WorkspacePath, options?: WorkspaceFsMutationOptions) => Promise<void>
+  createFolder: (args: { parentPath: WorkspacePath; name: string; requireExactPath?: boolean } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
+  deleteEntry: (path: WorkspacePath, options?: WorkspaceFsWriteOptions) => Promise<void>
 }
 
 export type WorkspaceOutlineItem = {

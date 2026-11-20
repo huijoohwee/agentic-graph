@@ -151,7 +151,7 @@ export function buildVideoAgentImportSidecars({
   }
   addFile(joinWorkspacePath(root, 'source.json'), jsonFileText({
     ...sourceManifest,
-    ...(sampled ? { requiredFiles: files.map(file => workspaceBasename(file.path)) } : {}),
+    requiredFiles: files.map(file => workspaceBasename(file.path)),
   }))
   return files
 }
