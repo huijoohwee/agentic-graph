@@ -130,21 +130,67 @@ async function verifyImportDocumentBudget(): Promise<void> {
   assert(nodes.length === expectedIds.length && expectedIds.every(id => nodes.some(node => node.id === id)), 'Bounded URL preview lost source, renderer, or rich-media panels')
   assert(markdown.includes('Beginning of the source transcript.') && markdown.includes('Ending of the source transcript.'), 'Bounded preview lost source transcript content')
 
-  let rejected = false
-  try {
-    buildVideoAgentUrlImportMarkdown({
-      sourceUrl,
-      sourceText: 'Large transcript',
-      sourceTranscriptJsonText: JSON.stringify({
-        ...transcript,
-        segments: [{ start: 0, duration: 600, text: '漢'.repeat(180_000) }],
-      }),
-    })
-  } catch (error) {
-    assert(String((error as Error)?.message || error).includes('500 KB'), 'Oversized transcript did not report its explicit preview document limit')
-    rejected = true
+  const longCue = '引🌍'.repeat(80_000)
+  const rawText = '# Source transcript\n\n' + longCue + '\r\n'
+  const transcriptJsonText = JSON.stringify({ segments: [{ start: 0, duration: 600, text: longCue }] })
+  const fs = createMemoryWorkspaceFs()
+  const fetchUrlContent = async () => ({ normalizedUrl: sourceUrl, name: 'large.md', text: rawText,
+    sourceMediaKind: 'video' as const, transcriptJsonText })
+  const result = await importWorkspaceUrl({ fs, urlRaw: sourceUrl, fetchUrlContent, mirrorToHost: false })
+  const path = result.createdPaths[0]
+  const folder = path.slice(0, path.lastIndexOf('/') + 1)
+  const read = async (name: string) => {
+    const content = await fs.readFileText(folder + name)
+    if (content === null) throw new Error(`Missing source file ${name}`)
+    return content
   }
-  assert(rejected, 'Oversized transcript produced a silently truncated preview instead of failing')
+  const preview = await fs.readFileText(path) || ''
+  assert(result.createdPaths.length === 1 && preview.includes('[Full source text](./transcript.md)'), 'Large import did not focus a preview linking to its complete transcript')
+  const largeGraph = await loadGraphDataFromTextViaParser(path, preview, { applyToStore: false })
+  assert(largeGraph?.graphData?.nodes?.length === expectedIds.length, 'Large import lost graph panels')
+  const files = (await fs.listEntries()).filter(entry => entry.kind === 'file' && entry.path.startsWith(folder))
+  assert(files.every(entry => new TextEncoder().encode(entry.text).length < 500_000), 'An imported file exceeded the byte budget')
+  const manifest = JSON.parse(await read('source.json'))
+  const sourceIndex = await read(manifest.sourceTextPath)
+  const sourceParts = [...sourceIndex.matchAll(/\(\.\/([^)]*)\)/g)].map(match => match[1])
+  assert((await Promise.all(sourceParts.map(read))).join('') === rawText, 'Markdown parts changed original source bytes')
+  const readJson = async (name: string) => {
+    const text = await read(name)
+    const index = JSON.parse(text)
+    return index.schemaVersion === 'workspace-text-parts/v1' ? (await Promise.all(index.parts.map(read))).join('') : text
+  }
+  assert(await readJson(manifest.sourceTranscriptJsonPath) === transcriptJsonText, 'Structured transcript changed during import')
+  assert(JSON.parse(await readJson('parse.json')).sourceTranscript.segments[0].text === longCue, 'Parsed transcript lost the full cue')
+  const repeated = await importWorkspaceUrl({ fs, urlRaw: sourceUrl,
+    fetchUrlContent: async () => { throw new Error('Bounded preview should be reusable offline') } })
+  assert(repeated.createdPaths[0] === path, 'Repeated import created a duplicate')
+  assert(await fs.readFileText('/large.md') === null, 'Import left a duplicate intake document')
+  await fs.deleteEntry(folder + sourceParts[0])
+  const repaired = await importWorkspaceUrl({ fs, urlRaw: sourceUrl, fetchUrlContent, mirrorToHost: false })
+  assert(repaired.createdPaths[0] !== path && await fs.readFileText(path) === preview, 'Incomplete saved import hid or overwrote the original')
+
+  const longUrl = new URL(sourceUrl)
+  longUrl.searchParams.set('context', 'x'.repeat(4096))
+  const wide = await importWorkspaceUrl({ fs, urlRaw: longUrl.href, documentSemanticMode: 'document',
+    fetchUrlContent: async () => ({ ...await fetchUrlContent(), normalizedUrl: longUrl.href }), mirrorToHost: false })
+  const widePath = wide.createdPaths[0]
+  const graphIndex = await fs.readFileText(widePath.replace(/[^/]+$/, 'graph.md'))
+  assert(wide.applyToGraph === false && graphIndex?.includes('graph.md.part-1.md'), 'Oversized graph metadata blocked source import or produced a partial graph')
+  const graphParts = [...(graphIndex || '').matchAll(/\(\.\/([^)]*)\)/g)].map(match => match[1])
+  const storedGraph = (await Promise.all(graphParts.map(name => fs.readFileText(widePath.replace(/[^/]+$/, name))))).join('')
+  assert(storedGraph.includes(longUrl.href) && storedGraph.includes('kgVideoAgentImport: true'), 'Stored graph did not preserve the source URL and graph data')
+
+  const failedFs = createMemoryWorkspaceFs()
+  const failWrite = { ...failedFs, createFile: (args: Parameters<typeof fs.createFile>[0]) => {
+    if (args.name === 'parse.json') throw new Error('Storage unavailable')
+    return failedFs.createFile(args)
+  } }
+  let writeFailure = ''
+  try { await importWorkspaceUrl({ fs: failWrite, urlRaw: sourceUrl, fetchUrlContent, mirrorToHost: false }) }
+  catch (error) { writeFailure = (error as Error).message }
+  assert(writeFailure === 'Storage unavailable', 'Import concealed a persistence failure')
+  assert(!(await failedFs.listEntries()).some(entry => entry.name === 'large.md' || /^\d{8}T\d{6}Z/.test(entry.name)),
+    'Interrupted import left a partial bundle or intake document')
 }
 
 async function verifySavedImportUpgrade(): Promise<void> {

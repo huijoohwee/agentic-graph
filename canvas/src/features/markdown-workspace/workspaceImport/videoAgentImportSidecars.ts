@@ -1,9 +1,12 @@
 import { VIDEO_AGENT_SCHEMA_VERSION, type VideoAgentPipeline } from '@/features/video-agent'
-import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { joinWorkspacePath, normalizeWorkspacePath, workspaceBasename } from '@/features/workspace-fs/path'
+import { fitsVideoImportFile, videoImportTextParts } from './videoAgentImportPreview'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import type { buildVideoAgentTranscriptImportArtifacts } from './videoAgentTranscriptImportArtifacts'
 
 type SidecarInput = {
+  sampled: boolean
+  storedGraph?: string
   pipeline: VideoAgentPipeline
   renderData: Record<string, unknown>
   transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>
@@ -19,35 +22,39 @@ const jsonFileText = (value: unknown): string => `${JSON.stringify(value, null, 
 
 export function buildVideoAgentImportSidecars({
   pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl,
-  sourceName, sourceText, sourceTranscriptJsonText, youtubeId,
+  sampled, storedGraph, sourceName, sourceText, sourceTranscriptJsonText, youtubeId,
 }: SidecarInput) {
   const { renderSpec } = pipeline
   const workspaceFiles = renderData.workspaceFiles as Array<{ kind?: unknown; path?: unknown; role?: unknown }>
-  const fileTextByPath = new Map<WorkspacePath, string>()
+  const files: Array<{ path: WorkspacePath; text: string }> = []
   const sourceManifest = {
     schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:source-manifest`,
     sourceUrl,
-    sourceName: sourceName,
+    sourceName,
     youtubeId: youtubeId || undefined,
-    sourceText: sourceText,
-    sourceTranscriptJsonText: sourceTranscriptJsonText,
+    ...(sampled ? { sourceTextPath: 'transcript.md', sourceTranscriptJsonPath: sourceTranscriptJsonText ? 'transcript.json' : undefined }
+      : { sourceText, sourceTranscriptJsonText }),
     sourceVideo: renderData.sourceVideo,
     transcriptStatus: transcriptArtifacts.sourceTranscript.status,
     transcriptSegmentCount: transcriptArtifacts.sourceTranscript.segmentCount,
   }
+  const frameByFrameTranscript = sampled
+    ? transcriptArtifacts.frameByFrameTranscript.map(({ text, ...timing }) => timing)
+    : transcriptArtifacts.frameByFrameTranscript
   const parseOutput = {
     schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:parse-output`,
     sourceUrl,
     sourceTranscript: transcriptArtifacts.sourceTranscript,
-    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
+    frameByFrameTranscript,
     frameBoundingBoxes: pipeline.frameBoundingBoxes,
     frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
   }
   const searchIndex = {
     schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:search-index`,
+    ...(sampled ? { transcriptPath: 'parse.json' } : {}),
     sourceUrl,
     frameByFrameSamples: (renderData.frameByFrameSamples || []) as unknown,
-    frameByFrameTranscript: transcriptArtifacts.frameByFrameTranscript,
+    frameByFrameTranscript,
   }
   const timelineManifest = {
     schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:timeline`,
@@ -95,7 +102,6 @@ export function buildVideoAgentImportSidecars({
     '',
   ].join('\n')
   const artifactTextByName: Record<string, string> = {
-    'source.json': jsonFileText(sourceManifest),
     'dataset-operations.json': jsonFileText({
       schemaVersion: `${VIDEO_AGENT_SCHEMA_VERSION}:dataset-operation-summary`,
       sourceUrl,
@@ -113,11 +119,39 @@ export function buildVideoAgentImportSidecars({
     'render.html': renderHtmlText,
     'stream-manifest.json': jsonFileText(streamManifest),
   }
+
+  function addFile(path: WorkspacePath, text: string) {
+    if (fitsVideoImportFile(text)) {
+      files.push({ path, text })
+      return
+    }
+    const parts: string[] = []
+    const markdown = path.endsWith('.md')
+    for (const part of videoImportTextParts(text)) {
+      const suffix = `.part-${parts.length + 1}.${markdown ? 'md' : 'txt'}`
+      parts.push(workspaceBasename(path) + suffix)
+      files.push({ path: path + suffix, text: part })
+    }
+    // Concatenating the ordered UTF-8 parts restores the exact original file.
+    const index = markdown ? parts.map((name, i) => `${i + 1}. [${name}](./${name})`).join('\n')
+      : jsonFileText({ schemaVersion: 'workspace-text-parts/v1', encoding: 'utf-8', parts })
+    files.push({ path, text: index })
+  }
+
   for (const file of workspaceFiles) {
     const path = normalizeWorkspacePath(String(file.path || ''))
-    const name = path.split('/').filter(Boolean).pop() || ''
-    const text = artifactTextByName[name]
-    if (path && text) fileTextByPath.set(path, text)
+    const text = artifactTextByName[workspaceBasename(path)]
+    if (path && text) addFile(path, text)
   }
-  return Array.from(fileTextByPath, ([path, text]) => ({ path, text }))
+  const root = String(renderData.workspaceOutputRoot)
+  if (storedGraph) addFile(joinWorkspacePath(root, 'graph.md'), storedGraph)
+  if (sampled) {
+    addFile(joinWorkspacePath(root, 'transcript.md'), sourceText)
+    if (sourceTranscriptJsonText) addFile(joinWorkspacePath(root, 'transcript.json'), sourceTranscriptJsonText)
+  }
+  addFile(joinWorkspacePath(root, 'source.json'), jsonFileText({
+    ...sourceManifest,
+    ...(sampled ? { requiredFiles: files.map(file => workspaceBasename(file.path)) } : {}),
+  }))
+  return files
 }
