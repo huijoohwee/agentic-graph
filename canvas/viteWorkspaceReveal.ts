@@ -67,7 +67,9 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
         || origin.host !== req.headers.host || !['http:', 'https:'].includes(origin.protocol)
         || req.headers['sec-fetch-site'] === 'cross-site') throw new Error()
     } catch { return reply(403, { ok: false, error: 'Reveal requires a same-origin local preview' }) }
-    if (!String(req.headers['content-type'] || '').startsWith('application/json')) return reply(415, { ok: false, error: 'Use application/json' })
+    const contentType = String(req.headers['content-type'] || '')
+    const rawCopy = contentType.startsWith('text/plain') && typeof req.headers['x-workspace-website-path'] === 'string'
+    if (!rawCopy && !contentType.startsWith('application/json')) return reply(415, { ok: false, error: 'Use application/json' })
     let ownsFileManager = false
     try {
       const chunks: Buffer[] = []
@@ -79,7 +81,13 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
         chunks.push(bytes)
       }
       let body: unknown
-      try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new RevealError(400, 'Invalid reveal request') }
+      try {
+        const text = Buffer.concat(chunks).toString('utf8')
+        body = rawCopy ? { saveOnly: true, kind: 'file', snapshot: {
+          workspacePath: decodeURIComponent(String(req.headers['x-workspace-website-path'])), text,
+        }, outputRoot: req.headers['x-workspace-output-root'] ? decodeURIComponent(String(req.headers['x-workspace-output-root'])) : undefined }
+          : JSON.parse(text)
+      } catch { throw new RevealError(400, 'Invalid reveal request') }
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RevealError(400, 'Invalid reveal request')
       const request = body as Record<string, unknown>
       const saveOnly = request.saveOnly === true
