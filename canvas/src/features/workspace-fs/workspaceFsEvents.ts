@@ -50,10 +50,10 @@ export function notifyWorkspaceFsChanged(detail?: WorkspaceFsChangedDetail): voi
 
     if (workspaceFsChangedBatchDepth > 0) {
       const normalizedPath = detail?.path ? normalizeWorkspacePath(detail.path) : undefined
-      pendingWorkspaceFsChangedDetail = {
-        ...(detail?.op ? { op: detail.op } : {}),
-        ...(normalizedPath ? { path: normalizedPath } : {}),
-      }
+      // Only a single-path batch can use the explorer's path-specific refresh shortcut.
+      const path = pendingWorkspaceFsChangedDetail && pendingWorkspaceFsChangedDetail.path !== normalizedPath
+        ? undefined : normalizedPath
+      pendingWorkspaceFsChangedDetail = { op: 'batch', path }
       return
     }
 
