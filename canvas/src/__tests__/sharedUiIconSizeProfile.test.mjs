@@ -15,14 +15,19 @@ const sha256 = value => `sha256:${createHash('sha256').update(value).digest('hex
 
 test('static Graph surfaces ship the pinned offline fact-label stylesheet', () => {
   const typography = fs.readFileSync(fileURLToPath(import.meta.resolve('agentic-design-system/typography.css')))
-  for (const [directory, page] of [
-    ['canvas/public', 'travel-commerce-demo-offline.html'],
-    ['cloudflare/workers/miaoxyz/public', 'index.html'],
-    ['cloudflare/pages/pitch/agentic-drone-as-a-service', 'index.html'],
+  for (const [directory, page, servedAt] of [
+    ['canvas/public', 'travel-commerce-demo-offline.html', '/__demo__/travel-commerce'],
+    ['cloudflare/workers/miaoxyz/public', 'index.html', '/'],
+    ['cloudflare/pages/pitch/agentic-drone-as-a-service', 'index.html', '/pitch/agentic-drone-as-a-service/'],
   ]) {
     const root = new URL('../../../' + directory + '/', import.meta.url)
     assert.deepEqual(fs.readFileSync(new URL('typography.css', root)), typography)
-    assert.match(fs.readFileSync(new URL(page, root), 'utf8'), /<link rel="stylesheet" href="\.\/typography\.css"/u)
+    const html = fs.readFileSync(new URL(page, root), 'utf8')
+    const href = html.match(/<link rel="stylesheet" href="([^"]*typography\.css)"/u)?.[1]
+    assert.ok(href)
+    const asset = new URL(href, 'https://example.test' + servedAt)
+    const expected = servedAt.startsWith('/__demo__/') ? '/typography.css' : servedAt + 'typography.css'
+    assert.equal(asset.pathname, expected)
   }
 })
 
