@@ -1,4 +1,6 @@
 import React from 'react'
+import { useSavedClipThumbnails } from './useSavedClipThumbnails'
+import { selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import type { VideoSequenceGeneratedFrameThumbnailOrigin } from './videoSequenceGeneratedFrameThumbnails'
 import { formatVideoSequenceTimelineSecondsOffset } from './videoSequenceTimeline'
@@ -61,7 +63,7 @@ export function VideoSequenceClipThumbnailStrip({
   suppressPreview = false,
   thumbnailWindow,
   thumbnailOrigin,
-  thumbnails,
+  thumbnails: original,
 }: {
   onSelectRowPosition: (rowKey: string, positionMinutes: number) => void
   onMovePointerStart: (event: React.PointerEvent<HTMLElement>, span: MermaidGanttTimelineTaskSpan) => void
@@ -75,6 +77,11 @@ export function VideoSequenceClipThumbnailStrip({
   const moveIntentRef = React.useRef<ThumbnailMoveIntent | null>(null)
   const frameDragIntentRef = React.useRef<ThumbnailMoveIntent | null>(null)
   const suppressClickRef = React.useRef(false)
+  const { thumbnails, source } = useSavedClipThumbnails(original, thumbnailWindow, span.raw)
+  const selectThumbnail = (thumbnail: TimelineMediaReaderThumbnail) => {
+    onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
+    if (source) void selectSavedVideoFrame({ sourceUrl: source, seconds: thumbnail.timestampSeconds, savedUrl: thumbnail.rasterDataUrl })
+  }
   if (!thumbnails.length) return null
   const sourceStart = thumbnails[0]?.timestampSeconds
   const sourceEnd = thumbnails[thumbnails.length - 1]?.timestampSeconds
@@ -144,7 +151,7 @@ export function VideoSequenceClipThumbnailStrip({
               suppressClickRef.current = false
               return
             }
-            onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
+            selectThumbnail(thumbnail)
           }}
         >
           <button
@@ -204,7 +211,7 @@ export function VideoSequenceClipThumbnailStrip({
             onClick={event => {
               event.stopPropagation()
               if (suppressClickRef.current) { suppressClickRef.current = false; return }
-              onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
+              selectThumbnail(thumbnail)
             }}
           >⠿</button>
           <figcaption

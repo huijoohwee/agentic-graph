@@ -1,4 +1,6 @@
 import React from 'react'
+import { DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH } from 'grph-shared/rich-media/providers'
+import { selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
 import { useTimelineMediaReaderSummaries, useTimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
 import { resolveTimelinePlanSourceUrl } from '@/components/timeline/timelinePlanSync'
 import type { VideoSequenceTimelineClipOverlayRenderer, VideoSequenceTimelineInsertedLane, VideoSequenceTimelineSourceThumbnailSet, VideoSequenceTimelineThumbnailWindow } from '@/components/timeline/VideoSequenceTimelineRuler'
@@ -192,7 +194,9 @@ export function useGanttTimelineTransportSurfaceModel(args: {
         setSelectedAnnotation({ rowKey: span.rowKey, timestampSeconds: sample.timestampSeconds })
         state.setSelectionSource('editor')
         state.selectNodesExpanded({ nodeIds: [group.association.frameAnalysisNodeId], activeNodeId: group.association.frameAnalysisNodeId, edgeIds: [], groupIds: [] })
-        requestRichMediaTimelineTargetFrame({ documentKey: transportSession.documentKey,
+        if (sample.url.startsWith(DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH + '?') && source?.sourceUrl) {
+          void selectSavedVideoFrame({ sourceUrl: source.sourceUrl, seconds: sample.timestampSeconds, documentPath: transportSession.documentKey })
+        } else requestRichMediaTimelineTargetFrame({ documentKey: transportSession.documentKey,
           overlayId: group.association.frameAnalysisNodeId, sourceUrl, position,
           sourceTimestampMs: sample.timestampSeconds * 1000, frameSampleUrl: sample.url })
         emitMainPanelOpen({ tab: 'workflowManager', workflowManagerTab: 'graph', workflowManagerEntryLabel: 'Inspector' })
