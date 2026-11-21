@@ -23,7 +23,7 @@ export type DataViewCandidate = {
 const DATA_VIEW_CANDIDATES_CACHE = new LRUCache<string, DataViewCandidate[]>(60)
 const ROWS_JSON_DATA_VIEW_CANDIDATES_CACHE = new LRUCache<string, DataViewCandidate[]>(40)
 const DELIMITED_TEXT_DATA_VIEW_CANDIDATES_CACHE = new LRUCache<string, DataViewCandidate[]>(40)
-const DERIVED_TABLE_SCAN_MAX_CHARS = 320_000
+const DERIVED_TABLE_SOURCE_BUDGET_CHARS = 320_000
 const HEADING_LINE_RE = /^#{1,6}\s+(.+?)\s*#*\s*$/
 
 export function tryBuildApiGraphMarkdownTablesFromJson(text: string, preferredMode?: JsonToMarkdownMode): string | null {
@@ -199,18 +199,18 @@ export const buildMarkdownPipeTableFromRowsJsonArtifact = (
   return lines.length > 0 ? `${lines.join('\n')}\n` : null
 }
 
-const deriveCandidateBaseLabel = (markdownLines: string[], startLine: number, fallbackIndex: number): string => {
-  const fromIndex = Math.max(0, startLine - 2)
-  for (let i = fromIndex; i >= 0; i -= 1) {
-    const raw = String(markdownLines[i] || '')
-    const line = raw.trim()
-    if (!line) continue
-    const headingMatch = line.match(HEADING_LINE_RE)
-    if (headingMatch?.[1]) return headingMatch[1].trim()
-    if (line.startsWith('|')) continue
-    if (line.startsWith('```')) break
+// The lexer supplies ordered, one-based source ranges. Locate them without copying the whole document.
+function sourceLineCursor(markdown: string) {
+  let line = 1
+  let offset = 0
+  return (target: number) => {
+    while (line < target && offset < markdown.length) {
+      const next = markdown.indexOf('\n', offset)
+      offset = next < 0 ? markdown.length : next + 1
+      line++
+    }
+    return offset
   }
-  return `Table ${fallbackIndex}`
 }
 
 const isStructuredSourceCandidateLabel = (label: string): boolean => {
@@ -224,24 +224,35 @@ export const buildDataViewCandidates = (
   tokens: TokenWithLines[],
   relaxed: boolean,
 ): DataViewCandidate[] => {
-  if (markdownText.length > DERIVED_TABLE_SCAN_MAX_CHARS) return []
   const cacheKey = `${candidatesKey}|${relaxed ? 'relaxed' : 'strict'}`
   const cached = DATA_VIEW_CANDIDATES_CACHE.get(cacheKey)
   if (cached) return cached
-  const markdownLines = markdownText.split('\n')
-  const tables = tokens.filter((t): t is TokenWithLines & TokensTable => t.type === 'table')
   const candidates: DataViewCandidate[] = []
   const seenLabels = new Map<string, number>()
-  for (let i = 0; i < tables.length; i += 1) {
-    const table = tables[i]
+  const offsetAtLine = sourceLineCursor(markdownText)
+  let remaining = DERIVED_TABLE_SOURCE_BUDGET_CHARS
+  let heading = ''
+  for (const token of tokens) {
+    if (token.type === 'heading' && 'text' in token) {
+      const start = offsetAtLine(token.startLine)
+      const rawHeading = markdownText.slice(start, offsetAtLine(token.startLine + 1)).trim()
+      heading = rawHeading.match(HEADING_LINE_RE)?.[1]?.trim() || token.text
+    }
+    if (token.type === 'code') heading = ''
+    if (token.type !== 'table' || !('header' in token)) continue
+    const table = token
+    const from = offsetAtLine(table.startLine)
+    const length = offsetAtLine(table.endLine + 1) - from
+    if (length > remaining) continue
     const view = relaxed
       ? (buildMarkdownDataViewFromTableToken(table) || buildMarkdownDataViewFromTableTokenLoose(table))
       : buildMarkdownDataViewFromTableToken(table)
     if (!view) continue
+    remaining -= length
     const startLine = Math.max(1, Math.floor(Number((table as unknown as { startLine?: unknown }).startLine || 0)))
     const endLine = Math.max(startLine, Math.floor(Number((table as unknown as { endLine?: unknown }).endLine || 0)))
     const stableId = `md-block:${startLine}-${endLine}`
-    const baseLabel = deriveCandidateBaseLabel(markdownLines, startLine, candidates.length + 1)
+    const baseLabel = heading || `Table ${candidates.length + 1}`
     const labelCount = seenLabels.get(baseLabel) || 0
     seenLabels.set(baseLabel, labelCount + 1)
     const label = labelCount > 0 ? `${baseLabel} (${labelCount + 1})` : baseLabel
