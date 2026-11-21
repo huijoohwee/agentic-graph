@@ -6,8 +6,12 @@ import path from 'node:path'
 import { buildRemoteVideoFrameFileName } from 'grph-shared/rich-media/providers'
 import { readSavedFrameEntries, videoFrameBundles } from '@/features/source-files/useSavedFrameEntries'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
-import { createRemoteVideoFramePublicAssetHandler } from '@/lib/rich-media/server/videoFrameServer'
-import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX } from '@/lib/rich-media/videoFrameAssets'
+import { createRemoteVideoFrameHandler, createRemoteVideoFramePublicAssetHandler } from '@/lib/rich-media/server/videoFrameServer'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport/urlImport'
+import { transcriptFrameTimes } from '@/features/markdown-workspace/workspaceImport/transcriptFrames'
+import { videoFrameWorkerPool } from '@/lib/rich-media/server/videoFrameWorker'
+import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, TRANSCRIPT_FRAME_BATCH_SIZE } from '@/lib/rich-media/videoFrameAssets'
 import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 
 export async function testSavedFrameDirectory() {
@@ -51,8 +55,76 @@ export async function testSavedFrameDirectory() {
     assert.equal(await image.text(), first.name)
     await fs.unlink(path.join(root, first.name))
     assert.equal((await read()).length, 256)
+    await verifyTimestampImport(root)
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()))
     await fs.rm(root, { recursive: true, force: true })
+  }
+}
+
+async function verifyTimestampImport(root: string) {
+  const id = 'SourceCueFixture'
+  const sourceUrl = new URL('/watch?v=' + id, 'https://www.youtube.com').href
+  const markdown = `[0:01](https://youtu.be/${id}?t=1) [0:03](https://youtu.be/AnotherVideo?t=3)`
+  const cues = Array.from({ length: TRANSCRIPT_FRAME_BATCH_SIZE + 3 }, (_, i) => ({ start: i + 0.125, duration: 1, text: 'cue ' + i }))
+  const transcriptJsonText = JSON.stringify({ segments: [...cues, cues[0]] })
+  const expected = [0.125, 1, ...cues.slice(1).map(cue => cue.start)]
+  assert.deepEqual(transcriptFrameTimes(sourceUrl, markdown, transcriptJsonText), expected)
+  const name = (timeSeconds: number, format = 'png') => buildRemoteVideoFrameFileName({ sourceUrl, timeSeconds, format })
+  const listing = createRemoteVideoFramePublicAssetHandler({ workspaceRoot: root, cacheRoot: root })
+  let rejectTime: number | null = cues.at(-1)!.start
+  const extracted: number[] = []
+  const writer = createRemoteVideoFrameHandler({ workspaceRoot: root, repoRoot: root, cacheRoot: root,
+    getPythonBin: async () => 'python', withRepoPythonPath: env => env, workerPool: {
+      ...videoFrameWorkerPool,
+      request: async req => {
+        if (req.timeSeconds === rejectTime) return { ok: false, error: 'test decoder unavailable' }
+        extracted.push(req.timeSeconds)
+        await fs.writeFile(req.outputPath, 'frame')
+        return { ok: true, path: req.outputPath, timeSeconds: req.timeSeconds, format: req.format, cached: false, bytes: 5 }
+      },
+    } })
+  let batches = 0
+  const server = createServer((req, res) => {
+    const url = new URL(req.url!, 'http://localhost')
+    if (url.pathname === '/__video_frame') { batches++; void writer(req, res, () => res.end()); return }
+    req.url = '/' + url.search
+    void listing(req, res, () => res.end())
+  })
+  try {
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    assert.ok(address && typeof address === 'object')
+    const origin = 'http://127.0.0.1:' + address.port
+    const fetchVideoFrames: typeof fetch = (input, init) => fetch(new URL(String(input), origin), init)
+    const workspace = createMemoryWorkspaceFs()
+    let conversions = 0
+    const run = () => importWorkspaceUrl({ fs: workspace, urlRaw: sourceUrl, fetchVideoFrames,
+      fetchUrlContent: async () => {
+        conversions++
+        return { normalizedUrl: sourceUrl, name: 'clip.md', text: markdown, sourceMediaKind: 'video', transcriptJsonText }
+      } })
+    await fs.writeFile(path.join(root, name(0.125, 'png')), 'existing frame')
+    await assert.rejects(run, /test decoder unavailable/)
+    assert.ok(batches >= 2, 'long transcripts must use bounded batches')
+    rejectTime = null
+    await run()
+    assert.equal(conversions, 1, 'resume should use the preserved source transcript')
+    for (const seconds of expected) {
+      const file = path.join(root, name(seconds))
+      assert.ok((await fs.stat(file)).size > 0)
+    }
+    assert.deepEqual([...extracted].sort((a, b) => a - b), expected.slice(1))
+    const before = batches
+    await run()
+    assert.equal(batches, before, 'a complete import should only read the inventory')
+    await fs.unlink(path.join(root, name(1)))
+    await run()
+    assert.deepEqual(extracted.slice(expected.length - 1), [1])
+    const invalid = await fetchVideoFrames('/__video_frame?url=' + encodeURIComponent(sourceUrl) + '&times=2,1',
+      { method: 'POST', headers: { 'X-Workspace-Frame-Import': '1' } })
+    assert.equal(invalid.status, 400)
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()))
   }
 }
