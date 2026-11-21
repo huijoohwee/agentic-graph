@@ -4,6 +4,11 @@ import { formatMediaTimestampSeconds } from 'grph-shared/rich-media/providers'
 const TRANSCRIPT_MAIN = '<main data-kg-video-agent-transcript-panel="1"'
 const WORKSPACE_TRANSCRIPT_MAIN = TRANSCRIPT_MAIN + ' data-kg-workspace-transcript="1"'
 
+export function scopeImportedTranscriptPanel(srcDoc: string) {
+  if (!srcDoc.includes('data-kg-video-agent-transcript-cue="1"') || srcDoc.includes(WORKSPACE_TRANSCRIPT_MAIN)) return srcDoc
+  return srcDoc.replace(TRANSCRIPT_MAIN, WORKSPACE_TRANSCRIPT_MAIN)
+}
+
 export function usesWorkspaceTranscript(srcDoc: string): boolean {
   return srcDoc.includes(WORKSPACE_TRANSCRIPT_MAIN)
 }
@@ -90,7 +95,7 @@ export function buildSourceUrlAtTime(sourceUrl: string, timeSeconds: number): st
   if (!raw) return ''
   try {
     const url = new URL(raw)
-    url.searchParams.set('t', `${Math.max(0, Math.floor(timeSeconds))}s`)
+    url.searchParams.set('t', `${Math.max(0, Math.round(timeSeconds * 1000) / 1000)}s`)
     return url.toString()
   } catch {
     return raw
@@ -111,7 +116,7 @@ export function buildVideoAgentTranscriptPanelSrcDoc(args: {
   const cueItems = cues.map((cue, renderIndex) => {
     const timeLabel = formatMediaTimestampSeconds(cue.startMs / 1000)
     const href = buildSourceUrlAtTime(sourceUrl, cue.startMs / 1000)
-    const time = `<time datetime="PT${Math.max(0, Math.round(cue.startMs / 1000))}S">${escapeHtml(timeLabel)}</time>`
+    const time = `<time datetime="PT${Math.max(0, cue.startMs / 1000)}S">${escapeHtml(timeLabel)}</time>`
     const label = href
       ? `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${time}</a>`
       : time

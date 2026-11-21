@@ -1,5 +1,5 @@
 import React from 'react'
-import { formatMediaTimestampSeconds } from 'grph-shared/rich-media/providers'
+import { selectSavedVideoFrame, formatSavedFrameTime } from '@/lib/rich-media/savedVideoFrameSelection'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
@@ -101,9 +101,13 @@ function TranscriptPages({ documentPath, timeMs, onReady }: TranscriptProps) {
     <ol start={start + 1} className="space-y-1">
       {cues.slice(start, end).map((cue, offset) => {
         const seconds = cue.startMs / 1000
-        const stamp = <time className="font-mono" dateTime={`PT${seconds}S`}>{formatMediaTimestampSeconds(seconds)}</time>
+        const stamp = <time className="font-mono" dateTime={`PT${seconds}S`}>{formatSavedFrameTime(seconds)}</time>
         return <li key={start + offset} aria-current={index === start + offset || undefined}>
-          {source.sourceUrl ? <a href={buildSourceUrlAtTime(source.sourceUrl, seconds)} target="_blank" rel="noreferrer">{stamp}</a> : stamp}
+          {source.sourceUrl ? <a href={buildSourceUrlAtTime(source.sourceUrl, seconds)} data-saved-frame-cue="" target="_blank" rel="noreferrer" onClick={event => {
+            if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            event.preventDefault()
+            void selectSavedVideoFrame({ sourceUrl: source.sourceUrl, seconds, documentPath })
+          }}>{stamp}</a> : stamp}
           {' '}{cue.text}
         </li>
       })}

@@ -3,6 +3,7 @@ import { loadWorkspaceSourceIndex, type WorkspaceSourceIndex } from '@/features/
 import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
+import { loadSavedVideoFrames } from '@/lib/rich-media/savedVideoFrameCatalog'
 import { readSavedFrameDirectory, SAVED_FRAMES_CHANGED_EVENT } from '@/lib/rich-media/videoFrameAssets'
 
 type FrameBundle = { path: string; source: string }
@@ -27,10 +28,10 @@ export function videoFrameBundles(entries: WorkspaceEntry[], sources: WorkspaceS
   return Array.from(bundles, ([path, source]) => ({ path, source }))
 }
 
-export async function readSavedFrameEntries(bundle: FrameBundle, signal: AbortSignal, fetchPage: typeof fetch = fetch): Promise<WorkspaceEntry[]> {
-  const { directory, files } = await readSavedFrameDirectory(bundle.source, signal, fetchPage)
-  return files.map(name => ({ kind: 'file', path: bundle.path + '/' + name, parentPath: bundle.path, name, updatedAtMs: 0,
-    savedAsset: { url: directory + '/' + name } }))
+export async function readSavedFrameEntries(bundle: FrameBundle, signal: AbortSignal, fetchPage?: typeof fetch): Promise<WorkspaceEntry[]> {
+  const { directory, files } = await (fetchPage ? readSavedFrameDirectory(bundle.source, signal, fetchPage) : loadSavedVideoFrames(bundle.source))
+  return files.map((name): WorkspaceEntry => ({ kind: 'file', path: bundle.path + '/' + name, parentPath: bundle.path, name, updatedAtMs: 0,
+    savedAsset: { url: directory + '/' + name, sourceUrl: bundle.source } }))
 }
 
 /** Project metadata into Explorer only. Never seed binary files as editable text. */

@@ -1,4 +1,5 @@
 import React from 'react'
+import { TranscriptFrameSourceContext, timestampLinkSeconds } from '@/lib/rich-media/videoTimestampLink'
 import { buildYouTubeThumbnailPreviewDescriptor, buildYouTubeTimestampFramePreviewDescriptor, type RichMediaPreviewDescriptor } from 'grph-shared/rich-media/providers'
 import Tooltip from 'agentic-design-system/react/hover'
 import { MediaVideoSnapshot } from '@/lib/markdown-core/ui/MarkdownMediaUi.impl'
@@ -28,6 +29,7 @@ export function YouTubeTimestampPreviewLink({
   preview: RichMediaPreviewDescriptor | null
   children: React.ReactNode
 }) {
+  const savedSource = React.useContext(TranscriptFrameSourceContext)
   const [open, setOpen] = React.useState(false)
   const tooltipId = React.useId()
   const linkRef = React.useRef<HTMLAnchorElement | null>(null)
@@ -51,7 +53,7 @@ export function YouTubeTimestampPreviewLink({
 
   const openPreview = () => setOpen(true)
 
-  if (!sourceUrl || !timestampLabel) {
+  if (!sourceUrl || !timestampLabel || (savedSource && timestampLinkSeconds(href, savedSource) !== null)) {
     return (
       <a href={href} target={anchor.target} rel={anchor.rel} className={anchor.className}>
         {children}

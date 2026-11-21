@@ -224,7 +224,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const setPage = (next: number) => setFramePages(current => ({ ...current, [entry.path]: next }))
     const selectEntry = () => {
       if (entry.savedAsset) {
-        if ('url' in entry.savedAsset) setPreview({ path: entry.path, name: entry.name, url: entry.savedAsset.url })
+        if ('url' in entry.savedAsset && entry.savedAsset.sourceUrl && frameTime) {
+          const { sourceUrl, url } = entry.savedAsset
+          void import('@/lib/rich-media/savedVideoFrameSelection').then(({ selectSavedVideoFrame }) =>
+            selectSavedVideoFrame({ sourceUrl, seconds: Number(frameTime), savedUrl: url, documentPath: entry.parentPath || undefined }))
+        } else if ('url' in entry.savedAsset) setPreview({ path: entry.path, name: entry.name, url: entry.savedAsset.url })
         else toggleExpanded(entry.path)
       } else if (isFolder) onSelectFolder(entry.path)
       else onSelectFile(entry.path)

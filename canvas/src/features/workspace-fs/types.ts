@@ -8,7 +8,7 @@ export type WorkspaceEntry = {
   kind: WorkspaceEntryKind
   name: string
   /** Read-only Explorer projection. Image bytes stay with the asset service. */
-  savedAsset?: { url: string } | { status?: string }
+  savedAsset?: { url: string; sourceUrl?: string } | { status?: string }
   text?: string
   updatedAtMs: number
   /** Durable provenance for restoring references after a collection migration. */

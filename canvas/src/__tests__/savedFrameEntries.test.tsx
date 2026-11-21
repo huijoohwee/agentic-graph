@@ -49,7 +49,7 @@ export async function testSavedFrameDirectory() {
     assert.deepEqual(list.map(entry => entry.name), names.sort())
     for (const entry of list) {
       assert.equal(entry.path, bundle!.path + '/' + entry.name)
-      assert.deepEqual(entry.savedAsset, { url: REMOTE_VIDEO_FRAME_PUBLIC_PREFIX + '/' + entry.name })
+      assert.deepEqual(entry.savedAsset, { url: REMOTE_VIDEO_FRAME_PUBLIC_PREFIX + '/' + entry.name, sourceUrl })
       assert.equal(entry.text, undefined)
     }
     const first = list[0]!
@@ -111,7 +111,11 @@ async function verifyTimestampImport(root: string) {
     await assert.rejects(run, /test decoder unavailable/)
     assert.ok(batches >= 2, 'long transcripts must use bounded batches')
     rejectTime = null
-    await run()
+    const imported = await run()
+    const doc = await workspace.readFileText(imported.createdPaths[0])
+    assert.ok(doc)
+    const { checkSavedVideoFrameSelection } = await import('./savedVideoFrameSelection.test')
+    await checkSavedVideoFrameSelection(sourceUrl, doc)
     assert.equal(conversions, 1, 'resume should use the preserved source transcript')
     for (const seconds of expected) {
       const file = path.join(root, name(seconds))

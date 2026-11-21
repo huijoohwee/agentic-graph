@@ -1,25 +1,9 @@
-import { buildRemoteVideoFrameFileName, type RemoteVideoFrameFormat, DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH, getYouTubeId, parseYouTubeStartSeconds } from 'grph-shared/rich-media/providers'
+import { buildRemoteVideoFrameFileName, type RemoteVideoFrameFormat, DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH } from 'grph-shared/rich-media/providers'
 import { readSavedFrameDirectory, SAVED_FRAMES_CHANGED_EVENT, TRANSCRIPT_FRAME_BATCH_SIZE } from '@/lib/rich-media/videoFrameAssets'
 import { readWorkspaceFrameFormat } from '@/lib/rich-media/videoFrameSettings'
 import type { WorkspaceImportProgress } from './types'
-
-function timestampLinkSeconds(href: string, source: URL, videoId: string | null): number | null {
-  try {
-    const link = new URL(href, source)
-    const time = link.searchParams.get('t') ?? link.searchParams.get('start') ?? new URLSearchParams(link.hash.slice(1)).get('t')
-    if (!time) return null
-    const seconds = /^\d+(?:\.\d+)?$/.test(time) ? Number(time) : parseYouTubeStartSeconds(link.href)
-    if (videoId && getYouTubeId(link.href) === videoId) return seconds
-    function mediaIdentity(url: URL) {
-      const value = new URL(url)
-      value.searchParams.delete('t')
-      value.searchParams.delete('start')
-      value.hash = ''
-      return value.href
-    }
-    return mediaIdentity(link) === mediaIdentity(source) ? seconds : null
-  } catch { return null }
-}
+import { forgetSavedVideoFrames } from '@/lib/rich-media/savedVideoFrameCatalog'
+import { timestampLinkSeconds } from '@/lib/rich-media/videoTimestampLink'
 
 /** Use recorded source times only. Paragraph playback links can differ from fractional cue starts. */
 export function transcriptFrameTimes(sourceUrl: string, markdown: string, transcriptJson?: string | null): number[] {
@@ -40,10 +24,8 @@ export function transcriptFrameTimes(sourceUrl: string, markdown: string, transc
       }
     }
   }
-  const source = new URL(sourceUrl)
-  const videoId = getYouTubeId(sourceUrl)
   for (const match of markdown.matchAll(/https?:\/\/[^\s)<>"\]]+/gi)) {
-    add(timestampLinkSeconds(match[0], source, videoId), 1000)
+    add(timestampLinkSeconds(match[0], sourceUrl), 1000)
   }
   return [...millis].sort((a, b) => a - b).map(ms => ms / 1000)
 }
@@ -92,6 +74,7 @@ export async function saveTranscriptFrames(args: {
   } catch (error) {
     throw new Error(`Timestamp frames: ${complete} of ${times.length} confirmed. ${error instanceof Error ? error.message : String(error)} Reimport to resume.`)
   } finally {
+    forgetSavedVideoFrames(sourceUrl)
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SAVED_FRAMES_CHANGED_EVENT, { detail: sourceUrl }))
   }
 }

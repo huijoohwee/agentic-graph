@@ -22,6 +22,7 @@ const LearningCanvasEmbedLazy = lazy(() => import('@/features/python-learning/Le
 const PerformanceAutomationReadoutLazy = lazy(async () => ({
   default: (await import('@/features/canvas/PerformanceAutomationReadout')).PerformanceAutomationReadout,
 }))
+const SavedVideoFrameHost = lazy(() => import('@/features/video-agent/SavedVideoFrameHost'))
 const ToastHostLazy = lazy(() => import('@/components/ui/ToastHost'))
 const RichMediaBrowserSmokePageLazy = lazy(async () => ({
   default: (await import('@/features/testing/RichMediaBrowserSmokePage')).RichMediaBrowserSmokePage,
@@ -261,6 +262,7 @@ function CanvasApplication() {
           ) : null}
           <Suspense fallback={null}>
             <ToastHostLazy />
+            <SavedVideoFrameHost />
           </Suspense>
           <ErrorBoundary>
             <Routes>
