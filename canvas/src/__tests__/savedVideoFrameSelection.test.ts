@@ -4,7 +4,7 @@ import { forgetSavedVideoFrames, indexSavedVideoFrames } from '@/lib/rich-media/
 import { timestampLinkSeconds } from '@/lib/rich-media/videoTimestampLink'
 import { closeSavedFramePreview, formatSavedFrameTime, readSavedFrameSelection, selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
 import { savedClipThumbnailTimes } from '@/components/timeline/useSavedClipThumbnails'
-import { resolveSavedFrameDocument, savedFrameTimelineTarget } from '@/features/video-agent/savedVideoFrameTransport'
+import { activateSavedFrameDocument, resolveSavedFrameDocument, savedFrameTimelineTarget } from '@/features/video-agent/savedVideoFrameTransport'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, savedFrameListUrl } from '@/lib/rich-media/videoFrameAssets'
@@ -50,6 +50,23 @@ export async function checkSavedVideoFrameSelection(sourceUrl: string, markdown:
   const requests: string[] = []
   forgetSavedVideoFrames(sourceUrl)
   try {
+    const { useMarkdownExplorerStore } = await import('@/features/markdown-explorer/store')
+    const initialPath = useMarkdownExplorerStore.getState().activePath
+    useGraphStore.setState({ markdownDocumentName: 'transcript.md' })
+    let activations = 0
+    const stop = useMarkdownExplorerStore.subscribe(state => {
+      if (state.activePath !== file.path) return
+      activations++
+      queueMicrotask(() => useGraphStore.setState({ markdownDocumentName: file.path.slice(1) }))
+    })
+    try {
+      await activateSavedFrameDocument(file.path, file.path.slice(1), () => true)
+      assert.equal(activations, 1)
+      assert.equal(useGraphStore.getState().markdownDocumentName, file.path.slice(1))
+    } finally {
+      stop()
+      useMarkdownExplorerStore.getState().setActivePath(initialPath)
+    }
     globalThis.fetch = async input => {
       requests.push(String(input))
       return Response.json({ directory: REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, files: [name('png')], next: null })
