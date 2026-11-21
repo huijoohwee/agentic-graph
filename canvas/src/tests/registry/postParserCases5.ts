@@ -307,6 +307,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["flow.widgets.byteplusTextWidget.ssotIsolation","@/__tests__/byteplusTextWidgetSsotContract.test","testBytePlusTextWidgetKtvRowsStayBytePlus"],
   ["ui.typography.graphTable.usesUiSettings","@/__tests__/graphTableTypography.test","testGraphTableTypographyUsesUiSettings"],
   ["ui.multiDimTable.surface.workspaceModeOwners","@/__tests__/multiDimTableSurfaceMode.test","testMultiDimTableSurfacePreservesWorkspaceModeOwners"],
+  ["ui.multiDimTable.largeDocument.completeSourceTables","@/__tests__/largeDocumentDataViewCandidates.test","testLargeDocumentsKeepCompleteSourceTables"],
   ["ui.multiDimTable.structuredSource.presentationDefaults","@/__tests__/multiDimTableSurfaceMode.test","testMultiDimTableStructuredSourcePresentationDefaults"],
   ["ui.multiDimTable.structuredSource.summaryAliases","@/__tests__/multiDimTableSurfaceMode.test","testStructuredSourceSemanticSummaryAliases"],
   ["ui.multiDimTable.structuredSource.visibleTable","@/__tests__/multiDimTableSurfaceMode.test","testMultiDimTableStructuredSourceMetadataBuildsVisibleTable"],
