@@ -3,11 +3,12 @@ import { test } from 'node:test'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { MarkdownWorkspaceExplorer } from '@/features/markdown-workspace/MarkdownWorkspaceExplorer'
+import '@/tests/lib/registerCssLoader'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 test('active source remains identifiable and can be revealed through filtering and collapsed parents without reopening', async () => {
   const env = initJsdomHarness()
+  const { MarkdownWorkspaceExplorer } = await import('@/features/markdown-workspace/MarkdownWorkspaceExplorer')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
