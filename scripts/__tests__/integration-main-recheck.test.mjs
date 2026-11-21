@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, test } from 'node:test'
 import { load } from 'js-yaml'
 import { readChangedPaths } from '../run-affected-ci.mjs'
+import { changedSince, plan, publish, replacePin } from '../refresh-base-adapter-pin.mjs'
 
 const workflow = load(readFileSync(new URL('../../.github/workflows/integration.yml', import.meta.url), 'utf8'))
 const steps = workflow.jobs['integration-gate'].steps
@@ -90,4 +91,85 @@ test('main recheck selects the actual main commit delta rather than an empty PR 
   })
   assert.deepEqual(calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
   assert.deepEqual(changed, ['.github/workflows/integration.yml'])
+})
+
+test('the Base pin follows changes to the consumer checkout on protected Graph history', () => {
+  const source = path.join(fixture, 'adapter-history')
+  git(fixture, 'clone', '--quiet', checkout, source)
+  git(source, 'config', 'user.email', 'adapter@example.invalid')
+  git(source, 'config', 'user.name', 'Adapter')
+  const commit = (file, value) => {
+    writeFileSync(path.join(source, file), value)
+    git(source, 'add', file)
+    git(source, '-c', 'commit.gpgsign=false', 'commit', '-m', file)
+    return git(source, 'rev-parse', 'HEAD')
+  }
+  const paths = ['adapter.ts', 'adapter.test.ts']
+  const unrelated = commit('README.md', 'docs')
+  const adapter = commit(paths[0], 'source')
+  const suite = commit(paths[1], 'tests')
+  assert.equal(changedSince(revision, unrelated, paths, source), false)
+  assert.equal(changedSince(unrelated, adapter, paths, source), true)
+  assert.equal(changedSince(adapter, suite, paths, source), true)
+  assert.equal(changedSince(suite, adapter, paths, source), false)
+})
+
+test('a pin refresh creates one Base PR, resumes interrupted publication and updates the open PR', () => {
+  const repo = 'fixture/graph'
+  const base = 'a'.repeat(40), old = 'b'.repeat(40), first = 'c'.repeat(40), latest = 'd'.repeat(40)
+  const file = '.github/workflows/ci.yml', ref = 'refs/heads/automation/graph-adapter-pin'
+  const yaml = `jobs:\n  check:\n    steps:\n      - uses: actions/checkout@sha\n        with:\n          repository: ${repo}\n          ref: ${old}\n          sparse-checkout: |\n            /src/adapter.ts\n            /test/\n`
+  const snapshots = new Map([[base, yaml]])
+  let tip = null, tree, edits = [file], open = [], created = 0
+  const api = (url, method = 'GET', body) => {
+    if (url === 'git/ref/heads/main') return { object: { sha: base } }
+    if (url.startsWith('git/matching-refs/')) return tip ? [{ ref, object: { sha: tip } }] : []
+    if (url.startsWith('contents/')) return { content: Buffer.from(snapshots.get(url.split('?ref=')[1])).toString('base64') }
+    if (url.startsWith('compare/')) return { merge_base_commit: { sha: base }, files: edits.map(filename => ({ filename })) }
+    if (url.startsWith('pulls?')) return open
+    if (url === 'git/commits/' + base) return { tree: { sha: base } }
+    if (url === 'git/trees' && method === 'POST') {
+      assert.deepEqual(body.tree.map(entry => entry.path), [file])
+      tree = body.tree[0].content
+      return { sha: base }
+    }
+    if (url === 'git/commits' && method === 'POST') {
+      assert.deepEqual(body.parents, tip ? [base, tip] : [base])
+      const sha = (++created).toString(16).padStart(40, '0')
+      snapshots.set(sha, tree)
+      return { sha }
+    }
+    if (url === 'git/refs' && method === 'POST') { assert.equal(body.ref, ref); tip = body.sha; return {} }
+    if (url === 'git/' + ref && method === 'PATCH') { assert.equal(body.force, false); tip = body.sha; return {} }
+    if (url === 'pulls' && method === 'POST') {
+      assert.deepEqual([body.base, body.head, open.length], ['main', ref.slice('refs/heads/'.length), 0])
+      open = [{ state: 'open', number: 1, head: { sha: tip } }]
+      return open[0]
+    }
+    assert.fail(method + ' ' + url)
+  }
+  const select = revision => plan(revision, repo, api, (pinned, target, paths) => {
+    assert.deepEqual(paths, ['src/adapter.ts', 'test/'])
+    return [old, first, latest].indexOf(pinned) < [old, first, latest].indexOf(target)
+  })
+  assert.equal(select(old), null)
+  const initial = select(first)
+  assert.equal(publish(initial, api).number, 1)
+  assert.equal(snapshots.get(tip), replacePin(yaml, old, first))
+  assert.throws(() => publish(initial, api), /refs changed/)
+  assert.equal(select(first), null)
+  open = []
+  const resume = select(first)
+  assert.equal(resume.write, false)
+  publish(resume, api)
+  assert.equal(created, 1)
+  assert.equal(publish(select(latest), api).number, 1)
+  assert.equal(snapshots.get(tip), replacePin(yaml, old, latest))
+  assert.equal(select(first), null)
+  const revert = 'e'.repeat(40)
+  const reverted = plan(revert, repo, api, pinned => pinned === latest)
+  assert.equal(publish(reverted, api).number, 1)
+  assert.equal(snapshots.get(tip), replacePin(yaml, old, revert))
+  edits = [file, 'human-edit.md']
+  assert.throws(() => select(latest), /beyond the managed pin/)
 })

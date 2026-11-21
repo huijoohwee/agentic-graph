@@ -68,6 +68,8 @@ jobs:
   integration-gate:
     name: Integration Gate
     needs: [docs-contract]
+    outputs:
+      base-adapter-pin: ${{ steps.base_adapter.outputs.plan }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -416,3 +418,33 @@ jobs:
           path: ${{ runner.temp }}/source-evidence/evidence.json
           if-no-files-found: error
           retention-days: 1
+
+      - name: Compare Base's pinned Graph adapter inputs
+        id: base_adapter
+        if: github.repository == 'huijoohwee/agentic-graph' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.operation == 'protected-main-recheck')
+        working-directory: agentic-graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/refresh-base-adapter-pin.mjs plan
+
+  refresh-base-adapter:
+    needs: integration-gate
+    if: needs.integration-gate.outputs.base-adapter-pin != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: base-graph-adapter-pin
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          filter: tree:0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /scripts/refresh-base-adapter-pin.mjs
+      - name: Open or update the Base pin PR
+        env:
+          GH_TOKEN: ${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}
+          PIN_PLAN: ${{ needs.integration-gate.outputs.base-adapter-pin }}
+        run: node scripts/refresh-base-adapter-pin.mjs publish
