@@ -32,6 +32,7 @@ import {
 import { WorkspaceModeSelect } from '../../WorkspaceModeSelect'
 import { rowIdToMarkdownLineInTable } from './markdownDataViewSourceMap'
 import { WorkspaceDataViewHeader, type WorkspaceDataViewHeaderState } from './WorkspaceDataViewHeader'
+import { DataViewAction } from './WorkspaceDataViewSettingsActions'
 import type { JsonToMarkdownMode } from '@/features/markdown/jsonToMarkdown'
 import {
   applyWorkspaceDataViewQuery,
@@ -241,8 +242,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     return candidates.find(c => c.id === selectedTableId) ?? (candidates[0] ?? null)
   }, [candidates, selectedTableId])
 
+  const canvasHost = props.canvasDataViewSurface ? (props.onChangeViewerMode ? 'standalone' : 'embedded') : undefined
   const { viewConfig, setViewConfig, commitViewConfig } = useWorkspaceDataViewConfig(
-    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource, !!props.canvasDataViewSurface,
+    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource, canvasHost,
   )
   const effectiveViewerMode = props.canvasDataViewSurface && viewConfig
     ? viewConfig.layout === 'calendar' ? 'calendar'
@@ -280,13 +282,14 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     if (!props.dataViewSource) void setGeospatialModeEnabled(true).catch(() => void 0)
   }, [props.dataViewSource, props.onChangeViewerMode, setViewConfig])
 
+  const instanceId = React.useId()
   const viewSettingsBinding = React.useMemo<WorkspaceDataViewFloatingBinding | null>(() => {
     if (!selected || !viewConfig) return null
     const registrationId = hashSignatureParts([
       'workspace-data-view-floating-settings',
+      instanceId,
       props.activeDocumentPath ?? '',
       selected.id,
-      effectiveViewerMode,
     ])
     return {
       registrationId,
@@ -322,7 +325,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
         props.onChangeViewerMode?.(mode)
         if (!props.dataViewSource && !props.canvasDataViewSurface) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
       },
-      onSelectGeospatialView: handleSelectGeospatialView,
+      onSelectGeospatialView: canvasHost === 'embedded' ? undefined : handleSelectGeospatialView,
       onReset: onResetDataView,
       onNewRecord: canMutate ? () => onNewRecord() : undefined,
       onAddColumn: canMutate ? onAddColumn : undefined,
@@ -334,7 +337,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     canMutate,
     commitViewConfig,
     effectiveViewerMode,
+    canvasHost,
     handleSelectGeospatialView,
+    instanceId,
     onAddColumn,
     onDeleteColumn,
     onDuplicateColumn,
@@ -454,7 +459,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
         state={headerState}
         onChangeState={setHeaderState}
         onChangeViewerMode={(mode) => props.onChangeViewerMode?.(mode)}
-        onSelectGeospatialView={handleSelectGeospatialView}
+        onSelectGeospatialView={viewSettingsBinding?.onSelectGeospatialView}
         supportsMultiDimLayout={true}
         onNewRecord={canMutate ? () => onNewRecord() : undefined}
         viewConfig={viewConfig}
@@ -482,6 +487,8 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           <React.Suspense fallback={<p role="status" className="p-4">Loading data view…</p>}>
           {effectiveViewerMode === 'calendar' && viewConfig ? (
             <WorkspaceDataViewCalendarSurface view={displayedView || selected.view} config={viewConfig} onChangeConfig={commitViewConfig} canMutate={canMutate} onUpdateCell={onUpdateCell} onNewRecord={onNewRecord} />
+          ) : effectiveViewerMode === 'kanban' && !displayedView?.groupByColumnId ? (
+            <DataViewAction onClick={() => openViewSettingsPanel('group')}>Choose a column to group Kanban cards</DataViewAction>
           ) : effectiveViewerMode === 'kanban' ? (
             <MarkdownDataViewKanbanView
             view={displayedView || selected.view}
