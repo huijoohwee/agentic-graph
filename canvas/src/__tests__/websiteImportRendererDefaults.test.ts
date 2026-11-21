@@ -8,7 +8,7 @@ import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatte
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-test('each crawl artifact reopens in D3 even after a Storyboard document', async () => {
+test('each crawl artifact reopens in Dashboard even after a Storyboard document', async () => {
   const before = useGraphStore.getState()
   const fs = createMemoryWorkspaceFs()
   try {
@@ -23,14 +23,14 @@ test('each crawl artifact reopens in D3 even after a Storyboard document', async
     for (const path of result.created.createdPaths) {
       useGraphStore.setState({ canvas2dRenderer: 'storyboard', documentStructureBaselineLock: false })
       const rawText = String(await fs.readFileText(path))
-      assert.equal(parseCanvasWorkspaceFrontmatterPreset(rawText)?.canvas2dRenderer, 'd3', path)
+      assert.equal(parseCanvasWorkspaceFrontmatterPreset(rawText)?.canvas2dRenderer, 'dashboard', path)
       applyCanvasFrontmatterPreset({ rawText })
-      assert.equal(useGraphStore.getState().canvas2dRenderer, 'd3', path)
+      assert.equal(useGraphStore.getState().canvas2dRenderer, 'dashboard', path)
     }
   } finally { useGraphStore.setState(before) }
 })
 
-test('headless crawl starts in the shared D3 document preset before requesting the server', async () => {
+test('headless crawl starts in the shared Dashboard document preset before requesting the server', async () => {
   const before = useGraphStore.getState()
   const fetchBefore = globalThis.fetch
   const options = buildAutoWebsiteImportOptions()
@@ -41,7 +41,7 @@ test('headless crawl starts in the shared D3 document preset before requesting t
       frontmatterModeEnabled: true, multiDimTableModeEnabled: true, documentStructureBaselineLock: false })
     globalThis.fetch = async () => {
       const state = useGraphStore.getState()
-      assert.equal(state.canvas2dRenderer, 'd3')
+      assert.equal(state.canvas2dRenderer, 'dashboard')
       assert.equal(state.canvasRenderMode, '2d')
       assert.equal(state.documentSemanticMode, 'document')
       assert.equal(state.frontmatterModeEnabled, false)

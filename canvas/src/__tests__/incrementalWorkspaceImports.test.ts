@@ -126,3 +126,30 @@ test('changed deferred bytes replace the input receipt even when the placeholder
   assert.equal((await hydrateWorkspaceFileFromPendingLocalImport({ fs, path }))?.text, 'first')
   assert.equal(await fs.readFileText(path), 'first')
 })
+
+test('video URL reimport upgrades the generated renderer in place and keeps edited sources and explicit views', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const url = new URL('archive/lecture.mp4', 'https://example.invalid/').href
+  const first = await importWorkspaceUrl({ fs, urlRaw: url, mirrorToHost: false, fetchUrlContent: async () => ({
+    normalizedUrl: url, name: 'lecture.mp4', text: 'Recorded lecture', sourceMediaKind: 'video', sourceMimeHint: 'video/mp4',
+  }) })
+  const [path] = first.createdPaths
+  assert.equal(first.createdPaths.length, 1)
+  const dashboard = (await fs.readFileText(path))!
+  assert.match(dashboard, /^kgCanvas2dRenderer: "dashboard"$/m)
+  const old = dashboard.replace('kgCanvas2dRenderer: "dashboard"', 'kgCanvas2dRenderer: "media"')
+  await fs.writeFileText(path, old)
+  await recordUrlImport(fs, path, url)
+  const cached = { fs, urlRaw: url, mirrorToHost: false, fetchUrlContent: async (): Promise<never> => { throw new Error('unexpected refetch') } }
+  const paths = (await fs.listEntries()).map(entry => entry.path)
+  assert.deepEqual((await importWorkspaceUrl(cached)).createdPaths, [path])
+  assert.equal(await fs.readFileText(path), dashboard)
+  assert.deepEqual((await fs.listEntries()).map(entry => entry.path), paths)
+  assert.deepEqual((await importWorkspaceUrl({ ...cached, canvas2dRenderer: 'design', documentSemanticMode: 'keyword', viewHint: 'html' })).createdPaths, [path])
+  assert.match((await fs.readFileText(path))!, /^kgCanvas2dRenderer: "design"$/m)
+  assert.match((await fs.readFileText(path))!, /^kgDocumentSemanticMode: "keyword"$/m)
+  const edited = old + '\nPersonal notes'
+  await fs.writeFileText(path, edited)
+  await importWorkspaceUrl(cached)
+  assert.equal(await fs.readFileText(path), edited)
+})

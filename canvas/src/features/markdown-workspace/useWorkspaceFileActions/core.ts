@@ -1,3 +1,4 @@
+import { withUrlImportRendererDefault } from '../workspaceImport/canvasPresets'
 import React from 'react'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import {
@@ -202,7 +203,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
   const status = useWorkspaceStatusHelpers()
 
   const applyImportedTextToGraph = React.useCallback(
-    async (inner: { nameForParse: string; text: string }) => {
+    async (inner: { nameForParse: string; text: string; sourceUrl?: string | null }) => {
       const storeBefore = useGraphStore.getState()
       const resolvedText = await (async (): Promise<string> => {
         const meta = parsePdfWorkspaceFrontmatter(inner.text)
@@ -226,7 +227,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         await loadGraphDataFromTextViaParser(inner.nameForParse, resolvedText, { applyToStore: true })
       }
 
-      const preset = resolveCanvasFrontmatterPreset({ graphData: useGraphStore.getState().graphData, rawText: resolvedText })
+      const preset = withUrlImportRendererDefault(resolveCanvasFrontmatterPreset({ graphData: useGraphStore.getState().graphData, rawText: resolvedText }), inner.sourceUrl)
       const hasExplicitSurface = Boolean(
         (preset?.canvasSurfaceMode && preset.canvasSurfaceMode !== '2d') || preset?.canvasRenderMode === '3d' || preset?.canvas3dMode
         || (preset?.canvas2dRenderer && preset.canvas2dRenderer !== 'storyboard'),
@@ -303,7 +304,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         opts?.applyToGraph === true ||
         (opts?.applyToGraph !== false && shouldApplyImportedCanvasDocumentToGraph({ path: docKey || String(path || ''), text: content }))
       if (docKey && content.trim() && shouldApplyToGraph) {
-        await applyImportedTextToGraph({ nameForParse: docKey, text: content })
+        await applyImportedTextToGraph({ nameForParse: docKey, text: content, sourceUrl: opts?.sourceUrl })
       }
     },
     [

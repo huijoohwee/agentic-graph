@@ -1,3 +1,7 @@
+// Shared by the browser importer, document writers and the headless tool schema.
+export const DEFAULT_URL_IMPORT_RENDERER = 'dashboard'
+export const URL_IMPORT_RENDERERS = Object.freeze(/** @type {const} */ ([DEFAULT_URL_IMPORT_RENDERER, 'd3', 'design', 'storyboard']))
+
 export const IMPORT_URL_AGENT_READY_TOOL_IDS = Object.freeze({
   controlLocalImportUrl: 'control_local_import_url',
 })
@@ -36,7 +40,7 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
       },
       canvas2dRenderer: {
         type: 'string',
-        enum: ['d3', 'design', 'storyboard'],
+        enum: [...URL_IMPORT_RENDERERS],
       },
       documentSemanticMode: {
         type: 'string',
@@ -86,7 +90,7 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
           },
           renderer: {
             oneOf: [
-              { type: 'string', enum: ['d3', 'design', 'storyboard'] },
+              { type: 'string', enum: [...URL_IMPORT_RENDERERS] },
               { type: 'null' },
             ],
           },
@@ -109,7 +113,7 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
           invocation: { type: 'string', minLength: 1, pattern: '^/ingest-url\\s+@url:' },
           renderer: {
             oneOf: [
-              { type: 'string', enum: ['d3', 'design', 'storyboard'] },
+              { type: 'string', enum: [...URL_IMPORT_RENDERERS] },
               { type: 'null' },
             ],
           },
@@ -185,7 +189,7 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
           },
           renderer: {
             oneOf: [
-              { type: 'string', enum: ['d3', 'design', 'storyboard'] },
+              { type: 'string', enum: [...URL_IMPORT_RENDERERS] },
               { type: 'null' },
             ],
           },

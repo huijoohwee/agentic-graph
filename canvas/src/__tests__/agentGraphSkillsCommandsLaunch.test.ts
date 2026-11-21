@@ -301,7 +301,6 @@ export async function testAgentGraphLaunchImportUrlTargetsFloatingPanelSkillsCom
         React.Fragment,
         null,
         React.createElement(LaunchDropdownImportUrlItem, {
-          canvas2dRenderer: 'flow',
           menuIconClass: 'icon',
           menuItemClass: 'item',
           onClose: () => undefined,
@@ -412,7 +411,6 @@ export async function testLaunchImportUrlCrawlerTargetsSkillsCommandsBeforeDispa
         React.Fragment,
         null,
         React.createElement(LaunchDropdownImportUrlItem, {
-          canvas2dRenderer: 'flow',
           menuIconClass: 'icon',
           menuItemClass: 'item',
           onClose: () => undefined,
@@ -509,7 +507,6 @@ export async function testAgentGraphLaunchSkillsCommandsFailureIsVisibleAndScope
         React.Fragment,
         null,
         React.createElement(LaunchDropdownImportUrlItem, {
-          canvas2dRenderer: 'flow',
           menuIconClass: 'icon',
           menuItemClass: 'item',
           onClose: () => undefined,

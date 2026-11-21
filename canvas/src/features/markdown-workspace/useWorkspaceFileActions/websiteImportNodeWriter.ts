@@ -16,7 +16,7 @@ import { buildWebsiteSitemapMarkdown } from '@/lib/websites/websiteSitemapMarkdo
 import { buildWebsiteCrawlCanvasMarkdown } from '@/lib/websites/websiteCrawlCanvasMarkdown'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
 import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '../workspaceImport'
-import { D3_URL_IMPORT_CANVAS_PRESET } from '../workspaceImport/canvasPresets'
+import { DEFAULT_URL_IMPORT_CANVAS_PRESET } from '../workspaceImport/canvasPresets'
 
 export type WebsiteImportSettings = {
   selectedUrls?: string[]
@@ -102,7 +102,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   const stubForNode = (nodeUrl: string, nodeId: string, unavailable = false) => {
     const text = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
       upstreamMarkdown: unavailable ? 'Markdown conversion is unavailable for this page. Use the HTML view to inspect the captured source.' : '',
-      url: nodeUrl, view, canvasPreset: D3_URL_IMPORT_CANVAS_PRESET,
+      url: nodeUrl, view, canvasPreset: DEFAULT_URL_IMPORT_CANVAS_PRESET,
       websiteImportMeta: { importId, nodeId, outputDirRel: settings.outputDirRel || undefined },
     })
     return !/^https?:\/\//i.test(nodeUrl) && localSiteRootRel
@@ -242,7 +242,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
                 upstreamMarkdown: selectedMarkdown,
                 url: row.nodeUrl,
                 view,
-                canvasPreset: D3_URL_IMPORT_CANVAS_PRESET,
+                canvasPreset: DEFAULT_URL_IMPORT_CANVAS_PRESET,
                 title: selectedTitle,
                 fidelityLevel: 4,
                 includeImages: true,

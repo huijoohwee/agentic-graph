@@ -119,7 +119,6 @@ export async function testAgentGraphLaunchImportUrlInputRunsVisibleCanonicalGrap
       return React.createElement(React.Fragment, null,
         open
           ? React.createElement(LaunchDropdownImportUrlItem, {
-              canvas2dRenderer: 'storyboard',
               menuIconClass: 'icon',
               menuItemClass: 'item',
               onClose: () => {
@@ -274,7 +273,6 @@ export async function testAgentGraphLaunchImportUrlSurfacesDedupedValidationPres
       },
     } as never)
     const LaunchShell = () => React.createElement(LaunchDropdownImportUrlItem, {
-      canvas2dRenderer: 'storyboard',
       menuIconClass: 'icon',
       menuItemClass: 'item',
       onClose: () => undefined,
@@ -400,7 +398,6 @@ export async function testAgentGraphLaunchImportUrlOffersRateLimitedRepositoryRe
       return React.createElement(React.Fragment, null,
         open
           ? React.createElement(LaunchDropdownImportUrlItem, {
-              canvas2dRenderer: 'storyboard',
               menuIconClass: 'icon',
               menuItemClass: 'item',
               onClose: () => {

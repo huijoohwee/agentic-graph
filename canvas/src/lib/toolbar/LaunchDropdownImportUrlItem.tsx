@@ -11,7 +11,6 @@ import { ImportUrlPrompt, type ImportUrlPromptPreset } from '@/features/toolbar/
 import { VideoDownloadOptionsPanel } from '@/features/toolbar/VideoDownloadOptionsPanel'
 import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
 import { isWorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
-import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { VideoDownloadOptions } from '@/lib/video-download/types'
 import { isVideoDownloadEligible } from '@/lib/video-download/isVideoDownloadEligible'
 import { resolveVideoDownloadEndpoint } from '@/lib/video-download/videoDownloadResolver'
@@ -64,7 +63,6 @@ const AGENT_GRAPH_IMPORT_PROGRESS: Record<LaunchAgentGraphImportProgressStage, s
 type PushUiToast = (toast: UiToastInput) => void
 
 export function LaunchDropdownImportUrlItem(props: {
-  canvas2dRenderer: Canvas2dRendererId
   menuIconClass: string
   menuItemClass: string
   onClose: () => void
@@ -161,7 +159,7 @@ export function LaunchDropdownImportUrlItem(props: {
       return
     }
     setUrlInputOpen(false)
-    setImportUrlRenderer(props.canvas2dRenderer === 'design' ? DESIGN_IMPORT_URL_RENDERER_SELECTION : 'default')
+    setImportUrlRenderer('default')
     setDownloadOptionsOpen(false)
     setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
     setIsDownloading(false)
@@ -169,7 +167,7 @@ export function LaunchDropdownImportUrlItem(props: {
     setRateLimitRecoveryUrl(null)
     setIsImportingUrl(false)
     endpointWarningShownRef.current = false
-  }, [props.canvas2dRenderer, props.open])
+  }, [props.open])
 
   React.useEffect(() => {
     if (!downloadOptionsOpen || endpointConfigured || hasBridgeVideoDownload || endpointWarningShownRef.current) return

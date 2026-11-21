@@ -1,3 +1,4 @@
+import { DEFAULT_URL_IMPORT_RENDERER } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { wasFloatingPanelPresetDismissedForDocument } from './floatingPanelPresetDismissal'
 import type { DocumentSemanticMode } from '@/hooks/store/types'
@@ -172,7 +173,7 @@ export function resolveCanvasFrontmatterPreset(args: {
   return websiteImport ? {
     ...preset,
     canvasRenderMode: preset?.canvasRenderMode ?? '2d',
-    canvas2dRenderer: preset?.canvas2dRenderer ?? 'd3',
+    canvas2dRenderer: preset?.canvas2dRenderer ?? DEFAULT_URL_IMPORT_RENDERER,
   } : preset
 }
 

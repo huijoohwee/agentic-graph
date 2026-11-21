@@ -1,3 +1,4 @@
+import { DEFAULT_URL_IMPORT_RENDERER } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -56,10 +57,10 @@ export function ImportUrlRendererSelect(props: {
       aria-label="Import URL renderer"
       title="Optional 2D Canvas layout"
     >
-      <option value="default">Automatic (source defaults)</option>
+      <option value="default">{getWorkspaceUrlImportCanvasRendererLabel(DEFAULT_URL_IMPORT_RENDERER)} (default)</option>
       {WORKSPACE_URL_IMPORT_CANVAS_RENDERERS.map(renderer => (
         <optgroup key={renderer} label={getWorkspaceUrlImportCanvasRendererLabel(renderer)}>
-          {WORKSPACE_URL_IMPORT_DOCUMENT_MODES.map(mode => (
+          {WORKSPACE_URL_IMPORT_DOCUMENT_MODES.filter(mode => renderer !== DEFAULT_URL_IMPORT_RENDERER || mode !== 'document').map(mode => (
             <option key={`${renderer}:${mode}`} value={`${renderer}:${mode}`}>
               {`${getWorkspaceUrlImportCanvasRendererLabel(renderer)} / ${getWorkspaceUrlImportDocumentModeLabel(mode)}`}
             </option>

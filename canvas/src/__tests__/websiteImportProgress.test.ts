@@ -65,7 +65,7 @@ test('query variants keep separate files without replacing a page already opened
   await writer.writeNodes([home])
   const firstPath = published[0]!
   const firstText = await fs.readFileText(firstPath)
-  assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(firstText))?.canvas2dRenderer, 'd3')
+  assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(firstText))?.canvas2dRenderer, 'dashboard')
   assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(firstText))?.canvasRenderMode, '2d')
   await writer.writeNodes([home, node('a', 'https://example.invalid/library?category=a'), node('b', 'https://example.invalid/library?category=b')])
   assert.equal(new Set(published).size, 3, 'query variants must not overwrite a shared pathname')
@@ -74,7 +74,7 @@ test('query variants keep separate files without replacing a page already opened
   assert.match(String(await fs.readFileText(published[2]!)), /category=b/)
 })
 
-test('converted crawl pages carry the shared D3 preset when opened individually', async () => {
+test('converted crawl pages carry the shared Dashboard preset when opened individually', async () => {
   const fs = createMemoryWorkspaceFs()
   const originalFetch = globalThis.fetch
   let path = ''
@@ -90,7 +90,7 @@ test('converted crawl pages carry the shared D3 preset when opened individually'
     const text = String(await fs.readFileText(path))
     const preset = parseCanvasWorkspaceFrontmatterPreset(text)
     assert.equal(preset?.canvasSurfaceMode, '2d')
-    assert.equal(preset?.canvas2dRenderer, 'd3')
+    assert.equal(preset?.canvas2dRenderer, 'dashboard')
     assert.match(text, /Complete article/)
     assert.match(text, /Body text\./)
   } finally { globalThis.fetch = originalFetch }
@@ -134,7 +134,7 @@ test('missing server Markdown never reparses a large HTML capture on the client'
     const text = await fs.readFileText('/websites/example.invalid/oversized.md')
     assert.match(String(text), /Markdown conversion is unavailable/)
     assert.match(String(text), /kgWebsiteNodeId: "oversized"/)
-    assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(text))?.canvas2dRenderer, 'd3')
+    assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(text))?.canvas2dRenderer, 'dashboard')
     assert.ok(String(text).length < 1024, 'unconverted captures remain referenced, not copied into the workspace')
   } finally {
     globalThis.fetch = originalFetch

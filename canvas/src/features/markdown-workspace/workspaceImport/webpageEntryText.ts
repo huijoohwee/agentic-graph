@@ -1,3 +1,4 @@
+import { buildCanvasPresetLines, DEFAULT_URL_IMPORT_CANVAS_PRESET } from './canvasPresets'
 import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
 import type { CanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 import { upsertWebpageFrontmatterMeta } from '@/lib/markdown/frontmatter'
@@ -39,24 +40,6 @@ function pushWebsiteImportMetaLines(fmLines: string[], meta: WebsiteImportMeta |
     const text = String(value || '').trim()
     if (text) fmLines.push(`${key}: ${yamlQuote(text)}`)
   }
-}
-
-function buildCanvasPresetLines(preset: CanvasWorkspaceFrontmatterPreset | null | undefined): string[] {
-  if (!preset) return []
-  const lines: string[] = []
-  if (preset.canvasSurfaceMode) lines.push(`kgCanvasSurfaceMode: ${yamlQuote(preset.canvasSurfaceMode)}`)
-  if (preset.canvasRenderMode) lines.push(`kgCanvasRenderMode: ${yamlQuote(preset.canvasRenderMode)}`)
-  if (preset.canvas3dMode) lines.push(`kgCanvas3dMode: ${yamlQuote(preset.canvas3dMode)}`)
-  if (preset.canvas2dRenderer) lines.push(`kgCanvas2dRenderer: ${yamlQuote(preset.canvas2dRenderer)}`)
-  if (preset.documentSemanticMode) lines.push(`kgDocumentSemanticMode: ${yamlQuote(preset.documentSemanticMode)}`)
-  if (preset.frontmatterModeEnabled != null) lines.push(`kgFrontmatterModeEnabled: ${yamlQuote(preset.frontmatterModeEnabled ? 'true' : 'false')}`)
-  if (preset.multiDimTableModeEnabled != null) {
-    lines.push(`kgMultiDimTableModeEnabled: ${yamlQuote(preset.multiDimTableModeEnabled ? 'true' : 'false')}`)
-  }
-  if (preset.documentStructureBaselineLock != null) {
-    lines.push(`kgDocumentStructureBaselineLock: ${yamlQuote(preset.documentStructureBaselineLock ? 'true' : 'false')}`)
-  }
-  return lines
 }
 
 const decodeLooseHtmlEntities = (text: string): string => {
@@ -355,7 +338,7 @@ export function buildWebpageWorkspaceEntryStubText(args: {
   const view = args.view === 'html' ? 'html' : args.view === 'json' ? 'json' : 'markdown'
   const body = String(args.body || '').trimEnd()
   const siteRootRel = String(args.siteRootRel || '').trim()
-  const canvasPresetLines = buildCanvasPresetLines(args.canvasPreset)
+  const canvasPresetLines = buildCanvasPresetLines(args.canvasPreset ?? DEFAULT_URL_IMPORT_CANVAS_PRESET)
   const hydrateLine = args.hydrate === false ? `kgWebpageHydrate: ${yamlQuote('false')}` : null
   const scriptPolicy = args.scriptPolicy === 'allow' ? 'allow' : args.scriptPolicy === 'strip' ? 'strip' : ''
   const fidelityLevel =
@@ -418,7 +401,7 @@ export function buildWebpageWorkspaceEntryTextFromUpstreamMarkdown(args: {
 
   const urlLine = `kgWebpageUrl: ${yamlQuote(url)}`
   const viewLine = `kgWebpageView: ${yamlQuote(view)}`
-  const fmLines = ['---', ...buildCanvasPresetLines(args.canvasPreset), urlLine, viewLine]
+  const fmLines = ['---', ...buildCanvasPresetLines(args.canvasPreset ?? DEFAULT_URL_IMPORT_CANVAS_PRESET), urlLine, viewLine]
   if (scriptPolicy) fmLines.push(`kgWebpageScriptPolicy: ${yamlQuote(scriptPolicy)}`)
   if (fidelityLevel) fmLines.push(`kgWebpageFidelityLevel: ${yamlQuote(String(fidelityLevel))}`)
   if (includeImages != null) fmLines.push(`kgWebpageIncludeImages: ${yamlQuote(includeImages ? 'true' : 'false')}`)

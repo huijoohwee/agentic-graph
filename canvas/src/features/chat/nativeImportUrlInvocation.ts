@@ -1,3 +1,4 @@
+import { URL_IMPORT_RENDERERS } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import {
   getMarkdownWorkspaceActionBridge,
   type WorkspaceBridgeImportResult,
@@ -160,7 +161,7 @@ const buildInvocation = (args: {
     throw new Error('Import URL requires an HTTP(S) URL without embedded credentials.')
   }
   if (args.canvas2dRenderer != null && !isWorkspaceUrlImportCanvasRendererId(args.canvas2dRenderer)) {
-    throw new Error('Import URL canvas2dRenderer must be d3, design, or storyboard.')
+    throw new Error(`Import URL canvas2dRenderer must be one of ${URL_IMPORT_RENDERERS.join(', ')}.`)
   }
   const canvas2dRenderer = isWorkspaceUrlImportCanvasRendererId(args.canvas2dRenderer)
     ? args.canvas2dRenderer
@@ -225,7 +226,7 @@ const readStructuredImportUrlInput = (input: unknown): Record<string, unknown> =
     throw new Error('Import URL requires a non-empty url string of at most 4096 characters.')
   }
   if (hasRenderer && typeof record.canvas2dRenderer !== 'string') {
-    throw new Error('Import URL canvas2dRenderer must be d3, design, or storyboard.')
+    throw new Error(`Import URL canvas2dRenderer must be one of ${URL_IMPORT_RENDERERS.join(', ')}.`)
   }
   if (hasDocumentMode && typeof record.documentSemanticMode !== 'string') {
     throw new Error('Import URL documentSemanticMode must be document or keyword.')
