@@ -58,8 +58,10 @@ export function plan(next, graphRepo, api = request, changed = changedSince) {
   const base = mainTip(api)
   const source = content(api, base)
   const { pin, paths } = checkoutContract(source, graphRepo)
-  if (!changed(pin, next, paths)) return null
+  const differsFromBase = changed(pin, next, paths)
   const tip = branchTip(api)
+  // An upstream revert can match Base main while invalidating its open proposal.
+  if (!differsFromBase && (!tip || !pulls(api).some(pr => pr.state === 'open'))) return null
   if (tip) {
     const comparison = api(`compare/${base}...${sha(tip)}`)
     const ancestor = content(api, comparison.merge_base_commit.sha)
@@ -70,7 +72,7 @@ export function plan(next, graphRepo, api = request, changed = changedSince) {
       throw new Error('Refresh branch contains edits beyond the managed pin')
     if (!changed(prior, next, paths)) {
       // Recover a published branch if PR creation was interrupted. Honor a closed review.
-      if (prior === pin || pulls(api).some(pr => pr.state === 'open' || pr.head.sha === tip)) return null
+      if (!differsFromBase || prior === pin || pulls(api).some(pr => pr.state === 'open' || pr.head.sha === tip)) return null
       return { base, tip, pin, next: prior, write: false }
     }
   }

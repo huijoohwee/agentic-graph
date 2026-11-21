@@ -166,6 +166,10 @@ test('a pin refresh creates one Base PR, resumes interrupted publication and upd
   assert.equal(publish(select(latest), api).number, 1)
   assert.equal(snapshots.get(tip), replacePin(yaml, old, latest))
   assert.equal(select(first), null)
+  const revert = 'e'.repeat(40)
+  const reverted = plan(revert, repo, api, pinned => pinned === latest)
+  assert.equal(publish(reverted, api).number, 1)
+  assert.equal(snapshots.get(tip), replacePin(yaml, old, revert))
   edits = [file, 'human-edit.md']
   assert.throws(() => select(latest), /beyond the managed pin/)
 })
