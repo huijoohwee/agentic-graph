@@ -101,3 +101,33 @@ test('HTTP reveal awaits host completion and rejects foreign origins, invalid bo
     await fs.rm(root, { recursive: true, force: true })
   }
 })
+
+test('saved import directories use the same store as the writer, independently of contents or browser root', async () => {
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'saved-reveal-')))
+  const repo = path.join(root, 'repo'), policy = createKgFsPathPolicy(repo)
+  const previousStore = process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT
+  const store = path.join(root, 'document-store')
+  const workspacePath = '/websites/imported/collection'
+  const folder = path.join(store, workspacePath), frames = path.join(folder, 'frames')
+  try {
+    process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT = store
+    await fs.mkdir(frames, { recursive: true })
+    const binary = path.join(frames, 'image.png')
+    await fs.writeFile(binary, Buffer.alloc(600_000, 255))
+    const request = { kind: 'folder', workspacePath, outputRoot: path.join(root, 'browser-default') }
+    const before = await fs.stat(binary)
+    assert.equal(await resolveWorkspaceRevealTarget(repo, policy, request), folder)
+    assert.equal(await resolveWorkspaceRevealTarget(repo, policy, { ...request, workspacePath: workspacePath + '/frames' }), frames)
+    assert.deepEqual(await fs.readdir(store), ['websites'])
+    assert.equal((await fs.stat(binary)).mtimeMs, before.mtimeMs)
+    await assert.rejects(resolveWorkspaceRevealTarget(repo, policy, { ...request, workspacePath: workspacePath + '/frames/image.png' }), /does not match/)
+    await assert.rejects(resolveWorkspaceRevealTarget(repo, policy, { ...request, workspacePath: workspacePath + '/absent' }), { status: 404 })
+    await assert.rejects(resolveWorkspaceRevealTarget(repo, policy, { ...request, workspacePath: workspacePath + '/../other' }), /Invalid workspace file path/)
+    await fs.symlink(folder, path.join(store, 'websites/link'))
+    await assert.rejects(resolveWorkspaceRevealTarget(repo, policy, { ...request, workspacePath: '/websites/link' }), { status: 403 })
+  } finally {
+    if (previousStore === undefined) delete process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT
+    else process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT = previousStore
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
