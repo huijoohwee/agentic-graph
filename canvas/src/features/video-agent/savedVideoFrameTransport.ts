@@ -53,6 +53,33 @@ export function resolveSavedFrameDocument(entries: WorkspaceEntry[], request: Sa
   return entry && { path: entry.path, key: workspaceDocumentKey(entry.path) }
 }
 
+// Explorer already applies a selected file to the graph. Wait for that owner to commit
+// the document before seeking, so the previous file cannot reset its transport.
+export async function activateSavedFrameDocument(path: string, key: string, current: () => boolean) {
+  const [{ useGraphStore }, { useMarkdownExplorerStore }] = await Promise.all([
+    import('@/hooks/useGraphStore'), import('@/features/markdown-explorer/store'),
+  ])
+  if (!current()) return
+  useMarkdownExplorerStore.getState().setActivePath(path)
+  await new Promise<void>((resolve, reject) => {
+    const finish = (message?: string) => {
+      stopGraph()
+      stopExplorer()
+      clearTimeout(deadline)
+      if (message) reject(new Error(message))
+      else resolve()
+    }
+    const check = () => {
+      if (!current() || useMarkdownExplorerStore.getState().activePath !== path) finish('The selected source changed before seeking.')
+      else if (useGraphStore.getState().markdownDocumentName === key) finish()
+    }
+    const stopGraph = useGraphStore.subscribe(check)
+    const stopExplorer = useMarkdownExplorerStore.subscribe(check)
+    const deadline = setTimeout(() => finish('The source timeline did not finish opening.'), 15000)
+    check()
+  })
+}
+
 export async function seekSavedVideoFrame(request: SavedFrameRequest, frameSampleUrl: string, current: () => boolean) {
   const { useGraphStore } = await import('@/hooks/useGraphStore')
   if (!current()) return
@@ -73,15 +100,17 @@ export async function seekSavedVideoFrame(request: SavedFrameRequest, frameSampl
     target = savedFrameTimelineTarget(text, request, 0)
     if (!target) throw new Error('This timestamp is outside the source timeline.')
     documentKey = entry.key
-    const activated = await initial.setActiveMarkdownDocument({ name: documentKey, text, sourceUrl: null, applyToGraph: true,
-      applyViewPreset: false, expectedCurrentDocumentName: initial.markdownDocumentName, expectedCurrentDocumentText: initial.markdownDocumentText })
-    if (!activated) throw new Error('The active document changed before seeking.')
-    if (current() && activePath && useMarkdownExplorerStore.getState().activePath === activePath) {
-      useMarkdownExplorerStore.getState().setActivePath(entry.path)
+    if (activePath) {
+      await activateSavedFrameDocument(entry.path, documentKey, current)
+    } else {
+      const activated = await initial.setActiveMarkdownDocument({ name: documentKey, text, sourceUrl: null, applyToGraph: true,
+        applyViewPreset: false, expectedCurrentDocumentName: initial.markdownDocumentName, expectedCurrentDocumentText: initial.markdownDocumentText })
+      if (!activated) throw new Error('The active document changed before seeking.')
     }
   }
   const state = useGraphStore.getState()
-  if (!current() || state.markdownDocumentName !== documentKey) return
+  if (!current()) return
+  if (state.markdownDocumentName !== documentKey) throw new Error('The active document changed before seeking.')
   state.setTimelineTransportState({ documentKey, playing: false, position: target.position })
   if (target.overlayId) requestRichMediaTimelineTargetFrame({ documentKey, overlayId: target.overlayId, sourceUrl: request.sourceUrl,
     position: target.position, sourceTimestampMs: Math.round(request.seconds * 1000), frameSampleUrl })

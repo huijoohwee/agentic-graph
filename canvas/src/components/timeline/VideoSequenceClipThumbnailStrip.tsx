@@ -1,6 +1,6 @@
 import React from 'react'
 import { useSavedClipThumbnails } from './useSavedClipThumbnails'
-import { selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
+import { formatSavedFrameTime, selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import type { VideoSequenceGeneratedFrameThumbnailOrigin } from './videoSequenceGeneratedFrameThumbnails'
 import { formatVideoSequenceTimelineSecondsOffset } from './videoSequenceTimeline'
@@ -78,6 +78,7 @@ export function VideoSequenceClipThumbnailStrip({
   const frameDragIntentRef = React.useRef<ThumbnailMoveIntent | null>(null)
   const suppressClickRef = React.useRef(false)
   const { thumbnails, source } = useSavedClipThumbnails(original, thumbnailWindow, span.raw)
+  const formatTime = source ? formatSavedFrameTime : formatVideoSequenceTimelineSecondsOffset
   const selectThumbnail = (thumbnail: TimelineMediaReaderThumbnail) => {
     onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
     if (source) void selectSavedVideoFrame({ sourceUrl: source, seconds: thumbnail.timestampSeconds, savedUrl: thumbnail.rasterDataUrl })
@@ -157,14 +158,14 @@ export function VideoSequenceClipThumbnailStrip({
           <button
             type="button"
             className="timeline-video-sequence-clip-thumbnail-seek"
-            aria-label={`${span.label} thumbnail ${formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)} ${thumbnail.format}/${thumbnail.rasterFormat}`}
+            aria-label={`${span.label} thumbnail ${formatTime(thumbnail.timestampSeconds)} ${thumbnail.format}/${thumbnail.rasterFormat}`}
           >
             <img alt="" decoding="async" draggable={false} height={thumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(thumbnail)} width={thumbnail.width} />
           </button>
           <button
             type="button"
             className="timeline-video-sequence-clip-thumbnail-drag-affordance"
-            aria-label={`Drag ${span.label} frame ${formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)} or activate to seek`}
+            aria-label={`Drag ${span.label} frame ${formatTime(thumbnail.timestampSeconds)} or activate to seek`}
             title="Drag frame image or activate to seek"
             draggable={true}
             data-kg-media-draggable="1"
@@ -217,9 +218,9 @@ export function VideoSequenceClipThumbnailStrip({
           <figcaption
             className="timeline-video-sequence-clip-thumbnail-caption"
             data-kg-video-sequence-clip-thumbnail-caption-format={`${thumbnail.format}/${thumbnail.rasterFormat}`}
-            data-kg-video-sequence-clip-thumbnail-caption-time={formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)}
+            data-kg-video-sequence-clip-thumbnail-caption-time={formatTime(thumbnail.timestampSeconds)}
           >
-            <time dateTime={`PT${Math.max(0, thumbnail.timestampSeconds)}S`}>{formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)}</time>
+            <time dateTime={`PT${Math.max(0, thumbnail.timestampSeconds)}S`}>{formatTime(thumbnail.timestampSeconds)}</time>
           </figcaption>
         </figure>
       ))}
@@ -229,11 +230,11 @@ export function VideoSequenceClipThumbnailStrip({
           data-kg-video-sequence-clip-thumbnail-preview="1"
           style={activePreviewStyle}
         >
-          <img alt={`${span.label} frame ${formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)}`} decoding="async" draggable={false} height={activeThumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(activeThumbnail)} width={activeThumbnail.width} />
+          <img alt={`${span.label} frame ${formatTime(activeThumbnail.timestampSeconds)}`} decoding="async" draggable={false} height={activeThumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(activeThumbnail)} width={activeThumbnail.width} />
           <figcaption
             className="timeline-video-sequence-clip-thumbnail-preview-caption"
-            data-kg-video-sequence-clip-thumbnail-preview-caption={`${formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)} ${activeThumbnail.format}/${activeThumbnail.rasterFormat}`}
-          >{formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)}</figcaption>
+            data-kg-video-sequence-clip-thumbnail-preview-caption={`${formatTime(activeThumbnail.timestampSeconds)} ${activeThumbnail.format}/${activeThumbnail.rasterFormat}`}
+          >{formatTime(activeThumbnail.timestampSeconds)}</figcaption>
         </figure>
       ) : null}
     </section>
