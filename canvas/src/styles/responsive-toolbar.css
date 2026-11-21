@@ -1781,10 +1781,6 @@
   }
 
   .kg-data-view-table-frame {
-    min-width: 0;
-    max-width: 100%;
-    max-inline-size: 100%;
-    overflow: auto;
     max-height: min(var(--kg-data-view-table-frame-max-height, 70vh), calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem));
     max-block-size: min(var(--kg-data-view-table-frame-max-height, 70vh), calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem));
   }
