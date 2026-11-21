@@ -4,12 +4,18 @@ import { forgetSavedVideoFrames, indexSavedVideoFrames } from '@/lib/rich-media/
 import { timestampLinkSeconds } from '@/lib/rich-media/videoTimestampLink'
 import { closeSavedFramePreview, formatSavedFrameTime, readSavedFrameSelection, selectSavedVideoFrame } from '@/lib/rich-media/savedVideoFrameSelection'
 import { savedClipThumbnailTimes } from '@/components/timeline/useSavedClipThumbnails'
-import { savedFrameTimelineTarget } from '@/features/video-agent/savedVideoFrameTransport'
+import { resolveSavedFrameDocument, savedFrameTimelineTarget } from '@/features/video-agent/savedVideoFrameTransport'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, savedFrameListUrl } from '@/lib/rich-media/videoFrameAssets'
 
 export async function checkSavedVideoFrameSelection(sourceUrl: string, markdown: string) {
+  const path = '/websites/media/source'
+  const file = { kind: 'file' as const, parentPath: path, name: 'clip.video-agent.md', path: path + '/clip.video-agent.md', updatedAtMs: 0 }
+  for (const documentPath of [path + '/frames', path.slice(1) + '/transcript.md']) {
+    assert.deepEqual(resolveSavedFrameDocument([file], { sourceUrl, seconds: 0, documentPath }),
+      { path: file.path, key: file.path.slice(1) })
+  }
   const seconds = 1.125
   const name = (format: string) => buildRemoteVideoFrameFileName({ sourceUrl, timeSeconds: seconds, format })
   const catalog = indexSavedVideoFrames('/frames', [name('png'), name('jpg')])

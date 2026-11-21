@@ -5,6 +5,8 @@ import { buildVideoSequenceExportPlan, resolveTimelinePlanPositionFromSourceTime
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { readVideoSequenceSourceAnnotations, resolveVideoSequenceSourceAnnotations, resolveVideoSequenceAnnotationTimelinePosition } from '@/components/timeline/videoSequenceSourceAnnotations'
 import { requestRichMediaTimelineTargetFrame } from '@/lib/render/richMediaTimelineSync'
+import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
+import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { websiteSourceBundlePath } from '@/lib/websites/websitePathUtils'
 import type { SavedFrameRequest } from '@/lib/rich-media/savedVideoFrameSelection'
 
@@ -44,6 +46,13 @@ export function savedFrameTimelineTarget(text: string, request: SavedFrameReques
   return { position, overlayId: undefined }
 }
 
+export function resolveSavedFrameDocument(entries: WorkspaceEntry[], request: SavedFrameRequest) {
+  const path = normalizeWorkspacePath(request.documentPath)
+  const folder = request.documentPath ? path.slice(0, path.lastIndexOf('/')) || '/' : websiteSourceBundlePath(request.sourceUrl)
+  const entry = entries.find(file => file.parentPath === folder && file.kind === 'file' && /(?:\.video-agent\.md|video-sequence\.timeline\.md)$/i.test(file.name))
+  return entry && { path: entry.path, key: workspaceDocumentKey(entry.path) }
+}
+
 export async function seekSavedVideoFrame(request: SavedFrameRequest, frameSampleUrl: string, current: () => boolean) {
   const { useGraphStore } = await import('@/hooks/useGraphStore')
   if (!current()) return
@@ -58,20 +67,17 @@ export async function seekSavedVideoFrame(request: SavedFrameRequest, frameSampl
     ])
     const activePath = useMarkdownExplorerStore.getState().activePath
     const fs = await getWorkspaceFs()
-    const path = request.documentPath
-    const folder = path ? path.slice(0, path.lastIndexOf('/')) : websiteSourceBundlePath(request.sourceUrl)
-    const entries = await fs.listEntries()
-    const entry = entries.find(file => file.parentPath === folder && /(?:\.video-agent\.md|video-sequence\.timeline\.md)$/i.test(file.name))
+    const entry = resolveSavedFrameDocument(await fs.listEntries(), request)
     const text = entry && await fs.readFileText(entry.path)
     if (!entry || !text || !current() || useMarkdownExplorerStore.getState().activePath !== activePath) throw new Error('The source timeline is unavailable.')
     target = savedFrameTimelineTarget(text, request, 0)
     if (!target) throw new Error('This timestamp is outside the source timeline.')
-    documentKey = entry.path
+    documentKey = entry.key
     const activated = await initial.setActiveMarkdownDocument({ name: documentKey, text, sourceUrl: null, applyToGraph: true,
       applyViewPreset: false, expectedCurrentDocumentName: initial.markdownDocumentName, expectedCurrentDocumentText: initial.markdownDocumentText })
     if (!activated) throw new Error('The active document changed before seeking.')
     if (current() && activePath && useMarkdownExplorerStore.getState().activePath === activePath) {
-      useMarkdownExplorerStore.getState().setActivePath(documentKey)
+      useMarkdownExplorerStore.getState().setActivePath(entry.path)
     }
   }
   const state = useGraphStore.getState()
