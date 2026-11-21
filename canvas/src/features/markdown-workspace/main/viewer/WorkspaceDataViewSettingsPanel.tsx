@@ -303,14 +303,12 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                       }}
                     />
                   ))}
-                  <LayoutChoice
+                  {props.onSelectGeospatialView && <LayoutChoice
                     active={props.viewConfig.geospatialViewEnabled === true}
                     label={MARKDOWN_DATA_VIEW_COPY.geospatialViewLabel}
                     icon={<Globe2 className="w-6 h-6" aria-hidden="true" />}
-                    onClick={() => {
-                      props.onSelectGeospatialView?.()
-                    }}
-                  />
+                    onClick={props.onSelectGeospatialView}
+                  />}
                 </section>
               </section>
 
