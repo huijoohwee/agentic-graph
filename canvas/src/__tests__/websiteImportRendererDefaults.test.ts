@@ -5,7 +5,9 @@ import { createWebsiteImportWorkspaceWriter } from '@/features/markdown-workspac
 import { runWorkspaceWebsiteImport } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
-import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
+import type { GraphData } from '@/lib/graph/types'
+import { resolveCanvasFrontmatterPreset, applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 test('each crawl artifact reopens in Dashboard even after a Storyboard document', async () => {
@@ -53,4 +55,19 @@ test('headless crawl starts in the shared Dashboard document preset before reque
       status: { setStatusProgress() {} },
     }), /test-server-stop/)
   } finally { globalThis.fetch = fetchBefore; useGraphStore.setState(before) }
+})
+
+test('URL provenance supplies Dashboard for raw sources while authored surface choices survive', () => {
+  const path = '/capture/records.json'
+  const url = new URL('records.json', 'https://example.invalid/').href
+  const graphData: GraphData = { type: 'graph', nodes: [], edges: [], metadata: { source: 'markdown:' + path } }
+  setWorkspaceEntrySource(path, { kind: 'url', url })
+  try {
+    const rawText = '{"records":[]}'
+    assert.equal(resolveCanvasFrontmatterPreset({ graphData, rawText })?.canvas2dRenderer, 'dashboard')
+    assert.deepEqual(resolveCanvasFrontmatterPreset({ graphData, rawText, preset: { canvasRenderMode: '3d' } }), { canvasRenderMode: '3d' })
+    setWorkspaceEntrySource(path, { kind: 'local', originalName: 'records.json' })
+    assert.equal(resolveCanvasFrontmatterPreset({ graphData, rawText }), null)
+    assert.equal(resolveCanvasFrontmatterPreset({ rawText: `---\nkgWebpageUrl: "${url}"\n---\nSaved page` })?.canvas2dRenderer, 'dashboard')
+  } finally { setWorkspaceEntrySource(path, null) }
 })

@@ -1,3 +1,7 @@
+import { withUrlImportRendererDefault } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
+import { resolveWorkspaceImportSourceUrl } from '@/features/markdown-workspace/workspaceImport/sourceUrlIdentity'
+import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
+import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { DEFAULT_URL_IMPORT_RENDERER } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { wasFloatingPanelPresetDismissedForDocument } from './floatingPanelPresetDismissal'
@@ -170,11 +174,16 @@ export function resolveCanvasFrontmatterPreset(args: {
     || (frontmatterMeta?.kgWebsiteImportId && frontmatterMeta?.kgWebsiteNodeId)
   // Older crawls predate persisted renderer defaults. Resolve their missing
   // fields here as well, so opening a file cannot inherit another document's view.
-  return websiteImport ? {
+  if (websiteImport) return {
     ...preset,
     canvasRenderMode: preset?.canvasRenderMode ?? '2d',
     canvas2dRenderer: preset?.canvas2dRenderer ?? DEFAULT_URL_IMPORT_RENDERER,
-  } : preset
+  }
+  if (preset?.canvas2dRenderer) return preset
+  const name = typeof metadata?.markdownDocumentName === 'string' ? metadata.markdownDocumentName
+    : typeof metadata?.source === 'string' && metadata.source.startsWith('markdown:') ? metadata.source.slice('markdown:'.length) : ''
+  const source = name ? loadWorkspaceSourceIndex()[normalizeWorkspacePath(name)] : undefined
+  return withUrlImportRendererDefault(preset, resolveWorkspaceImportSourceUrl(source, rawText))
 }
 
 export function applyCanvasFrontmatterPreset(args: {
