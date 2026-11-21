@@ -176,11 +176,11 @@ export function testStoryboardCardOverlayRestoresFlexInteractions() {
   for (const snippet of ['<PinToggleIconButton', "title={pinned ? UI_LABELS.unpinPanel : UI_LABELS.pinPanel}", 'activeIconClassName={UI_THEME_TOKENS.icon.active}']) {
     if (!storyboardWidgetChrome.includes(snippet)) throw new Error(`expected Storyboard Widget chrome to reuse shared pin toggle button: ${snippet}`)
   }
-  for (const snippet of ['<PinToggleIconButton', 'title={pinned ? UI_COPY.floatingPanelUnpin : UI_COPY.floatingPanelPin}', 'ariaPressed={!!pinned}']) {
-    if (!headerActions.includes(snippet)) throw new Error(`expected floating panel header actions to reuse shared pin toggle button: ${snippet}`)
+  for (const snippet of ["from 'agentic-design-system/react/panels'", '<PanelControlGroup', 'pin: onPinToggle', 'pinned={pinned === true}']) {
+    if (!headerActions.includes(snippet)) throw new Error(`expected floating panel headers to forward the pin action and state to the shared controls: ${snippet}`)
   }
-  for (const snippet of ['<PinToggleIconButton', 'title={tooltipPinned ? UI_COPY.floatingPanelUnpin : UI_COPY.floatingPanelPin}', 'ariaPressed={tooltipPinned}']) {
-    if (!hoverTooltip.includes(snippet)) throw new Error(`expected hover tooltip to reuse shared pin toggle button: ${snippet}`)
+  for (const snippet of ["from 'agentic-design-system/react/panels'", '<PanelControlButton control="pin"', 'onAction={handleTogglePinned}', 'pressed={tooltipPinned}']) {
+    if (!hoverTooltip.includes(snippet)) throw new Error(`expected the hover tooltip to bind its pin action and pressed state: ${snippet}`)
   }
   for (const snippet of ['Pin className={renderedIconClassName}', 'PinOff className={renderedIconClassName}', 'getPinToggleButtonClassName(pinned)']) {
     if (!pinToggleButton.includes(snippet)) throw new Error(`expected shared pin toggle button to own pin/unpin icon rendering: ${snippet}`)
