@@ -1,14 +1,15 @@
 import { spawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process'
 import fs from 'node:fs/promises'
+import type { RemoteVideoFrameFormat } from 'grph-shared/rich-media/providers'
 import path from 'node:path'
 
 export type VideoFrameWorkerResult =
-  | { ok: true; path: string; timeSeconds: number; format: 'png' | 'jpg'; bytes: number; cached: boolean }
+  | { ok: true; path: string; timeSeconds: number; format: RemoteVideoFrameFormat; bytes: number; cached: boolean }
   | { ok: false; error: string }
 export type VideoFrameWorkerRequest = {
   contextKey: string; sourceUrl: string; pythonBin: string; repoRoot: string
   env: NodeJS.ProcessEnv; outputRoot: string; outputPath: string; privateRoot: string
-  timeSeconds: number; format: 'png' | 'jpg'; signal?: AbortSignal
+  timeSeconds: number; format: RemoteVideoFrameFormat; signal?: AbortSignal
   cookieSnapshot?: Buffer
 }
 type SpawnWorker = (command: string, args: string[], options: SpawnOptionsWithoutStdio & { stdio: 'pipe' }) => ChildProcessWithoutNullStreams

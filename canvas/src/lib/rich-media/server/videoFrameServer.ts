@@ -3,12 +3,15 @@ import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import { setMaxListeners } from 'node:events'
 import { unwrapUserProvidedText } from 'grph-shared/url'
 import {
   buildRemoteVideoFrameFileName,
   buildRemoteVideoFrameSemanticKey,
   normalizeRemoteVideoFrameFormat,
   normalizeRemoteVideoFrameSeconds,
+  remoteVideoFrameMimeType,
+  type RemoteVideoFrameFormat,
   parseYouTubeStartSeconds,
 } from 'grph-shared/rich-media/providers'
 import { resolveDocumentOutputRootFromWorkspace } from '../../websites/server/websiteImportStorage'
@@ -31,7 +34,7 @@ type VideoFrameServerOptions = {
 type VideoFrameRequest = {
   sourceUrl: string
   timeSeconds: number
-  format: 'png' | 'jpg'
+  format: RemoteVideoFrameFormat
   fileName: string
   outputPath: string
   publicUrl: string
@@ -39,7 +42,7 @@ type VideoFrameRequest = {
 }
 
 type VideoFrameResult =
-  | { ok: true; publicUrl: string; outputPath: string; semanticKey: string; cached: boolean; bytes: number; timeSeconds: number; format: 'png' | 'jpg' }
+  | { ok: true; publicUrl: string; outputPath: string; semanticKey: string; cached: boolean; bytes: number; timeSeconds: number; format: RemoteVideoFrameFormat }
   | { ok: false; error: string }
 
 export { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX } from '../videoFrameAssets'
@@ -291,7 +294,7 @@ const writeText = (res: ServerResponse, statusCode: number, body: string): void 
 }
 
 const pipeImage = async (res: ServerResponse, result: Extract<VideoFrameResult, { ok: true }>): Promise<void> => {
-  const contentType = result.format === 'jpg' ? 'image/jpeg' : 'image/png'
+  const contentType = remoteVideoFrameMimeType(result.format)
   res.statusCode = 200
   res.setHeader('Content-Type', contentType)
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
@@ -338,6 +341,7 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
     }
     const requests = frames as VideoFrameRequest[]
     const controller = new AbortController()
+    if (requests.length > 1) setMaxListeners(requests.length, controller.signal)
     const abort = () => { if (!res.writableEnded) controller.abort() }
     req.once('aborted', abort)
     res.once('close', abort)
@@ -454,7 +458,7 @@ export function createRemoteVideoFramePublicAssetHandler(opts: Pick<VideoFrameSe
       return
     }
     res.statusCode = 200
-    res.setHeader('Content-Type', fileName.toLowerCase().endsWith('.jpg') ? 'image/jpeg' : 'image/png')
+    res.setHeader('Content-Type', remoteVideoFrameMimeType(normalizeRemoteVideoFrameFormat(path.extname(fileName).slice(1))))
     res.setHeader('Content-Length', String(bytes))
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     if (req.method === 'HEAD') {

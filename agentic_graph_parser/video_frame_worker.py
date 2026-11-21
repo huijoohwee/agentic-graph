@@ -16,7 +16,7 @@ from . import video_frame_cmd as frames
 
 MAX_PENDING_JOBS = 16
 MAX_JOB_LINE_BYTES = 16_384
-FRAME_FILE_RE = re.compile(r"^frame-[a-f0-9]+-t\d+(?:_\d+)?\.(?:png|jpg)$", re.IGNORECASE)
+FRAME_FILE_RE = re.compile(r"^frame-[a-f0-9]+-t\d+(?:_\d+)?\.(?:%s)$" % "|".join(frames.FRAME_FORMATS), re.IGNORECASE)
 
 
 def _within_root(root: str, value: str) -> bool:
@@ -104,8 +104,8 @@ def _read_job(value: Any, output_root: str) -> Dict[str, Any]:
     if not math.isfinite(timestamp) or not 0 <= timestamp <= 43_200:
         raise ValueError("Frame timestamp is outside the supported range")
     fmt = value.get("format")
-    if fmt not in ("png", "jpg"):
-        raise ValueError("Frame format must be png or jpg")
+    if fmt not in frames.FRAME_FORMATS:
+        raise ValueError("Frame format must be one of " + ", ".join(frames.FRAME_FORMATS))
     output = value.get("outputPath")
     if not isinstance(output, str) or not os.path.isabs(output) or len(output.encode("utf-8")) > 4096:
         raise ValueError("Frame output must be an absolute path within the output root")

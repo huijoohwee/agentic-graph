@@ -1,8 +1,9 @@
+import { VIDEO_FRAME_FILE_RE } from 'grph-shared/rich-media/providers'
 import { websiteSourceBundlePath } from '../websites/websitePathUtils'
 
 /** Local frame service mount. Explorer reads only saved assets through this route. */
 export const REMOTE_VIDEO_FRAME_PUBLIC_PREFIX = '/image/video-frame'
-export const VIDEO_FRAME_FILE_RE = /^frame-([a-f0-9]+)-t(\d+(?:_\d+)?)\.(png|jpg)$/i
+export { VIDEO_FRAME_FILE_RE }
 
 export const SAVED_FRAME_PAGE_SIZE = 256
 

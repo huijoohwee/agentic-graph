@@ -3,13 +3,14 @@ import {
   buildRemoteVideoFrameSemanticKey,
   normalizeRemoteVideoFrameFormat,
   normalizeRemoteVideoFrameSeconds,
+  remoteVideoFrameMimeType,
+  VIDEO_FRAME_FILE_RE,
   parseYouTubeStartSeconds,
 } from '../grph-shared/dist/rich-media/providers.js'
 
 const PUBLIC_PREFIX = '/image/agentic-graph/video-frame'
 const MAX_URL_LENGTH = 4096
 const MAX_TIME_SECONDS = 12 * 60 * 60
-const FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+\.(?:png|jpg)$/i
 
 const corsHeaders = {
   'access-control-allow-origin': '*',
@@ -72,7 +73,7 @@ const readFrameRequest = (request, env) => {
   const timeSeconds = Math.min(MAX_TIME_SECONDS, Math.max(0, parsedTime))
   const format = normalizeRemoteVideoFrameFormat(parsed.searchParams.get('format') || 'png')
   const fileName = buildRemoteVideoFrameFileName({ sourceUrl, timeSeconds, format })
-  if (!FRAME_FILE_RE.test(fileName)) return { error: 'Invalid frame cache key' }
+  if (!VIDEO_FRAME_FILE_RE.test(fileName)) return { error: 'Invalid frame cache key' }
   const publicUrl = `${PUBLIC_PREFIX}/${fileName}`
   return {
     sourceUrl,
@@ -98,7 +99,7 @@ const missingFrameMessage = frame =>
 
 const imageResponseHeaders = (asset, frame) => {
   const headers = new Headers()
-  headers.set('content-type', frame.format === 'jpg' ? 'image/jpeg' : 'image/png')
+  headers.set('content-type', remoteVideoFrameMimeType(frame.format))
   headers.set('cache-control', 'public, max-age=31536000, immutable')
   headers.set('access-control-allow-origin', '*')
   const contentLength = asset.headers.get('content-length')

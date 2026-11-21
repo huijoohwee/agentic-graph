@@ -1,5 +1,6 @@
-import { buildRemoteVideoFrameFileName, DEFAULT_REMOTE_VIDEO_FRAME_FORMAT, DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH, getYouTubeId, parseYouTubeStartSeconds } from 'grph-shared/rich-media/providers'
+import { buildRemoteVideoFrameFileName, type RemoteVideoFrameFormat, DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH, getYouTubeId, parseYouTubeStartSeconds } from 'grph-shared/rich-media/providers'
 import { readSavedFrameDirectory, SAVED_FRAMES_CHANGED_EVENT, TRANSCRIPT_FRAME_BATCH_SIZE } from '@/lib/rich-media/videoFrameAssets'
+import { readWorkspaceFrameFormat } from '@/lib/rich-media/videoFrameSettings'
 import type { WorkspaceImportProgress } from './types'
 
 function timestampLinkSeconds(href: string, source: URL, videoId: string | null): number | null {
@@ -51,10 +52,10 @@ export async function saveTranscriptFrames(args: {
   sourceUrl: string
   text: string
   transcriptJsonText?: string | null
-  format?: 'png' | 'jpg'
+  format?: RemoteVideoFrameFormat
   onProgress?: (progress: WorkspaceImportProgress) => void
 }, fetchPage: typeof fetch = fetch) {
-  const { sourceUrl, format = DEFAULT_REMOTE_VIDEO_FRAME_FORMAT } = args
+  const { sourceUrl, format = readWorkspaceFrameFormat() } = args
   const times = transcriptFrameTimes(sourceUrl, args.text, args.transcriptJsonText)
   if (!times.length) return
   const saved = await readSavedFrameDirectory(sourceUrl, undefined, fetchPage)

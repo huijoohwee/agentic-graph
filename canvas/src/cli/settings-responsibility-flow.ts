@@ -252,7 +252,7 @@ function buildSchema(
       functions: setters,
       responsibility: fallback.responsibility || resolveSettingsResponsibility(key, meta.type),
       imports: importsForSetting(meta),
-      notes: fallback.notes || '',
+      notes: meta.valueHelp || fallback.notes || '',
       lineRange: `${owner.modulePath}:L${owner.line}`,
     }
   }

@@ -190,6 +190,7 @@ export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
   markdownWorkspaceUserClearedAllFiles: 'ui.bottomSurface',
   documentVersions: 'ui.workspace',
   workspaceImportDefaultSourceUrl: 'ui.workspace',
+  workspaceImportVideoFrameFormat: 'ui.workspace',
   workspaceImportVideoDownloadOutputDir: 'ui.workspace',
   workspaceImportShareExportRootPath: 'ui.workspace',
   markdownCollapsedHeadingIds: 'ui.bottomSurface',

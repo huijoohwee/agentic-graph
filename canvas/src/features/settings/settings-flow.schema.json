@@ -8837,6 +8837,22 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L163"
   },
+  "workspace.import.videoFrames.format": {
+    "area": "Workspace",
+    "modules": [
+      "canvas/src/features/settings/workspaceFrameFormatSetting.ts"
+    ],
+    "classes": [],
+    "functions": [
+      "setItem"
+    ],
+    "responsibility": "format",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "PNG preserves fine text and edges. Files are larger.\nJPEG encodes quickly into small files. Fine text can blur.\nWebP often saves more space. Encoding takes longer and fine detail can soften.",
+    "lineRange": "canvas/src/features/settings/workspaceFrameFormatSetting.ts:L6"
+  },
   "workspace.split.divider.gap": {
     "area": "Workspace",
     "modules": [

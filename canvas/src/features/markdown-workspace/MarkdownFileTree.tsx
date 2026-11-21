@@ -5,6 +5,8 @@ import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
+import { formatMediaTimestampSeconds } from 'grph-shared/rich-media/providers'
+import { SAVED_FRAME_PAGE_SIZE, VIDEO_FRAME_FILE_RE } from '@/lib/rich-media/videoFrameAssets'
 import { normalizeImportUrlInput } from '@/lib/url'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
@@ -46,6 +48,10 @@ const buildTree = (entries: WorkspaceEntry[]): Node => {
 
   const walk = (entry: WorkspaceEntry): Node => {
     const kids = sortWorkspaceEntriesForExplorer(byParent.get(entry.path) || [])
+    if (entry.savedAsset) {
+      const time = (child: WorkspaceEntry) => Number(VIDEO_FRAME_FILE_RE.exec(child.name)?.[2]?.replace('_', '.') || 0)
+      kids.sort((a, b) => time(a) - time(b))
+    }
     return { entry, children: kids.map(walk) }
   }
   return walk(root)
@@ -100,6 +106,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     isEntrySaved,
   } = props
   const [preview, setPreview] = React.useState<{ name: string; path: string; url: string } | null>(null)
+  const [framePages, setFramePages] = React.useState<Record<string, number>>({})
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; entry: WorkspaceEntry; detailsOpen?: boolean } | null>(null)
@@ -207,6 +214,14 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const selectionFolder = isFolder && Boolean(entryLeading)
     const fileRight = !entry.savedAsset && renderFileRight?.({ entry, isActive })
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
+    const frame = entry.savedAsset && !isFolder ? VIDEO_FRAME_FILE_RE.exec(entry.name) : null
+    const frameTime = frame?.[2]?.replace('_', '.')
+    const frameLabel = frame && frameTime && `${formatMediaTimestampSeconds(Number(frameTime))}${frameTime.includes('.') ? '.' + frameTime.split('.')[1] : ''} · ${frame[3]?.toUpperCase()}`
+    const paged = Boolean(isFolder && entry.savedAsset && node.children.length > SAVED_FRAME_PAGE_SIZE)
+    const lastPage = Math.max(0, Math.ceil(node.children.length / SAVED_FRAME_PAGE_SIZE) - 1)
+    const page = Math.min(framePages[entry.path] || 0, lastPage)
+    const start = page * SAVED_FRAME_PAGE_SIZE
+    const setPage = (next: number) => setFramePages(current => ({ ...current, [entry.path]: next }))
     const selectEntry = () => {
       if (entry.savedAsset) {
         if ('url' in entry.savedAsset) setPreview({ path: entry.path, name: entry.name, url: entry.savedAsset.url })
@@ -239,7 +254,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onClick={selectionFolder ? () => toggleExpanded(entry.path) : contentUnavailable ? openContextMenu : selectEntry}
             onContextMenu={openContextMenu}
           >
-            <span className={`truncate${contentUnavailable ? ' opacity-50' : ''}`}>{entry.name || (isFolder ? 'folder' : 'file')}</span>
+            <span className={`truncate${contentUnavailable ? ' opacity-50' : ''}`}>{frameLabel || entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
               <ShieldCheck role="img" aria-label="agentic-graph workspace-seed authority"
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
@@ -251,7 +266,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           <p role="status" className={panelTypography.panelTextClass}>{entry.savedAsset.status}</p>}
         {isFolder && isExpanded && node.children.length > 0 ? (
           <DirectoryTreeChildren name={entry.name} path={entry.path} depth={depth} onSelect={selectEntry}>
-            <ul className="list-none m-0 p-0">{node.children.map(child => renderNode(child, depth + 1))}</ul>
+            {paged && <nav aria-label="Saved frame pages" className={`flex items-center justify-end gap-2 px-2 ${panelTypography.panelTextClass}`}>
+              <button type="button" aria-label="Previous frames" disabled={!page} onClick={() => setPage(page - 1)}>‹</button>
+              <span aria-live="polite">{start + 1}–{Math.min(start + SAVED_FRAME_PAGE_SIZE, node.children.length)} of {node.children.length}</span>
+              <button type="button" aria-label="Next frames" disabled={page === lastPage} onClick={() => setPage(page + 1)}>›</button>
+            </nav>}
+            <ul className="list-none m-0 p-0">{(paged ? node.children.slice(start, start + SAVED_FRAME_PAGE_SIZE) : node.children)
+              .map(child => renderNode(child, depth + 1))}</ul>
           </DirectoryTreeChildren>
         ) : null}
       </DirectoryTreeBranch>

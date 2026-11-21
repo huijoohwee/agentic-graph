@@ -32,7 +32,7 @@ import {
   writeWorkspaceSourceFilesSyncDebounceMsSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { useGraphStore } from '@/hooks/useGraphStore'
-
+import { FRAME_FORMAT_SETTING } from './workspaceFrameFormatSetting'
 const workspaceSettings: SettingMeta[] = WORKSPACE_LAYOUT_TOKENS.map(token => ({
   key: token.key,
   type: 'number',
@@ -169,4 +169,5 @@ export const uiWorkspaceSettingsRegistry: SettingMeta[] = [
     },
     default: () => readWorkspaceImportVideoDownloadOutputDirSetting(),
   },
+  FRAME_FORMAT_SETTING,
 ]

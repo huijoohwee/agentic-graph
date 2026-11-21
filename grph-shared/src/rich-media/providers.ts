@@ -35,6 +35,13 @@ export function buildRichMediaPreviewSemanticKey(parts: Array<string | number | 
 
 export const DEFAULT_REMOTE_VIDEO_FRAME_ROUTE_PATH = '/__video_frame'
 export const DEFAULT_REMOTE_VIDEO_FRAME_FORMAT = 'png'
+export const REMOTE_VIDEO_FRAME_FORMAT_LABELS = { png: 'PNG', jpg: 'JPEG', webp: 'WebP' } as const
+export type RemoteVideoFrameFormat = keyof typeof REMOTE_VIDEO_FRAME_FORMAT_LABELS
+export const VIDEO_FRAME_FILE_RE = /^frame-([a-f0-9]+)-t(\d+(?:_\d+)?)\.(png|jpg|webp)$/i
+
+export function remoteVideoFrameMimeType(format: RemoteVideoFrameFormat): string {
+  return format === 'jpg' ? 'image/jpeg' : 'image/' + format
+}
 
 export function normalizeRemoteVideoFrameSeconds(value: unknown): number | null {
   const raw = typeof value === 'number' ? value : Number(String(value ?? '').trim())
@@ -47,9 +54,10 @@ function formatRemoteVideoFrameSecondsForFileName(value: number): string {
   return String(normalizeRemoteVideoFrameSeconds(value) ?? 0).replace(/\./g, '_')
 }
 
-export function normalizeRemoteVideoFrameFormat(value: unknown): 'png' | 'jpg' {
+export function normalizeRemoteVideoFrameFormat(value: unknown): RemoteVideoFrameFormat {
   const raw = String(value || '').trim().toLowerCase()
-  return raw === 'jpg' || raw === 'jpeg' ? 'jpg' : 'png'
+  if (raw === 'jpeg' || raw === 'jpg') return 'jpg'
+  return raw === 'webp' ? 'webp' : DEFAULT_REMOTE_VIDEO_FRAME_FORMAT
 }
 
 export function buildRemoteVideoFrameSemanticKey(args: {
