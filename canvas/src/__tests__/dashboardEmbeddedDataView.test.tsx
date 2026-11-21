@@ -33,6 +33,11 @@ test('Dashboard shares source records and saved layouts with the standalone data
   const tableToggle = () => Array.from(dashboard()?.querySelectorAll('button') ?? [])
     .find(button => button.textContent?.trim() === 'Multi-dimensional Table')
   const nested = () => dashboard()?.querySelector('[aria-label="Workspace data view"]')
+  function assertTableFitsFrame(table?: HTMLTableElement | null) {
+    assert.ok(table)
+    assert.equal(table.style.width, '100%', 'the grid fills its frame when the columns fit')
+    assert.ok(parseFloat(table.style.minWidth) > 0, 'the grid keeps a scrollable column minimum on narrow screens')
+  }
   try {
     useGraphStore.setState({ canvas2dRenderer: 'dashboard', markdownDocumentName: 'inventory.md', markdownDocumentText: markdown, sourceFiles: [] })
     await act(async () => root.render(<><Dashboard /><Settings /></>))
@@ -40,6 +45,10 @@ test('Dashboard shares source records and saved layouts with the standalone data
     assert.ok(!nested(), 'a collapsed section does not mount or parse the table')
     await act(async () => tableToggle()!.click())
     await waitFor(() => !!nested()?.querySelector('table')?.textContent?.includes('Copper'), 'Dashboard displays the source record')
+    assertTableFitsFrame(nested()?.querySelector('table'))
+    await act(async () => settings().setViewConfig({ ...settings().viewConfig, orientation: 'columns' }))
+    assert.ok(nested()?.querySelector('thead')?.textContent?.includes('Copper'), 'the record is now a column')
+    assertTableFitsFrame(nested()?.querySelector('table'))
     await act(async () => settings().onChangeLayoutMode!('kanban'))
     const group = Array.from(nested()!.querySelectorAll('button')).find(button => button.textContent?.includes('Choose a column'))
     assert.ok(group, 'Kanban offers the shared grouping settings when no group has been selected')
@@ -62,6 +71,7 @@ test('Dashboard shares source records and saved layouts with the standalone data
       root.render(<><MultiDimTableSurface ariaLabel="Canvas Multi-dimensional Table" /><Settings /></>)
     })
     await waitFor(() => !!host.querySelector('[aria-label="Canvas Multi-dimensional Table"] table')?.textContent?.includes('Copper'), 'the standalone renderer opens as a table')
+    assertTableFitsFrame(host.querySelector<HTMLTableElement>('[aria-label="Canvas Multi-dimensional Table"] table'))
     await act(async () => settings().onChangeLayoutMode!('kanban'))
     assert.equal(useGraphStore.getState().canvas2dRenderer, 'kanban')
     await waitFor(() => !!host.querySelector('[aria-label="Kanban groups"]'), 'the standalone renderer can switch to Kanban')

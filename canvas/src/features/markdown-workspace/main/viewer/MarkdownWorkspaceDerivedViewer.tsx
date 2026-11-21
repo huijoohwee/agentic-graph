@@ -504,6 +504,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           ) : (
             <MarkdownDataViewTableView
             view={displayedView || selected.view}
+            tableFit="container"
             visibleColumnIds={visibleColumnIds}
             columnTypesById={columnTypesById}
             rowHeightPreset={structuredSourcePresentation?.rowHeightPreset ?? viewConfig?.rowHeightPreset}
