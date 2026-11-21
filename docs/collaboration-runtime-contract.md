@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 90
+contract_version: 91
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -83,6 +83,20 @@ ci_scopes:
     commands:
       - ["npm", "run", "smoke:prepare"]
       - ["node", "--test", "scripts/__tests__/production-sheets.test.mjs"]
+  data_view_browser_adapter:
+    roots:
+      - package.json
+      - canvas/package.json
+      - grph-shared/package.json
+      - package-lock.json
+      - canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx
+      - canvas/scripts/build-data-view-adapter.mjs
+      - canvas/src/__tests__/dataViewBrowserAdapter.test.tsx
+      - canvas/src/tests/lib/jsdomHarness.ts
+      - canvas/src/tests/lib/registerCssLoader.ts
+      - docs/collaboration-runtime-contract.md
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/dataViewBrowserAdapter.test.tsx"]
   viewer_surface:
     roots: ["canvas/src/lib/markdown-core/ui/MarkdownBlockContainerCore.impl.engine.runtime.tsx", "canvas/src/lib/markdown-core/ui/markdownBlockContainerCore.editInitialization.ts", "canvas/src/__tests__/viewerSurface.test.tsx"]
     commands:

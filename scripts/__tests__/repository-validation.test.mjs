@@ -102,6 +102,23 @@ test('default and protected affected validation share one owner command map', as
   }
 })
 
+test('Graph adapter and Base dependency changes select the portable grid suite once', async () => {
+  const contract = await readContract()
+  const suite = 'canvas/src/__tests__/dataViewBrowserAdapter.test.tsx'
+  const runSuite = ['env', 'TSX_TSCONFIG_PATH=canvas/tsconfig.json', 'node', '--import', 'tsx', '--test', suite]
+  const adapterCommands = paths => {
+    const { commands } = selectAffectedCommands(paths, contract)
+    return partitionAffectedCommands(commands, contract).standard.filter(command => command.includes(suite))
+  }
+  const inputs = [
+    'package.json', 'package-lock.json', 'canvas/package.json', 'grph-shared/package.json',
+    'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx', 'canvas/scripts/build-data-view-adapter.mjs', suite,
+  ]
+  for (const input of inputs) assert.deepEqual(adapterCommands([input]), [runSuite], input)
+  assert.deepEqual(adapterCommands(inputs), [runSuite])
+  assert.deepEqual(adapterCommands(['README.md', 'canvas/src/app/main.ts']), [])
+})
+
 test('execution groups preserve every affected check once and retain contract timeout ownership', async () => {
   const contract = await readContract()
   for (const paths of [
