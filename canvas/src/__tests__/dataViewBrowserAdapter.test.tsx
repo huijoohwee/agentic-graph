@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { act } from 'react'
+import '../tests/lib/registerCssLoader'
 import { initJsdomHarness } from '../tests/lib/jsdomHarness'
-import {
-  DATA_VIEW_BROWSER_LIMITS,
-  mountDataView,
-  type DataViewBrowserHandle,
-  type DataViewBrowserState,
-} from '../features/markdown/ui/dataViewBrowserAdapter'
+import type { DataViewBrowserHandle, DataViewBrowserState } from '../features/markdown/ui/dataViewBrowserAdapter'
+
+const { DATA_VIEW_BROWSER_LIMITS, mountDataView } = await import('../features/markdown/ui/dataViewBrowserAdapter')
 
 type MutableDataViewBrowserState = Omit<DataViewBrowserState, 'columns' | 'rows'> & {
   columns: Array<{ id: string; name: string }>
@@ -51,11 +49,14 @@ test('mount snapshots plain text; activation is explicit and selection stays con
     state.onActivateRow = id => activated.push(id)
     const handle = await env.mount(state)
     assert.equal(env.target.querySelectorAll('table').length, 1)
-    assert.equal(env.target.querySelector('table')?.getAttribute('aria-label'), 'Commerce records')
-    assert.equal(env.target.querySelector('[role="region"]')?.getAttribute('aria-label'), 'Commerce records')
-    assert.equal(env.target.querySelectorAll('col').length, 2)
-    assert.equal(env.target.querySelectorAll('tbody tr').length, 2)
-    assert.equal(env.target.querySelector('tbody tr td:last-child')?.textContent, literal)
+    const table = env.target.querySelector('table')
+    assert.ok(table)
+    assert.equal(table.getAttribute('aria-label'), state.ariaLabel)
+    const region = table.closest('section[aria-label]:not([role]), [role="region"]')
+    assert.equal(region?.getAttribute('aria-label'), state.ariaLabel)
+    assert.equal(table.querySelectorAll('col').length, state.columns.length)
+    assert.equal(table.querySelectorAll('tbody tr').length, state.rows.length)
+    assert.equal(table.querySelector('tbody tr td:last-child')?.textContent, literal)
     assert.equal(env.target.querySelector('img,a,script,iframe'), null)
     assert.deepEqual(activated, [])
     state.rows[0].cells[0] = 'Mutable caller value'
@@ -86,21 +87,29 @@ test('detail orientation, empty state and mount lifecycle preserve the consumer 
     assert.deepEqual([...env.target.querySelectorAll('tbody td')].map(cell => cell.textContent), ['First', 'One'])
     assert.throws(() => mountDataView(env.target, state), /already mounted/)
     await act(async () => handle.update({ ...state, rows: [], selectedRowId: null }))
-    assert.equal(env.target.querySelector('[role="status"]')?.textContent, 'No records.')
+    assert.deepEqual([...env.target.querySelectorAll('thead th')].map(cell => cell.textContent), ['Field'])
+    assert.deepEqual([...env.target.querySelectorAll('tbody th')].map(cell => cell.textContent), state.columns.map(column => column.name))
+    assert.equal(env.target.querySelector('tbody td'), null)
+    await act(async () => handle.update({ ...state, orientation: 'rows', rows: [] }))
+    assert.deepEqual([...env.target.querySelectorAll('thead th')].map(cell => cell.textContent), state.columns.map(column => column.name))
+    assert.equal(env.target.querySelector('tbody tr'), null)
     await act(async () => handle.destroy())
     handle.destroy()
     assert.equal(env.target.childElementCount, 0)
     assert.equal(env.shadow.querySelector('style'), env.style)
     assert.equal(env.host.shadowRoot, env.shadow)
     assert.throws(() => handle.update(state), /destroyed/)
-    await env.mount(fixture())
-    assert.equal(env.target.querySelectorAll('tbody tr').length, 2)
+    const fresh = fixture()
+    await env.mount(fresh)
+    assert.equal(env.target.querySelectorAll('tbody tr').length, fresh.rows.length)
   } finally { await env.cleanup() }
 })
 
 test('invalid inputs reject before rendering and invalid updates retain the last valid view', async () => {
   const env = setup()
   try {
+    const multibyteCell = '界'.repeat(DATA_VIEW_BROWSER_LIMITS.cellChars)
+    const overflowRows = Math.floor(DATA_VIEW_BROWSER_LIMITS.payloadBytes / new TextEncoder().encode(multibyteCell).length) + 1
     const invalid: unknown[] = [
       null,
       { ...fixture(), columns: [] },
@@ -119,7 +128,7 @@ test('invalid inputs reject before rendering and invalid updates retain the last
       { ...fixture(), ariaLabel: 'x'.repeat(DATA_VIEW_BROWSER_LIMITS.labelChars + 1) },
       { ...fixture(), columns: [{ id: 'one', name: 'x'.repeat(DATA_VIEW_BROWSER_LIMITS.labelChars + 1) }] },
       // This stays below the character-count guard but exceeds the UTF-8 byte budget.
-      { columns: [{ id: 'text', name: 'Text' }], rows: Array.from({ length: 20 }, (_, i) => ({ id: String(i), cells: ['界'.repeat(4096)] })) },
+      { columns: [{ id: 'text', name: 'Text' }], rows: Array.from({ length: overflowRows }, (_, i) => ({ id: String(i), cells: [multibyteCell] })) },
     ]
     for (const input of invalid) {
       assert.throws(() => mountDataView(env.target, input as DataViewBrowserState), /data view/i)
@@ -135,29 +144,25 @@ test('invalid inputs reject before rendering and invalid updates retain the last
   } finally { await env.cleanup() }
 })
 
-test('progressive rendering and selection updates retain already visible records', async () => {
+test('the browser grid renders every admitted record and keeps selection controlled on update', async () => {
   const env = setup()
   try {
     const state = fixture()
     const activated: string[] = []
-    state.rows = Array.from({ length: 70 }, (_, i) => ({ id: String(i), cells: [`Record ${i}`, 'Value'] }))
+    state.rows = Array.from({ length: DATA_VIEW_BROWSER_LIMITS.rows }, (_, i) => ({ id: String(i), cells: [`Record ${i}`, 'Value'] }))
     state.onActivateRow = id => activated.push(id)
     const handle = await env.mount(state)
     const count = () => env.target.querySelectorAll('tbody tr[aria-selected]').length
-    assert.equal(count(), 32)
-    const more = env.target.querySelector('button') as HTMLButtonElement
-    assert.match(more.textContent!, /Show 32 more rows/)
-    await act(async () => more.click())
-    assert.equal(count(), 64)
-    await act(async () => handle.update({ ...state, selectedRowId: '40' }))
-    assert.equal(count(), 64)
-    assert.equal(env.target.querySelector('tr[aria-selected="true"]')?.textContent, 'Record 40Value')
-    assert.deepEqual(activated, [])
-    await act(async () => (env.target.querySelector('button') as HTMLButtonElement).click())
-    assert.equal(count(), 70)
-    assert.equal(env.target.querySelector('button'), null)
-    await act(async () => handle.update({ ...fixture(), onActivateRow: id => activated.push(id) }))
-    assert.equal(count(), 2)
+    assert.equal(count(), state.rows.length)
+    const last = state.rows[state.rows.length - 1]
+    await act(async () => handle.update({ ...state, selectedRowId: last.id }))
+    assert.equal(count(), state.rows.length)
+    const selectedCells = env.target.querySelectorAll('tbody tr[aria-selected="true"] td')
+    assert.deepEqual([...selectedCells].map(cell => cell.textContent), last.cells)
+    const replacement = fixture()
+    await act(async () => handle.update({ ...replacement, onActivateRow: state.onActivateRow }))
+    assert.equal(count(), replacement.rows.length)
+    assert.equal(env.target.querySelector('tr[aria-selected="true"]'), null)
     assert.deepEqual(activated, [])
   } finally { await env.cleanup() }
 })
