@@ -12,7 +12,7 @@ import {
   parseYouTubeStartSeconds,
 } from 'grph-shared/rich-media/providers'
 import { resolveDocumentOutputRootFromWorkspace } from '../../websites/server/websiteImportStorage'
-import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, SAVED_FRAME_PAGE_SIZE, VIDEO_FRAME_FILE_RE, savedFrameRelativeDirectory } from '../videoFrameAssets'
+import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, SAVED_FRAME_PAGE_SIZE, TRANSCRIPT_FRAME_BATCH_SIZE, VIDEO_FRAME_FILE_RE, savedFrameRelativeDirectory } from '../videoFrameAssets'
 import { videoFrameWorkerPool, type VideoFrameWorkerPool } from './videoFrameWorker'
 
 type NextHandleFunction = (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void
@@ -102,15 +102,14 @@ const isAllowedRemoteVideoFrameUrl = (sourceUrl: string): boolean => {
   }
 }
 
-const readRequest = (req: IncomingMessage, opts: VideoFrameServerOptions): VideoFrameRequest | { error: string } => {
-  const parsed = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+const readRequest = (parsed: URL, opts: VideoFrameServerOptions, timestamp?: number): VideoFrameRequest | { error: string } => {
   const rawUrlParam = parsed.searchParams.get('url') || ''
   const sourceUrl = unwrapUserProvidedText(rawUrlParam) || rawUrlParam.trim()
   if (!sourceUrl) return { error: 'Missing url parameter' }
   if (sourceUrl.length > MAX_VIDEO_FRAME_URL_LENGTH) return { error: 'Video URL is too long' }
   if (!isAllowedRemoteVideoFrameUrl(sourceUrl)) return { error: 'Video frame extraction is limited to supported remote video hosts' }
 
-  const parsedTime = normalizeRemoteVideoFrameSeconds(parsed.searchParams.get('time')) ?? parseYouTubeStartSeconds(sourceUrl)
+  const parsedTime = timestamp ?? normalizeRemoteVideoFrameSeconds(parsed.searchParams.get('time')) ?? parseYouTubeStartSeconds(sourceUrl)
   if (parsedTime == null) return { error: 'Missing time parameter' }
   const timeSeconds = Math.min(MAX_VIDEO_FRAME_TIME_SECONDS, Math.max(0, parsedTime))
   const format = normalizeRemoteVideoFrameFormat(parsed.searchParams.get('format') || 'png')
@@ -313,13 +312,31 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
       next()
       return
     }
-    const frameReq = readRequest(req, opts)
-    const emitJson = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`).searchParams.get('emit') === 'json'
-    if ('error' in frameReq) {
-      if (emitJson) writeJson(res, 400, { ok: false, error: frameReq.error })
-      else writeText(res, 400, frameReq.error)
+    const parsed = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+    const batch = parsed.searchParams.get('times')
+    const emitJson = batch !== null || parsed.searchParams.get('emit') === 'json'
+    let times: number[] = []
+    if (batch !== null) {
+      // The non-simple header prevents other origins from starting bulk disk writes through a browser.
+      if (req.method !== 'POST' || req.headers['x-workspace-frame-import'] !== '1') {
+        return writeJson(res, 400, { ok: false, error: 'Expected a workspace frame import request' })
+      }
+      const values = batch.split(',')
+      times = values.map(Number)
+      if (times.length > TRANSCRIPT_FRAME_BATCH_SIZE || values.some((value, i) =>
+        !/^\d+(?:\.\d{1,3})?$/.test(value) || times[i]! > MAX_VIDEO_FRAME_TIME_SECONDS ||
+        (i > 0 && times[i]! <= times[i - 1]!))) {
+        return writeJson(res, 400, { ok: false, error: 'Invalid transcript frame timestamps' })
+      }
+    }
+    const frames = (batch !== null ? times : [undefined]).map(time => readRequest(parsed, opts, time))
+    const invalid = frames.find(frame => 'error' in frame)
+    if (invalid && 'error' in invalid) {
+      if (emitJson) writeJson(res, 400, { ok: false, error: invalid.error })
+      else writeText(res, 400, invalid.error)
       return
     }
+    const requests = frames as VideoFrameRequest[]
     const controller = new AbortController()
     const abort = () => { if (!res.writableEnded) controller.abort() }
     req.once('aborted', abort)
@@ -327,8 +344,10 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
     let timedOut = false
     const timeoutMs = Math.max(1, Math.min(75_000, opts.requestTimeoutMs ?? 75_000))
     const timer = setTimeout(() => { timedOut = true; controller.abort() }, timeoutMs)
-    let result: VideoFrameResult
-    try { result = await runFrameExtraction(frameReq, opts, controller.signal) } finally {
+    let results: VideoFrameResult[]
+    try {
+      results = await Promise.all(requests.map(frame => runFrameExtraction(frame, opts, controller.signal)))
+    } finally {
       clearTimeout(timer)
       req.removeListener('aborted', abort)
       res.removeListener('close', abort)
@@ -341,10 +360,14 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
       return
     }
     if (controller.signal.aborted) return
+    const result = results.find(frame => !frame.ok) || results[0]!
     if (result.ok !== true) {
       if (emitJson) writeJson(res, 502, result)
       else writeText(res, 502, result.error)
       return
+    }
+    if (batch !== null) {
+      return writeJson(res, 200, { ok: true, files: requests.map(frame => frame.fileName) })
     }
     if (emitJson) {
       writeJson(res, 200, {

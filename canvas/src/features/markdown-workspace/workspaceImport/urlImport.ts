@@ -170,11 +170,18 @@ export async function importWorkspaceUrl(args: {
   browserSessionId?: string
   destinationPath?: WorkspacePath
   fetchUrlContent?: typeof fetchWorkspaceUrlContent
+  fetchVideoFrames?: typeof fetch
   mirrorToHost?: boolean
 }): Promise<WorkspaceImportResult> {
   const rawUrl = String(args.urlRaw || '').trim()
   if (!rawUrl) return { createdPaths: [], sources: [], skipped: [], failed: [] }
   const parentPath = args.parentPath || WORKSPACE_ROOT_PATH
+
+  const writesFrames = args.mirrorToHost !== false && typeof (args.fetchVideoFrames ?? globalThis.window?.fetch) === 'function'
+  const persistFrames = async (sourceUrl: string, content: Pick<WorkspaceUrlContent, 'text' | 'transcriptJsonText'>) => {
+    const { saveTranscriptFrames } = await import('./transcriptFrames')
+    await saveTranscriptFrames({ sourceUrl, text: content.text, transcriptJsonText: content.transcriptJsonText, onProgress: args.onProgress }, args.fetchVideoFrames)
+  }
 
   let legacySource: WorkspaceUrlContent | null = null
   if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
@@ -199,6 +206,12 @@ export async function importWorkspaceUrl(args: {
       }
     }
     if (saved) {
+      if (writesFrames && /^kgVideoAgentImport:\s*true\s*$/m.test(saved.text)) {
+        const { readLegacyVideoSource } = await import('./videoSourceBundle')
+        const source = await readLegacyVideoSource(args.fs, saved.path.slice(0, saved.path.lastIndexOf('/')), saved.source.url)
+        if (!source) throw new Error('The saved video transcript is unavailable for frame extraction.')
+        await persistFrames(saved.source.url, source)
+      }
       args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Reused saved source; Refresh from source checks for updates' })
       return { createdPaths: [saved.path], sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
         corpusManifest: buildCorpusImportManifest({ sourceUnits: [buildCorpusSourceUnit({ workspacePath: saved.path,
@@ -448,6 +461,7 @@ export async function importWorkspaceUrl(args: {
   }
   // Multi-output format owners retain their own replay semantics; a single row cannot represent that set.
   if (/^https?:\/\//i.test(sourceUrl) && createdPaths.length === 1) await recordUrlImport(args.fs, createdPaths[0], sourceUrl)
+  if (writesFrames && fetched.sourceMediaKind === 'video') await persistFrames(sourceUrl, fetched)
   return {
     createdPaths,
     sources,
