@@ -105,7 +105,7 @@ test('reveal hydrates unopened saved files without reading unrelated entries or 
   const readFileText = async (path: string) => { reads.push(path); return 'Stored content' }
   try {
     const { revealWorkspaceFileInManager: reveal } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
-    await reveal({ path: '/notes', kind: 'folder', entries, readFileText })
+    await reveal({ path: '/notes', kind: 'folder', getFolderEntries: () => entries, readFileText })
     assert.deepEqual(reads, ['/notes/unopened.md'])
     assert.deepEqual(requests.pop(), { kind: 'folder', folderSnapshot: { workspacePath: '/notes', entries: [
       { workspacePath: '/notes/unopened.md', kind: 'file', text: 'Stored content' },
@@ -113,8 +113,39 @@ test('reveal hydrates unopened saved files without reading unrelated entries or 
     ] } })
     await reveal({ path: '/notes/unopened.md', kind: 'file', readFileText })
     assert.deepEqual(requests.pop(), { kind: 'file', snapshot: { workspacePath: '/notes/unopened.md', text: 'Stored content' } })
-    await assert.rejects(reveal({ path: '/notes', kind: 'folder', entries, readFileText: async () => null }), /unavailable/)
-    await assert.rejects(reveal({ path: '/notes', kind: 'folder', entries, readFileText: async () => '界'.repeat(166667) }), /500 KB/)
+    await assert.rejects(reveal({ path: '/notes', kind: 'folder', getFolderEntries: () => entries, readFileText: async () => null }), /unavailable/)
+    await assert.rejects(reveal({ path: '/notes', kind: 'folder', getFolderEntries: () => entries, readFileText: async () => '界'.repeat(166667) }), /500 KB/)
     assert.equal(requests.length, 0)
+  } finally { globalThis.fetch = previousFetch; restore() }
+})
+
+test('saved folders reveal by path before any descendant is listed or read; only a missing folder needs a copy', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const requests: Record<string, unknown>[] = []
+  let status = 200
+  globalThis.fetch = (async (_url, init) => {
+    const body = JSON.parse(String(init?.body))
+    requests.push(body)
+    const code = body.folderSnapshot ? 200 : status
+    return Response.json({ ok: code === 200, message: 'Opened folder', error: 'Folder lookup failed' }, { status: code })
+  }) as typeof fetch
+  try {
+    const { revealWorkspaceFileInManager: reveal } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+    const selected = '/websites/imported/collection'
+    const getFolderEntries = () => { throw new Error('Saved folder contents must not be enumerated') }
+    for (const path of ['/websites', selected, selected + '/frames']) {
+      assert.equal(await reveal({ path, kind: 'folder', getFolderEntries }), 'Opened folder')
+      assert.deepEqual(requests.pop(), { workspacePath: path, kind: 'folder' })
+    }
+    status = 403
+    await assert.rejects(reveal({ path: selected, kind: 'folder', getFolderEntries }), /Folder lookup failed/)
+    assert.equal(requests.length, 1)
+    requests.length = 0
+    status = 404
+    const entry: WorkspaceEntry = { path: selected + '/note.txt', parentPath: selected, kind: 'file', name: 'note.txt', text: 'Draft', updatedAtMs: 0 }
+    await reveal({ path: selected, kind: 'folder', getFolderEntries: () => [entry] })
+    assert.deepEqual(requests, [{ workspacePath: selected, kind: 'folder' }, {
+      kind: 'folder', folderSnapshot: { workspacePath: selected, entries: [{ workspacePath: entry.path, kind: 'file', text: 'Draft' }] },
+    }])
   } finally { globalThis.fetch = previousFetch; restore() }
 })

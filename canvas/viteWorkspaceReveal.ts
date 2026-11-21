@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Connect } from 'vite'
 import type { KgFsPathPolicy } from './viteWorkspaceArtifactBridge'
-import { WORKSPACE_REVEAL_MAX_BYTES } from './src/features/workspace-fs/workspaceRevealContract'
+import { isWorkspaceWebsiteOutputPath, WORKSPACE_REVEAL_MAX_BYTES } from './src/features/workspace-fs/workspaceRevealContract'
 import { parseWorkspaceRevealSnapshot, saveWorkspaceRevealSnapshot, parseWorkspaceRevealFolderSnapshot, saveWorkspaceRevealFolderSnapshot, WorkspaceRevealSnapshotError } from './viteWorkspaceRevealSnapshot'
 import { resolveWorkspaceDocumentOutputRoot } from './src/lib/websites/server/websiteImportStorage'
 
@@ -16,7 +16,16 @@ class RevealError extends Error {
   constructor(readonly status: number, message: string) { super(message) }
 }
 
-export async function resolveWorkspaceRevealTarget(_repoRoot: string, policy: KgFsPathPolicy, input: unknown): Promise<string> {
+function revealOutputRoot(repoRoot: string, policy: KgFsPathPolicy, requested: unknown, imported: boolean): string {
+  const root = imported && process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT?.trim()
+    ? resolveWorkspaceDocumentOutputRoot(repoRoot) : requested ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
+  if (typeof root !== 'string' || !path.isAbsolute(root) || !policy.isAllowed(root)) {
+    throw new RevealError(403, 'Output folder is outside the local workspace')
+  }
+  return root
+}
+
+export async function resolveWorkspaceRevealTarget(repoRoot: string, policy: KgFsPathPolicy, input: unknown): Promise<string> {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new RevealError(400, 'Invalid reveal request')
   const request = input as Record<string, unknown>
   let target: string
@@ -24,7 +33,12 @@ export async function resolveWorkspaceRevealTarget(_repoRoot: string, policy: Kg
     throw new RevealError(400, 'Reveal requires one exact document or folder path, not a capture identity')
   }
   if (request.kind !== undefined && request.kind !== 'file' && request.kind !== 'folder') throw new RevealError(400, 'Invalid item kind')
-  {
+  const importedFolder = request.kind === 'folder' && isWorkspaceWebsiteOutputPath(request.workspacePath)
+  if (importedFolder) {
+    const { workspacePath } = parseWorkspaceRevealSnapshot({ workspacePath: request.workspacePath, text: '' })
+    const root = revealOutputRoot(repoRoot, policy, request.outputRoot, true)
+    target = path.join(root, workspacePath)
+  } else {
     const canonical = typeof request.workspacePath === 'string' ? policy.resolveCanonicalWorkspacePath(request.workspacePath) : null
     const raw = request.path
     if (canonical) target = canonical
@@ -33,7 +47,11 @@ export async function resolveWorkspaceRevealTarget(_repoRoot: string, policy: Kg
     if (!policy.isAllowed(target)) throw new RevealError(403, 'Path is outside the local workspace')
   }
   let real: string
-  try { real = await fs.realpath(target) } catch { throw new RevealError(404, 'This item has no saved local file or folder to reveal') }
+  try { real = await fs.realpath(target) } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new RevealError(404, 'This item has no saved local file or folder to reveal')
+    throw error
+  }
+  if (importedFolder && real !== path.resolve(target)) throw new RevealError(403, 'Saved import directory must not be a symlink')
   if (!policy.isAllowed(real)) throw new RevealError(403, 'Path is outside the local workspace')
   const stat = await fs.stat(real)
   if (!(request.kind === 'folder' ? stat.isDirectory() : request.kind === 'file' ? stat.isFile() : stat.isFile() || stat.isDirectory())) {
@@ -102,9 +120,9 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
       let target = '', copied = false
       if ('folderSnapshot' in request) {
         if ('snapshot' in request || 'website' in request || 'workspacePath' in request || 'path' in request || request.kind !== 'folder') throw new RevealError(400, 'A folder copy requires a single workspace folder')
-        const outputRoot = request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
-        if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) throw new RevealError(403, 'Output folder is outside the local workspace')
-        target = await saveWorkspaceRevealFolderSnapshot(outputRoot, parseWorkspaceRevealFolderSnapshot(request.folderSnapshot)); copied = true
+        const snapshot = parseWorkspaceRevealFolderSnapshot(request.folderSnapshot)
+        const outputRoot = revealOutputRoot(repoRoot, policy, request.outputRoot, isWorkspaceWebsiteOutputPath(snapshot.workspacePath))
+        target = await saveWorkspaceRevealFolderSnapshot(outputRoot, snapshot); copied = true
       } else if ('snapshot' in request) {
         if ('website' in request || 'workspacePath' in request || (request.kind !== undefined && request.kind !== 'file')) {
           throw new RevealError(400, 'A document copy requires a single workspace file')
@@ -118,14 +136,7 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
           } catch (error) { if (!(error instanceof RevealError && error.status === 404)) throw error }
         }
         if (!target) {
-          // Automatic import copies follow the host's explicit store even when
-          // the browser supplies an output path derived from its seed source.
-          const outputRoot = saveOnly && process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT?.trim()
-            ? resolveWorkspaceDocumentOutputRoot(repoRoot)
-            : request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
-          if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) {
-            throw new RevealError(403, 'Output folder is outside the local workspace')
-          }
+          const outputRoot = revealOutputRoot(repoRoot, policy, request.outputRoot, saveOnly)
           target = await saveWorkspaceRevealSnapshot(outputRoot, snapshot); copied = true
         }
       } else target = await resolveWorkspaceRevealTarget(repoRoot, policy, request)
