@@ -7,6 +7,7 @@ import { lsSetBool, lsSetInt } from '@/lib/persistence'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { useSavedFrameEntries } from '@/features/source-files/useSavedFrameEntries'
 import { resolveWorkspaceSourceIndexSnapshot } from '@/features/workspace-fs/sourceIndex'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
@@ -539,12 +540,10 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     })
   }, [resizeHandleEl, setSidebarWidthPx])
 
-  const sourceFilesExplorerEntries = React.useMemo(() => {
-    return projectWorkspaceEntriesToSourceFilesExplorer(
-      args.entries,
-      resolveWorkspaceSourceRootPaths({ chatLocalStorageRootPath }),
-    )
-  }, [args.entries, chatLocalStorageRootPath, workspaceSyncSettingsRev])
+  const documentEntries = React.useMemo(() => projectWorkspaceEntriesToSourceFilesExplorer(args.entries,
+    resolveWorkspaceSourceRootPaths({ chatLocalStorageRootPath })), [args.entries, chatLocalStorageRootPath, workspaceSyncSettingsRev])
+  const sourceFilesExplorerEntries = useSavedFrameEntries(documentEntries, args.expandedPaths,
+    args.active && args.explorerOpen && !args.sourceFilesCollapsed, args.search)
 
   const filteredEntries = React.useMemo(() => {
     const q = String(args.search || '').trim().toLowerCase()
