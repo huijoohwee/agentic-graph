@@ -1,3 +1,4 @@
+import { readWorkspaceFrameFormat } from '@/lib/rich-media/videoFrameSettings'
 import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { buildRemoteVideoFrameRequestUrl } from 'grph-shared/rich-media/providers'
 
@@ -98,12 +99,13 @@ const buildFrameAnalysisMarkup = (
   boxes: readonly VideoAgentFrameAnalysisBox[],
   sourceUrl: string,
 ): string => {
+  const format = readWorkspaceFrameFormat()
   const frameBoxes = boxes.filter((box, index, all) => all.findIndex(entry => entry.frameIndex === box.frameIndex) === index)
   const images = frameBoxes.map(box => {
     const url = buildRemoteVideoFrameRequestUrl({
       sourceUrl,
       timeSeconds: box.timestampMs / 1000,
-      format: 'png',
+      format,
     })
     return `<li data-kg-video-agent-frame="${box.frameIndex}" hidden><img data-kg-video-agent-frame-src="${escapeHtml(url)}" alt="" decoding="async"></li>`
   }).join('')
@@ -122,7 +124,7 @@ const buildFrameAnalysisMarkup = (
   const frameUrlTemplate = buildRemoteVideoFrameRequestUrl({
     sourceUrl,
     timeSeconds: 0,
-    format: 'png',
+    format,
   })
   return [
     `<section data-kg-video-agent-frame-analysis="1" data-kg-video-agent-frame-analysis-version="2" data-kg-video-agent-frame-analysis-exact-samples="1" data-kg-rich-media-panel-size="viewport" data-kg-video-agent-frame-url-template="${escapeHtml(frameUrlTemplate)}" aria-label="Timeline-synchronized frame analysis">`,

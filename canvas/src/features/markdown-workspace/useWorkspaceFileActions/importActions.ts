@@ -345,7 +345,7 @@ export function useWorkspaceImportActions(args: {
                 return
               }
               if (p.total && p.total > 0) {
-                const label = 'Writing'
+                const label = p.label || 'Writing'
                 if (p.current && p.current > 0) status.setStatusProgress(label, p.current, p.total)
                 else status.setStatusProgress(label, null, null, null, null, { busy: true })
                 return

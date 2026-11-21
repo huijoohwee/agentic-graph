@@ -1,3 +1,5 @@
+import { normalizeRemoteVideoFrameFormat, remoteVideoFrameMimeType } from 'grph-shared/rich-media/providers'
+import { readPreferredImageFormat } from '@/lib/media/mediaFormatPreference'
 import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import type { MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
@@ -74,17 +76,23 @@ const resolveGeneratedFrameThumbnailCount = (
 const buildSourceFrameThumbnail = (args: {
   timestampSeconds: number
   url: string
-}): TimelineMediaReaderThumbnail => ({
-  dataUrl: args.url,
-  format: 'png',
-  height: GENERATED_FRAME_THUMBNAIL_HEIGHT,
-  mimeType: 'image/png',
-  rasterDataUrl: args.url,
-  rasterFormat: 'png',
-  rasterMimeType: 'image/png',
-  timestampSeconds: args.timestampSeconds,
-  width: GENERATED_FRAME_THUMBNAIL_WIDTH,
-})
+}): TimelineMediaReaderThumbnail => {
+  const query = new URLSearchParams(args.url.split('?')[1] || '')
+  const format = normalizeRemoteVideoFrameFormat(query.get('format') || readPreferredImageFormat(args.url))
+  const rasterFormat = format === 'jpg' ? 'jpeg' : format
+  const mimeType = remoteVideoFrameMimeType(format)
+  return {
+    dataUrl: args.url,
+    format: rasterFormat,
+    height: GENERATED_FRAME_THUMBNAIL_HEIGHT,
+    mimeType,
+    rasterDataUrl: args.url,
+    rasterFormat,
+    rasterMimeType: mimeType,
+    timestampSeconds: args.timestampSeconds,
+    width: GENERATED_FRAME_THUMBNAIL_WIDTH,
+  }
+}
 
 const buildGeneratedFrameThumbnailSvg = (args: {
   label: string

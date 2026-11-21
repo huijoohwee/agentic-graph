@@ -1,4 +1,6 @@
+import { readWorkspaceFrameFormat } from '@/lib/rich-media/videoFrameSettings'
 import {
+  type RemoteVideoFrameFormat,
   buildRemoteVideoFrameRequestUrl,
   buildRemoteVideoFrameSemanticKey,
   normalizeRemoteVideoFrameFormat,
@@ -13,7 +15,7 @@ export type RemoteVideoFrameExtractionOk = {
   cached: boolean
   bytes: number
   timeSeconds: number
-  format: 'png' | 'jpg'
+  format: RemoteVideoFrameFormat
 }
 
 export type RemoteVideoFrameExtractionErr = {
@@ -51,7 +53,7 @@ export async function fetchRemoteVideoTimestampFrame(args: {
   const sourceUrl = String(args.sourceUrl || '').trim()
   const timeSeconds = normalizeRemoteVideoFrameSeconds(args.timeSeconds)
   if (!sourceUrl || timeSeconds == null) return null
-  const format = normalizeRemoteVideoFrameFormat(args.format || 'png')
+  const format = normalizeRemoteVideoFrameFormat(args.format ?? readWorkspaceFrameFormat())
   const key = buildRemoteVideoFrameSemanticKey({ sourceUrl, timeSeconds, format })
   const cached = frameCache.get(key)
   if (cached) return cached

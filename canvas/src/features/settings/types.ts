@@ -20,6 +20,7 @@ export interface SettingMeta {
   docKey?: string
   default?: () => string | number | boolean | null
   options?: string[]
+  valueHelp?: string
 }
 
 export interface FlowDetails {

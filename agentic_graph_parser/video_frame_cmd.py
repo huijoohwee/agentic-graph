@@ -25,9 +25,14 @@ def _normalize_time_seconds(value: Any) -> float:
     return round(raw, 3)
 
 
+FRAME_FORMATS = ("png", "jpg", "webp")
+
+
 def _normalize_format(value: Any) -> str:
     raw = str(value or "").strip().lower()
-    return "jpg" if raw in {"jpg", "jpeg"} else "png"
+    if raw == "jpeg":
+        return "jpg"
+    return raw if raw in FRAME_FORMATS else "png"
 
 
 def _downloaded_input_bytes(directory: str) -> int:
@@ -412,7 +417,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--url", required=True, help="Remote video URL")
     parser.add_argument("--time", required=True, help="Timestamp in seconds")
     parser.add_argument("--output", required=True, help="Output PNG/JPEG path")
-    parser.add_argument("--format", choices=["png", "jpg", "jpeg"], default="png")
+    parser.add_argument("--format", choices=(*FRAME_FORMATS, "jpeg"), default="png")
     parser.add_argument("--timeout-s", type=int, default=int(os.environ.get("AG_VIDEO_FRAME_TIMEOUT_S", "60") or "60"))
     parser.add_argument("--emit", choices=["json"], default="json")
     args = parser.parse_args(list(argv) if argv is not None else None)

@@ -9,6 +9,9 @@ import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { createRemoteVideoFrameHandler, createRemoteVideoFramePublicAssetHandler } from '@/lib/rich-media/server/videoFrameServer'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport/urlImport'
+import { FRAME_FORMAT_SETTING } from '@/features/settings/workspaceFrameFormatSetting'
+import { initWindowHarness } from '@/tests/lib/windowHarness'
+import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { transcriptFrameTimes } from '@/features/markdown-workspace/workspaceImport/transcriptFrames'
 import { videoFrameWorkerPool } from '@/lib/rich-media/server/videoFrameWorker'
 import { REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, TRANSCRIPT_FRAME_BATCH_SIZE } from '@/lib/rich-media/videoFrameAssets'
@@ -88,7 +91,7 @@ async function verifyTimestampImport(root: string) {
   const server = createServer((req, res) => {
     const url = new URL(req.url!, 'http://localhost')
     if (url.pathname === '/__video_frame') { batches++; void writer(req, res, () => res.end()); return }
-    req.url = '/' + url.search
+    req.url = url.pathname.slice(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX.length) + url.search
     void listing(req, res, () => res.end())
   })
   try {
@@ -121,6 +124,24 @@ async function verifyTimestampImport(root: string) {
     await fs.unlink(path.join(root, name(1)))
     await run()
     assert.deepEqual(extracted.slice(expected.length - 1), [1])
+    const browser = initWindowHarness({ storage: new MemoryStorage() })
+    try {
+      assert.equal(FRAME_FORMAT_SETTING.default?.(), 'PNG')
+      assert.equal(FRAME_FORMAT_SETTING.read(), 'PNG')
+      assert.deepEqual(FRAME_FORMAT_SETTING.options, ['PNG', 'JPEG', 'WebP'])
+      for (const [label, extension, mime] of [['JPEG', 'jpg', 'image/jpeg'], ['WebP', 'webp', 'image/webp']] as const) {
+        FRAME_FORMAT_SETTING.write!(label)
+        assert.equal(FRAME_FORMAT_SETTING.read(), label)
+        await run()
+        for (const seconds of expected) assert.ok((await fs.stat(path.join(root, name(seconds, extension)))).size)
+        const image = await fetchVideoFrames(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX + '/' + name(expected[0]!, extension))
+        assert.equal(image.headers.get('content-type'), mime)
+        await image.arrayBuffer()
+        const count = batches
+        await run()
+        assert.equal(batches, count)
+      }
+    } finally { browser.restore() }
     const invalid = await fetchVideoFrames('/__video_frame?url=' + encodeURIComponent(sourceUrl) + '&times=2,1',
       { method: 'POST', headers: { 'X-Workspace-Frame-Import': '1' } })
     assert.equal(invalid.status, 400)

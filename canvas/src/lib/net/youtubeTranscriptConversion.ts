@@ -321,7 +321,6 @@ const fetchTimestampFrameThumbnailUrl = async (sourceUrl: string, timeoutMs: num
   const result = await fetchRemoteVideoTimestampFrame({
     sourceUrl,
     timeSeconds: startSeconds,
-    format: 'png',
     timeoutMs: Math.min(timeoutMs, 75_000),
   }).catch(() => null)
   return result?.ok === true ? String(result.imageUrl || result.publicUrl || '').trim() : ''

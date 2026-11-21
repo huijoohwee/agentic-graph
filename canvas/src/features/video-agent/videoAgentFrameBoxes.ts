@@ -1,3 +1,4 @@
+import { readWorkspaceFrameFormat } from '@/lib/rich-media/videoFrameSettings'
 import { buildRemoteVideoFrameRequestUrl, getBilibiliVideoId, getYouTubeId } from 'grph-shared/rich-media/providers'
 
 export type VideoAgentFrameDetection = {
@@ -53,7 +54,7 @@ const buildVideoAgentFrameImageUrl = (sourceUrl: string, timestampMs: number): s
   return buildRemoteVideoFrameRequestUrl({
     sourceUrl: normalizedSourceUrl,
     timeSeconds: Math.max(0, timestampMs / 1000),
-    format: 'png',
+    format: readWorkspaceFrameFormat(),
   })
 }
 
