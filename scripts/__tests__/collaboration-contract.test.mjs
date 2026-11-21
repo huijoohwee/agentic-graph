@@ -206,9 +206,11 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     'package.json',
     'README.md',
   ], contract)
-  assert.deepEqual(plan.scopes, ['evidence_analysis', 'agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
+  assert.deepEqual(plan.scopes, ['data_view_browser_adapter', 'evidence_analysis', 'agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
-  assert.deepEqual(plan.commands, [...contract.ci_scopes.evidence_analysis.commands,
+  assert.deepEqual(plan.commands, [
+    ...contract.ci_scopes.data_view_browser_adapter.commands,
+    ...contract.ci_scopes.evidence_analysis.commands,
     ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps, ['node', '--test', 'canvas/scripts/lib/mission-authored-state-readiness.test.mjs'],
     canvasCheck,
     ...runtimeCommands,
@@ -323,14 +325,12 @@ test('affected XR review expands the composite gate and runs the shared check on
     pkg.scripts?.['xr-v2:review-candidate'],
     'npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser',
   )
-  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xr_mp4_export', 'xrpl_paid_resource'])
+  assert.deepEqual(plan.scopes, ['data_view_browser_adapter', 'agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xr_mp4_export', 'xrpl_paid_resource'])
   assert.deepEqual(plan.unmatchedPaths, [])
-  assert.equal(
-    plan.commands.filter(command => command.join(' ') === canvasCheck.join(' ')).length,
-    1,
-  )
+  assert.equal(plan.commands.filter(command => command.join(' ') === canvasCheck.join(' ')).length, 1)
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
   assert.deepEqual(plan.commands, [
+    ...contract.ci_scopes.data_view_browser_adapter.commands,
     ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps, ['node', '--test', 'canvas/scripts/lib/mission-authored-state-readiness.test.mjs'],
     canvasCheck,
     ...runtimeCommands,
