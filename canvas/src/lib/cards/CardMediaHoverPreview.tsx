@@ -88,7 +88,6 @@ export function CardMediaHoverPreview(props: {
         UI_THEME_TOKENS.panel.border,
       ].join(' ')}
       contentDataAttrs={{
-        'aria-label': `${props.title} media preview`,
         'data-kg-card-media-hover-preview': '1',
         'data-kg-card-media-hover-preview-kind': props.kind,
         'data-kg-canvas-pointer-ignore': 'true',

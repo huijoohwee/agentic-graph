@@ -375,6 +375,9 @@ export async function testCardMediaSurfacesReuseSharedHoverPreview() {
     if (!(chipPreview instanceof dom.window.HTMLElement) || !chipPreview.querySelector('img[data-kg-card-media-kind="image"]')) {
       throw new Error(`expected inline media hover to render the shared CardMediaPreview overlay, body=${dom.window.document.body.innerHTML}`)
     }
+    if (chipPreview.querySelector('img')?.alt !== 'shared-hover-preview.png media preview' || chip.getAttribute('aria-describedby') !== chipPreview.id) {
+      throw new Error('expected the hover anchor to describe its preview using the labeled image')
+    }
     await act(async () => {
       chip.dispatchEvent(new dom.window.MouseEvent('mouseout', { bubbles: true, cancelable: true, relatedTarget: dom.window.document.body }))
       await waitForFrames(dom.window, 2)
