@@ -35,8 +35,11 @@ test('Dashboard shares source records and saved layouts with the standalone data
   const nested = () => dashboard()?.querySelector('[aria-label="Workspace data view"]')
   function assertTableFitsFrame(table?: HTMLTableElement | null) {
     assert.ok(table)
-    assert.equal(table.style.width, '100%', 'the grid fills its frame when the columns fit')
-    assert.ok(parseFloat(table.style.minWidth) > 0, 'the grid keeps a scrollable column minimum on narrow screens')
+    assert.ok(table.parentElement?.classList.contains('agentic-table-frame'))
+    assert.equal(table.dataset.agenticTableFit, 'container', 'the grid uses the shared container fit')
+    const columnWidth = Array.from(table.querySelectorAll('col')).reduce((sum, col) => sum + parseFloat(col.style.width), 0)
+    assert.ok(columnWidth > 0)
+    assert.equal(table.style.getPropertyValue('--agentic-table-content-size'), `${columnWidth}px`)
   }
   try {
     useGraphStore.setState({ canvas2dRenderer: 'dashboard', markdownDocumentName: 'inventory.md', markdownDocumentText: markdown, sourceFiles: [] })

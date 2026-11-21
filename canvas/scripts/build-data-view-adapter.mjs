@@ -129,14 +129,16 @@ assert.equal(baseProfile, await read('canvas/src/styles/shared-ui-profile.css'),
 for (const role of ['.agentic-panel-section', '.agentic-panel-section-header', '.agentic-panel-section-body']) {
   assert(baseProfile.includes(`${role} {`), `Central panel layout owner missing: ${role}`)
 }
-// Resolve the same owner-defined cascade inside a shadow root. Base above already embeds its first sheet.
+// The Base browser bundle already embeds the shared profile and collection layout.
 const panelIndex = postcss.parse(await read(`${designSystemPrefix}/site/panels.css`))
 const panelSheets = new Set()
 for (const node of panelIndex.nodes.filter(node => node.type !== 'comment')) {
   const file = node.type === 'atrule' && node.name === 'import' && /^"\.\/((?:vendor\/)?[a-z-]+\.css)"$/.exec(node.params)?.[1]
   assert(file && !panelSheets.has(file), 'Expected unique local stylesheets in the native panel entry')
   panelSheets.add(file)
-  if (file !== 'vendor/shared-ui-profile.css') nativeStyles.push(shadowScope(await read(`${designSystemPrefix}/site/${file}`)))
+  if (file !== 'vendor/shared-ui-profile.css' && file !== 'collection-layout.css') {
+    nativeStyles.push(shadowScope(await read(`${designSystemPrefix}/site/${file}`)))
+  }
 }
 assert.equal([...panelSheets][0], 'vendor/shared-ui-profile.css', 'Base must provide the first sheet in the native panel cascade')
 nativeStyles.push(shadowScope(await read(`${designSystemPrefix}/site/hover.css`)))
