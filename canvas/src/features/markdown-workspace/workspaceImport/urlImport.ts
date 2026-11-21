@@ -186,6 +186,7 @@ export async function importWorkspaceUrl(args: {
 
   let legacySource: WorkspaceUrlContent | null = null
   if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && args.canvas2dRenderer !== 'storyboard'
+    && (!args.documentSemanticMode || args.canvas2dRenderer)
     && (!args.viewHint || (args.viewHint === 'html' && args.canvas2dRenderer))) {
     const expectedFolder = websiteSourceBundlePath(rawUrl, normalizeWorkspacePath(parentPath))
     const legacyFolders = new Set<string>()
