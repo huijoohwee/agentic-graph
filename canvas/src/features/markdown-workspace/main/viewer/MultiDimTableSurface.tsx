@@ -17,7 +17,7 @@ import { UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME, UI_VIEW_EDIT_SURFACE_DATA_ATTRIBU
 const NOOP_REVEAL_LINE = () => void 0
 const NOOP_VIEWER_ROOT_REF = () => void 0
 
-export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: string; dataViewSource?: WorkspaceDataViewSource }) {
+export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: string; dataViewSource?: WorkspaceDataViewSource; embedded?: boolean }) {
   const renderer = useGraphStore(state => state.canvas2dRenderer)
   const viewerMode = renderer === 'kanban' ? 'kanban' : renderer === 'calendar' ? 'calendar' : 'multiDimTable'
   const active = props.active !== false
@@ -132,7 +132,7 @@ export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: stri
         viewerKind="markdown"
         canvasDataViewSurface={true}
         viewerMode={viewerMode}
-        onChangeViewerMode={mode => useGraphStore.getState().setCanvas2dRenderer(mode === 'kanban' ? 'kanban' : mode === 'calendar' ? 'calendar' : 'multiDimTable')}
+        onChangeViewerMode={props.embedded ? undefined : mode => useGraphStore.getState().setCanvas2dRenderer(mode === 'kanban' ? 'kanban' : mode === 'calendar' ? 'calendar' : 'multiDimTable')}
         dataViewSource={props.dataViewSource}
         markdownText={props.dataViewSource ? '' : markdownText}
         title={props.dataViewSource?.label ?? source.title}
