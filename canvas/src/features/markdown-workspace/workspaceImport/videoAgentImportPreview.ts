@@ -27,6 +27,7 @@ export function buildBoundedVideoImportPreview(
   sourceText: string,
   sourceDurationMs: number,
   render: (transcript: Transcript, body: string, sampled: boolean, inlineSource?: boolean) => string,
+  canvasLines: readonly string[],
 ): { markdown: string; sampled: boolean; storedGraph?: string } {
   const { sourceTranscript, frameByFrameTranscript } = transcript
   const segments = sourceTranscript.segments
@@ -70,7 +71,7 @@ export function buildBoundedVideoImportPreview(
   }
   // Long source URLs and other graph metadata can exceed the budget independently of cues.
   return { sampled: true, storedGraph, markdown: [
-    '---', 'kgVideoAgentImport: true', 'kgVideoAgentTranscriptPreview: true', 'kgVideoAgentStoredGraph: true',
+    '---', ...canvasLines, 'kgVideoAgentImport: true', 'kgVideoAgentTranscriptPreview: true', 'kgVideoAgentStoredGraph: true',
     `kgVideoAgentSourceDurationMs: ${sourceDurationMs}`, '---',
     '', '# Video import', '', 'The graph is stored in parts because it exceeds the preview size limit.', '',
     '[Graph parts](./graph.md) · [Full source text](./transcript.md) · [Source manifest](./source.json) · [Parsed transcript](./parse.json)', '',

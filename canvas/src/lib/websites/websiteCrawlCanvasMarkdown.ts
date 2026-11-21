@@ -1,3 +1,4 @@
+import { DEFAULT_URL_IMPORT_RENDERER } from '../../features/agent-ready/importUrlAgentReadyContract.mjs'
 type CrawlDownload = {
   id?: unknown
   fileName?: unknown
@@ -65,7 +66,7 @@ export function buildWebsiteCrawlCanvasMarkdown(args: {
   const pageByUrl = new Map(pages.map(page => [page.url, page]))
   const lines = [
     '---',
-    'kgCanvas2dRenderer: "d3"',
+    `kgCanvas2dRenderer: ${JSON.stringify(DEFAULT_URL_IMPORT_RENDERER)}`,
     'kgCanvasRenderMode: "2d"',
     `kgWebsiteImportId: ${yamlString(args.importId)}`,
     `kgWebsiteRootUrl: ${yamlString(args.rootUrl)}`,

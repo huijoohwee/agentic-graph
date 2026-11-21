@@ -1,3 +1,4 @@
+import { DEFAULT_URL_IMPORT_RENDERER } from '../../features/agent-ready/importUrlAgentReadyContract.mjs'
 import { normalizeInline, stripWww, truncate } from './webpageMarkdownArtifactUtils'
 import { hostFromUrl, safeWebsitePathSegment } from './websitePathUtils'
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
@@ -104,7 +105,7 @@ export function buildWebsiteSitemapMarkdown(args: {
 
   const doc: string[] = []
   doc.push('---')
-  doc.push('kgCanvas2dRenderer: "d3"')
+  doc.push(`kgCanvas2dRenderer: ${JSON.stringify(DEFAULT_URL_IMPORT_RENDERER)}`)
   doc.push('kgCanvasRenderMode: "2d"')
   doc.push('kgCanvasSurfaceMode: "2d"')
   if (rootUrl) doc.push(`kgWebpageUrl: "${rootUrl.replace(/"/g, '\\"')}"`)

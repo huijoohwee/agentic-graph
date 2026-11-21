@@ -114,9 +114,9 @@ test('projection notifies edge observers once after every changed card is commit
   }
 })
 
-test('any legacy website import defaults to D3 while explicit document renderer choices survive', () => {
+test('any legacy website import defaults to Dashboard while explicit document renderer choices survive', () => {
   const rawText = '---\nkgWebsiteImportId: generic-crawl\nkgWebsiteNodeId: arbitrary-page\n---\n# Content'
-  assert.equal(resolveCanvasFrontmatterPreset({ rawText })?.canvas2dRenderer, 'd3')
+  assert.equal(resolveCanvasFrontmatterPreset({ rawText })?.canvas2dRenderer, 'dashboard')
   assert.equal(resolveCanvasFrontmatterPreset({ rawText })?.canvasRenderMode, '2d')
   assert.equal(resolveCanvasFrontmatterPreset({ rawText, preset: { canvas2dRenderer: 'storyboard' } })?.canvas2dRenderer, 'storyboard')
   assert.equal(resolveCanvasFrontmatterPreset({ rawText: '# Ordinary document' }), null)

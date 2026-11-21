@@ -511,7 +511,6 @@ export function LaunchDropdown({
           </li>
 
           <LaunchDropdownImportUrlItem
-            canvas2dRenderer={canvas2dRenderer}
             menuIconClass={menuIconClass}
             menuItemClass={menuItemClass}
             onClose={onClose}

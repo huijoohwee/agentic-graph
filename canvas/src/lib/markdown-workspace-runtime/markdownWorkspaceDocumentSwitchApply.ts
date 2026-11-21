@@ -1,3 +1,4 @@
+import { withUrlImportRendererDefault } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
 import React from 'react'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { workspaceExtLower } from '@/features/workspace-fs/path'
@@ -20,11 +21,13 @@ import type { WorkspaceSourceTextSnapshot } from '@/features/workspace-fs/worksp
 export function resolveWorkspaceDocumentSwitchCanvasPreset(args: {
   activeDocumentKey: string
   text: string
+  sourceUrl?: string | null
 }): CanvasWorkspaceFrontmatterPreset | null {
-  return resolveWorkspaceDocumentCanvasPreset({
+  const preset = resolveWorkspaceDocumentCanvasPreset({
     documentName: args.activeDocumentKey,
     rawText: args.text,
   })
+  return withUrlImportRendererDefault(preset, args.sourceUrl)
 }
 
 function buildWorkspaceDocumentSwitchSignature(args: {
@@ -364,6 +367,7 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
         applyToGraph: true,
         forceApplyToGraph: true,
         canvasWorkspacePreset: resolveWorkspaceDocumentSwitchCanvasPreset({
+          sourceUrl: applyArgs.sourceUrl,
           activeDocumentKey: applyArgs.activeDocumentKey,
           text: applyArgs.text,
         }),

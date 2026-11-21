@@ -28,9 +28,13 @@ import {
 } from './videoAgentTranscriptImportArtifacts'
 import { buildBoundedVideoImportPreview, createVideoImportScalarWriter, VIDEO_IMPORT_SAMPLE_LIMIT } from './videoAgentImportPreview'
 import { buildVideoAgentImportSidecars } from './videoAgentImportSidecars'
+import type { Canvas2dRendererId } from '@/lib/config.render'
+import { videoUrlImportCanvasLines, type WorkspaceUrlImportDocumentModeId } from './canvasPresets'
 import { yamlQuote } from './yaml'
 
 type VideoAgentUrlImportDocumentArgs = {
+  canvas2dRenderer?: Canvas2dRendererId | null
+  documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
   sourceName?: string | null
   sourceText?: string | null
   sourceTranscriptJsonText?: string | null
@@ -126,8 +130,9 @@ function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
     })
     const renderData = renderSpec.data as Record<string, unknown>
     const sourcePlaybackUrl = String((renderData.sourceVideo as { playbackEmbedUrl?: unknown })?.playbackEmbedUrl || sourceUrl)
+    const canvasLines = videoUrlImportCanvasLines(args.canvas2dRenderer, args.documentSemanticMode)
     const preview = buildBoundedVideoImportPreview(transcriptArtifacts, sourceText, pipeline.source.durationMs, (transcript, body, sampled, inlineSource) =>
-      renderPreview(pipeline, workspaceOutputRoot, sourceUrl, sourcePlaybackUrl, transcript, body, sampled, inlineSource))
+      renderPreview(pipeline, workspaceOutputRoot, sourceUrl, sourcePlaybackUrl, canvasLines, transcript, body, sampled, inlineSource), canvasLines)
     return { ...preview, pipeline, renderData, transcriptArtifacts, sourceUrl, sourcePlaybackUrl }
   }
   const initial = prepare(VIDEO_IMPORT_SAMPLE_LIMIT)
@@ -136,7 +141,7 @@ function prepareVideoImport(args: VideoAgentUrlImportDocumentArgs) {
 }
 
 function renderPreview(
-  pipeline: VideoAgentPipeline, workspaceOutputRoot: WorkspacePath, sourceUrl: string, sourcePlaybackUrl: string,
+  pipeline: VideoAgentPipeline, workspaceOutputRoot: WorkspacePath, sourceUrl: string, sourcePlaybackUrl: string, canvasLines: string[],
   transcriptArtifacts: ReturnType<typeof buildVideoAgentTranscriptImportArtifacts>, sourceText: string, sampled: boolean, inlineSource = false,
 ): string {
   const renderSpec = pipeline.renderSpec
@@ -182,9 +187,7 @@ function renderPreview(
   const lines: string[] = [
     '---',
     '$schema: "agentic-os-pipeline/v1"',
-    'kgCanvasRenderMode: "2d"',
-    'kgCanvas2dRenderer: "storyboard"',
-    'kgDocumentSemanticMode: "document"',
+    ...canvasLines,
     'kgFrontmatterModeEnabled: true',
     'kgVideoAgentImport: true',
     `kgVideoAgentSourceDurationMs: ${sourceVideoTrack.durationMs}`,
@@ -544,14 +547,10 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   return prepareVideoImport(args).markdown
 }
 
-export async function materializeVideoAgentUrlImportDocument(args: {
+export async function materializeVideoAgentUrlImportDocument(args: VideoAgentUrlImportDocumentArgs & {
   fs: WorkspaceFs
   mirrorToHost?: boolean
   parentPath?: WorkspacePath | null
-  sourceName?: string | null
-  sourceText?: string | null
-  sourceTranscriptJsonText?: string | null
-  sourceUrl: string
 }): Promise<WorkspacePath> {
   const outputFolderPath = websiteSourceBundlePath(args.sourceUrl, normalizeWorkspacePath(args.parentPath || '/'))
   const prepared = prepareVideoImport({ ...args, workspaceOutputRoot: outputFolderPath })

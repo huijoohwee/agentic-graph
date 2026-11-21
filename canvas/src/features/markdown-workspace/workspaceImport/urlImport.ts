@@ -1,3 +1,4 @@
+import { applySavedUrlVideoRenderer, isSavedUrlVideoDocument } from './savedUrlImportRenderer'
 import { findSavedUrlImport, recordUrlImport, type SavedUrlImport } from './incrementalImport'
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 import { readWorkspaceImportMarkdownSourceUrl, workspaceImportSourceUrlsMatch } from './sourceUrlIdentity'
@@ -8,7 +9,7 @@ import { importGitHubFolder } from '../githubRepoImport'
 import type { WorkspaceImportProgress, WorkspaceImportResult, WorkspaceUrlContent } from './types'
 import { fetchWorkspaceUrlContent } from './urlContent'
 import type { Canvas2dRendererId } from '@/lib/config.render'
-import type { WorkspaceUrlImportDocumentModeId } from './canvasPresets'
+import { normalizeWorkspaceUrlImportCanvas2dRenderer, videoUrlImportCanvasLines, type WorkspaceUrlImportDocumentModeId } from './canvasPresets'
 import { shouldApplyImportedCanvasDocumentToGraph } from './applyPolicy'
 import {
   persistImportedShareUrlArtifacts,
@@ -184,12 +185,15 @@ export async function importWorkspaceUrl(args: {
   }
 
   let legacySource: WorkspaceUrlContent | null = null
-  if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
+  if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && args.canvas2dRenderer !== 'storyboard'
+    && (!args.documentSemanticMode || args.canvas2dRenderer)
+    && (!args.viewHint || (args.viewHint === 'html' && args.canvas2dRenderer))) {
     const expectedFolder = websiteSourceBundlePath(rawUrl, normalizeWorkspacePath(parentPath))
     const legacyFolders = new Set<string>()
     const saved = await findSavedUrlImport(args.fs, rawUrl,
       async candidate => {
         if (!workspaceImportSourceUrlsMatch(candidate.source.url, rawUrl)) return false
+        if ((args.canvas2dRenderer || args.documentSemanticMode) && !isSavedUrlVideoDocument(candidate.path, expectedFolder)) return false
         const folder = candidate.path.slice(0, candidate.path.lastIndexOf('/'))
         const header = folder === expectedFolder ? null : extractYamlFrontmatterHeaderBlock(candidate.text)
         if (header && readYamlFrontmatterValue(header.rawBlock, 'kgVideoAgentImport') === 'true') {
@@ -206,6 +210,10 @@ export async function importWorkspaceUrl(args: {
       }
     }
     if (saved) {
+      const savedVideo = isSavedUrlVideoDocument(saved.path, expectedFolder)
+      const text = savedVideo
+        ? await applySavedUrlVideoRenderer(args.fs, saved, normalizeWorkspaceUrlImportCanvas2dRenderer(args.canvas2dRenderer), args.documentSemanticMode, args.mirrorToHost)
+        : saved.text
       if (writesFrames && /^kgVideoAgentImport:\s*true\s*$/m.test(saved.text)) {
         const { readLegacyVideoSource } = await import('./videoSourceBundle')
         const source = await readLegacyVideoSource(args.fs, saved.path.slice(0, saved.path.lastIndexOf('/')), saved.source.url)
@@ -213,9 +221,9 @@ export async function importWorkspaceUrl(args: {
         await persistFrames(saved.source.url, source)
       }
       args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Reused saved source; Refresh from source checks for updates' })
-      return { createdPaths: [saved.path], sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
+      return { createdPaths: [saved.path], ...(savedVideo ? { applyToGraph: !saved.path.endsWith('.video-agent.source.md') } : {}), sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
         corpusManifest: buildCorpusImportManifest({ sourceUnits: [buildCorpusSourceUnit({ workspacePath: saved.path,
-          relativePath: saved.path, originalName: saved.path, text: saved.text, status: 'cached', importMode: 'url' })], skipped: [], failed: [] }) }
+          relativePath: saved.path, originalName: saved.path, text, status: 'cached', importMode: 'url' })], skipped: [], failed: [] }) }
     }
   }
 
@@ -309,19 +317,21 @@ export async function importWorkspaceUrl(args: {
     const { materializeVideoAgentUrlImportDocument } = await import('./videoAgentUrlImport')
     return materializeVideoAgentUrlImportDocument({
       fs: args.fs, parentPath, sourceName: fetched.name, sourceText: fetched.text,
+      canvas2dRenderer: args.canvas2dRenderer, documentSemanticMode: args.documentSemanticMode,
       sourceTranscriptJsonText: fetched.transcriptJsonText, sourceUrl, mirrorToHost: args.mirrorToHost,
     })
   }
   const asset = { originalName: fetched.name.replace(/\.source\.md$/i, ''), relativePath: sourceUrl, sourceUrl,
     mimeHint: fetched.sourceMimeHint, byteSize: fetched.sourceMediaKind === 'video' ? new TextEncoder().encode(fetched.text).length : undefined, importMode: 'url' as const }
   const preferVideoAgent = args.canvas2dRenderer !== 'storyboard' && (!!fetched.transcriptJsonText || !isVideoSequenceImportAsset(asset))
+  const videoCanvasLines = videoUrlImportCanvasLines(args.canvas2dRenderer, args.documentSemanticMode)
   const primaryVideo = args.canvas2dRenderer !== 'storyboard' && fetched.sourceMediaKind === 'video' && !sharePrimaryPath
   const materializePrimaryVideo = async () => {
     if (preferVideoAgent) return materializeVideo()
     const { persistVideoSourceBundle } = await import('./videoSourceBundle')
     const folder = websiteSourceBundlePath(sourceUrl, normalizeWorkspacePath(parentPath))
     const path = folder + '/' + buildVideoSequenceWorkspaceDocumentName([asset])
-    await persistVideoSourceBundle(args.fs, folder, [{ path, text: buildVideoSequenceTimelineImportMarkdown([asset]) }], args.mirrorToHost)
+    await persistVideoSourceBundle(args.fs, folder, [{ path, text: buildVideoSequenceTimelineImportMarkdown([asset], videoCanvasLines) }], args.mirrorToHost)
     return path
   }
   const exactDestinationPath = args.destinationPath ? normalizeWorkspacePath(args.destinationPath) : ''
@@ -425,6 +435,7 @@ export async function importWorkspaceUrl(args: {
   if (sourceUnit.mediaKind === 'video' && !primaryVideo) {
     let videoPath = preferVideoAgent ? await materializeVideo() : await materializeVideoSequenceTimelineImportDocument({
       fs: args.fs, parentPath,
+      canvasLines: videoCanvasLines,
       assets: [{
         workspacePath: normalized, relativePath: sourceUrl,
         originalName: fetched.name.replace(/\.source\.md$/i, '') || fetched.name,

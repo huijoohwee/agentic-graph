@@ -94,7 +94,7 @@ export function buildVideoSequenceWorkspaceDocumentName(assetsRaw: ReadonlyArray
   return `${prefix}.${VIDEO_SEQUENCE_DOCUMENT_SUFFIX}`
 }
 
-export function buildVideoSequenceTimelineImportMarkdown(assetsRaw: ReadonlyArray<VideoSequenceImportAsset>): string {
+export function buildVideoSequenceTimelineImportMarkdown(assetsRaw: ReadonlyArray<VideoSequenceImportAsset>, canvasLines?: readonly string[]): string {
   const assets = assetsRaw.filter(isVideoSequenceImportAsset)
   const clips = assets.map((asset, index) => ({
     asset,
@@ -156,9 +156,7 @@ export function buildVideoSequenceTimelineImportMarkdown(assetsRaw: ReadonlyArra
   })
   return [
     '---',
-    'kgCanvasRenderMode: "2d"',
-    'kgCanvas2dRenderer: "media"',
-    'kgDocumentSemanticMode: "document"',
+    ...(canvasLines ?? ['kgCanvasRenderMode: "2d"', 'kgCanvas2dRenderer: "media"', 'kgDocumentSemanticMode: "document"']),
     'kgFrontmatterModeEnabled: true',
     'kgVideoSequenceTimeline: true',
     `kgVideoSequenceImportSourceCount: ${clips.length}`,
@@ -182,10 +180,11 @@ export async function materializeVideoSequenceTimelineImportDocument(args: {
   fs: WorkspaceFs
   parentPath?: WorkspacePath | null
   assets: ReadonlyArray<VideoSequenceImportAsset>
+  canvasLines?: readonly string[]
 }): Promise<WorkspacePath | null> {
   const assets = args.assets.filter(isVideoSequenceImportAsset)
   if (assets.length === 0) return null
-  const text = buildVideoSequenceTimelineImportMarkdown(assets)
+  const text = buildVideoSequenceTimelineImportMarkdown(assets, args.canvasLines)
   const createdPath = await args.fs.createFile({
     parentPath: args.parentPath || WORKSPACE_ROOT_PATH,
     name: buildVideoSequenceWorkspaceDocumentName(assets),
