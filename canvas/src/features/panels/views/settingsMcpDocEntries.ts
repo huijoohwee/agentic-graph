@@ -29,6 +29,13 @@ import {
   getAgenticGraphToolServerRowAnchorId,
 } from './agentic-graph-tool-server-docs'
 import {
+  TRADING_RUNTIME_GATEWAY_DOC_AREA,
+  TRADING_RUNTIME_GATEWAY_DOC_ENTRIES,
+  TRADING_RUNTIME_GATEWAY_HTTP_CONFIG_KEY,
+  buildTradingRuntimeGatewayLocalHttpConfigJson,
+  getTradingRuntimeGatewayRowAnchorId,
+} from './tradingRuntimeGatewayDocs'
+import {
   CRAWLER_ACCESS_MCP_DOC_AREA,
   CRAWLER_ACCESS_MCP_DOC_ENTRIES,
   getCrawlerAccessMcpApiRowAnchorId,
@@ -71,6 +78,15 @@ import {
   buildExaRemoteMcpConfigJson,
   getExaMcpApiRowAnchorId,
 } from './exaMcpApiDocs'
+import {
+  MOOMOO_MARKET_MCP_CODEX_CONFIG_KEY,
+  MOOMOO_MARKET_MCP_DOC_AREA,
+  MOOMOO_MARKET_MCP_DOC_ENTRIES,
+  MOOMOO_MARKET_MCP_REMOTE_CONFIG_KEY,
+  buildMoomooMarketCodexMcpAddCommand,
+  buildMoomooMarketRemoteMcpConfigJson,
+  getMoomooMarketMcpApiRowAnchorId,
+} from './moomooMarketMcpApiDocs'
 import {
   FEISHU_BASE_MCP_DOC_AREA,
   FEISHU_BASE_MCP_DOC_ENTRIES,
@@ -138,12 +154,14 @@ export function buildMcpDocEntries(
   return [
     ...API_NATIVE_BROWSER_MCP_DOC_ENTRIES,
     ...AGENTIC_OS_TOOL_SERVER_DOC_ENTRIES,
+    ...TRADING_RUNTIME_GATEWAY_DOC_ENTRIES,
     ...EXTERNAL_MCP_TOOL_SERVER_DOC_ENTRIES,
     ...CRAWLER_ACCESS_MCP_DOC_ENTRIES,
     ...CLOUDFLARE_AI_GATEWAY_MCP_DOC_ENTRIES,
     ...BYTEPLUS_MODELARK_MCP_DOC_ENTRIES,
     ...OPENAI_MCP_DOC_ENTRIES,
     ...EXA_MCP_DOC_ENTRIES,
+    ...MOOMOO_MARKET_MCP_DOC_ENTRIES,
     ...FEISHU_BASE_MCP_DOC_ENTRIES,
     ...LARK_APP_MCP_DOC_ENTRIES,
     ...STRIPE_MCP_DOC_ENTRIES,
@@ -167,6 +185,8 @@ export function buildMcpVirtualEntry(
       ? getApiNativeBrowserMcpApiRowAnchorId(entry.meta.key)
       : area === AGENTIC_OS_TOOL_SERVER_DOC_AREA
         ? getAgenticGraphToolServerRowAnchorId(entry.meta.key)
+      : area === TRADING_RUNTIME_GATEWAY_DOC_AREA
+        ? getTradingRuntimeGatewayRowAnchorId(entry.meta.key)
       : area === EXTERNAL_MCP_TOOL_SERVER_DOC_AREA
         ? getExternalMcpToolServerRowAnchorId(entry.meta.key)
       : area === CRAWLER_ACCESS_MCP_DOC_AREA
@@ -179,6 +199,8 @@ export function buildMcpVirtualEntry(
         ? getOpenAiMcpApiRowAnchorId(entry.meta.key)
       : area === EXA_MCP_DOC_AREA
         ? getExaMcpApiRowAnchorId(entry.meta.key)
+      : area === MOOMOO_MARKET_MCP_DOC_AREA
+        ? getMoomooMarketMcpApiRowAnchorId(entry.meta.key)
       : area === FEISHU_BASE_MCP_DOC_AREA
         ? getFeishuBaseMcpApiRowAnchorId(entry.meta.key)
       : area === LARK_APP_MCP_DOC_AREA
@@ -210,6 +232,8 @@ export function buildMcpVirtualEntry(
               ? buildAgenticGraphToolServerLocalStdioConfigJson()
               : entry.meta.key === AGENTIC_OS_TOOL_SERVER_PAGES_CONFIG_KEY
                 ? buildAgenticGraphToolServerPagesHttpConfigJson()
+                : entry.meta.key === TRADING_RUNTIME_GATEWAY_HTTP_CONFIG_KEY
+                  ? buildTradingRuntimeGatewayLocalHttpConfigJson()
         : entry.meta.key === CLOUDFLARE_AI_GATEWAY_MCP_REMOTE_CONFIG_KEY
           ? buildCloudflareAiGatewayMcpRemoteConfigJson()
         : entry.meta.key === BYTEPLUS_MODELARK_MCP_RESPONSES_TOOL_CONFIG_KEY
@@ -232,6 +256,10 @@ export function buildMcpVirtualEntry(
               ? buildExaCodexMcpAddCommand(values)
               : entry.meta.key === EXA_MCP_REMOTE_CONFIG_KEY
                 ? buildExaRemoteMcpConfigJson(values)
+                : entry.meta.key === MOOMOO_MARKET_MCP_CODEX_CONFIG_KEY
+                  ? buildMoomooMarketCodexMcpAddCommand(values)
+                  : entry.meta.key === MOOMOO_MARKET_MCP_REMOTE_CONFIG_KEY
+                    ? buildMoomooMarketRemoteMcpConfigJson(values)
                 : entry.meta.key === LARK_APP_MCP_REMOTE_CONFIG_KEY
                   ? buildLarkAppRemoteMcpConfigJson()
                 : entry.meta.key === SEALION_MCP_REMOTE_CONFIG_KEY

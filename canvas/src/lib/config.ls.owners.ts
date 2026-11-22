@@ -49,7 +49,8 @@ export type LsKeyOwner =
   | 'openai.mcp'
   | 'operator.deploy.mcp'
   | 'search.exa.mcp'
-  | 'search.feishuBase.mcp';
+  | 'search.feishuBase.mcp'
+  | 'search.moomooMarket.mcp';
 
 
 export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
@@ -252,6 +253,16 @@ export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
   searchFeishuBaseMcpPhase: 'search.feishuBase.mcp',
   searchFeishuBaseMcpPhase2Status: 'search.feishuBase.mcp',
   searchFeishuBaseMcpPhase3Status: 'search.feishuBase.mcp',
+  searchMoomooMarketMcpServerKey: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpRemoteUrl: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpToolProfile: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpEnabledToolsJson: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpConnectionMode: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpStartupTimeoutMs: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpMaxRows: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpRequireToolReview: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpAuthBoundary: 'search.moomooMarket.mcp',
+  searchMoomooMarketMcpConnectedStatus: 'search.moomooMarket.mcp',
   openAiMcpServerLabel: 'openai.mcp',
   openAiMcpServerUrl: 'openai.mcp',
   openAiMcpTransport: 'openai.mcp',
