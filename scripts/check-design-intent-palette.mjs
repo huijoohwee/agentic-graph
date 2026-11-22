@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = f => fs.readFileSync(path.join(root, f), 'utf8')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
-const TARGET = 'c870d3463b97d446f7ff94e6decc348ef85bd69c'
+const TARGET = 'd60b569179c23a14418616abc265d22f2da00e30'
 const OWNER = 'github.com/huijoohwee/agentic-design-system'
 
 const palette = JSON.parse(read('grph-shared/src/ui/ui-intent-palette.json'))

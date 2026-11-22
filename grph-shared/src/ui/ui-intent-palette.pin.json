@@ -1,7 +1,7 @@
 {
   "schema": "agentic-design-system/consumer-pin/v1",
   "owner": "github.com/huijoohwee/agentic-design-system",
-  "sourceRevision": "c870d3463b97d446f7ff94e6decc348ef85bd69c",
+  "sourceRevision": "d60b569179c23a14418616abc265d22f2da00e30",
   "sourcePath": "site/ui-intent-palette.json",
   "sourceSha256": "sha256:a8ac8032592d0937d2a32294be09f0d171708ae8eb7554a880690f6cc06ac50b"
 }
