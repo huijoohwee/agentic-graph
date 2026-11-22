@@ -39,6 +39,7 @@ import { CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA } from './cloudflareAiGatewayMcpApiD
 import { BYTEPLUS_MODELARK_MCP_DOC_AREA } from './byteplusModelArkMcpApiDocs'
 import { OPENAI_MCP_DOC_AREA } from './openaiMcpApiDocs'
 import { EXA_MCP_DOC_AREA } from './exaMcpApiDocs'
+import { MOOMOO_MARKET_MCP_DOC_AREA } from './moomooMarketMcpApiDocs'
 import { EXA_SEARCH_API_DOC_AREA } from './exaSearchApiDocs'
 import { FEISHU_BASE_MCP_DOC_AREA } from './feishuBaseMcpApiDocs'
 import { LARK_APP_MCP_DOC_AREA } from './larkAppMcpApiDocs'
@@ -99,6 +100,7 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   BYTEPLUS_MODELARK_MCP_DOC_AREA,
   OPENAI_MCP_DOC_AREA,
   EXA_MCP_DOC_AREA,
+  MOOMOO_MARKET_MCP_DOC_AREA,
   FEISHU_BASE_MCP_DOC_AREA,
   LARK_APP_MCP_DOC_AREA,
   STRIPE_MCP_DOC_AREA,
@@ -219,6 +221,7 @@ export function isMcpOwnedSetting(key: string, areaRaw: string): boolean {
   if (area === BYTEPLUS_MODELARK_MCP_DOC_AREA) return true
   if (area === OPENAI_MCP_DOC_AREA) return true
   if (area === EXA_MCP_DOC_AREA) return true
+  if (area === MOOMOO_MARKET_MCP_DOC_AREA) return true
   if (area === FEISHU_BASE_MCP_DOC_AREA) return true
   if (area === LARK_APP_MCP_DOC_AREA) return true
   if (area === STRIPE_MCP_DOC_AREA) return true

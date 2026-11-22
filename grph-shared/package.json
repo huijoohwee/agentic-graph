@@ -373,6 +373,11 @@
       "import": "./dist/search/larkAppMcpSsot.js",
       "default": "./dist/search/larkAppMcpSsot.js"
     },
+    "./search/moomooMarketMcpSsot": {
+      "types": "./dist/search/moomooMarketMcpSsot.d.ts",
+      "import": "./dist/search/moomooMarketMcpSsot.js",
+      "default": "./dist/search/moomooMarketMcpSsot.js"
+    },
     "./openai/openaiMcpSsot": {
       "types": "./dist/openai/openaiMcpSsot.d.ts",
       "import": "./dist/openai/openaiMcpSsot.js",

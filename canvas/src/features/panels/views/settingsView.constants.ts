@@ -27,6 +27,8 @@ import { OPENAI_MCP_DOC_AREA, OPENAI_MCP_DOCS_URL } from './openaiMcpApiDocs'
 import { OPERATOR_DEPLOY_MCP_DOC_AREA, OPERATOR_DEPLOY_MCP_DOCS_URL } from './operatorDeployMcpApiDocs'
 import { OPERATOR_DEPLOY_SETTING_KEYS } from '@/features/settings/operatorDeploySsot'
 import { EXA_MCP_DOC_AREA, EXA_MCP_DOCS_URL } from './exaMcpApiDocs'
+import { MOOMOO_MARKET_MCP_DOC_AREA } from './moomooMarketMcpApiDocs'
+import { MOOMOO_MARKET_MCP_OPENAPI_URL } from 'grph-shared/search/moomooMarketMcpSsot'
 import { EXA_SEARCH_API_DOC_AREA, EXA_SEARCH_API_DOCS_URL } from './exaSearchApiDocs'
 import { FEISHU_BASE_MCP_DOC_AREA, FEISHU_BASE_MCP_DOCS_URL } from './feishuBaseMcpApiDocs'
 import { LARK_APP_MCP_DOC_AREA, LARK_APP_MCP_DOCS_URL } from './larkAppMcpApiDocs'
@@ -193,6 +195,12 @@ export const MCP_SECTION_META: Readonly<Record<string, SectionMeta>> = {
   [EXA_MCP_DOC_AREA]: {
     docsUrl: EXA_MCP_DOCS_URL,
     docsLabel: 'Open Exa MCP Docs',
+    panelLabel: 'Open FloatingPanel Chat UI',
+    openPanel: () => openFloatingPanelChat(),
+  },
+  [MOOMOO_MARKET_MCP_DOC_AREA]: {
+    docsUrl: MOOMOO_MARKET_MCP_OPENAPI_URL,
+    docsLabel: 'Open Moomoo OpenAPI Docs',
     panelLabel: 'Open FloatingPanel Chat UI',
     openPanel: () => openFloatingPanelChat(),
   },

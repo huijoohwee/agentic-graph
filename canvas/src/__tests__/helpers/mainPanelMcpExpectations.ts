@@ -41,6 +41,19 @@ import {
   EXA_MCP_REMOTE_URL,
 } from 'grph-shared/search/exaMcpSsot'
 import {
+  MOOMOO_MARKET_MCP_AUTH_HEADER,
+  MOOMOO_MARKET_MCP_CONNECTED_STATUS,
+  MOOMOO_MARKET_MCP_DEFAULT_CONNECTION_MODE,
+  MOOMOO_MARKET_MCP_DEFAULT_ENABLED_TOOLS_JSON,
+  MOOMOO_MARKET_MCP_DEFAULT_MAX_ROWS,
+  MOOMOO_MARKET_MCP_DEFAULT_SERVER_KEY,
+  MOOMOO_MARKET_MCP_DEFAULT_STARTUP_TIMEOUT_MS,
+  MOOMOO_MARKET_MCP_OPENAPI_URL,
+  MOOMOO_MARKET_MCP_READ_ONLY_BOUNDARY,
+  MOOMOO_MARKET_MCP_REMOTE_URL,
+  MOOMOO_MARKET_MCP_WRITE_TOOLS_JSON,
+} from 'grph-shared/search/moomooMarketMcpSsot'
+import {
   EXA_SEARCH_API_CODING_AGENT_REQUEST_JSON,
   EXA_SEARCH_API_DOCS_URL,
   EXA_SEARCH_API_ENDPOINT,
@@ -574,6 +587,74 @@ export function assertMcpHubSurfacesExaMcpConfig(container: Element): void {
     .filter(Boolean)
   if (!mcpAnchors.some(anchor => anchor.startsWith('mcp-row-exa-'))) {
     throw new Error(`expected Exa MCP rows to use Exa MCP anchors, got ${JSON.stringify(mcpAnchors)}`)
+  }
+}
+
+export function assertMcpHubSurfacesMoomooMarketMcpConfig(container: Element): void {
+  const text = container.textContent || ''
+  const searchableText = `${text}\n${readRenderedFormValues(container)}`
+  ;[
+    'Moomoo Market Data MCP Configuration',
+    'moomooMarketMcp.server_key',
+    'moomooMarketMcp.remote.url',
+    'moomooMarketMcp.tool_profile',
+    'moomooMarketMcp.enabled_tools',
+    'moomooMarketMcp.connection.mode',
+    'moomooMarketMcp.startup_timeout_ms',
+    'moomooMarketMcp.max_rows',
+    'moomooMarketMcp.require_tool_review',
+    'moomooMarketMcp.auth_boundary',
+    'moomooMarketMcp.connected_status',
+    'moomooMarketMcp.read_only_boundary',
+    'moomooMarketMcp.write_tools_excluded',
+    'moomooMarketMcp.openapi.url',
+    'moomooMarketMcp.remote_config.codex',
+    'moomooMarketMcp.remote_config.generic',
+    'moomooMarketMcp.troubleshooting.restart',
+    'quote_stock_quote',
+    'quote_cur_kline',
+    'quote_order_book',
+    'quote_rt_ticker',
+    'mcpServers',
+    `codex mcp add ${MOOMOO_MARKET_MCP_DEFAULT_SERVER_KEY} --url '${MOOMOO_MARKET_MCP_REMOTE_URL}'`,
+    MOOMOO_MARKET_MCP_DEFAULT_SERVER_KEY,
+    MOOMOO_MARKET_MCP_REMOTE_URL,
+    MOOMOO_MARKET_MCP_DEFAULT_ENABLED_TOOLS_JSON,
+    MOOMOO_MARKET_MCP_WRITE_TOOLS_JSON,
+    MOOMOO_MARKET_MCP_DEFAULT_CONNECTION_MODE,
+    String(MOOMOO_MARKET_MCP_DEFAULT_STARTUP_TIMEOUT_MS),
+    String(MOOMOO_MARKET_MCP_DEFAULT_MAX_ROWS),
+    MOOMOO_MARKET_MCP_AUTH_HEADER,
+    MOOMOO_MARKET_MCP_OPENAPI_URL,
+    MOOMOO_MARKET_MCP_CONNECTED_STATUS,
+    MOOMOO_MARKET_MCP_READ_ONLY_BOUNDARY,
+    'restart_mcp_client_after_config_change',
+    'Open Moomoo OpenAPI Docs',
+    'Open FloatingPanel Chat UI',
+  ].forEach(token => {
+    if (!searchableText.includes(token)) {
+      throw new Error(`expected MCP hub to include Moomoo Market MCP config token ${JSON.stringify(token)}, got ${JSON.stringify(searchableText)}`)
+    }
+  })
+  ;[
+    'YOUR_MOOMOO_API_KEY',
+    'your_api_key',
+    'access_token=',
+    'refresh_token=',
+    'Bearer ey',
+    'moomooApiKey=',
+    'sk_test_',
+    'sk_live_',
+  ].forEach(token => {
+    if (searchableText.includes(token)) {
+      throw new Error(`expected Moomoo Market MCP surface to avoid embedded secret examples ${JSON.stringify(token)}`)
+    }
+  })
+  const mcpAnchors = Array.from(container.querySelectorAll<HTMLElement>('[data-kg-anchor]'))
+    .map(el => String(el.dataset.kgAnchor || ''))
+    .filter(Boolean)
+  if (!mcpAnchors.some(anchor => anchor.startsWith('mcp-row-moomoo-market-'))) {
+    throw new Error(`expected Moomoo Market MCP rows to use Moomoo Market MCP anchors, got ${JSON.stringify(mcpAnchors)}`)
   }
 }
 

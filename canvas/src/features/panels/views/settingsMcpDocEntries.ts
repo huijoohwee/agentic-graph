@@ -72,6 +72,15 @@ import {
   getExaMcpApiRowAnchorId,
 } from './exaMcpApiDocs'
 import {
+  MOOMOO_MARKET_MCP_CODEX_CONFIG_KEY,
+  MOOMOO_MARKET_MCP_DOC_AREA,
+  MOOMOO_MARKET_MCP_DOC_ENTRIES,
+  MOOMOO_MARKET_MCP_REMOTE_CONFIG_KEY,
+  buildMoomooMarketCodexMcpAddCommand,
+  buildMoomooMarketRemoteMcpConfigJson,
+  getMoomooMarketMcpApiRowAnchorId,
+} from './moomooMarketMcpApiDocs'
+import {
   FEISHU_BASE_MCP_DOC_AREA,
   FEISHU_BASE_MCP_DOC_ENTRIES,
   getFeishuBaseMcpApiRowAnchorId,
@@ -144,6 +153,7 @@ export function buildMcpDocEntries(
     ...BYTEPLUS_MODELARK_MCP_DOC_ENTRIES,
     ...OPENAI_MCP_DOC_ENTRIES,
     ...EXA_MCP_DOC_ENTRIES,
+    ...MOOMOO_MARKET_MCP_DOC_ENTRIES,
     ...FEISHU_BASE_MCP_DOC_ENTRIES,
     ...LARK_APP_MCP_DOC_ENTRIES,
     ...STRIPE_MCP_DOC_ENTRIES,
@@ -179,6 +189,8 @@ export function buildMcpVirtualEntry(
         ? getOpenAiMcpApiRowAnchorId(entry.meta.key)
       : area === EXA_MCP_DOC_AREA
         ? getExaMcpApiRowAnchorId(entry.meta.key)
+      : area === MOOMOO_MARKET_MCP_DOC_AREA
+        ? getMoomooMarketMcpApiRowAnchorId(entry.meta.key)
       : area === FEISHU_BASE_MCP_DOC_AREA
         ? getFeishuBaseMcpApiRowAnchorId(entry.meta.key)
       : area === LARK_APP_MCP_DOC_AREA
@@ -232,6 +244,10 @@ export function buildMcpVirtualEntry(
               ? buildExaCodexMcpAddCommand(values)
               : entry.meta.key === EXA_MCP_REMOTE_CONFIG_KEY
                 ? buildExaRemoteMcpConfigJson(values)
+                : entry.meta.key === MOOMOO_MARKET_MCP_CODEX_CONFIG_KEY
+                  ? buildMoomooMarketCodexMcpAddCommand(values)
+                  : entry.meta.key === MOOMOO_MARKET_MCP_REMOTE_CONFIG_KEY
+                    ? buildMoomooMarketRemoteMcpConfigJson(values)
                 : entry.meta.key === LARK_APP_MCP_REMOTE_CONFIG_KEY
                   ? buildLarkAppRemoteMcpConfigJson()
                 : entry.meta.key === SEALION_MCP_REMOTE_CONFIG_KEY
