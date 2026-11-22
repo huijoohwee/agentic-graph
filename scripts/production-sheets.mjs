@@ -30,12 +30,12 @@ export const sheetsRedirects = [
   '/content/agentic-sheets/ /agentic-sheets/ 308',
   '/content/agentic-sheets/* /agentic-sheets/:splat 308',
 ]
-export const sheetsHeaders = [
-  '/content/agentic-sheets/*', `  Content-Security-Policy: ${SHEETS_CSP}`,
+export const sheetsHeaders = ['/content/agentic-sheets', '/agentic-sheets'].flatMap(prefix => [
+  `${prefix}/*`, `  Content-Security-Policy: ${SHEETS_CSP}`,
   '  Cache-Control: no-cache, max-age=0, must-revalidate', '  X-Content-Type-Options: nosniff',
-  '/content/agentic-sheets/sw.js', '  Service-Worker-Allowed: /agentic-sheets/',
-  ...['LICENSE', 'LICENSE.design-system'].flatMap(name => [`/content/agentic-sheets/${name}`, '  Content-Type: text/plain; charset=utf-8']),
-]
+  `${prefix}/sw.js`, '  Service-Worker-Allowed: /agentic-sheets/',
+  ...['LICENSE', 'LICENSE.design-system'].flatMap(name => [`${prefix}/${name}`, '  Content-Type: text/plain; charset=utf-8']),
+])
 function validateSheetsPin(pin) {
   if (pin.schema !== 'agentic-graph/sheets-source/v1' || pin.repository !== 'https://github.com/huijoohwee/agentic-sheets'
     || !/^[0-9a-f]{40}$/.test(pin.revision)) throw new Error('Invalid Sheets source pin')
