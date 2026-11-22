@@ -27,10 +27,12 @@ function artifactFileNames(manifest) {
 export const SHEETS_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
 export const sheetsRedirects = [
   '/agentic-sheets /agentic-sheets/ 308',
-  '/agentic-sheets/ /content/agentic-sheets/index.html 200',
-  '/agentic-sheets/* /content/agentic-sheets/:splat 200',
+  // Pages canonicalizes an index.html proxy target with a 308. Proxy both public entries to the directory.
+  '/agentic-sheets/ /content/agentic-sheets/ 200',
+  '/agentic-sheets/index.html /content/agentic-sheets/ 200',
   '/content/agentic-sheets /agentic-sheets/ 308',
   '/content/agentic-sheets/ /agentic-sheets/ 308',
+  '/agentic-sheets/* /content/agentic-sheets/:splat 200',
   '/content/agentic-sheets/* /agentic-sheets/:splat 308',
 ]
 export const sheetsHeaders = ['/content/agentic-sheets', '/agentic-sheets'].flatMap(prefix => [

@@ -116,6 +116,10 @@ test('route verifier checks every byte, MIME, CSP, worker scope and negative pat
 test('existing release owners include Sheets without SPA fallback or duplicate blocks', () => {
   const routes = buildAgenticGraphRedirects({ existing: '', rootFiles: [] })
   for (const line of sheetsRedirects) assert.ok(routes.includes(line))
+  for (const entry of ['/agentic-sheets/', '/agentic-sheets/index.html']) {
+    const firstMatch = routes.split('\n').find(line => [entry, '/agentic-sheets/*'].includes(line.split(' ')[0]))
+    assert.equal(firstMatch, entry + ' /content/agentic-sheets/ 200')
+  }
   assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: [] }), routes)
   const args = { existing: '', artifacts: {}, agentReadyHomepageLinkHeaderValue: '', productionRuntimeReadinessHeaderLines: [] }
   const headers = buildAgentReadyHeaders(args)
