@@ -105,6 +105,11 @@ function updateSession(id: number, update: (session: WebsiteSelectionSession) =>
   useWebsiteImportSelectionSession.setState({ session: next, recoveryError: writeDraft(next) })
 }
 
+function describeInventoryPersistenceFailure(failure: unknown): string {
+  const message = String((failure as Error)?.message || failure || '').trim()
+  return message || 'The local discovery cache could not be updated.'
+}
+
 export function finishWebsiteImportSelection(urls: string[] | null) {
   controller?.abort()
   controller = null
@@ -140,14 +145,12 @@ export async function discoverWebsiteSelection(url: string, selectAllOnDiscover 
   try {
     const result = await discoverWebsitePages(session.url, url, active.signal)
     if (active.signal.aborted) return
-    const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
-    const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
-    await persistImportInventory(await getWorkspaceFs(), [...session.pages, ...result.pages].map(page => ({ source: page.url, status: 'not imported' })))
-    if (active.signal.aborted) return
+    let pagesForInventory: WebsiteDiscoveredPage[] = []
     updateSession(session.id, current => {
       const merged = new Map(current.pages.map(page => [page.url, page]))
       result.pages.forEach(page => merged.set(page.url, page))
       const pages = [...merged.values()].slice(0, 2_000)
+      pagesForInventory = pages
       return { ...current, pages,
         authenticatedBrowserSession: result.authenticatedBrowserSession === true,
         browserSessionId: result.browserSessionId,
@@ -156,6 +159,19 @@ export async function discoverWebsiteSelection(url: string, selectAllOnDiscover 
         error: current.selectAllOnDiscover && !result.pages.length ? 'No linked pages were found. Try the source link or a different website file.' : '',
         visited: new Set([...current.visited, url]), limited: current.limited || result.limited || merged.size > 2_000 }
     })
+    if (pagesForInventory.length) {
+      void (async () => {
+        try {
+          const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
+          const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+          await persistImportInventory(await getWorkspaceFs(), pagesForInventory.map(page => ({ source: page.url, status: 'not imported' })))
+        } catch (failure) {
+          if (active.signal.aborted) return
+          updateSession(session.id, current => current.error ? current
+            : { ...current, error: describeInventoryPersistenceFailure(failure) })
+        }
+      })()
+    }
   } catch (failure) {
     if (!active.signal.aborted) updateSession(session.id, current => ({ ...current, selectAllOnDiscover: false, error: String((failure as Error).message || failure) }))
   } finally {
