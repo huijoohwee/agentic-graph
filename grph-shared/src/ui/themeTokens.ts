@@ -1,6 +1,7 @@
 import { centralTokenValue } from './fontStacks.js'
 import { UI_INTENT_TOKENS } from './intentTokens.js'
 import { resolveCssVarWithKgFallback } from './kgTokens.js'
+import palette from './ui-intent-palette.json' with { type: 'json' }
 
 export type ThemeColors = {
   bg: string
@@ -58,8 +59,13 @@ const CONTROL_BORDER_CLASS_NAME = '[border:var(--agentic-control-border)]'
 
 const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--agentic-control-height)]'
 
-/** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
-export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
+/** Paint counterpart of table.rowSelected for the virtualized canvas grid; central palette owns the values. */
+export const UI_ROW_SELECTION_PAINT = palette.interaction.rowSelection
+
+const ROW_SELECTION_PERCENT = `${Math.round(UI_ROW_SELECTION_PAINT.alpha * 100)}%`
+const ROW_SELECTION_ACCENT = UI_ROW_SELECTION_PAINT.accent
+const ROW_SELECTION_WIDTH = UI_ROW_SELECTION_PAINT.accentWidthPx
+const ROW_SELECTED_CLASS_NAME = `!bg-[color-mix(in_srgb,${ROW_SELECTION_ACCENT}_${ROW_SELECTION_PERCENT},var(--kg-panel-bg,white))] hover:!bg-[color-mix(in_srgb,${ROW_SELECTION_ACCENT}_${ROW_SELECTION_PERCENT},var(--kg-panel-bg,white))] !shadow-[inset_${ROW_SELECTION_WIDTH}px_0_0_${ROW_SELECTION_ACCENT}] [&>td:first-child]:!shadow-[inset_${ROW_SELECTION_WIDTH}px_0_0_${ROW_SELECTION_ACCENT}] [&>th:first-child]:!shadow-[inset_${ROW_SELECTION_WIDTH}px_0_0_${ROW_SELECTION_ACCENT}] [&>td]:!bg-inherit [&>th]:!bg-inherit`
 
 /** Contract adapter; values and presentation live in the pinned central profile. */
 export const UI_ICON_DEFAULTS = { strokeWidth: Number(centralTokenValue('--agentic-icon-stroke-width')) } as const
@@ -83,8 +89,8 @@ export function assertCentralIconAppearance<K extends keyof typeof UI_ICON_APPEA
   return owned
 }
 
-// A stronger primary wash distinguishes keyboard focus even on a selected icon.
-const ICON_FOCUS_CLASS_NAME = 'focus-visible:bg-blue-100 dark:focus-visible:bg-blue-900/40 focus-visible:text-blue-600 dark:focus-visible:text-blue-400'
+// A stronger primary wash distinguishes keyboard focus even on a selected icon; central palette owns it.
+const ICON_FOCUS_CLASS_NAME = palette.focus.iconWash
 
 export const UI_THEME_TOKENS = {
   shadow: {
@@ -107,22 +113,22 @@ export const UI_THEME_TOKENS = {
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
     hoverBg: 'hover:bg-[var(--kg-panel-action-bg-hover)]',
-    neutralSubtle: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
-    neutralMuted: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
+    neutralSubtle: palette.surfaces.neutralSubtle,
+    neutralMuted: palette.surfaces.neutralMuted,
     primarySolid: `${UI_INTENT_TOKENS.primary.solidBg} ${UI_INTENT_TOKENS.primary.solidText}`,
     activeSoft: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text} ${UI_INTENT_TOKENS.primary.softBorder}`,
     primaryOutline: `${UI_INTENT_TOKENS.primary.border} ${UI_INTENT_TOKENS.primary.text} hover:bg-[var(--kg-panel-action-bg-hover)]`,
     primaryLinkHoverText: UI_INTENT_TOKENS.primary.hoverText,
-    hintHoverEmphasis: 'hover:bg-[var(--kg-panel-action-bg-hover)] hover:border-blue-200 dark:hover:border-blue-700',
-    inverseHoverBg: 'hover:bg-black/70 dark:hover:bg-white/15',
-    dangerHoverBg: 'hover:bg-red-50 dark:hover:bg-red-900/20',
-    ring: 'ring-blue-500 dark:ring-blue-400',
+    hintHoverEmphasis: `hover:bg-[var(--kg-panel-action-bg-hover)] ${palette.interaction.hintHoverBorder}`,
+    inverseHoverBg: palette.interaction.inverseHoverBg,
+    dangerHoverBg: palette.interaction.dangerHoverBg,
+    ring: palette.interaction.ring,
     padding: 'p-2',
     square: 'h-[var(--kg-control-height,28px)] w-[var(--kg-control-height,28px)] p-0 flex items-center justify-center',
-    activeText: 'text-blue-600 dark:text-blue-400',
-    activeBg: 'bg-blue-50 dark:bg-blue-900/20',
-    activeBorder: 'border-blue-500 dark:border-blue-400',
-    disabledText: 'text-black/40 dark:text-white/30',
+    activeText: UI_INTENT_TOKENS.primary.text,
+    activeBg: UI_INTENT_TOKENS.primary.bg,
+    activeBorder: UI_INTENT_TOKENS.primary.border,
+    disabledText: palette.interaction.disabledText,
   },
   pill: {
     base: 'rounded-full px-2 py-0.5 border border-[color:var(--kg-border)]',
@@ -130,13 +136,13 @@ export const UI_THEME_TOKENS = {
     badgeText: 'text-xs font-bold',
   },
   badge: {
-    chip: 'rounded px-1.5 py-0.5 bg-black/5 dark:bg-white/5',
+    chip: `rounded px-1.5 py-0.5 ${palette.surfaces.chipWash}`,
     text: 'text-xs font-mono',
-    toolbarGroup: 'rounded bg-black/5 dark:bg-white/5 p-0.5',
+    toolbarGroup: `rounded ${palette.surfaces.chipWash} p-0.5`,
   },
   icon: {
     color: 'text-[color:var(--kg-text-secondary)]',
-    active: 'text-blue-600 dark:text-blue-400',
+    active: UI_INTENT_TOKENS.primary.text,
   },
   panel: {
     bg: 'bg-[var(--kg-panel-bg)]',
@@ -161,8 +167,8 @@ export const UI_THEME_TOKENS = {
     tertiary: 'text-[color:var(--kg-text-tertiary)]',
   },
   table: {
-    headerBg: 'bg-gray-50 dark:bg-gray-800',
-    rowHover: 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
+    headerBg: palette.surfaces.tableHeaderBg,
+    rowHover: palette.surfaces.tableRowHover,
     rowHoverHighlight: 'hover:!bg-[var(--kg-panel-action-bg-hover)]',
     rowDivider: 'divide-[color:var(--kg-border)]',
     cellBorder: NEUTRAL_BORDER_COLOR_CLASS_NAME,
@@ -171,8 +177,8 @@ export const UI_THEME_TOKENS = {
     rowBg: 'bg-[var(--kg-panel-bg)]',
     rowBgAlt: 'bg-[var(--kg-panel-bg)]',
     // Inset accent avoids layout shifts; first-cell paint keeps it above sticky table cells.
-    rowSelected: '!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] hover:!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] !shadow-[inset_4px_0_0_#3b82f6] [&>td:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>th:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>td]:!bg-inherit [&>th]:!bg-inherit',
-    rowRelated: 'bg-blue-50/50 dark:bg-blue-900/10',
+    rowSelected: ROW_SELECTED_CLASS_NAME,
+    rowRelated: palette.interaction.rowRelated,
     rowOutside: 'bg-[var(--kg-panel-bg)]',
   },
   input: {
@@ -180,26 +186,26 @@ export const UI_THEME_TOKENS = {
     border: CONTROL_BORDER_CLASS_NAME,
     hoverBorder: 'hover:[border:var(--agentic-control-border)]',
     placeholder: 'placeholder:text-[color:var(--kg-text-tertiary)]',
-    selectionControl: 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400',
+    selectionControl: palette.interaction.selectionControl,
     text: 'text-[color:var(--kg-text-primary)]',
   },
   focus: {
-    primaryRing: 'focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400',
-    primaryStrongRing: 'focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400',
-    primaryBorderRing: 'focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400',
-    primarySoftRing: 'focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:focus:ring-blue-400/40',
-    primarySofterRing: 'focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50',
+    primaryRing: palette.focus.primaryRing,
+    primaryStrongRing: palette.focus.primaryStrongRing,
+    primaryBorderRing: palette.focus.primaryBorderRing,
+    primarySoftRing: palette.focus.primarySoftRing,
+    primarySofterRing: palette.focus.primarySofterRing,
   },
   status: {
-    success: 'text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30',
-    info: 'text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30',
-    warning: 'text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/30',
-    error: 'text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30',
-    neutral: 'text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800',
+    success: palette.statuses.success,
+    info: palette.statuses.info,
+    warning: palette.statuses.warning,
+    error: palette.statuses.error,
+    neutral: palette.statuses.neutral,
     neutralDot: 'bg-[color:var(--kg-text-tertiary)]',
-    lilac: 'text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20',
-    pink: 'text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/20',
-    orange: 'text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20',
+    lilac: palette.statuses.lilac,
+    pink: palette.statuses.pink,
+    orange: palette.statuses.orange,
   },
   tooltip: {
     bg: 'agentic-hover-background',
