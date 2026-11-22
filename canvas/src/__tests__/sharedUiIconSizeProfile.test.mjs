@@ -40,7 +40,11 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.ok(profileCss.toString('utf8').includes(`agentic-design-system@${pin.profile.sourceRevision}`))
   assert.equal(pin.metrics.toolbarOverlayLayer, 6000)
   assert.match(profileCss.toString('utf8'), /--agentic-toolbar-overlay-layer:\s*6000;/u)
-  assert.match(applicationCss, /@import ['"]@agentic-base\/views-react\/toolbar\.css['"];?/u)
+  const panelBundle = fs.readFileSync(fileURLToPath(import.meta.resolve('agentic-design-system/panels.css')), 'utf8')
+  assert.equal((applicationCss.match(/@import 'agentic-design-system\/panels\.css';/gu) ?? []).length, 1)
+  assert.equal((panelBundle.match(/@import "\.\/toolbar\.css";/gu) ?? []).length, 1)
+  assert.equal((panelBundle.match(/@import "\.\/vendor\/shared-ui-profile\.css";/gu) ?? []).length, 1)
+  assert.doesNotMatch(applicationCss, /@agentic-base\/views-react\/toolbar\.css/u)
   assert.match(profileCss.toString('utf8'), /--agentic-control-hover-background: light-dark\(#fffbeb, rgb\(251 191 36 \/ 0\.16\)\);/u)
   assert.match(profileCss.toString('utf8'), /\.agentic-icon \{[^}]*inline-size: var\(--agentic-icon-size-default\); block-size: var\(--agentic-icon-size-default\);/s)
   assert.equal(pin.metrics.floatingPanelRadius, 8)
@@ -49,7 +53,8 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.doesNotMatch(applicationCss, /@import[^;]*shared-ui-profile/)
   for (const file of ['main.tsx', 'observability.tsx']) {
     const entry = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8')
-    assert.ok(entry.includes("import 'agentic-design-system/profile.css'"), file)
+    assert.ok(entry.includes("import './index.css'"), file)
+    assert.doesNotMatch(entry, /import ['"][^'"]*(?:toolbar|panels|profile)\.css['"]/u, file)
   }
   const table = fs.readFileSync(new URL('../features/markdown/ui/GraphTableHost.tsx', import.meta.url), 'utf8')
   assert.ok(table.includes("import '@agentic-base/views-react/browser-components.css'"))
