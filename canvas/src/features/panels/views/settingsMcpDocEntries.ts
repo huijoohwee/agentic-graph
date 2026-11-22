@@ -29,6 +29,13 @@ import {
   getAgenticGraphToolServerRowAnchorId,
 } from './agentic-graph-tool-server-docs'
 import {
+  TRADING_RUNTIME_GATEWAY_DOC_AREA,
+  TRADING_RUNTIME_GATEWAY_DOC_ENTRIES,
+  TRADING_RUNTIME_GATEWAY_HTTP_CONFIG_KEY,
+  buildTradingRuntimeGatewayLocalHttpConfigJson,
+  getTradingRuntimeGatewayRowAnchorId,
+} from './tradingRuntimeGatewayDocs'
+import {
   CRAWLER_ACCESS_MCP_DOC_AREA,
   CRAWLER_ACCESS_MCP_DOC_ENTRIES,
   getCrawlerAccessMcpApiRowAnchorId,
@@ -147,6 +154,7 @@ export function buildMcpDocEntries(
   return [
     ...API_NATIVE_BROWSER_MCP_DOC_ENTRIES,
     ...AGENTIC_OS_TOOL_SERVER_DOC_ENTRIES,
+    ...TRADING_RUNTIME_GATEWAY_DOC_ENTRIES,
     ...EXTERNAL_MCP_TOOL_SERVER_DOC_ENTRIES,
     ...CRAWLER_ACCESS_MCP_DOC_ENTRIES,
     ...CLOUDFLARE_AI_GATEWAY_MCP_DOC_ENTRIES,
@@ -177,6 +185,8 @@ export function buildMcpVirtualEntry(
       ? getApiNativeBrowserMcpApiRowAnchorId(entry.meta.key)
       : area === AGENTIC_OS_TOOL_SERVER_DOC_AREA
         ? getAgenticGraphToolServerRowAnchorId(entry.meta.key)
+      : area === TRADING_RUNTIME_GATEWAY_DOC_AREA
+        ? getTradingRuntimeGatewayRowAnchorId(entry.meta.key)
       : area === EXTERNAL_MCP_TOOL_SERVER_DOC_AREA
         ? getExternalMcpToolServerRowAnchorId(entry.meta.key)
       : area === CRAWLER_ACCESS_MCP_DOC_AREA
@@ -222,6 +232,8 @@ export function buildMcpVirtualEntry(
               ? buildAgenticGraphToolServerLocalStdioConfigJson()
               : entry.meta.key === AGENTIC_OS_TOOL_SERVER_PAGES_CONFIG_KEY
                 ? buildAgenticGraphToolServerPagesHttpConfigJson()
+                : entry.meta.key === TRADING_RUNTIME_GATEWAY_HTTP_CONFIG_KEY
+                  ? buildTradingRuntimeGatewayLocalHttpConfigJson()
         : entry.meta.key === CLOUDFLARE_AI_GATEWAY_MCP_REMOTE_CONFIG_KEY
           ? buildCloudflareAiGatewayMcpRemoteConfigJson()
         : entry.meta.key === BYTEPLUS_MODELARK_MCP_RESPONSES_TOOL_CONFIG_KEY
