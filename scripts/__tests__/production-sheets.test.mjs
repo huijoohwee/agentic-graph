@@ -17,6 +17,7 @@ async function fixture(t, assetNames = names) {
   const sourceRoot = path.join(root, 'source'), mirrorRoot = path.join(root, 'mirror')
   await fs.mkdir(path.join(sourceRoot, 'sheets/dist'), { recursive: true })
   const bodies = new Map(assetNames.map(name => [name, Buffer.from(name)]))
+  bodies.set('index.html', Buffer.from('<html><head><link rel="manifest" href="./manifest.webmanifest"></head><body>Workbook</body></html>'))
   const files = [...bodies].map(([path, body]) => ({ path, bytes: body.length, sha256: sha(body) }))
   const inputs = [{ path: 'sheets/input.txt', bytes: 5, sha256: sha('input') }]
   const manifest = { schema: 'sheets/artifact/v1', contract: 'sheets/workbook/v1', sourceDigest: sha(JSON.stringify(inputs)), inputs,
@@ -107,6 +108,28 @@ test('route verifier checks every byte, MIME, CSP, worker scope and negative pat
   const args = { artifactRoot: plan.targetRoot, origins: ['https://preview.example/'], fetchImpl, sourceRevision: f.pin.revision }
   assert.equal((await verifySheetsRoute(args)).origins[0].files.length, 15)
   for (mode of ['tamper', 'mime', 'csp', 'scope', 'spa']) await assert.rejects(verifySheetsRoute(args))
+  mode = 'ok'
+  const publicOrigin = 'https://public.example'
+  const bridge = `<script type="module" async fetchpriority="low" src="${publicOrigin}/.webmcp/bridge.js" data-packs="c2pa,mcp-server-client"></script>`
+  const withBridge = (url, extra = '') => fetchImpl(url).then(async response => {
+    if (response.headers.get('content-type') !== 'text/html') return response
+    return new Response((await response.text()).replace('<link rel="manifest"', bridge + extra + '<link rel="manifest"'), response)
+  })
+  const publicArgs = { ...args, origins: [publicOrigin], publicOrigin, fetchImpl: url => withBridge(url) }
+  const proof = await verifySheetsRoute(publicArgs)
+  const html = proof.origins[0].files.filter(row => row.normalization)
+  assert.deepEqual(html.map(row => row.path), ['/agentic-sheets/', '/agentic-sheets/index.html'])
+  for (const row of html) {
+    assert.deepEqual(row.normalization, ['cloudflare-webmcp-bridge/v1'])
+    assert.equal(row.canonicalSha256, sha(f.bodies.get('index.html')))
+    assert.notEqual(row.sha256, row.canonicalSha256)
+  }
+  await assert.rejects(verifySheetsRoute({ ...publicArgs, publicOrigin: undefined }), /live artifact mismatch: https:\/\/public\.example/)
+  await assert.rejects(verifySheetsRoute({ ...publicArgs, fetchImpl: url => withBridge(url, 'changed') }), /live artifact mismatch/)
+  mode = 'tamper'
+  await assert.rejects(verifySheetsRoute(publicArgs), /core\.mjs/)
+  mode = 'csp'
+  await assert.rejects(verifySheetsRoute(publicArgs), /enforced CSP mismatch/)
   mode = 'ok'
   await fs.writeFile(path.join(plan.targetRoot, 'core.mjs'), 'changed')
   await assert.rejects(verifySheetsRoute(args), /drift/)
