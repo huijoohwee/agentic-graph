@@ -11,12 +11,15 @@ const digest = body => createHash('sha256').update(body).digest('hex')
 const git = (root, args) => execFileSync('git', args, { cwd: root, maxBuffer: 1_000_000, stdio: ['ignore', 'pipe', 'pipe'] })
 const baseFiles = ['app.mjs', 'core.mjs', 'formula.mjs', 'index.html', 'LICENSE', 'LICENSE.design-system', 'manifest.webmanifest', 'schema.mjs', 'shared-ui-profile.css', 'storage.mjs', 'styles.css', 'sw.js']
 const panelFile = 'floating-panel.mjs'
-const panelFiles = [...baseFiles, panelFile].sort((a, b) => a.localeCompare(b))
+const sortNames = names => names.sort((a, b) => a.localeCompare(b))
+const panelFiles = sortNames([...baseFiles, panelFile])
+const panelAssets = [panelFile, 'collection-layout.js', 'floating-panel.js', 'icons.json', 'panel-section.js', 'skills-commands.js', 'toolbar-icons.js']
+const nativeFiles = sortNames([...baseFiles, ...panelAssets])
 
 // Select a known producer inventory before using any manifest entry as a path.
 function artifactFileNames(manifest) {
   const declared = manifest.files?.map(row => row.path)
-  for (const known of [baseFiles, panelFiles]) {
+  for (const known of [baseFiles, panelFiles, nativeFiles]) {
     if (JSON.stringify(declared) === JSON.stringify(known)) return known
   }
   throw new Error('Invalid Sheets artifact file inventory')
@@ -24,18 +27,20 @@ function artifactFileNames(manifest) {
 export const SHEETS_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
 export const sheetsRedirects = [
   '/agentic-sheets /agentic-sheets/ 308',
-  '/agentic-sheets/ /content/agentic-sheets/index.html 200',
-  '/agentic-sheets/* /content/agentic-sheets/:splat 200',
+  // Pages canonicalizes an index.html proxy target with a 308. Proxy both public entries to the directory.
+  '/agentic-sheets/ /content/agentic-sheets/ 200',
+  '/agentic-sheets/index.html /content/agentic-sheets/ 200',
   '/content/agentic-sheets /agentic-sheets/ 308',
   '/content/agentic-sheets/ /agentic-sheets/ 308',
+  '/agentic-sheets/* /content/agentic-sheets/:splat 200',
   '/content/agentic-sheets/* /agentic-sheets/:splat 308',
 ]
-export const sheetsHeaders = [
-  '/content/agentic-sheets/*', `  Content-Security-Policy: ${SHEETS_CSP}`,
+export const sheetsHeaders = ['/content/agentic-sheets', '/agentic-sheets'].flatMap(prefix => [
+  `${prefix}/*`, `  Content-Security-Policy: ${SHEETS_CSP}`,
   '  Cache-Control: no-cache, max-age=0, must-revalidate', '  X-Content-Type-Options: nosniff',
-  '/content/agentic-sheets/sw.js', '  Service-Worker-Allowed: /agentic-sheets/',
-  ...['LICENSE', 'LICENSE.design-system'].flatMap(name => [`/content/agentic-sheets/${name}`, '  Content-Type: text/plain; charset=utf-8']),
-]
+  `${prefix}/sw.js`, '  Service-Worker-Allowed: /agentic-sheets/',
+  ...['LICENSE', 'LICENSE.design-system'].flatMap(name => [`${prefix}/${name}`, '  Content-Type: text/plain; charset=utf-8']),
+])
 function validateSheetsPin(pin) {
   if (pin.schema !== 'agentic-graph/sheets-source/v1' || pin.repository !== 'https://github.com/huijoohwee/agentic-sheets'
     || !/^[0-9a-f]{40}$/.test(pin.revision)) throw new Error('Invalid Sheets source pin')
@@ -87,7 +92,7 @@ export async function createSheetsArtifact({ graphRoot = path.resolve(scriptRoot
 async function inventory(root) {
   try {
     const entries = await fs.readdir(root, { withFileTypes: true })
-    for (const entry of entries) if (!entry.isFile() || ![...panelFiles, 'artifact-manifest.json', routeName].includes(entry.name)) throw new Error('Unowned Sheets mirror entry: ' + entry.name)
+    for (const entry of entries) if (!entry.isFile() || ![...nativeFiles, 'artifact-manifest.json', routeName].includes(entry.name)) throw new Error('Unowned Sheets mirror entry: ' + entry.name)
     return entries.map(entry => entry.name)
   } catch (error) { if (error.code === 'ENOENT') return []; throw error }
 }
@@ -96,19 +101,21 @@ export async function planSheetsSync({ graphRoot, mirrorRoot, sourceRoot, pin })
   try { const stat = await fs.lstat(targetRoot); if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Invalid Sheets mirror directory') }
   catch (error) { if (error.code !== 'ENOENT') throw error }
   const artifact = await createSheetsArtifact({ graphRoot, sourceRoot, pin }), existing = await inventory(targetRoot)
-  let obsoletePanel
+  const obsoletePanels = []
   if (existing.length) {
     const previous = JSON.parse(await fs.readFile(resolveWithin(targetRoot, routeName)))
     if (previous.schema !== 'agentic-graph/sheets-route/v1' || !Array.isArray(previous.files)) throw new Error('Sheets mirror ownership mismatch')
     for (const name of existing) {
-      if (name === routeName || previous.files.some(row => row.path === name)) continue
-      // A retry may find the exact new module written before the route receipt was replaced.
-      if (name === panelFile && artifact.files.has(name)
+      if (name === routeName) continue
+      const prior = previous.files.find(row => row.path === name)
+      if (prior) {
+        if (!artifact.files.has(name)) obsoletePanels.push(prior)
+        continue
+      }
+      // A retry may find new panel assets written before the route receipt was replaced.
+      if (panelAssets.includes(name) && artifact.files.has(name)
         && (await fs.readFile(resolveWithin(targetRoot, name))).equals(artifact.files.get(name))) continue
       throw new Error('Sheets mirror ownership mismatch')
-    }
-    if (existing.includes(panelFile) && !artifact.files.has(panelFile)) {
-      obsoletePanel = previous.files.find(row => row.path === panelFile)
     }
   }
   const toCopy = []
@@ -117,15 +124,15 @@ export async function planSheetsSync({ graphRoot, mirrorRoot, sourceRoot, pin })
     try { previous = await fs.readFile(resolveWithin(targetRoot, relativePath)) } catch (error) { if (error.code !== 'ENOENT') throw error }
     if (!previous?.equals(body)) toCopy.push({ relativePath, body })
   }
-  return { targetRoot, artifact, toCopy, obsoletePanel, hasDrift: toCopy.length > 0 || Boolean(obsoletePanel) }
+  return { targetRoot, artifact, toCopy, obsoletePanels, hasDrift: toCopy.length > 0 || obsoletePanels.length > 0 }
 }
 export async function applySheetsSync(plan) {
   await fs.mkdir(plan.targetRoot, { recursive: true })
-  if (plan.obsoletePanel) {
-    const file = resolveWithin(plan.targetRoot, panelFile)
+  for (const previous of plan.obsoletePanels) {
+    const file = resolveWithin(plan.targetRoot, previous.path)
     try {
       const current = await fs.readFile(file)
-      if (current.length !== plan.obsoletePanel.bytes || digest(current) !== plan.obsoletePanel.sha256) {
+      if (current.length !== previous.bytes || digest(current) !== previous.sha256) {
         throw new Error('Changed Sheets panel asset during rollback')
       }
       await fs.unlink(file)
@@ -193,6 +200,8 @@ export async function verifySheetsBrowser({ origin, artifactDigest }) {
     const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message))
     await page.goto(new URL('/agentic-sheets/', base).href)
     await page.waitForFunction(expected => document.documentElement.dataset.artifactDigest === expected, artifactDigest)
+    const manifest = await page.evaluate(async () => (await fetch('./artifact-manifest.json')).json())
+    if (manifest.artifactDigest !== artifactDigest) throw new Error('Sheets browser manifest mismatch')
     await page.locator('#sample').click()
     const total = page.getByRole('gridcell', { name: /^D4,/ })
     await total.filter({ hasText: /^80$/ }).waitFor()
@@ -202,8 +211,19 @@ export async function verifySheetsBrowser({ origin, artifactDigest }) {
     await page.waitForFunction(() => navigator.serviceWorker.controller)
     await context.setOffline(true); await page.reload()
     await total.filter({ hasText: /^130$/ }).waitFor()
+    let panelTabs
+    if (manifest.files.some(file => file.path === 'skills-commands.js')) {
+      await page.getByRole('button', { name: 'Functions', exact: true }).click()
+      const dialog = page.getByRole('dialog', { name: 'Workbook tools' })
+      await dialog.getByRole('tab', { name: 'Functions', selected: true }).waitFor()
+      await dialog.getByRole('tab', { name: 'Skills & Commands' }).click()
+      await dialog.getByRole('tabpanel', { name: 'Skills & Commands' }).waitFor()
+      panelTabs = await dialog.getByRole('tab').allTextContents()
+      await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+      await dialog.waitFor({ state: 'hidden' })
+    }
     const fits = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
     if (!fits || errors.length || external.length) throw new Error('Sheets browser smoke failed: ' + JSON.stringify({ fits, errors, external }))
-    return { schema: 'agentic-graph/sheets-browser-proof/v1', origin: base, artifactDigest, viewport: [360, 800], sample: 80, edited: 130, offlineReload: 130 }
+    return { schema: 'agentic-graph/sheets-browser-proof/v1', origin: base, artifactDigest, viewport: [360, 800], sample: 80, edited: 130, offlineReload: 130, ...(panelTabs && { panelTabs }) }
   } finally { await browser.close() }
 }
