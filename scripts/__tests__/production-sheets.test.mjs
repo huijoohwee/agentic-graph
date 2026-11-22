@@ -69,6 +69,26 @@ test('a panel release upgrades and rolls back the prior inventory without removi
   const unexpected = await fixture(t, [...names, 'other.mjs'])
   await assert.rejects(planSheetsSync(args(unexpected)), /Invalid Sheets artifact file inventory/)
 })
+test('native panel modules upgrade and roll back to the single-module panel inventory', async t => {
+  const bundled = [...names, 'floating-panel.mjs']
+  const modules = ['collection-layout.js', 'floating-panel.js', 'icons.json', 'panel-section.js', 'skills-commands.js', 'toolbar-icons.js']
+  const old = await fixture(t, bundled.sort((a, b) => a.localeCompare(b)))
+  const current = await fixture(t, [...bundled, ...modules].sort((a, b) => a.localeCompare(b)))
+  const plan = source => planSheetsSync({ ...source, graphRoot: source.sourceRoot, mirrorRoot: old.mirrorRoot })
+  await applySheetsSync(await plan(old))
+  const upgrade = await plan(current)
+  const first = path.join(upgrade.targetRoot, modules[0])
+  await fs.writeFile(first, current.bodies.get(modules[0]))
+  await applySheetsSync(await plan(current))
+  const rollback = await plan(old)
+  assert.deepEqual(rollback.obsoletePanels.map(row => row.path).sort(), [...modules].sort())
+  await fs.writeFile(first, 'modified')
+  await assert.rejects(applySheetsSync(rollback), /Changed Sheets panel asset/)
+  await fs.writeFile(first, current.bodies.get(modules[0]))
+  await applySheetsSync(await plan(old))
+  assert.equal((await plan(old)).hasDrift, false)
+  for (const name of modules) await assert.rejects(fs.stat(path.join(upgrade.targetRoot, name)), { code: 'ENOENT' })
+})
 test('route verifier checks every byte, MIME, CSP, worker scope and negative paths', async t => {
   const f = await fixture(t), plan = await planSheetsSync({ ...f, graphRoot: f.sourceRoot }); await applySheetsSync(plan)
   let mode = 'ok'
