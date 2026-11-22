@@ -1,0 +1,340 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "deployed-and-runtime-verified",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "release": {
+    "workflowRunId": "45032847957",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/45032847957",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/45032847957#environment-production",
+    "sourceRevision": "284dc39bf5aa2571c6f30c33d6a321c59fb91ee7",
+    "candidateDigest": "b01c9e6ef3f3b1ffbacc232228c31f78069b2f9e61fdaa4520f51ce2948c5ac7",
+    "lifecycleCandidateDigest": "afde0285e1cc065a8443444315d4dba98ec64f4d48631d894eed086ec3a2266b",
+    "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+    "sourceReleaseReceiptDigest": "3144af776ef7e72642d4a9012802ec0191fdcd00f61b6e6093b490af4e07eb81",
+    "deploymentReceiptDigest": "5c8c2d59d495ebd031cf12394b0dafbe452d5463b03218c0d775e23464100b75",
+    "stateReconciliationReceiptDigest": "686b69f1b85df333eeeb29385c621f8d667e497896208efd15d4d7ae36595ec3",
+    "runtimeVerificationReceiptDigest": "9434076486cc58862c52edddb942c01db38cc5a98c9d61543e853b9f0a8a4d5e",
+    "publicationReceiptDigest": "5aa682b68ebda1bf0031a98862b749d1a71eff6964f37d35f71289412cfb7203",
+    "development": {
+      "status": "verified",
+      "exactCandidateDigest": "b01c9e6ef3f3b1ffbacc232228c31f78069b2f9e61fdaa4520f51ce2948c5ac7",
+      "deploymentId": "e480aca9-08e4-44e3-aa2b-48389ea027a0",
+      "deploymentUrl": "https://e480aca9.agentic-graph-dev.pages.dev",
+      "immutableManifestDigest": "71f44dd50054e4583e6244c6b0be691b526d5b9e2d24dd3d600735c382b8beec",
+      "uiVerificationDigest": "ed1fb2ffe4a657d64213fe89b7522aa8028c57edd5bb7c3d9dab93a1ac73e77a",
+      "sheetsVerificationDigest": "4a4e405bda82896fa8c55b4722f9ed54c9d897470c3a1bb5df375704a9c71b7d",
+      "views": [
+        "Table",
+        "Multi-dimensional Table",
+        "Kanban",
+        "Calendar",
+        "Dashboard",
+        "Base demo route"
+      ],
+      "sheetsBrowser": {
+        "schema": "agentic-graph/sheets-browser-proof/v1",
+        "origin": "https://agentic-graph-dev.pages.dev",
+        "artifactDigest": "f83a48bc73adbb7b8eb1580f08fcc557afcb8536d4c37b0e411e5f1fce423235",
+        "viewport": [
+          360,
+          800
+        ],
+        "sample": 80,
+        "edited": 130,
+        "offlineReload": 130,
+        "panelTabs": [
+          "Functions",
+          "Skills & Commands"
+        ]
+      }
+    },
+    "production": {
+      "status": "deployed-and-verified",
+      "immutableDeploymentId": "e4d8286c-5a5e-4e58-91a1-acfc6ed6463f",
+      "immutableDeploymentOrigin": "https://e4d8286c.joohwee.pages.dev",
+      "deployedAt": "2026-11-22T14:37:44.355Z",
+      "verifiedAt": "2026-11-22T14:42:04.000Z",
+      "deployedArtifactDigest": "c4994beb7942cf01e3869af8615c7c2ad6cdd4aa5ceedfe06f488e21fcbae4d4",
+      "runtimeMarkerParity": true,
+      "publicOrigin": "https://airvio.co",
+      "publicationMirror": "a6d1d7b8614bd35a4b999c8b0346328f19ba80c1",
+      "publicationReview": "https://github.com/huijoohwee/huijoohwee/pull/107",
+      "rollbackTargetDigest": "28647d49bbafd7c531faad5475b693518ba673d2a5e5ccefae25018887816035",
+      "previousDeployment": {
+        "deploymentId": "0bb68fd2-38fc-4368-8cd6-1763bf5ac1d1",
+        "deploymentOrigin": "https://0bb68fd2.joohwee.pages.dev",
+        "deploymentCommitRevision": "31e24c88ba63f7210b239217fcb534cd96683581",
+        "sourceRevision": "31e24c88ba63f7210b239217fcb534cd96683581"
+      },
+      "previousMirrorRevision": "4258858c612b60e052e3769955c41e019cd3db2d"
+    },
+    "storage": {
+      "status": "reconciled",
+      "worker": "agentic-storage",
+      "activeVersion": "274f0088-aac8-41fc-a3ce-fc704999b795",
+      "previousVersion": "f6244c6b-be0c-4a13-afbf-9c50b2bc41d7",
+      "counts": {
+        "documentCount": 31,
+        "chunkCount": 10,
+        "graphCount": 0
+      },
+      "pathHashParity": true,
+      "contentParity": true
+    }
+  },
+  "sourceLanes": [
+    {
+      "laneHead": "5b53f836c93c351fc5f6c2c5c3c73f3ddba8656c",
+      "mergeRevision": "d7e505f02aad482d3ee98fd2040d9b7c7d3f5ff4",
+      "paths": [
+        "canvas/src/__tests__/canvasToolbarDockResponsiveContract.test.ts",
+        "canvas/src/__tests__/sharedUiIconSizeProfile.test.mjs",
+        "canvas/src/index.css",
+        "canvas/src/main.tsx",
+        "canvas/src/observability.tsx"
+      ],
+      "pullRequest": 2039,
+      "ref": "agent/device-0232231d4a19/shared-toolbar-ownership",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2039"
+    }
+  ],
+  "supportingChanges": [
+    {
+      "laneHead": "1a67c4bcd23cff1d07c86813682178c21681b481",
+      "mergeRevision": "658dbdb76cea3cbc12ccc5d7fbc00fb045e33666",
+      "paths": [
+        ".github/workflows/release.yml"
+      ],
+      "pullRequest": 2042,
+      "ref": "agent/device-0232231d4a19/runner-pin-ubuntu-2404",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2042"
+    },
+    {
+      "laneHead": "298ba10dd14120e070edcf12266bf9b2b20dc1e2",
+      "mergeRevision": "2ad3f74682e2c2805259907d9e31f8318c3e97fc",
+      "paths": [
+        "scripts/pages-mirror-headers.mjs"
+      ],
+      "pullRequest": 2043,
+      "ref": "agent/device-0232231d4a19/headers-rule-consolidation",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2043"
+    },
+    {
+      "laneHead": "195f2daa7f9c03c7d0ab3e068d0616eb516cd76f",
+      "mergeRevision": "9be3dfde9626f736d6aa2f61a690951e1f862ed0",
+      "paths": [
+        "scripts/production-sheets.mjs"
+      ],
+      "pullRequest": 2044,
+      "ref": "agent/device-0232231d4a19/sheets-dev-csp-verification",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2044"
+    },
+    {
+      "laneHead": "5e6c3917ba993c73438514b85111ddc532e01f0b",
+      "mergeRevision": "92725152dfc0c5f03038c1124d57075aec379da8",
+      "paths": [
+        "scripts/production-sheets.mjs"
+      ],
+      "pullRequest": 2046,
+      "ref": "agent/device-0232231d4a19/sheets-public-path-headers",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2046"
+    },
+    {
+      "laneHead": "4a721c789cabe8fa691a1962dd83b8933473603c",
+      "mergeRevision": "5610c3c437cd7f7be9493da01d380bfd10cc2724",
+      "paths": [
+        "scripts/__tests__/production-sheets.test.mjs",
+        "scripts/production-sheets.mjs"
+      ],
+      "pullRequest": 2047,
+      "ref": "agent/device-0232231d4a19/sheets-pages-index-routing",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2047"
+    },
+    {
+      "laneHead": "f3c2b8c48760820974601fdb2aacee7ba2fd74f3",
+      "mergeRevision": "ac0f87b087a9f3f6892688451085659df7daa319",
+      "paths": [
+        "scripts/__tests__/production-sheets.test.mjs",
+        "scripts/agentic-sheets-source.json",
+        "scripts/production-sheets.mjs"
+      ],
+      "pullRequest": 2048,
+      "ref": "agent/device-0232231d4a19/sheets-panel-release-pin",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2048"
+    },
+    {
+      "laneHead": "ea8ba2f10ad32aaf0c3bdc9010d668013773b6c9",
+      "mergeRevision": "284dc39bf5aa2571c6f30c33d6a321c59fb91ee7",
+      "paths": [
+        "scripts/__tests__/production-sheets.test.mjs",
+        "scripts/cloudflare-public-html.mjs",
+        "scripts/production-sheets.mjs",
+        "scripts/verify-agentic-base-route.mjs"
+      ],
+      "pullRequest": 2050,
+      "ref": "agent/device-0232231d4a19/sheets-public-html-proof",
+      "state": "MERGED",
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2050"
+    }
+  ],
+  "featureReadiness": {
+    "graphPanelFamily": {
+      "features": [
+        "MainPanel",
+        "FloatingPanel",
+        "BottomPanel"
+      ],
+      "designSystemRevision": "d60b569179c23a14418616abc265d22f2da00e30",
+      "development": "Graph uses the shared panel styles, controls and tabs. Graph retains product content, view state and placement. The toolbar integration passed its protected checks.",
+      "production": "The Graph source containing the shared toolbar and panel components passed the protected production browser and returning-client gates.",
+      "scope": "Evidence covers protected Graph release checks and the named Sheets interactions on the public mobile route."
+    },
+    "mountedSheets": {
+      "sourceRevision": "825811a563cea22fc0898fe842f596bf156af850",
+      "artifactDigest": "f83a48bc73adbb7b8eb1580f08fcc557afcb8536d4c37b0e411e5f1fce423235",
+      "verifiedProductionOrigins": [
+        {
+          "origin": "https://e4d8286c.joohwee.pages.dev",
+          "matchingResponses": 22,
+          "missingRoutesReturning404": 3,
+          "html": [
+            {
+              "path": "/agentic-sheets/",
+              "status": 200,
+              "sha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232"
+            },
+            {
+              "path": "/agentic-sheets/index.html",
+              "status": 200,
+              "sha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232"
+            }
+          ]
+        },
+        {
+          "origin": "https://joohwee.pages.dev",
+          "matchingResponses": 22,
+          "missingRoutesReturning404": 3,
+          "html": [
+            {
+              "path": "/agentic-sheets/",
+              "status": 200,
+              "sha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232"
+            },
+            {
+              "path": "/agentic-sheets/index.html",
+              "status": 200,
+              "sha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232"
+            }
+          ]
+        },
+        {
+          "origin": "https://airvio.co",
+          "matchingResponses": 22,
+          "missingRoutesReturning404": 3,
+          "html": [
+            {
+              "path": "/agentic-sheets/",
+              "status": 200,
+              "sha256": "ddf00314ec3008ea4e4f59b71116e9c850f3dfcc2cb5294134923226099bfbe9",
+              "canonicalSha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232",
+              "normalization": [
+                "cloudflare-webmcp-bridge/v1",
+                "cloudflare-js-detection/v2"
+              ]
+            },
+            {
+              "path": "/agentic-sheets/index.html",
+              "status": 200,
+              "sha256": "bd7938787692b7bde2b809583f55de16ff55c4941d530002f6580dff7cee086c",
+              "canonicalSha256": "34c5c28f29c4372ab44bc389d0723d0521bed1609077280baaf46eba785ea232",
+              "normalization": [
+                "cloudflare-webmcp-bridge/v1",
+                "cloudflare-js-detection/v2"
+              ]
+            }
+          ]
+        }
+      ],
+      "publicMobileOffline": {
+        "schema": "agentic-graph/sheets-browser-proof/v1",
+        "origin": "https://airvio.co",
+        "artifactDigest": "f83a48bc73adbb7b8eb1580f08fcc557afcb8536d4c37b0e411e5f1fce423235",
+        "viewport": [
+          360,
+          800
+        ],
+        "sample": 80,
+        "edited": 130,
+        "offlineReload": 130,
+        "panelTabs": [
+          "Functions",
+          "Skills & Commands"
+        ]
+      },
+      "independentlyObserved": {
+        "schema": "agentic-graph/sheets-browser-proof/v1",
+        "origin": "https://airvio.co",
+        "artifactDigest": "f83a48bc73adbb7b8eb1580f08fcc557afcb8536d4c37b0e411e5f1fce423235",
+        "viewport": [
+          360,
+          800
+        ],
+        "sample": 80,
+        "edited": 130,
+        "offlineReload": 130,
+        "panelTabs": [
+          "Functions",
+          "Skills & Commands"
+        ]
+      }
+    },
+    "embeddedBase": {
+      "graphPackageRevision": "547fe7d0c1afdbdb9a0c70f7be4ee64dc81c73e1",
+      "publicDemoSourceRevision": "ce6d913453bf3f3d8d8db32e611ae38e5bc183b2",
+      "publicDemoArtifactDigest": "9e68264e0780ad692d9718b44374fe0c35817b36241fb4e0fa462cba54732418",
+      "decision": "Retained the existing Base package and demo pins. A newer demo changed the asset contract; the released demo passed checks on all three production origins."
+    }
+  },
+  "previousAttempts": [
+    {
+      "run": "45028008303",
+      "result": "Dev verified. Production preflight stopped before upload on an expired Core owner key."
+    },
+    {
+      "run": "45029801150",
+      "result": "Pages uploaded. Sheets HTML verification failed before Worker activation. The previous Pages deployment, D1 state and all three transport readbacks were restored. No mirror publication occurred."
+    }
+  ],
+  "retainedEvidence": {
+    "terminalCarrierSha256": "395d81bb77f9fb4f806a8e2b26b877e8e5cfab1010b4c3b9e51c3fbb752ee13d",
+    "completedLifecycle": "production-complete",
+    "devReceiptFileSha256": "20f4833b82cc9fcf172aec624b6eb51a26581a1cb903cbe7ab3c1526363a6d7d",
+    "baseAndSheetsProductionFileSha256": "3debc0399a8b87b825a0f0769b114ccd5bf99001b90894ada507333a86611d00",
+    "independentPublicReadbackFileSha256": "6c0e6115ab333644b5d26267a27babef13899ea26af8eccfd63aa6a0f717cae0",
+    "workflowArtifacts": [
+      {
+        "name": "production-lifecycle-complete-284dc39bf5aa2571c6f30c33d6a321c59fb91ee7-45032847957",
+        "digest": "sha256:c959c11f23f8fee9c5a165196d0fc3312349dc7f0797bf1a1c93801297b4c1de"
+      },
+      {
+        "name": "pages-dev-evidence-284dc39bf5aa2571c6f30c33d6a321c59fb91ee7-45032847957",
+        "digest": "sha256:1268e9fb23531d3ba45051f400dfc4372825139811f2c39ce87e75e50797817d"
+      },
+      {
+        "name": "production-release-evidence-284dc39bf5aa2571c6f30c33d6a321c59fb91ee7-45032847957",
+        "digest": "sha256:079c1d7acefc97d9b573ad5c6fd0a7679ed54210acb35e9aea68aa5f2e7b1f20"
+      }
+    ]
+  },
+  "handover": {
+    "remainingWork": "The parent feature is released. Supporting changes are listed with their own exact source identities. A Base pin upgrade requires an adapter update and separate qualification.",
+    "nextOwnerAction": "Use the current Sheets and Graph releases for shared panel work. Preserve the release and rollback identities for subsequent promotions."
+  }
+}

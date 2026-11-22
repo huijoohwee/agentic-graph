@@ -503,6 +503,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1791",
       "reason": "The only changed path in PR #1791 is the delivery-disposition ledger. This ledger is excluded from the product artifact by the production mirror artifact allowlist; this lane performs no deployment."
     },
+    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-0232231d4a19/shared-toolbar-ownership","laneHead":"5b53f836c93c351fc5f6c2c5c3c73f3ddba8656c","paths":["canvas/src/__tests__/canvasToolbarDockResponsiveContract.test.ts","canvas/src/__tests__/sharedUiIconSizeProfile.test.mjs","canvas/src/index.css","canvas/src/main.tsx","canvas/src/observability.tsx"],"disposition":"deployed","candidateRevision":"284dc39bf5aa2571c6f30c33d6a321c59fb91ee7","candidateDigest":"b01c9e6ef3f3b1ffbacc232228c31f78069b2f9e61fdaa4520f51ce2948c5ac7","sourceReleaseReceiptDigest":"3144af776ef7e72642d4a9012802ec0191fdcd00f61b6e6093b490af4e07eb81","deploymentReceiptDigest":"5c8c2d59d495ebd031cf12394b0dafbe452d5463b03218c0d775e23464100b75","runtimeVerificationReceiptDigest":"9434076486cc58862c52edddb942c01db38cc5a98c9d61543e853b9f0a8a4d5e","evidencePath":"docs/reports/production-delivery-evidence-45032847957.json","evidenceDigest":"5498b6cb01ccf3388f1623dbba96b8bed05087977f848191af434caadd68a130","decisionRef":"https://github.com/huijoohwee/agentic-graph/actions/runs/45032847957#environment-production","reason":null},
     {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/software-forensics-browser-local-rebuild",
@@ -594,5 +595,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "78cb8617c069803dd1bf45a8126ec8373484f3f992037d961b2919c9088f3be1"
+  "receiptDigest": "bd93ebd1831ea255653a2c3cc991867e22f84b48ab9fa60a9f22ea7dbabcdfec"
 }
