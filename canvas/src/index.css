@@ -1,4 +1,4 @@
-@import '@agentic-base/views-react/toolbar.css';
+@import 'agentic-design-system/panels.css';
 @import "tailwindcss";
 @import './styles/tailwind-theme.css';
 @import 'katex/dist/katex.min.css';
