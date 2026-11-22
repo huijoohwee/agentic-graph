@@ -84,13 +84,27 @@ export const buildAgentReadyHeaders = ({
   agentReadyHomepageLinkHeaderValue,
   productionRuntimeReadinessHeaderLines,
 }) => {
+  const isAgentSkillMarkdown = relativePath =>
+    relativePath.startsWith('.well-known/agent-skills/') && relativePath.endsWith('.md')
+  const artifactEntries = Object.entries(artifacts)
+  const skillMarkdownEntries = artifactEntries.filter(([relativePath]) => isAgentSkillMarkdown(relativePath))
+  const skillMarkdownContentTypes = new Set(skillMarkdownEntries.map(([, artifact]) => artifact.contentType))
+  const collapseSkillMarkdown = skillMarkdownEntries.length > 0 && skillMarkdownContentTypes.size === 1
+  const exactArtifactEntries = collapseSkillMarkdown
+    ? artifactEntries.filter(([relativePath]) => !isAgentSkillMarkdown(relativePath))
+    : artifactEntries
   const staticArtifactBlock = [
     GENERATED_AGENT_HEADERS_START,
-    ...Object.entries(artifacts).flatMap(([relativePath, artifact]) => [
+    ...exactArtifactEntries.flatMap(([relativePath, artifact]) => [
       `/${relativePath}`,
       `  Content-Type: ${artifact.contentType}`,
       '  Cache-Control: public, max-age=3600',
     ]),
+    ...(collapseSkillMarkdown ? [
+      '/.well-known/agent-skills/*.md',
+      `  Content-Type: ${[...skillMarkdownContentTypes][0]}`,
+      '  Cache-Control: public, max-age=3600',
+    ] : []),
     GENERATED_AGENT_HEADERS_END,
   ].join('\n')
   const appShellHeaderBlock = [
