@@ -4,7 +4,7 @@
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
     "sourceRevision": "0e1a21ff98a02604b7f733c6705380133c3d7d1c",
-    "registryRevision": "5e3b04e8510d05923d43a0ebac40a583544ec857",
+    "registryRevision": "d60b569179c23a14418616abc265d22f2da00e30",
     "sourcePath": "site/tokens/shared-ui-profile.json",
     "sourceSha256": "sha256:bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3",
     "projectionPath": "site/vendor/shared-ui-profile.css",
