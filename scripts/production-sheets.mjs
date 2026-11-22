@@ -163,7 +163,7 @@ export async function verifySheetsRoute({ artifactRoot, origins, fetchImpl = fet
       for (const routePath of name === 'index.html' ? ['/agentic-sheets/', '/agentic-sheets/index.html'] : [`/agentic-sheets/${name}`]) {
         const response = await get(routePath), actual = Buffer.from(await response.arrayBuffer())
         if (response.status !== 200 || !mime(name).test(response.headers.get('content-type') || '') || !actual.equals(body)) throw new Error('Sheets live artifact mismatch: ' + routePath)
-        if (name === 'index.html' && response.headers.get('content-security-policy') !== SHEETS_CSP) throw new Error('Sheets enforced CSP mismatch')
+        if (name === 'index.html' && !String(response.headers.get('content-security-policy') || '').split(', ').map(policy => policy.trim()).includes(SHEETS_CSP)) throw new Error('Sheets enforced CSP mismatch')
         if (name === 'sw.js' && response.headers.get('service-worker-allowed') !== '/agentic-sheets/') throw new Error('Sheets worker scope mismatch')
         observations.push({ path: routePath, status: response.status, sha256: digest(actual) })
       }
