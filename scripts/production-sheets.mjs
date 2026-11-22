@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { normalizeCloudflarePublicHtml } from './cloudflare-public-html.mjs'
 import { assertSafeRoot, resolveWithin } from './production-mirror-artifact-paths.mjs'
 
 const scriptRoot = path.dirname(fileURLToPath(import.meta.url))
@@ -146,7 +147,7 @@ export async function applySheetsSync(plan) {
 }
 const mime = name => name.endsWith('.html') ? /text\/html/i : name.endsWith('.mjs') || name.endsWith('.js') ? /(?:javascript|ecmascript)/i
   : name.endsWith('.css') ? /text\/css/i : name.endsWith('.json') || name.endsWith('.webmanifest') ? /(?:json|manifest)/i : /text\/plain/i
-export async function verifySheetsRoute({ artifactRoot, origins, fetchImpl = fetch, sourceRevision } = {}) {
+export async function verifySheetsRoute({ artifactRoot, origins, publicOrigin, fetchImpl = fetch, sourceRevision } = {}) {
   const root = assertSafeRoot(artifactRoot, 'Sheets artifact'), route = JSON.parse(await fs.readFile(resolveWithin(root, routeName)))
   const pin = await loadSheetsPin()
   if (route.schema !== 'agentic-graph/sheets-route/v1' || route.sourceRepository !== pin.repository || route.sourceRevision !== (sourceRevision || pin.revision)) throw new Error('Sheets route source mismatch')
@@ -169,10 +170,22 @@ export async function verifySheetsRoute({ artifactRoot, origins, fetchImpl = fet
     for (const [name, body] of files) {
       for (const routePath of name === 'index.html' ? ['/agentic-sheets/', '/agentic-sheets/index.html'] : [`/agentic-sheets/${name}`]) {
         const response = await get(routePath), actual = Buffer.from(await response.arrayBuffer())
-        if (response.status !== 200 || !mime(name).test(response.headers.get('content-type') || '') || !actual.equals(body)) throw new Error('Sheets live artifact mismatch: ' + routePath)
+        const contentType = response.headers.get('content-type') || ''
+        const normalized = name === 'index.html' && url.origin === publicOrigin && !actual.equals(body)
+          ? normalizeCloudflarePublicHtml(actual, url.origin)
+          : { body: actual, normalization: [] }
+        const sha256 = digest(actual)
+        if (response.status !== 200 || !mime(name).test(contentType) || !normalized.body.equals(body)) {
+          throw new Error(`Sheets live artifact mismatch: ${url.origin}${routePath} (HTTP ${response.status}, MIME ${contentType}, raw ${sha256}, canonical ${digest(normalized.body)}, expected ${digest(body)})`)
+        }
         if (name === 'index.html' && !String(response.headers.get('content-security-policy') || '').split(', ').map(policy => policy.trim()).includes(SHEETS_CSP)) throw new Error('Sheets enforced CSP mismatch')
         if (name === 'sw.js' && response.headers.get('service-worker-allowed') !== '/agentic-sheets/') throw new Error('Sheets worker scope mismatch')
-        observations.push({ path: routePath, status: response.status, sha256: digest(actual) })
+        const observation = { path: routePath, status: response.status, sha256 }
+        if (normalized.normalization.length) {
+          observation.canonicalSha256 = digest(normalized.body)
+          observation.normalization = normalized.normalization
+        }
+        observations.push(observation)
       }
     }
     for (const missing of ['missing-sheet-route', 'missing.js', 'assets/missing.css']) {
