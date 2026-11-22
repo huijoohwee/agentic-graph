@@ -6369,7 +6369,7 @@ export default defineConfig(({ command, mode }) => {
                   return 'settings-mcp-core'
                 }
                 const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticGraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
+                  /\/src\/features\/panels\/views\/(agentic-graph-tool-server-docs|apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|larkAppMcpApiDocs|miromindMcpApiDocs|moomooMarketMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|tradingRuntimeGatewayDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
                 )
                 if (settingsMcpDocModuleMatch) {
                   return `settings-${settingsMcpDocModuleMatch[1]}`

@@ -128,15 +128,18 @@ export const discoverSitemapUrl = async (rootUrl: string): Promise<string | null
   return `${origin}/sitemap.xml`
 }
 
-export const crawlInternalUrls = async (args: {
+export const indexInternalUrls = async (args: {
   rootUrl: string
   seedUrls: string[]
   maxPages: number
   timeoutMs: number
   maxBytes: number
-}): Promise<string[]> => {
+  maxRequests?: number
+  signal?: AbortSignal
+  readText?: typeof fetchTextWithLimit
+}): Promise<{ urls: string[]; limited: boolean }> => {
   const root = normalizeUrl(args.rootUrl)
-  if (!root) return []
+  if (!root) return { urls: [], limited: false }
 
   const maxPages = Math.max(1, Math.min(500, Math.floor(args.maxPages)))
   const visited = new Set<string>()
@@ -155,16 +158,24 @@ export const crawlInternalUrls = async (args: {
 
   const out: string[] = []
   let fetched = 0
-  const fetchLimit = Math.max(6, Math.min(120, maxPages * 3))
+  const fetchLimit = Math.max(6, Math.min(120, Number.isFinite(args.maxRequests) ? Math.floor(args.maxRequests!) : maxPages * 3))
   let queueIdx = 0
+  let limited = false
 
   while (queueIdx < queue.length && out.length < maxPages && fetched < fetchLimit) {
+    args.signal?.throwIfAborted()
     const u = queue[queueIdx] as string
     queueIdx += 1
     out.push(u)
     fetched += 1
 
-    const htmlRes = await fetchTextWithLimit(u, { timeoutMs: args.timeoutMs, maxBytes: args.maxBytes, accept: 'text/html,*/*;q=0.9' })
+    const htmlRes = await (args.readText || fetchTextWithLimit)(u, {
+      timeoutMs: args.timeoutMs,
+      maxBytes: args.maxBytes,
+      accept: 'text/html,*/*;q=0.9',
+      signal: args.signal,
+    })
+    args.signal?.throwIfAborted()
     if (!htmlRes.ok) continue
     const html = String(htmlRes.text || '')
     for (const href of extractInternalUrlCandidatesFromHtml(html, u, root)) {
@@ -173,8 +184,20 @@ export const crawlInternalUrls = async (args: {
     }
   }
 
-  return out
+  limited = queueIdx < queue.length
+  return { urls: out, limited }
 }
+
+export const crawlInternalUrls = async (args: {
+  rootUrl: string
+  seedUrls: string[]
+  maxPages: number
+  timeoutMs: number
+  maxBytes: number
+  maxRequests?: number
+  signal?: AbortSignal
+  readText?: typeof fetchTextWithLimit
+}): Promise<string[]> => (await indexInternalUrls(args)).urls
 
 export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, opts: {
   timeoutMs: number; maxBytes: number; maxSitemaps: number; discover?: boolean; maxUrls?: number; signal?: AbortSignal

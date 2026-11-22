@@ -155,6 +155,55 @@ test('cold and warm endpoint discovery preserves inventory while avoiding browse
   }
 })
 
+test('discovery recursively indexes nested same-site pages beyond the entry page', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  const requested: string[] = []
+  const source = createServer((req, res) => {
+    requested.push(req.url || '')
+    res.setHeader('Content-Type', 'text/html')
+    switch (req.url) {
+      case '/docs/':
+        res.end('<a href="/docs/guides/">Guides</a>')
+        return
+      case '/docs/guides/':
+        res.end('<a href="/docs/guides/start/">Start</a>')
+        return
+      case '/docs/guides/start/':
+        res.end('<h1>Start</h1>')
+        return
+      default:
+        res.writeHead(404)
+        res.end()
+    }
+  })
+  const sourceBase = await listen(source)
+  const handler = createWebsiteImportHandler({ repoRoot: tmpdir() })
+  const api = createServer((req, res) => { void handler(req, res, () => { res.statusCode = 404; res.end() }) })
+  const base = await listen(api)
+  try {
+    const response = await fetch(base + '/__website_import/discover', {
+      method: 'POST',
+      body: JSON.stringify({ rootUrl: sourceBase + '/docs/', url: sourceBase + '/docs/' }),
+    })
+    assert.equal(response.status, 200)
+    const result = await response.json() as { ok: boolean; pages: Array<{ url: string }>; limited?: boolean }
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.pages.map(page => page.url), [
+      sourceBase + '/docs/',
+      sourceBase + '/docs/guides/',
+      sourceBase + '/docs/guides/start/',
+    ])
+    assert.equal(result.limited, false)
+    assert.ok(requested.includes('/docs/guides/'), 'recursive indexing fetches nested pages beyond the entry route')
+  } finally {
+    await close(api)
+    await close(source)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
 test('overlapping discovery is rejected and client cancellation releases its admission', async () => {
   const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
   process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
@@ -232,6 +281,10 @@ test('page selection is explicit, bounded and constrained to the source scope', 
   const root = 'https://example.test/library/'
   assert.equal(validateSelectedWebsiteUrls(root, undefined), undefined)
   assert.deepEqual(validateSelectedWebsiteUrls(root, [root + 'a#first', root + 'a#second', root + 'a?q=2']), [root + 'a', root + 'a?q=2'])
+  assert.deepEqual(validateSelectedWebsiteUrls('https://example.test/api/overview/', ['https://example.test/api/overview/', 'https://example.test/api/guides/']), [
+    'https://example.test/api/overview/',
+    'https://example.test/api/guides/',
+  ])
   assert.deepEqual(validateSelectedWebsiteUrls('https://devpost.com/hackathons', ['https://medo.devpost.com/', 'https://agents-assemble.devpost.com/']), [
     'https://medo.devpost.com/',
     'https://agents-assemble.devpost.com/',
@@ -310,7 +363,7 @@ test('headless discovery includes explicit card URLs without collecting state or
   } finally { await crawler.close(); await close(source) }
 })
 
-test('discovery combines rendered navigation, robots and recursive sitemaps without importing pages', async () => {
+test('discovery combines rendered navigation, robots and recursive sitemaps without materializing imported pages', async () => {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'website-sitemap-discovery-'))
   const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
   process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
@@ -347,7 +400,8 @@ test('discovery combines rendered navigation, robots and recursive sitemaps with
     assert.equal(result.limited, true, 'a rejected referenced sitemap is reported as partial')
     assert.equal(outsideRequests, 0, 'sitemap references and redirects cannot change origin')
     assert.equal(requests.filter(url => url === '/maps/index.xml').length, 1, 'index cycles are visited once')
-    assert.ok(!requests.includes('/library/visible') && !requests.some(url => url.startsWith('/library/hidden')), 'finding a page must not crawl it')
+    assert.ok(requests.includes('/library/visible'), 'discovery can recursively index a rendered descendant page')
+    assert.ok(!requests.includes('/outside-scope') && !requests.includes('/library/asset.png'), 'discovery stays within crawlable document scope')
     assert.deepEqual(await fs.readdir(root), [], 'discovery must not write artifacts')
   } finally {
     await close(api); await close(source); await close(outside); await fs.rm(root, { recursive: true, force: true })

@@ -124,7 +124,6 @@ const NON_DOCUMENT_EXTENSIONS = new Set([
 ])
 
 const NON_DOCUMENT_PATH_PREFIXES = [
-  '/api/',
   '/assets/',
   '/static/',
   '/cdn-cgi/',

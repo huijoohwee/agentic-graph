@@ -11,10 +11,6 @@ import { SEALION_API_DOC_AREA } from './sealionApiDocs'
 import { QWEN_API_DOC_AREA } from './qwenApiDocs'
 import { Z_AI_API_DOC_AREA } from './zAiApiDocs'
 import { GOOGLE_CLOUD_API_DOC_AREA } from './googleCloudApiDocs'
-import { STRIPE_PAYMENT_API_DOC_AREA } from './stripePaymentApiDocs'
-import {
-  TRAVEL_AGENCY_PAYMENT_API_DOC_AREA,
-} from './travelAgencyPaymentApiDocs'
 import {
   BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA,
 } from './byteplusImageGenerationApiDocs'
@@ -33,17 +29,18 @@ import { MAPS_GRABMAPS_DIRECTIONS_REQUEST_DOC_AREA } from './grabmapsDirectionsA
 import { MAPS_GRABMAPS_MCP_DOC_AREA } from './grabmapsMcpApiDocs'
 import { API_NATIVE_BROWSER_MCP_DOC_AREA } from './apiNativeBrowserMcpApiDocs'
 import { AGENTIC_OS_TOOL_SERVER_DOC_AREA } from './agentic-graph-tool-server-docs'
+import { TRADING_RUNTIME_GATEWAY_DOC_AREA } from './tradingRuntimeGatewayDocs'
 import { EXTERNAL_MCP_TOOL_SERVER_DOC_AREA } from './externalMcpToolServerDocs'
 import { CRAWLER_ACCESS_MCP_DOC_AREA } from './crawlerAccessMcpApiDocs'
 import { CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA } from './cloudflareAiGatewayMcpApiDocs'
 import { BYTEPLUS_MODELARK_MCP_DOC_AREA } from './byteplusModelArkMcpApiDocs'
 import { OPENAI_MCP_DOC_AREA } from './openaiMcpApiDocs'
 import { EXA_MCP_DOC_AREA } from './exaMcpApiDocs'
+import { MOOMOO_MARKET_MCP_DOC_AREA } from './moomooMarketMcpApiDocs'
 import { EXA_SEARCH_API_DOC_AREA } from './exaSearchApiDocs'
 import { FEISHU_BASE_MCP_DOC_AREA } from './feishuBaseMcpApiDocs'
 import { LARK_APP_MCP_DOC_AREA } from './larkAppMcpApiDocs'
 import { STRIPE_MCP_DOC_AREA } from './stripeMcpApiDocs'
-import { MIROMIND_MCP_DOC_AREA } from './miromindMcpApiDocs'
 import { SEALION_MCP_DOC_AREA } from './sealionMcpApiDocs'
 import { AGENTIC_OS_VDEOXPLN_DOC_AREA } from './vdeoxplnMcpApiDocs'
 import { VIDEODB_MCP_DOC_AREA } from './videodbMcpApiDocs'
@@ -93,12 +90,14 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   MAPS_GRABMAPS_DOC_AREA,
   API_NATIVE_BROWSER_MCP_DOC_AREA,
   AGENTIC_OS_TOOL_SERVER_DOC_AREA,
+  TRADING_RUNTIME_GATEWAY_DOC_AREA,
   EXTERNAL_MCP_TOOL_SERVER_DOC_AREA,
   CRAWLER_ACCESS_MCP_DOC_AREA,
   CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA,
   BYTEPLUS_MODELARK_MCP_DOC_AREA,
   OPENAI_MCP_DOC_AREA,
   EXA_MCP_DOC_AREA,
+  MOOMOO_MARKET_MCP_DOC_AREA,
   FEISHU_BASE_MCP_DOC_AREA,
   LARK_APP_MCP_DOC_AREA,
   STRIPE_MCP_DOC_AREA,
@@ -161,74 +160,12 @@ export function settingsAreaSortWeight(area: string): number {
   return idx >= 0 ? idx : Number.MAX_SAFE_INTEGER
 }
 
-export function isIntegrationsOwnedSetting(key: string, areaRaw: string): boolean {
-  const area = normalizeSettingsAreaLabel(areaRaw)
-  if (
-    area === 'Chat'
-    || area === 'Integrations'
-    || area === EXA_SEARCH_API_DOC_AREA
-    || area === BYTEPLUS_SHARED_TEXT_API_DOC_AREA
-    || area === BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA
-    || area === BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA
-    || area === GEMINI_VIDEO_GENERATION_API_DOC_AREA
-    || area === SENSENOVA_API_DOC_AREA
-    || area === VIDEODB_API_DOC_AREA
-    || area === MIROMIND_API_DOC_AREA
-    || area === AGNES_API_DOC_AREA
-    || area === SEALION_API_DOC_AREA
-    || area === QWEN_API_DOC_AREA
-    || area === Z_AI_API_DOC_AREA
-    || area === GOOGLE_CLOUD_API_DOC_AREA
-    || area === OPENAI_CHAT_API_DOC_AREA
-    || area === OPENAI_IMAGES_API_DOC_AREA
-    || area === BYTEPLUS_MODELARK_MCP_DOC_AREA
-    || area === OPERATOR_DEPLOY_MCP_DOC_AREA
-  ) {
-    return true
-  }
-  return key.startsWith('chat') || key === 'integrationConfigsJson'
-}
-
-export function isPaymentsOwnedSetting(key: string, areaRaw: string): boolean {
-  const area = normalizeSettingsAreaLabel(areaRaw)
-  if (area === STRIPE_PAYMENT_API_DOC_AREA || area === TRAVEL_AGENCY_PAYMENT_API_DOC_AREA) return true
-  return key.startsWith('payments.')
-}
-
-export function isMapsOwnedSetting(key: string, areaRaw: string): boolean {
-  const area = normalizeSettingsAreaLabel(areaRaw)
-  if (key.includes('.mcp.')) return false
-  if (
-    area === MAPS_GRABMAPS_DOC_AREA
-    || area === MAPS_GRABMAPS_DIRECTIONS_REQUEST_DOC_AREA
-    || area === MAPS_GEO_DOC_AREA
-    || area === MAPS_MAPLIBRE_DOC_AREA
-  ) return true
-  if (key === 'autoEnableGeospatialOnGeoImport') return true
-  return key.startsWith('maps.')
-}
-
-export function isMcpOwnedSetting(key: string, areaRaw: string): boolean {
-  const area = normalizeSettingsAreaLabel(areaRaw)
-  if (area === MAPS_GRABMAPS_MCP_DOC_AREA) return true
-  if (area === API_NATIVE_BROWSER_MCP_DOC_AREA) return true
-  if (area === AGENTIC_OS_TOOL_SERVER_DOC_AREA) return true
-  if (area === EXTERNAL_MCP_TOOL_SERVER_DOC_AREA) return true
-  if (area === CRAWLER_ACCESS_MCP_DOC_AREA) return true
-  if (area === CLOUDFLARE_AI_GATEWAY_MCP_DOC_AREA) return true
-  if (area === BYTEPLUS_MODELARK_MCP_DOC_AREA) return true
-  if (area === OPENAI_MCP_DOC_AREA) return true
-  if (area === EXA_MCP_DOC_AREA) return true
-  if (area === FEISHU_BASE_MCP_DOC_AREA) return true
-  if (area === LARK_APP_MCP_DOC_AREA) return true
-  if (area === STRIPE_MCP_DOC_AREA) return true
-  if (area === MIROMIND_MCP_DOC_AREA) return true
-  if (area === SEALION_MCP_DOC_AREA) return true
-  if (area === AGENTIC_OS_VDEOXPLN_DOC_AREA) return true
-  if (area === OPERATOR_DEPLOY_MCP_DOC_AREA) return true
-  if (area === VIDEODB_MCP_DOC_AREA) return true
-  return key.includes('.mcp.')
-}
+export {
+  isIntegrationsOwnedSetting,
+  isMapsOwnedSetting,
+  isMcpOwnedSetting,
+  isPaymentsOwnedSetting,
+} from './settingsOwnershipRegistry'
 
 export function buildDocMappedEntry(
   entry: {

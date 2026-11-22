@@ -6401,6 +6401,146 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-feishu-base-mcp.ts:L16"
   },
+  "search.moomooMarket.mcp.authBoundary": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "auth boundary",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L75"
+  },
+  "search.moomooMarket.mcp.connectedStatus": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "connected status",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L81"
+  },
+  "search.moomooMarket.mcp.connectionMode": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "connection mode",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L46"
+  },
+  "search.moomooMarket.mcp.enabledTools": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "enabled tools",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L40"
+  },
+  "search.moomooMarket.mcp.maxRows": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "max rows",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L61"
+  },
+  "search.moomooMarket.mcp.remoteUrl": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "remote url",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L27"
+  },
+  "search.moomooMarket.mcp.requireToolReview": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "require tool review",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L69"
+  },
+  "search.moomooMarket.mcp.serverKey": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "server key",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L21"
+  },
+  "search.moomooMarket.mcp.startupTimeoutMs": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "startup timeout (ms)",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L53"
+  },
+  "search.moomooMarket.mcp.toolProfile": {
+    "area": "Search",
+    "modules": [
+      "canvas/src/features/settings/registry-moomoo-market-mcp.ts"
+    ],
+    "classes": [],
+    "functions": [],
+    "responsibility": "tool profile",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-moomoo-market-mcp.ts:L33"
+  },
   "selectionFlashDurationMs": {
     "area": "Selection Flash",
     "modules": [

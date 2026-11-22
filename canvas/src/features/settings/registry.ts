@@ -7,6 +7,7 @@ import { paymentsSettingsRegistry } from './registry-payments'
 import { searchSettingsRegistry } from './registry-search'
 import { openAiMcpSettingsRegistry } from './registry-openai-mcp'
 import { feishuBaseMcpSettingsRegistry } from './registry-feishu-base-mcp'
+import { moomooMarketMcpSettingsRegistry } from './registry-moomoo-market-mcp'
 import { operatorDeployMcpSettingsRegistry } from './registry-operator-deploy'
 
 export const settingsRegistry: SettingMeta[] = [
@@ -15,6 +16,7 @@ export const settingsRegistry: SettingMeta[] = [
   ...presetAndEnvSettingsRegistry,
   ...searchSettingsRegistry,
   ...feishuBaseMcpSettingsRegistry,
+  ...moomooMarketMcpSettingsRegistry,
   ...openAiMcpSettingsRegistry,
   ...operatorDeployMcpSettingsRegistry,
   ...paymentsSettingsRegistry,
