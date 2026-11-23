@@ -27,16 +27,17 @@ export type AgenticOsRemoteGrammarSigil = '/' | '#' | '@'
 const REMOTE_GRAMMAR_SIGIL_ORDER: readonly AgenticOsRemoteGrammarSigil[] = ['/', '#', '@'] as const
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const normalizeToken = (value: unknown): string => normalizeString(value)
+// Route lists are digest inputs. Preserve every valid relation from the catalog.
 const normalizeRelatedTokens = (value: unknown, sigil: '#' | '@'): string[] => {
   const tokenPattern = sigil === '@'
     ? /^@[A-Za-z0-9_.-]+:?$/
     : /^#[A-Za-z0-9_.-]+$/
   return Array.isArray(value)
-    ? [...new Set(value.map(normalizeString).filter(token => token.startsWith(sigil) && tokenPattern.test(token)))].slice(0, 12)
+    ? [...new Set(value.map(normalizeString).filter(token => token.startsWith(sigil) && tokenPattern.test(token)))]
     : []
 }
 const normalizeMcpTools = (value: unknown): string[] => Array.isArray(value)
-  ? [...new Set(value.map(normalizeString).filter(tool => /^agentic-graph\.[A-Za-z0-9_.-]+$/.test(tool)))].slice(0, 12)
+  ? [...new Set(value.map(normalizeString).filter(tool => /^agentic-graph\.[A-Za-z0-9_.-]+$/.test(tool)))]
   : []
 const normalizeSigil = (value: unknown): AgenticOsRemoteGrammarSigil | null => {
   const token = normalizeToken(value)

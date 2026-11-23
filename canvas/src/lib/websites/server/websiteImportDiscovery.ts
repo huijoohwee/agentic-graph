@@ -1,11 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import { isCrawlableInternalUrl, isWithinCrawlHostScope, normalizeUrl, urlToTreePath } from './websiteImportCore'
-import { collectSitemapUrls, indexInternalUrls } from './websiteImportServerHelpers'
+import { collectSitemapUrls, indexInternalUrls, WEBSITE_DISCOVERY_LIMIT } from './websiteImportServerHelpers'
 import { WebsiteDiscoveryCache, newDiscoveryMetrics } from './websiteDiscoveryCache'
 
 export const WEBSITE_SELECTION_LIMIT = 500
-const WEBSITE_DISCOVERY_LIMIT = 2_000
 const WEBSITE_DISCOVERY_INDEX_TIMEOUT_MS = 8_000
 const discoveryCache = new WebsiteDiscoveryCache()
 let discoveryActive = false
@@ -84,31 +83,14 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
     controller.signal.throwIfAborted()
     if (!cached) discoveryCache.setRendered(url, capture)
     const seedUrls = [capture.finalUrl, ...capture.links, ...(sitemap.ok ? sitemap.urls : [])]
-    let indexedUrls = seedUrls
-    let indexLimited = false
-    const indexSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(WEBSITE_DISCOVERY_INDEX_TIMEOUT_MS)])
-    try {
-      const indexed = await indexInternalUrls({
-        rootUrl,
-        seedUrls,
-        maxPages: WEBSITE_DISCOVERY_LIMIT,
-        timeoutMs: 4_000,
-        maxBytes: 4 * 1024 * 1024,
-        signal: indexSignal,
-        readText: (target, options) => discoveryCache.read(target, options, metrics),
-      })
-      indexedUrls = indexed.urls
-      indexLimited = indexed.limited
-    } catch {
-      controller.signal.throwIfAborted()
-      indexLimited = true
-    }
-    const urls = new Set<string>()
-    for (const link of indexedUrls) {
-      const normalized = normalizeUrl(link)
-      if (normalized && normalized.length <= 4096 && isCrawlableInternalUrl(normalized, rootUrl) && !new URL(normalized).username && !new URL(normalized).password) urls.add(normalized)
-    }
-    const pages = [...urls].slice(0, WEBSITE_DISCOVERY_LIMIT).map(pageUrl => ({
+    const indexed = await indexInternalUrls({
+      rootUrl, seedUrls, maxPages: WEBSITE_DISCOVERY_LIMIT, timeoutMs: 4_000,
+      maxBytes: 4 * 1024 * 1024, maxTotalBytes: 8 * 1024 * 1024,
+      signal: controller.signal, budgetMs: WEBSITE_DISCOVERY_INDEX_TIMEOUT_MS,
+      readText: (target, options) => discoveryCache.read(target, options, metrics),
+    })
+    // Only an observed redirect retires the requested spelling.
+    const pages = indexed.urls.filter(link => link !== url || url === capture.finalUrl).map(pageUrl => ({
       url: pageUrl,
       path: urlToTreePath(pageUrl),
       ...(pageUrl === capture.finalUrl ? { title: capture.title } : {}),
@@ -120,7 +102,7 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
       ok: true,
       rootUrl,
       pages,
-      limited: capture.linksLimited === true || !sitemap.ok || sitemap.limited || indexLimited || urls.size > WEBSITE_DISCOVERY_LIMIT,
+      limited: capture.linksLimited === true || !sitemap.ok || sitemap.limited || indexed.limited,
       limit: WEBSITE_DISCOVERY_LIMIT,
       metrics,
     }))

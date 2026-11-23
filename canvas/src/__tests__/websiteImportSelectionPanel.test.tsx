@@ -407,6 +407,35 @@ test('discovery opens existing ancestor folders and distinguishes saved files fr
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
 })
 
+test('Launch indexes a previously saved source and imports only the confirmed 500 pages', async () => {
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
+  const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
+  const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+  const urls = Array.from({ length: 501 }, (_, i) => sourceUrl + i)
+  const imported: string[][] = []
+  let discoveryRequests = 0
+  globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
+    assert.equal(String(target), '/__website_import/discover'); discoveryRequests++
+    return Response.json({ ok: true, pages: urls.map(url => ({ url, path: new URL(url).pathname })) })
+  }) as typeof fetch
+  const unregister = registerMarkdownWorkspaceActionBridge('launch-fresh-index', { importWebsite: async (_url, opts) => {
+    imported.push(opts?.selectedUrls || []); return { handled: true }
+  } })
+  try {
+    await persistImportInventory(await getWorkspaceFs(), [{ source: sourceUrl, status: 'not imported' }])
+    const pending = importWebsiteFromSourceFiles(sourceUrl, undefined, undefined, { selectAllOnDiscover: true, refreshInventory: true })
+    await settleDiscovery()
+    const session = useWebsiteImportSelectionSession.getState().session!
+    assert.equal(discoveryRequests, 1); assert.equal(session.pages.length, 501)
+    assert.deepEqual([...session.selected], urls.slice(0, 500)); assert.deepEqual(imported, [])
+    toggleWebsiteSelection([urls[0]!], false); toggleWebsiteSelection([urls[500]!], true)
+    finishWebsiteImportSelection([...useWebsiteImportSelectionSession.getState().session!.selected]); await pending
+    assert.deepEqual(imported, [urls.slice(1)])
+  } finally { finishWebsiteImportSelection(null); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
 test('large discovery inventories recover filtered pagination without network work or lost history and selection', async () => {
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
