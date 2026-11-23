@@ -92,8 +92,8 @@ const main = async () => {
       installHtmlVideoBrowserRuntimeAdapters()
       const registry = createHtmlVideoEngineRegistryFromRuntimeConfig()
       Object.defineProperty(window, 'showSaveFilePicker', { configurable: true, value: undefined })
-      return (html: string, durationMs = 1000) => runHtmlVideoFlowNode({
-        node: { id: 'smoke', properties: { html, duration_ms: durationMs, fps: 2, width: 64, height: 64, engine_hint: 'canvas-2d' } },
+      return (html: string, durationMs = 1000, fps = 2) => runHtmlVideoFlowNode({
+        node: { id: 'smoke', properties: { html, duration_ms: durationMs, fps, width: 64, height: 64, engine_hint: 'canvas-2d' } },
         registry,
       })
     })
@@ -126,6 +126,84 @@ const main = async () => {
     await context.setOffline(true)
     const requests: string[] = []
     page.on('request', request => { if (/^https?:/.test(request.url())) requests.push(request.url()) })
+    const invitation = await readFile(new URL(import.meta.resolve('agentic-gateway/examples/hyperframes/open-studio.html')), 'utf8')
+    const invitationDownload = page.waitForEvent('download')
+    const media = await page.evaluateHandle(async ({ run, html }) => {
+      const module = '/src/features/html-video-renderer/htmlVideoFlowNode.ts'
+      const { buildHtmlVideoPreviewSrcDocFromNode, buildHtmlVideoRenderSpecCandidateFromNode } = await import(module)
+      for (const [input, feature] of [
+        [html.replace('background-color:#834030', 'filter:blur(2px)'), 'filter'],
+        [html.replace('font-family:monospace', 'font-family:Arial'), 'font-family Arial'],
+      ]) {
+        const node = { properties: { html: input } }
+        let reason = ''
+        try { buildHtmlVideoRenderSpecCandidateFromNode(node) } catch (error) { reason = String(error) }
+        if (!reason.includes(feature) || node.properties.html !== input) throw Error('Missing preflight refusal for ' + feature)
+      }
+      const result = await run(html, 3000, 8)
+      if (!result.ok) throw Error(JSON.stringify(result))
+      const video = document.createElement('video')
+      const ready = new Promise<void>((done, fail) => { video.onloadeddata = () => done(); video.onerror = fail })
+      video.src = URL.createObjectURL(result.blob)
+      await ready
+      if (video.videoWidth !== 320 || video.videoHeight !== 180) throw Error('Wrong invitation dimensions')
+      const frame = document.createElement('iframe')
+      frame.id = 'invitation-preview'
+      frame.style.cssText = 'width:320px;height:180px;border:0;position:fixed;left:0;top:0'
+      const loaded = new Promise<void>(done => { frame.onload = () => done() })
+      frame.srcdoc = buildHtmlVideoPreviewSrcDocFromNode({properties: {html}})
+      document.body.append(frame)
+      await loaded
+      return { video, frame }
+    }, {run: runNode, html: invitation})
+    await invitationDownload
+    for (const seconds of [0.5, 1.5, 2.5]) {
+      await page.evaluate(async ({ media, seconds }) => {
+        const scene = media.frame.contentWindow as Window & {__agenticGraphRenderFrame(ms: number): Promise<void>}
+        await scene.__agenticGraphRenderFrame(seconds * 1000)
+        const seeked = new Promise<void>(done => { media.video.onseeked = () => done() })
+        media.video.currentTime = seconds
+        await seeked
+      }, {media, seconds})
+      const png = await page.locator('#invitation-preview').screenshot()
+      await page.evaluate(async ({ media, seconds, png }) => {
+        const image = new Image()
+        image.src = 'data:image/png;base64,' + png
+        await image.decode()
+        const canvas = document.createElement('canvas')
+        canvas.width = 320; canvas.height = 180
+        const ctx = canvas.getContext('2d')!
+        const [preview, decoded] = [image, media.video].map(source => {
+          ctx.drawImage(source, 0, 0)
+          const {data} = ctx.getImageData(0, 0, 320, 180)
+          const boxes = [false, true].map(yellow => {
+            let left = 320, top = 180, right = -1, bottom = -1
+            for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) {
+              const offset = 4 * (y * 320 + x)
+              const r = data[offset], g = data[offset+1], b = data[offset+2]
+              if (yellow ? r > 195 && g > 155 && b < 115 : Math.min(r,g,b) > 205) {
+                left = Math.min(left,x); right = Math.max(right,x); top = Math.min(top,y); bottom = Math.max(bottom,y)
+              }
+            }
+            return right < 0 ? [] : [left,top,right,bottom]
+          })
+          const overlap = 4 * (90 * 320 + 140)
+          const expected = seconds < 1 ? [131,64,48] : [24,90,80]
+          if (expected.some((v,i) => Math.abs(data[overlap+i]-v) > 10)) throw Error('Wrong visible panel at '+seconds)
+          if (Boolean(boxes[0].length) !== (seconds < 2) || Boolean(boxes[1].length) !== (seconds >= 1)) {
+            throw Error('Wrong visible text at '+seconds)
+          }
+          return boxes
+        })
+        for (const [i,box] of preview.entries()) {
+          if (box.some((edge,j) => Math.abs(edge-decoded[i][j]) > 2)) {
+            throw Error('Preview/export text bounds differ at '+seconds+': '+JSON.stringify({preview,decoded}))
+          }
+        }
+      }, {media,seconds,png: png.toString('base64')})
+    }
+    await page.evaluate(({video,frame}) => { URL.revokeObjectURL(video.src); frame.remove() }, media)
+    await media.dispose()
     const downloads: string[] = []
     page.on('download', entry => downloads.push(entry.suggestedFilename()))
     const exported = page.waitForEvent('download')

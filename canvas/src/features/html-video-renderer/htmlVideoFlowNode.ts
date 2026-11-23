@@ -31,10 +31,14 @@ const readDataJson = (value: unknown): Record<string, unknown> | undefined => {
   }
 }
 
+export function isHyperframesSource(html: string, format: unknown): boolean {
+  return format === 'hyperframes' || (/^\s*<!doctype html/i.test(html) && /\bdata-composition-id\s*=/i.test(html))
+}
+
 export function buildHtmlVideoRenderSpecCandidateFromNode(node: GraphNode): Record<string, unknown> {
   const properties = readNodeProperties(node)
   const html = typeof properties.html === 'string' ? properties.html : ''
-  if (properties.source_format === 'hyperframes' || (/^\s*<!doctype html/i.test(html) && /\bdata-composition-id\s*=/i.test(html))) {
+  if (isHyperframesSource(html, properties.source_format)) {
     const scene = importHyperframesHtml(html, document)
     return {
       html: scene.html,

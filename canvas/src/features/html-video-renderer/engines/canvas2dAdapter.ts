@@ -145,11 +145,15 @@ export const canvas2dAdapter: RenderEngine = {
       }) | null
       if (!scene?.__agenticGraphRenderFrame) throw new Error('HTML video frame runtime unavailable')
       const seek = scene.__agenticGraphRenderFrame.bind(scene)
+      // Browser text layout keeps qualified HTML glyphs aligned with the preview.
+      const declarativeClips = Array.isArray(spec.data?.hyperframesClips) &&
+        renderRoot.firstElementChild?.matches('[data-composition-id][data-no-timeline]') === true
       const rasterAt = async (timeMs: number) => {
         await seek(timeMs)
         return html2canvas(renderRoot, {
           width: spec.width, height: spec.height, windowWidth: spec.width, windowHeight: spec.height,
           scale: 1, backgroundColor: null, logging: false, useCORS: true,
+          foreignObjectRendering: declarativeClips,
         })
       }
       const paint = (raster: HTMLCanvasElement) => {
