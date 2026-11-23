@@ -36,7 +36,7 @@ const sourceStates = ({ application = {}, docs = {} } = {}) => [
   },
 ]
 
-test('canonical Dev source accepts only clean application and docs checkouts at fetched origin main SHAs', async () => {
+test('canonical Dev source accepts clean application and docs checkouts at fetched origin main SHAs', async () => {
   const contract = await readContract()
   const result = evaluateDevSourceConsistency(sourceStates(), contract, 'canonical')
 
@@ -90,7 +90,33 @@ test('canonical Dev source rejects stale or dirty checkouts before any port can 
   }), contract, 'canonical'), /Run npm run dev:latest to fast-forward clean canonical checkouts safely/)
   assert.throws(() => evaluateDevSourceConsistency(sourceStates({
     docs: { status: ' M docs\/FACTS.md' },
-  }), contract, 'canonical'), /agentic-canvas-os-docs source requires a clean worktree/)
+  }), contract, 'canonical'), /agentic-os canonical runtime checkout has runtime-blocking residue/)
+})
+
+test('canonical Dev admits unrelated untracked drafts in Graph and the OS checkout', async () => {
+  const contract = await readContract()
+  const states = sourceStates({
+    application: { status: '?? docs/drafts/work in progress.md\0' },
+    docs: { status: '?? notes/draft.md\0' },
+  })
+  assert.equal(evaluateDevSourceConsistency(states, contract, 'canonical').canonical, true)
+})
+
+test('a draft alongside runtime edits cannot make a canonical checkout eligible', async () => {
+  const contract = await readContract()
+  const cases = [
+    ['application', ' M docs/tracked.md'],
+    ['application', 'A  notes/staged.md'],
+    ['application', '?? canvas/src/module -> draft.ts'],
+    ['application', '?? grph-shared/src/new-module.ts'],
+    ['application', '?? notes/subfolder/vite.config.ts'],
+    ['docs', '?? catalog/dictionaries/new.json'],
+  ]
+  for (const [source, change] of cases) {
+    const states = sourceStates({ [source]: { status: '?? docs/unrelated.md\0' + change + '\0' } })
+    assert.throws(() => evaluateDevSourceConsistency(states, contract, 'canonical'), error =>
+      error.message.includes('runtime-blocking residue') && error.message.includes(change.slice(3)))
+  }
 })
 
 test('canonical Dev rejects a linked main owner outside the primary repository path', async () => {
@@ -203,6 +229,10 @@ test('source collection fetches and identifies both repositories from the shared
   assert.deepEqual(calls.filter(call => call.args[0] === 'fetch'), [
     { args: ['fetch', '--quiet', 'origin', 'main'], cwd: repoRoot },
     { args: ['fetch', '--quiet', 'origin', 'main'], cwd: docsRoot },
+  ])
+  assert.deepEqual(calls.filter(call => call.args[0] === 'status').map(call => call.args), [
+    ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
+    ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
   ])
   assert.equal(calls.filter(call => call.args[0] === 'worktree').length, 2)
   assert.equal(calls.filter(call => call.args.includes('--git-common-dir')).length, 1)

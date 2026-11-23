@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { chmodSync, writeFileSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import {
+  CANONICAL_RUNTIME_STATUS_ARGS,
   classifyCanonicalRuntimeResidue,
   parseConsumerPinnedDocsRef,
   refreshProtectedMain,
@@ -164,6 +165,31 @@ test("consumer pinned docs ref parsing is conservative", () => {
   assert.equal(parseConsumerPinnedDocsRef(`ref: "${pin}"`), null);
   assert.equal(parseConsumerPinnedDocsRef(["---", "docs_dependency:", "---", `  ref: "${pin}"`].join("\n")), null);
   assert.equal(parseConsumerPinnedDocsRef(null), null);
+});
+
+test("Git status keeps draft paths, nested configuration and rename destinations distinct", async t => {
+  const root = await mkdtemp(path.join(tmpdir(), "graph-runtime-workspace-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  git(root, ["init", "--quiet"]);
+  await writeFile(path.join(root, "tracked.md"), "tracked");
+  git(root, ["add", "tracked.md"]);
+  git(root, ["-c", "user.name=Test", "-c", "user.email=test@localhost", "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"]);
+  const draft = "notes/draft -> next\npart.md";
+  await mkdir(path.join(root, "notes"));
+  await writeFile(path.join(root, draft), "local draft");
+  const inspect = () => classifyCanonicalRuntimeResidue({
+    repositoryId: "agentic-graph",
+    statusPorcelain: execFileSync("git", CANONICAL_RUNTIME_STATUS_ARGS, { cwd: root, encoding: "utf8" }),
+  });
+  const before = inspect();
+  assert.equal(before.runtimeSafe, true);
+  assert.deepEqual(before.foreign.map(entry => entry.path), [draft]);
+
+  git(root, ["mv", "tracked.md", "notes/renamed.md"]);
+  await writeFile(path.join(root, "notes/package.json"), "{}");
+  const after = inspect();
+  assert.deepEqual(after.blocking.map(entry => entry.path).sort(), ["notes/package.json", "notes/renamed.md"]);
+  assert.deepEqual(after.foreign.map(entry => entry.path), [draft]);
 });
 
 test("canonical runtime residue tolerates foreign parallel docs but blocks runtime authority drift", () => {
