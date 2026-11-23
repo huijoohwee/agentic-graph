@@ -49,8 +49,9 @@ export async function testMarkdownWorkspaceEditorHtmlViewSwitchShowsViewerPane()
 
     const editorRef = { current: null as MonacoTextEditorHandle | null }
     const presentationApiRef = { current: null as MarkdownPresentationApi | null }
-    const markdownText = ['---', `kgWebpageUrl: "${WEBPAGE_TEST_URL}"`, 'kgWebpageView: "markdown"', '---', '', '# Title', ''].join('\n')
-    const htmlText = ['---', `kgWebpageUrl: "${WEBPAGE_TEST_URL}"`, 'kgWebpageView: "html"', '---', '', '# Title', ''].join('\n')
+    const body = ['# Title', '', '| Name | Type |', '| --- | --- |', '| First | text |', '| Second | text |']
+    const webpageText = (view: 'markdown' | 'html') =>
+      ['---', `kgWebpageUrl: "${WEBPAGE_TEST_URL}"`, `kgWebpageView: "${view}"`, '---', '', ...body, ''].join('\n')
 
     const render = async (activeText: string) => {
       await act(async () => {
@@ -88,7 +89,7 @@ export async function testMarkdownWorkspaceEditorHtmlViewSwitchShowsViewerPane()
       })
     }
 
-    await render(markdownText)
+    await render(webpageText('markdown'))
     await act(async () => {
       await waitUntil(() => Boolean(doc.querySelector('section[aria-label="Markdown Editor"]')), 2400)
       await tick(2)
@@ -97,7 +98,7 @@ export async function testMarkdownWorkspaceEditorHtmlViewSwitchShowsViewerPane()
       throw new Error('expected Markdown webpage view to start without HTML viewer pane')
     }
 
-    await render(htmlText)
+    await render(webpageText('html'))
     await act(async () => {
       await waitUntil(() => Boolean(doc.querySelector('section[aria-label="Webpage Viewer"] iframe')), 2400)
       await tick(2)
@@ -109,8 +110,12 @@ export async function testMarkdownWorkspaceEditorHtmlViewSwitchShowsViewerPane()
     if (!src.startsWith('/__webpage_proxy?url=')) {
       throw new Error(`expected HTML view switch iframe to use webpage proxy, got ${src}`)
     }
-    const viewerPane = doc.querySelector('section[aria-label="Viewer"]')
+    const viewerPane = doc.querySelector('section[aria-label="Viewer"]') as HTMLElement | null
     if (!viewerPane) throw new Error('expected HTML view switch to keep the Viewer pane visible')
+    const table = Array.from(viewerPane.querySelectorAll('table')).find(candidate => candidate.tHead?.textContent === 'NameType')
+    if (table?.rows.length !== 3 || table.rows[2].cells[0]?.textContent !== 'Second') {
+      throw new Error('Expected the imported Markdown table to retain its columns and rows beside the HTML preview')
+    }
     const htmlPane = doc.querySelector('section[aria-label="HTML Viewer"] section[aria-label="Webpage Viewer"]')
     if (!htmlPane) throw new Error('expected HTML view switch to render HTML in its own pane')
     if (!doc.querySelector('section[aria-label="Markdown Editor"]')) {
