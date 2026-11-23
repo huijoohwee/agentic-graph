@@ -30,6 +30,9 @@ import type { WidgetCompactPreviewViewModel } from '@/features/storyboard-widget
 import type { ImageToThreeJsRenderMode } from '@/features/image-to-threejs/imageToThreeJsContract'
 import { isProceduralAssetOutputPanel } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
 
+import { FLOW_HTML_VIDEO_RENDERER_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
+
+const HyperframesCompatibility = React.lazy(() => import('@/features/html-video-renderer/HyperframesCompatibility'))
 const ProceduralAssetControls = React.lazy(() => import('@/features/image-to-glb/ProceduralAssetControls').then(module => ({ default: module.ProceduralAssetControls })))
 
 type WidgetEditorFormContentProps = {
@@ -202,6 +205,12 @@ export function WidgetEditorFormContent(props: WidgetEditorFormContentProps) {
       onScrollCapture={() => handleWidgetInnerPanelScrollCapture(emitInteractionFrame)}
       onWheelCapture={e => handleWidgetInnerPanelWheelCapture(e, emitInteractionFrame)}
     >
+      {active && node.type === FLOW_HTML_VIDEO_RENDERER_NODE_TYPE_ID && (
+        <React.Suspense fallback={null}>
+          <HyperframesCompatibility html={connectedValuesSnapshot?.['properties.html']?.value ?? propertiesSnapshot.html}
+            format={propertiesSnapshot.source_format} />
+        </React.Suspense>
+      )}
       {active && isProceduralAssetOutputPanel(propertiesSnapshot) ? <React.Suspense fallback={<p role="status">Loading model controls…</p>}>
         <ProceduralAssetControls nodeId={String(node.id)} properties={propertiesSnapshot} inputClassName={keyValueInputClass} onPatchProperties={onPatchProperties} />
       </React.Suspense> : null}
