@@ -182,6 +182,11 @@ jobs:
           cache-dependency-path: |
             agentic-graph/package-lock.json
 
+      - name: Qualify registered fleet reuse
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@1b7f3726fd250127d93d8a0ccaa08ae356974385
+        with:
+          checkout: agentic-graph
+
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
@@ -315,6 +320,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: ${{ runner.temp }}
         run: npm run ci:integration
+
+      - name: Exercise the gateway fixture in the offline video renderer
+        working-directory: agentic-graph
+        timeout-minutes: 3
+        run: npm -C canvas run test:html-video:browser-native-video
 
       - name: Export failed-stage diagnostics
         id: failure_diagnostics
