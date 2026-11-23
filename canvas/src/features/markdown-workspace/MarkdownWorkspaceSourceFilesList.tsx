@@ -64,6 +64,7 @@ type MarkdownWorkspaceSourceFilesListProps = {
   loadError: string
   textSizeClass: string
   entries: WorkspaceEntry[]
+  allEntries?: WorkspaceEntry[]
   expandedPaths: Set<string>
   activePath: WorkspacePath | null
   activeDocumentKey?: string
@@ -129,6 +130,16 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const cloudSync = useSourceFileCloudSync(cloudEntries)
   const websiteImportConcurrency = useGraphStore(state => state.websiteImportConcurrency)
   const projection = React.useMemo(() => projectWebsiteImportTree(cloudEntries, sourcesByPath, importSession), [cloudEntries, sourcesByPath, importSession])
+  const [repairSelection, setRepairSelection] = React.useState<Set<string> | null>(null)
+  const selectedUrls = importSession?.selected
+  const selectionEntries = props.allEntries || entries
+  const selectedSavedPaths = React.useMemo(() => {
+    if (repairSelection) return [...repairSelection]
+    if (!selectedUrls?.size) return []
+    return selectionEntries.filter(entry => selectedUrls.has(sourceFileWebsiteUrl(entry, sourcesByPath?.[entry.path]) || '')).map(entry => entry.path)
+  }, [selectionEntries, sourcesByPath, repairSelection, selectedUrls])
+  const selectingPages = !!repairSelection || !!selectedUrls?.size
+  const repairGroup = { path: 'selected-saved-pages', name: 'selection' }
   const [sourcePicker, setSourcePicker] = React.useState<{ folder: string; path: string } | null>(null)
   const [captureRefresh, setCaptureRefresh] = React.useState<{ path: WorkspacePath; url: string } | null>(null)
   const [refreshingFolderPaths, setRefreshingFolderPaths] = React.useState<Set<string>>(() => new Set())
@@ -217,13 +228,137 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     })
   }
 
+  const refreshPages = async (entry: Pick<WorkspaceEntry, 'path' | 'name'>, paths: string[], repairTablesFromCapture = false) => {
+    if (!onRefreshFileFromSource || !paths.length || activeFolderRefreshesRef.current.size > 0
+      || paths.some(path => activeSourceRefreshesRef.current.has(path))) return
+    activeFolderRefreshesRef.current.add(entry.path)
+    setRefreshOutcomes(previous => {
+      const next = { ...previous }
+      delete next[entry.path]
+      paths.forEach(path => { delete next[path] })
+      return next
+    })
+    setRefreshingFolderPaths(previous => new Set(previous).add(entry.path))
+    let completed = 0
+    let repairedTables = 0, unchanged = 0, unresolved = 0
+    let refreshed = 0
+    let failed = 0
+    let active = 0
+    let nextIndex = 0
+    let authenticatedSourceFailure: RefreshFailure | null = null
+    const controller = new AbortController()
+    folderRefreshControllersRef.current.set(entry.path, controller)
+    const concurrency = Math.max(1, Math.min(
+      SOURCE_FOLDER_REFRESH_MAX_CONCURRENCY,
+      Math.floor(Number.isFinite(websiteImportConcurrency) ? websiteImportConcurrency : SOURCE_FOLDER_REFRESH_MAX_CONCURRENCY),
+    ))
+    const publishProgress = () => {
+      const progress = { completed, total: paths.length, refreshed, failed, active }
+      setFolderRefreshProgress(previous => ({ ...previous, [entry.path]: progress }))
+      pushUiToast({
+        id: `source-files:folder-refresh:${entry.path}`,
+        kind: 'neutral',
+        message: `Refreshing ${completed}/${paths.length} pages in ${entry.name}${active ? ` · ${active} active` : ''}`,
+        ttlMs: null,
+        dismissible: true,
+        busy: true,
+      })
+    }
+    const refreshPage = async (path: string) => {
+      active += 1
+      publishProgress()
+      let pageFailure: RefreshFailure | null = null
+      const refreshedPage = await refreshSourceFile(path, undefined, undefined, {
+        silent: true, repairTablesFromCapture,
+        onTableRepair: result => {
+          repairedTables += result.repaired
+          unresolved += result.unresolved
+          if (!result.repaired && !result.unresolved) unchanged++
+        },
+        signal: controller.signal,
+        browserSessionId: importSession?.browserSessionId,
+        onFailure: failure => {
+          pageFailure = failure
+          if (!repairTablesFromCapture && isAuthenticatedSourceFailure(failure)) {
+            authenticatedSourceFailure = failure
+            controller.abort(new Error('Source requires a signed-in browser session'))
+          }
+        },
+      })
+      active -= 1
+      completed += 1
+      if (refreshedPage) refreshed += 1
+      else if (pageFailure || !controller.signal.aborted) failed += 1
+      publishProgress()
+    }
+    try {
+      publishProgress()
+      // Probe one page first: a shared sign-in shell should stop a folder crawl
+      // before the remaining URLs are needlessly requested.
+      await refreshPage(paths[0]!)
+      nextIndex = 1
+      const worker = async () => {
+        while (!controller.signal.aborted) {
+          const index = nextIndex++
+          if (index >= paths.length) return
+          await refreshPage(paths[index]!)
+        }
+      }
+      if (!controller.signal.aborted) {
+        await Promise.all(Array.from({ length: Math.min(concurrency, paths.length - 1) }, () => worker()))
+      }
+      const authBlocked = authenticatedSourceFailure !== null
+      const cancelled = controller.signal.aborted && !authBlocked
+      if (!cancelled || authBlocked) {
+        setRefreshOutcomes(previous => ({
+          ...previous,
+          [entry.path]: failed
+            ? { ok: false, label: authBlocked
+              ? `Refresh stopped: ${conciseRefreshFailure(authenticatedSourceFailure!)} ${paths.length - completed} pages not attempted. Connect a matching authenticated browser session, then retry.`
+              : `Refresh completed with ${failed} failed pages out of ${paths.length} in ${entry.name}` }
+            : { ok: true, label: `Refresh succeeded for all ${refreshed} pages in ${entry.name}` },
+        }))
+      }
+      pushUiToast({
+        id: `source-files:folder-refresh:${entry.path}`,
+        kind: authBlocked ? 'error' : cancelled || unresolved ? 'warning' : failed ? (refreshed ? 'warning' : 'error') : 'success',
+        message: repairTablesFromCapture
+          ? `Checked ${completed}/${paths.length} selected pages. ${repairedTables} tables repaired, ${unchanged} pages already current, ${unresolved} unmatched tables, ${failed} failed.${cancelled ? ' Cancelled.' : ''}`
+          : authBlocked
+          ? `Refresh stopped after ${completed}/${paths.length} pages: ${conciseRefreshFailure(authenticatedSourceFailure!)} ${paths.length - completed} not started. Connect a matching authenticated browser session, then retry.`
+          : cancelled
+          ? `Cancelled ${entry.name} refresh after ${completed}/${paths.length} attempts settled; ${refreshed} refreshed, ${paths.length - completed} not started.`
+          : failed
+            ? `Refreshed ${refreshed}/${paths.length} pages in ${entry.name}; ${failed} failed.`
+            : `Refreshed ${refreshed} pages in ${entry.name} from source.`,
+        ttlMs: 7000,
+        dismissible: true,
+        busy: false,
+      })
+    } finally {
+      activeFolderRefreshesRef.current.delete(entry.path)
+      folderRefreshControllersRef.current.delete(entry.path)
+      setRefreshingFolderPaths(previous => {
+        const next = new Set(previous)
+        next.delete(entry.path)
+        return next
+      })
+      setFolderRefreshProgress(previous => {
+        const next = { ...previous }
+        delete next[entry.path]
+        return next
+      })
+    }
+  }
+
   const renderContextActions = (entry: WorkspaceEntry, details: { open: boolean; show: () => void; toggle: () => void }) => {
     const pending = projection.pendingPaths.has(entry.path)
     const folderSources = entry.kind === 'folder' ? websiteFolderSources(cloudEntries, sourcesByPath, entry.path) : []
-    const folderRefreshPaths = entry.kind === 'folder' ? cloudEntries
+    const folderRefreshPaths = entry.kind !== 'folder' ? [] : selectingPages
+      ? selectedSavedPaths.filter(path => path.startsWith(`${entry.path.replace(/\/$/u, '')}/`)) : cloudEntries
       .filter(child => child.kind === 'file' && child.path.startsWith(`${entry.path.replace(/\/$/u, '')}/`)
         && !!sourceFileWebsiteUrl(sourceEntry(child), sourcesByPath?.[child.path]))
-      .map(child => child.path).sort() : []
+      .map(child => child.path).sort()
     const folderRefreshing = refreshingFolderPaths.has(entry.path)
     const folderProgress = folderRefreshProgress[entry.path]
     const currentEntry = sourceEntry(entry)
@@ -236,124 +371,10 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       ? cloudSync.readFolderStatus(entry.path)
       : cloudSync.readStatus(currentEntry)
     const cloudSyncFileCount = entry.kind === 'folder' ? cloudSync.readFolderFileCount(entry.path) : 0
-    const refreshFolder = async () => {
-      if (!onRefreshFileFromSource || !folderRefreshPaths.length || activeFolderRefreshesRef.current.size > 0
-        || folderRefreshPaths.some(path => activeSourceRefreshesRef.current.has(path))) return
-      activeFolderRefreshesRef.current.add(entry.path)
-      setRefreshOutcomes(previous => {
-        const next = { ...previous }
-        delete next[entry.path]
-        folderRefreshPaths.forEach(path => { delete next[path] })
-        return next
-      })
-      setRefreshingFolderPaths(previous => new Set(previous).add(entry.path))
-      let completed = 0
-      let refreshed = 0
-      let failed = 0
-      let active = 0
-      let nextIndex = 0
-      let authenticatedSourceFailure: RefreshFailure | null = null
-      const controller = new AbortController()
-      folderRefreshControllersRef.current.set(entry.path, controller)
-      const concurrency = Math.max(1, Math.min(
-        SOURCE_FOLDER_REFRESH_MAX_CONCURRENCY,
-        Math.floor(Number.isFinite(websiteImportConcurrency) ? websiteImportConcurrency : SOURCE_FOLDER_REFRESH_MAX_CONCURRENCY),
-      ))
-      const publishProgress = () => {
-        const progress = { completed, total: folderRefreshPaths.length, refreshed, failed, active }
-        setFolderRefreshProgress(previous => ({ ...previous, [entry.path]: progress }))
-        pushUiToast({
-          id: `source-files:folder-refresh:${entry.path}`,
-          kind: 'neutral',
-          message: `Refreshing ${completed}/${folderRefreshPaths.length} pages in ${entry.name}${active ? ` · ${active} active` : ''}`,
-          ttlMs: null,
-          dismissible: true,
-          busy: true,
-        })
-      }
-      const refreshPage = async (path: string) => {
-        active += 1
-        publishProgress()
-        let pageFailure: RefreshFailure | null = null
-        const refreshedPage = await refreshSourceFile(path, undefined, undefined, {
-          silent: true,
-          signal: controller.signal,
-          browserSessionId: importSession?.browserSessionId,
-          onFailure: failure => {
-            pageFailure = failure
-            if (isAuthenticatedSourceFailure(failure)) {
-              authenticatedSourceFailure = failure
-              controller.abort(new Error('Source requires a signed-in browser session'))
-            }
-          },
-        })
-        active -= 1
-        completed += 1
-        if (refreshedPage) refreshed += 1
-        else if (pageFailure || !controller.signal.aborted) failed += 1
-        publishProgress()
-      }
-      try {
-        publishProgress()
-        // Probe one page first: a shared sign-in shell should stop a folder crawl
-        // before the remaining URLs are needlessly requested.
-        await refreshPage(folderRefreshPaths[0]!)
-        nextIndex = 1
-        const worker = async () => {
-          while (!controller.signal.aborted) {
-            const index = nextIndex++
-            if (index >= folderRefreshPaths.length) return
-            await refreshPage(folderRefreshPaths[index]!)
-          }
-        }
-        if (!controller.signal.aborted) {
-          await Promise.all(Array.from({ length: Math.min(concurrency, folderRefreshPaths.length - 1) }, () => worker()))
-        }
-        const authBlocked = authenticatedSourceFailure !== null
-        const cancelled = controller.signal.aborted && !authBlocked
-        if (!cancelled || authBlocked) {
-          setRefreshOutcomes(previous => ({
-            ...previous,
-            [entry.path]: failed
-              ? { ok: false, label: authBlocked
-                ? `Refresh stopped: ${conciseRefreshFailure(authenticatedSourceFailure!)} ${folderRefreshPaths.length - completed} pages not attempted. Connect a matching authenticated browser session, then retry.`
-                : `Refresh completed with ${failed} failed pages out of ${folderRefreshPaths.length} in ${entry.name}` }
-              : { ok: true, label: `Refresh succeeded for all ${refreshed} pages in ${entry.name}` },
-          }))
-        }
-        pushUiToast({
-          id: `source-files:folder-refresh:${entry.path}`,
-          kind: authBlocked ? 'error' : cancelled ? 'warning' : failed ? (refreshed ? 'warning' : 'error') : 'success',
-          message: authBlocked
-            ? `Refresh stopped after ${completed}/${folderRefreshPaths.length} pages: ${conciseRefreshFailure(authenticatedSourceFailure!)} ${folderRefreshPaths.length - completed} not started. Connect a matching authenticated browser session, then retry.`
-            : cancelled
-            ? `Cancelled ${entry.name} refresh after ${completed}/${folderRefreshPaths.length} attempts settled; ${refreshed} refreshed, ${folderRefreshPaths.length - completed} not started.`
-            : failed
-              ? `Refreshed ${refreshed}/${folderRefreshPaths.length} pages in ${entry.name}; ${failed} failed.`
-              : `Refreshed ${refreshed} pages in ${entry.name} from source.`,
-          ttlMs: 7000,
-          dismissible: true,
-          busy: false,
-        })
-      } finally {
-        activeFolderRefreshesRef.current.delete(entry.path)
-        folderRefreshControllersRef.current.delete(entry.path)
-        setRefreshingFolderPaths(previous => {
-          const next = new Set(previous)
-          next.delete(entry.path)
-          return next
-        })
-        setFolderRefreshProgress(previous => {
-          const next = { ...previous }
-          delete next[entry.path]
-          return next
-        })
-      }
-    }
     return <>
-      {pageUrl && onRefreshFileFromSource && <SourceImportAction action="refresh" label={`Refresh ${entry.name} from source`}
-        disabled={pending || refreshingSourcePaths.has(entry.path) || activeFolderRefreshesRef.current.size > 0 || !!importSession?.busy || !!importSession?.importing}
-        onClick={() => { void refreshSourceFile(entry.path, undefined, pageUrl) }} />}
+      {pageUrl && onRefreshFileFromSource && <SourceImportAction action="refresh" label={selectingPages ? `Refresh ${selectedSavedPaths.length} selected saved pages from saved HTML` : `Refresh ${entry.name} from source`}
+        disabled={pending || (selectingPages && !selectedSavedPaths.length) || refreshingSourcePaths.has(entry.path) || activeFolderRefreshesRef.current.size > 0 || !!importSession?.busy || !!importSession?.importing}
+        onClick={() => { if (selectingPages) void refreshPages(repairGroup, selectedSavedPaths, true); else void refreshSourceFile(entry.path, undefined, pageUrl) }} />}
       {pageUrl && onRefreshFileFromSource && <SourceImportAction action="capture" label={`Refresh ${entry.name} from rendered page`}
         title={`Refresh ${entry.name} from rendered page — use a copied page when the source requires sign-in`}
         aria-pressed={captureRefresh?.path === entry.path}
@@ -363,9 +384,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         ? <SourceImportAction action="cancel" label={`Cancel refreshing ${entry.name}`}
           title={`Cancel refresh of ${folderRefreshPaths.length} pages in ${entry.name}`}
           onClick={() => folderRefreshControllersRef.current.get(entry.path)?.abort(new Error('Folder refresh cancelled'))} />
-        : <SourceImportAction action="refresh" label={`Refresh ${folderRefreshPaths.length} pages in ${entry.name} from source`}
+        : <SourceImportAction action="refresh" label={selectingPages ? `Repair tables in ${folderRefreshPaths.length} selected saved pages in ${entry.name}` : `Refresh ${folderRefreshPaths.length} pages in ${entry.name} from source`}
           disabled={pending || activeFolderRefreshesRef.current.size > 0 || folderRefreshPaths.some(path => refreshingSourcePaths.has(path)) || !!importSession?.busy || !!importSession?.importing}
-          onClick={() => { void refreshFolder() }} />)}
+          onClick={() => { void refreshPages(entry, folderRefreshPaths, selectingPages) }} />)}
       <SourceFileWebsiteActions entry={currentEntry} source={sourcesByPath?.[entry.path]} urlOverride={projection.pageUrls.get(entry.path)} confirmationOwner={projection.ownerPath === entry.path}
         folderPageUrls={projection.folderImportUrls.get(entry.path)}
         onChooseFolderSource={folderSources.length ? () => {
@@ -436,6 +457,17 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   }, [])
 
   const renderSelectionControl = (entry: WorkspaceEntry) => {
+    if (repairSelection) {
+      if (!projection.savedPaths.has(entry.path)) return null
+      return <WebsiteSelectionCheckbox label={`Select saved page ${entry.path} for table repair`} urls={[entry.path]}
+        selected={repairSelection} disabled={activeFolderRefreshesRef.current.size > 0}
+        toggle={(_, checked) => setRepairSelection(previous => {
+          if (!previous) return null
+          const next = new Set(previous)
+          if (!checked) next.delete(entry.path); else next.add(entry.path)
+          return next
+        })} />
+    }
     if (!importSession?.selected.size) {
       const pending = projection.pendingPaths.has(entry.path), saved = projection.savedPaths.has(entry.path)
       if (entry.kind !== 'file' || (!pending && !saved)) return null
@@ -456,13 +488,23 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     <>
       <section aria-label="Source Files import" className="px-1 py-1">
         <section aria-label="Choose folder(s)/page(s) to import" aria-busy={!!importSession?.busy} className={`border-b py-1 ${UI_THEME_TOKENS.panel.border}`}>
-          <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}
+          {onRefreshFileFromSource && (repairSelection || projection.savedPaths.size > 0) && (repairSelection || !importSession?.selected.size) &&
+            <SourceImportAction action={repairSelection ? 'cancel' : 'refresh'} label={repairSelection ? 'Exit saved page selection' : 'Select saved pages for table repair'}
+              aria-pressed={!!repairSelection} disabled={!!importSession?.importing || refreshingFolderPaths.size > 0}
+              onClick={() => setRepairSelection(previous => previous ? null : new Set())} />}
+          {refreshingFolderPaths.has(repairGroup.path)
+            ? <SourceImportAction action="cancel" label="Cancel selected page repair" onClick={() => folderRefreshControllersRef.current.get(repairGroup.path)?.abort()} />
+            : selectedSavedPaths.length > 0 && onRefreshFileFromSource && <SourceImportAction action="refresh"
+              label={`Repair tables in ${selectedSavedPaths.length} selected saved pages`}
+              disabled={!!importSession?.importing || !!importSession?.busy || refreshingFolderPaths.size > 0 || selectedSavedPaths.some(path => refreshingSourcePaths.has(path))}
+              onClick={() => void refreshPages(repairGroup, selectedSavedPaths, true)} />}
+          {!repairSelection && <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}
             selected={importSession?.selected || new Set<string>()} disabled={!!importSession?.busy || !!importSession?.importing || (!importSession && !selectedSourceUrl)}
             toggle={(urls, checked) => {
               if (importSession && checked && !urls.length) void discoverWebsiteSelection(importSession.url, true)
               else if (importSession) toggleWebsiteSelection(urls, checked)
               else if (checked && selectedSourceUrl && selectedSource) void importWebsiteFromSourceFiles(selectedSourceUrl, selectedSource.path, undefined, { selectAllOnDiscover: true }).catch(reportSourceImportFailure)
-            }} />
+            }} />}
         </section>
       </section>
       <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />

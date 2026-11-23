@@ -107,7 +107,7 @@ const splitMarkdownPipeRow = (line: string): string[] | null => {
   return splitPipeCells(trimmed.slice(1, -1))
 }
 
-function cellsWithOptionalOuterPipes(line: string): string[] {
+export function markdownPipeRowCells(line: string): string[] {
   const cells = splitPipeCells(line.trim())
   if (cells[0] === '') cells.shift()
   if (cells.at(-1) === '') cells.pop()
@@ -118,9 +118,9 @@ function cellsWithOptionalOuterPipes(line: string): string[] {
 export function findMarkdownPipeTableEnd(lines: readonly string[], start: number): number {
   const delimiter = lines[start + 1]?.trim()
   if (!delimiter?.includes('|') || !/^[|:\s-]+$/.test(delimiter) || !lines[start]?.includes('|')) return start
-  const delimiters = cellsWithOptionalOuterPipes(delimiter)
+  const delimiters = markdownPipeRowCells(delimiter)
   if (!delimiters.length || !delimiters.every(cell => /^:?-+:?$/.test(cell))) return start
-  if (cellsWithOptionalOuterPipes(lines[start]!).length !== delimiters.length) return start
+  if (markdownPipeRowCells(lines[start]!).length !== delimiters.length) return start
   let end = start + 2
   while (end < lines.length && lines[end]!.includes('|') && !/^\s*(?:`{3,}|~{3,}|#{1,6}\s|>|[-*+]\s|\d+[.)]\s)/.test(lines[end]!)) end++
   return end

@@ -2,6 +2,8 @@ import React from 'react'
 import { buildWorkspaceDataViewScopeKey, readWorkspaceDataViewConfig, writeWorkspaceDataViewConfig, type WorkspaceDataViewConfig } from './workspaceDataViewConfig'
 import { subscribeDataViewState } from './workspaceDataViewStateEvents'
 
+export const ImportedMarkdownTableContext = React.createContext(false)
+
 /** The shared settings adapter for inline and standalone views; source writes remain separate. */
 export function useSavedWorkspaceDataView(args: { activeDocumentPath: string | null; tableId: string | null; fallback: WorkspaceDataViewConfig; ephemeral?: boolean }) {
   const { activeDocumentPath, tableId, ephemeral } = args

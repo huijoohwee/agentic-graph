@@ -430,9 +430,8 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   })
   const fileActions = useWorkspaceFileActions(
     buildMarkdownWorkspaceFileActionsArgs({
-      getFs: explorerState.getFs,
-      refresh: explorerState.refresh,
-      activePath,
+      getOpenEditor: () => ({ path: activePathRef.current, dirty: userEditedActiveTextRef.current && activeTextRef.current !== lastLoadedRef.current?.text }),
+      getFs: explorerState.getFs, refresh: explorerState.refresh, activePath,
       selectionPath: selectionState.selectionPath,
       selectionEntryKind: selectionState.selectionEntry?.kind ?? null,
       activeDocumentKey: selectionState.activeDocumentKey,

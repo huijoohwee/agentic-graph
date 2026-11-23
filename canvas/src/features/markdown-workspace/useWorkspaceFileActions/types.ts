@@ -17,6 +17,8 @@ export type WorkspaceRefreshSnapshot = {
 }
 
 export type WorkspaceRefreshOptions = {
+  repairTablesFromCapture?: boolean
+  onTableRepair?: (result: { repaired: number; unresolved: number }) => void
   silent?: boolean
   signal?: AbortSignal
   browserSessionId?: string
@@ -24,6 +26,7 @@ export type WorkspaceRefreshOptions = {
 }
 
 export type UseWorkspaceFileActionsArgs = {
+  getOpenEditor?: () => { path: WorkspacePath | null; dirty: boolean }
   getFs: () => Promise<WorkspaceFs>
   refresh: () => Promise<WorkspaceRefreshSnapshot>
 
@@ -68,6 +71,7 @@ export type WorkspaceWebsiteImportCtx = Pick<UseWorkspaceFileActionsArgs, 'getFs
 
 export type WorkspaceMutationActionsCtx = Pick<
   UseWorkspaceFileActionsArgs,
+  | 'getOpenEditor'
   | 'getFs'
   | 'refresh'
   | 'openedPath'
