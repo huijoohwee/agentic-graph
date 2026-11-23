@@ -71,7 +71,8 @@ test('discovered page import is explicit, locked while running and preserves the
   const host = document.createElement('section'), root = createRoot(host)
   document.body.append(host)
   const page = sourceUrl + 'topic?category=Examples%20Only', other = sourceUrl + 'other'
-  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [page, other].map(url => ({ url, path: new URL(url).pathname, title: url === page ? 'Topic page' : 'Other page' })), limited: false }))) as typeof fetch
+  const third = sourceUrl + 'third'
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [page, other, third].map(url => ({ url, path: new URL(url).pathname, title: url === page ? 'Topic page' : 'Other page' })), limited: false }))) as typeof fetch
   const calls: Array<{ url: string; options: unknown }> = [], resolutions: unknown[] = []
   let complete!: () => void, reject!: (error: Error) => void, started!: () => void
   let importStarted = new Promise<void>(resolve => { started = resolve })
@@ -85,7 +86,7 @@ test('discovered page import is explicit, locked while running and preserves the
     await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} destinationPath="/topic.md" confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
     await settleDiscovery()
     assert.equal(useWebsiteImportSelectionSession.getState().session!.selected.size, 0)
-    await act(async () => toggleWebsiteSelection([other], true))
+    await act(async () => toggleWebsiteSelection([other, third], true))
     assert.equal(importButton().disabled, false)
     await act(async () => { importButton().click(); await importStarted })
     const id = useWebsiteImportSelectionSession.getState().session!.id
@@ -103,7 +104,7 @@ test('discovered page import is explicit, locked while running and preserves the
     await act(async () => reject(new Error('Page capture failed')))
     assert.equal(importButton().disabled, false)
     assert.match(document.querySelector('[role="alert"]')!.textContent || '', /Page capture failed/)
-    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
+    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other, third])
     await act(async () => { await importDiscoveredWebsitePage(id + 1, page); await importDiscoveredWebsitePage(id, 'https://outside.invalid/') })
     assert.equal(calls.length, 1, 'stale sessions and non-members do not import')
     importStarted = new Promise<void>(resolve => { started = resolve })
@@ -111,9 +112,13 @@ test('discovered page import is explicit, locked while running and preserves the
     assert.equal(calls.length, 2, 'retry uses the same direct action')
     await act(async () => complete())
     assert.equal(useWebsiteImportSelectionSession.getState().session!.error, '')
-    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
+    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other, third])
     assert.deepEqual(resolutions, [], 'direct import leaves the pending batch chooser intact')
-    await act(async () => finishWebsiteImportSelection([other]))
-    assert.deepEqual(resolutions, [[other]])
+    await act(async () => { toggleWebsiteSelection([third], false); toggleWebsiteSelection([page], true); setWebsiteSelectionQuery('Topic page') })
+    const batch = host.querySelector<HTMLButtonElement>('button[aria-label="Import selected (2)"]')!
+    assert.equal(batch.title, 'Import selected (2)')
+    await act(async () => batch.click())
+    assert.deepEqual(resolutions, [[page, other]], 'the checked row confirms the full selection, including the hidden sibling')
+    assert.equal(calls.length, 2, 'the batch does not also import the clicked page separately')
   } finally { await act(async () => { complete?.(); root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
