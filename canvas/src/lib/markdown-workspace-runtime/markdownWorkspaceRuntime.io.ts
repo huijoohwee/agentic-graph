@@ -202,11 +202,12 @@ export const writeWorkspaceFileAndSync = async (args: {
   text: string
   getFs: MarkdownWorkspaceRuntimeGetFs
   skipWrite?: boolean
+  canWrite?: () => boolean
   lastLoadedRef: MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   patchWorkspaceEntryInlineText?: (path: WorkspacePath, text: string) => void
   setEntries?: Dispatch<SetStateAction<WorkspaceEntry[]>>
   createEntryIfMissing?: boolean
-  synchronizeActiveDocument?: boolean
+  synchronizeActiveDocument?: boolean | (() => boolean)
   setActiveText?: (text: string) => void
   activeDocumentKey?: string
   activeDocumentSourceUrl?: string | null
@@ -242,6 +243,7 @@ export const writeWorkspaceFileAndSync = async (args: {
         if (currentText !== expectedWorkspaceText && currentText !== text) return false
         if (currentText === text) { committedFs = fs; return true }
       }
+      if (args.canWrite && !args.canWrite()) return false
       try {
         await fs.writeFileText(path, text, hasExpectedWorkspaceText ? { expectedText: args.expectedWorkspaceText } : undefined)
       } catch (error) {
@@ -260,6 +262,7 @@ export const writeWorkspaceFileAndSync = async (args: {
   })
   syncWorkspaceTextState({
     ...args,
+    synchronizeActiveDocument: typeof args.synchronizeActiveDocument === 'function' ? args.synchronizeActiveDocument() : args.synchronizeActiveDocument,
     text: textToWrite,
     ...(committedFs ? { observedWorkspaceText: textToWrite, observedWorkspaceFs: committedFs } : {}),
   })

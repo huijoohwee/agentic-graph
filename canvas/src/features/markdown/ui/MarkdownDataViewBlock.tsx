@@ -1,5 +1,5 @@
 import { upsertDataViewColumnFilter } from '@/features/markdown-workspace/main/viewer/workspaceDataViewFilterTree'
-import { useSavedWorkspaceDataView } from '@/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView'
+import { ImportedMarkdownTableContext, useSavedWorkspaceDataView } from '@/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView'
 import { WorkspaceDataViewCalendarSurface } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewCalendarSurface'
 import React from 'react'
 import type { TokenWithLines } from './markdownPreviewLex'
@@ -64,8 +64,9 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
   const tableId = React.useMemo(() => `md-block:${startLine}-${endLine}`, [endLine, startLine])
   const activeDocumentPath = opts.activeDocumentPath ?? null
 
+  const importedTable = React.useContext(ImportedMarkdownTableContext)
   const { viewConfig, setViewConfig } = useSavedWorkspaceDataView({ activeDocumentPath, tableId: view ? tableId : null,
-    fallback: defaultWorkspaceDataViewConfig({ title: UI_COPY.markdownDataViewTitleDefault, layout: view?.groupByColumnId ? 'kanban' : 'table', groupByColumnId: view?.groupByColumnId || null }),
+    fallback: defaultWorkspaceDataViewConfig({ title: UI_COPY.markdownDataViewTitleDefault, layout: !importedTable && view?.groupByColumnId ? 'kanban' : 'table', groupByColumnId: view?.groupByColumnId || null }),
   })
   const [settingsPanel, setSettingsPanel] = React.useState<WorkspaceDataViewSettingsPanelKey>('properties')
   const [headerState, setHeaderState] = React.useState<WorkspaceDataViewHeaderState>(() => ({

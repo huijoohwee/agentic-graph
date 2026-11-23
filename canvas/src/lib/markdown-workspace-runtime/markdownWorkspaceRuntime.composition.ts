@@ -10,6 +10,7 @@ import type { MarkdownWorkspaceSaveArgs } from './useMarkdownWorkspaceSave'
 import { materializeAgentGraphWorkspaceArtifact } from '@/features/agent-graph/agentGraphWorkspaceArtifact'
 
 export function buildMarkdownWorkspaceFileActionsArgs(args: {
+  getOpenEditor?: UseWorkspaceFileActionsArgs['getOpenEditor']
   getFs: UseWorkspaceFileActionsArgs['getFs']
   refresh: UseWorkspaceFileActionsArgs['refresh']
   activePath: WorkspacePath | null
@@ -30,6 +31,7 @@ export function buildMarkdownWorkspaceFileActionsArgs(args: {
     getFs: args.getFs,
     refresh: args.refresh,
     openedPath: args.activePath,
+    getOpenEditor: args.getOpenEditor,
     selectionPath: args.selectionPath,
     selectionEntryKind: args.selectionEntryKind,
     activeDocumentKey: args.activeDocumentKey,

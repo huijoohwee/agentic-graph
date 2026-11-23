@@ -16,7 +16,7 @@ import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from 
 import type { WorkspaceMutationActionsCtx, WorkspaceRefreshOptions } from './types'
 import { syncWorkspaceTextState, writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
 import { cancelMarkdownWorkspaceAutosaveSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.stateSync'
-import { settleWorkspaceSourceTextTransactions } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { captureWorkspaceSourceTextRevision, settleWorkspaceSourceTextTransactions } from '@/features/workspace-fs/workspaceSourceTextTransaction'
 import { resolveWorkspaceImportSourceUrl, workspaceImportSourceUrlsMatch } from '../workspaceImport/sourceUrlIdentity'
 
 export function useWorkspaceMutationActions(args: {
@@ -26,6 +26,7 @@ export function useWorkspaceMutationActions(args: {
   const { status } = args.core
   const {
     getFs,
+    getOpenEditor,
     refresh,
     openedPath,
     selectionPath,
@@ -97,8 +98,39 @@ export function useWorkspaceMutationActions(args: {
       try {
         refreshOptions?.signal?.throwIfAborted()
         const fs = await getFs()
-        const prevText = await fs.readFileText(normalized).catch(() => '')
+        const revision = captureWorkspaceSourceTextRevision(normalized)
+        const prevText = await fs.readFileText(normalized)
         const sourceUrl = resolveWorkspaceImportSourceUrl(src, prevText)
+        if (refreshOptions?.repairTablesFromCapture) {
+          const canWrite = () => {
+            refreshOptions.signal?.throwIfAborted()
+            const current = getOpenEditor?.()
+            return current?.path !== normalized || !current.dirty
+          }
+          if (!canWrite()) throw new Error('Save the open editor changes before repairing this page')
+          const { refreshWebsiteImportMarkdown } = await import('../workspaceImport/refreshWebsiteImportMarkdown')
+          if (!prevText) throw new Error('This page has no saved HTML capture')
+          const regenerated = await refreshWebsiteImportMarkdown(prevText, sourceUrl || '', refreshOptions.signal)
+          if (!regenerated) throw new Error('This page has no saved HTML capture')
+          const { repairCapturedMarkdownTables } = await import('../workspaceImport/repairCapturedMarkdownTables')
+          const result = repairCapturedMarkdownTables(prevText, regenerated)
+          refreshOptions.signal?.throwIfAborted()
+          if (result.repaired) {
+            const saved = await writeWorkspaceFileAndSync({
+              path: normalized, text: result.text, getFs, lastLoadedRef, setEntries, setActiveText, setActiveMarkdownDocument,
+              activeDocumentKey: workspaceDocumentKey(normalized), activeDocumentSourceUrl: sourceUrl,
+              expectedSourceRevision: revision, expectedWorkspaceText: prevText, expectedWorkspaceFs: fs, canWrite,
+              synchronizeActiveDocument: () => {
+                const current = getOpenEditor?.()
+                return current ? current.path === normalized && !current.dirty : openedPath === normalized
+              },
+              resetParsedState: true,
+            })
+            if (!saved) throw new Error('The page changed during repair. Its newer edits were kept. Retry after saving.')
+          }
+          refreshOptions.onTableRepair?.({ repaired: result.repaired, unresolved: result.unresolved })
+          return true
+        }
         if (!sourceUrl) {
           if (!refreshOptions?.silent) status.setStatusError('No URL source')
           return false
@@ -176,7 +208,7 @@ export function useWorkspaceMutationActions(args: {
         return false
       }
     },
-    [getFs, status, writeMutationWorkspaceText],
+    [getOpenEditor, getFs, lastLoadedRef, openedPath, setActiveMarkdownDocument, setActiveText, setEntries, status, writeMutationWorkspaceText],
   )
 
   const deleteEntry = React.useCallback(

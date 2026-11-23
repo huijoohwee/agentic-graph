@@ -14,6 +14,7 @@ import { buildWebpageLayoutWireframeAsciiFromMarkdown } from '@/lib/websites/web
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import { useDebouncedValue } from '@/features/hooks/useDebouncedValue'
+import { ImportedMarkdownTableContext } from './viewer/useSavedWorkspaceDataView'
 import { WebpageViewerPane } from './webpage/WebpageViewerPane'
 import { deriveWebpageFrontmatterMetaFromBlock, deriveWebsiteImportFrontmatterMetaFromBlock, shouldRenderWebpageIframe } from './webpage/webpageMeta'
 import { useWebpageIframeView } from './webpage/useWebpageIframeView'
@@ -383,28 +384,30 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   const disableDerivedMarkdownMutations = !!disableViewerMutations
 
   const markdownViewer = !viewerPaneVisible ? null : (props.passive || (viewerMode === 'read' || viewerMode === 'table') && viewerKind === 'markdown') ? (
-    <MarkdownWorkspaceViewerSurface
-      ref={handleMarkdownViewerRootRef}
-      markdownText={viewerText}
-      markdownTokenStoreSync={!props.passive}
-      activeDocumentPath={activeDocumentKey}
-      highlightedLineRange={highlightedLineRange}
-      markdownWordWrap={markdownWordWrap}
-      markdownTextHighlight={markdownTextHighlight}
-      markdownViewerMediaMode={webpageMeta?.url ? 'image' : undefined}
-      selectionKind={null}
-      uiPanelTextFontClass={uiPanelTextFontClass}
-      uiPanelMonospaceTextClass={uiPanelMonospaceTextClass}
-      webpageLayoutWireframeAscii={webpageLayoutWireframeAscii}
-      geoDatasetIntegration={geoDatasetIntegration}
-      onInsertLineAfter={disableDerivedMarkdownMutations ? undefined : onInsertLineAfter}
-      onReorderLineBlock={disableDerivedMarkdownMutations ? undefined : onReorderLineBlock}
-      onReplaceLineRange={disableDerivedMarkdownMutations ? undefined : onReplaceLineRange}
-      onShowInEditor={line => revealLineInEditor(line)}
-      onInlineEditStateChange={disableDerivedMarkdownMutations ? undefined : handleInlineEditStateChange}
-      onInlineDraftTextChange={disableDerivedMarkdownMutations ? undefined : handleInlineDraftTextChange}
-      markdownForcePlainTables={viewerMode === 'table' || !!webpageMeta || !!websiteImportMeta}
-    />
+    <ImportedMarkdownTableContext.Provider value={!!webpageMeta || !!websiteImportMeta}>
+      <MarkdownWorkspaceViewerSurface
+        ref={handleMarkdownViewerRootRef}
+        markdownText={viewerText}
+        markdownTokenStoreSync={!props.passive}
+        activeDocumentPath={activeDocumentKey}
+        highlightedLineRange={highlightedLineRange}
+        markdownWordWrap={markdownWordWrap}
+        markdownTextHighlight={markdownTextHighlight}
+        markdownViewerMediaMode={webpageMeta?.url ? 'image' : undefined}
+        selectionKind={null}
+        uiPanelTextFontClass={uiPanelTextFontClass}
+        uiPanelMonospaceTextClass={uiPanelMonospaceTextClass}
+        webpageLayoutWireframeAscii={webpageLayoutWireframeAscii}
+        geoDatasetIntegration={geoDatasetIntegration}
+        onInsertLineAfter={disableDerivedMarkdownMutations ? undefined : onInsertLineAfter}
+        onReorderLineBlock={disableDerivedMarkdownMutations ? undefined : onReorderLineBlock}
+        onReplaceLineRange={disableDerivedMarkdownMutations ? undefined : onReplaceLineRange}
+        onShowInEditor={line => revealLineInEditor(line)}
+        onInlineEditStateChange={disableDerivedMarkdownMutations ? undefined : handleInlineEditStateChange}
+        onInlineDraftTextChange={disableDerivedMarkdownMutations ? undefined : handleInlineDraftTextChange}
+        markdownForcePlainTables={viewerMode === 'table' && !webpageMeta && !websiteImportMeta}
+      />
+    </ImportedMarkdownTableContext.Provider>
   ) : (
     <MarkdownWorkspaceDerivedViewer
       viewerKind={viewerKind}

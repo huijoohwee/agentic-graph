@@ -7,6 +7,7 @@ import { MarkdownBlockContainer } from './MarkdownBlockContainer'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui'
 import { UI_COPY } from '@/lib/config'
+import { ImportedMarkdownTableContext } from '@/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView'
 import { MarkdownDataViewBlock } from './MarkdownDataViewBlock'
 import { isMarkdownDataViewCandidate } from './markdownDataViewModel'
 import {
@@ -57,10 +58,11 @@ export const MarkdownTableBlock = React.memo(function MarkdownTableBlock({
     !!opts.viewerBlockEditingEnabled &&
     opts.markdownBlockControlsEnabled !== false
   const useEditableDataView = blockControlsAllowed && !!opts.onReplaceLineRange
+  const importedTable = React.useContext(ImportedMarkdownTableContext)
   const isDataView =
     !opts.markdownPresentationMode &&
     !opts.markdownForcePlainTables &&
-    (useEditableDataView || isMarkdownDataViewCandidate(tbl))
+    (importedTable || useEditableDataView || isMarkdownDataViewCandidate(tbl))
   const canInsertLine = blockControlsAllowed && !!opts.onInsertLineAfter && Number.isFinite(endLine)
   const canReorder = blockControlsAllowed && !isDataView && !!opts.onReorderLineBlock && Number.isFinite(t.startLine)
   const gutterEnabled = (canInsertLine || canReorder) && opts.markdownBlockGutterEnabled !== false

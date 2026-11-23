@@ -39,6 +39,7 @@ function buildWorkspaceMutationActionsCtx(args: UseWorkspaceFileActionsArgs): Wo
     getFs: args.getFs,
     refresh: args.refresh,
     openedPath: args.openedPath,
+    getOpenEditor: args.getOpenEditor,
     selectionPath: args.selectionPath,
     selectionEntryKind: args.selectionEntryKind,
     activeDocumentKey: args.activeDocumentKey,

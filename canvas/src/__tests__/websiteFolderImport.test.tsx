@@ -1,8 +1,11 @@
+import { repairCapturedMarkdownTables } from '@/features/markdown-workspace/workspaceImport/repairCapturedMarkdownTables'
+import { useWorkspaceMutationActions } from '@/features/markdown-workspace/useWorkspaceFileActions/mutationActions'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { initJsdomHarness, settleDiscovery } from '@/tests/lib/importInventoryHarness'
+import { initJsdomHarness, settleDiscovery, waitForImportCondition } from '@/tests/lib/importInventoryHarness'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
@@ -135,4 +138,113 @@ test('folder confirmation preserves outside selections, retries failure, and rej
     await importSelectedWebsiteFolderPages(701, [urls[0]])
     assert.equal(calls.length, 2, 'unselected pages cannot be reimported by stale folder actions')
   } finally { release(); await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); restore() }
+})
+
+const header = '| Field | Unit |', separator = '| --- | --- |'
+const rows = ['| Rate | Hz |', '| Duration | s |']
+const original = [header, separator, ...rows].join('\n')
+const meta = '---\r\ncustom: "authored | metadata"\r\n---\r\n'
+
+test('repair inserts only structure, preserving local rows, metadata, fences, line endings and the final newline choice', () => {
+  const saved = '# Measurements\n\n' + original
+  const edited = ['# Measurements', '', '~~~', header, ...rows, '~~~', '', 'My notes.', '', header, '| Rate | local \\| unit |', rows[1]].join('\r\n')
+  const broken = meta + edited
+  const expected = broken.replace('My notes.\r\n\r\n' + header, 'My notes.\r\n\r\n' + header + '\r\n' + separator)
+  const result = repairCapturedMarkdownTables(broken, saved)
+  assert.deepEqual(result, { text: expected, repaired: 1, unresolved: 0 })
+  assert.deepEqual(repairCapturedMarkdownTables(expected, saved), { text: expected, repaired: 0, unresolved: 0 })
+})
+
+test('restores missing column headers, keeps renamed headers and never recreates a deleted or ambiguous table', () => {
+  for (const [damaged, expected] of [
+    [rows.join('\n'), original], [[separator, ...rows].join('\n'), original],
+    [['| Metric | Units |', ...rows].join('\n'), original.replace(header, '| Metric | Units |')],
+    [header, header + '\n' + separator],
+  ]) assert.equal(repairCapturedMarkdownTables(damaged!, original).text, expected)
+  for (const local of ['My replacement', ['```text', header, ...rows, '```'].join('\n'),
+    [header, ...rows, '', header, ...rows].join('\n')]) {
+    assert.deepEqual(repairCapturedMarkdownTables(local, original), { text: local, repaired: 0, unresolved: 1 })
+  }
+})
+
+test('checked saved pages repair from their own captures, leave other files alone and protect concurrently edited files', async () => {
+  const { restore } = await initJsdomHarness()
+  const host = document.createElement('div'); document.body.append(host)
+  const root = createRoot(host), previousFetch = globalThis.fetch
+  const ids = ['first', 'second', 'unselected', 'race', 'dirty', 'missing']
+  const source = (id: string) => new URL(id, document.baseURI).href
+  const body = '# Measurements\n\nLocal introduction.\n\n' + [header, rows[0], '| Duration | edited locally |'].join('\n')
+  const page = (id: string) => '---\ncustom: "keep exactly"\nkgWebpageUrl: "' + source(id) + '"\nkgWebsiteImportId: "batch"\nkgWebsiteNodeId: "' + id + '"\n---\n\n' + body
+  const entries = ids.map(id => ({ path: '/' + id + '.md', name: id + '.md', parentPath: '/', kind: 'file' as const, updatedAtMs: 1, text: page(id) }))
+  const fs = createMemoryWorkspaceFs({ initialEntries: entries })
+  let dirtyPath: string | null = null
+  let actions!: ReturnType<typeof useWorkspaceMutationActions>
+  const requests: string[] = [], failures: string[] = [], checked: string[] = []
+  const html = '<main><h1>Measurements</h1><table><tr><th>Field</th><th>Unit</th></tr><tr><td>Rate</td><td>Hz</td></tr><tr><td>Duration</td><td>s</td></tr></table></main>'
+  globalThis.fetch = async input => {
+    const url = new URL(String(input), document.baseURI)
+    assert.equal(url.searchParams.get('kind'), 'rawHtml', 'only the saved raw HTML should be read')
+    const id = url.searchParams.get('nodeId')!
+    requests.push(id)
+    if (id === 'race') await fs.writeFileText('/race.md', page('race') + '\nconcurrent edit')
+    return id === 'missing' ? new Response('', { status: 404 }) : new Response(html)
+  }
+  function Harness({ filtered = false } = {}) {
+    actions = useWorkspaceMutationActions({ core: { status: { setStatusInfo() {}, setStatusError() {}, setStatusProgress() {},
+      setStatusWarning() {}, clearStatus() {}, buildWebpageImportStageLabel: () => '' } },
+      ctx: { getFs: async () => fs, refresh: async () => ({ entries, sourcesByPath: {} }), openedPath: null, selectionPath: null,
+        selectionEntryKind: null, activeDocumentKey: '', getOpenEditor: () => ({ path: dirtyPath, dirty: !!dirtyPath }),
+        setActiveText() {}, setEntries() {}, lastLoadedRef: React.useRef(null), setActiveMarkdownDocument: async () => true,
+        setActivePathSafe() {}, setSelectionPathSafe() {} } })
+    return <MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="" allEntries={entries} entries={filtered ? entries.slice(0, 1) : entries}
+      expandedPaths={new Set()} activePath={null} sourcesByPath={{}} toggleExpanded={() => {}} onSelectFile={() => {}}
+      onCreateNewFile={() => {}} onSelectFolder={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}}
+      onRefreshFileFromSource={async (path, url, options) => {
+        const success = await actions.refreshFileFromSource(path, url, options)
+        if (success) checked.push(path)
+        return success
+      }} />
+  }
+  const click = async (label: string) => {
+    const element = [...host.querySelectorAll<HTMLElement>('[aria-label]')].find(el => el.getAttribute('aria-label') === label)
+    assert.ok(element, label); await act(async () => element.click())
+  }
+  const repair = (id: string) => actions.refreshFileFromSource('/' + id + '.md', undefined, {
+    repairTablesFromCapture: true, silent: true, onFailure: error => failures.push(error.message),
+  })
+  try {
+    await act(async () => root.render(<Harness />))
+    await click('Select saved pages for table repair')
+    for (const id of ['first', 'second']) await click('Select saved page /' + id + '.md for table repair')
+    await click('Repair tables in 2 selected saved pages')
+    for (let i = 0; i < 80 && !(await fs.readFileText('/second.md'))?.includes(separator); i++)
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+    for (const id of ['first', 'second']) assert.equal(await fs.readFileText('/' + id + '.md'), page(id).replace(header, header + '\n' + separator))
+    assert.deepEqual(requests.sort(), ['first', 'second'])
+    assert.equal(await fs.readFileText('/unselected.md'), page('unselected'))
+    await click('Exit saved page selection')
+    // The existing discovery selection can include hidden saved pages and unsaved results.
+    const selected = ['first', 'second', 'pending'].map(source)
+    await act(async () => {
+      useWebsiteImportSelectionSession.setState({ session: { id: 1, url: source('first'), pages: selected.map(url => ({ url, path: new URL(url).pathname })),
+        selected: new Set(selected), visited: new Set(), busy: false, error: '', limited: false, query: 'first' } })
+      root.render(<Harness filtered />)
+    })
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="File first.md"]')!.dispatchEvent(
+      new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true })))
+    const refreshSelected = document.querySelector<HTMLButtonElement>('button[aria-label="Refresh 2 selected saved pages from saved HTML"]')
+    assert.ok(refreshSelected && !refreshSelected.disabled)
+    await act(async () => refreshSelected.click())
+    await waitForImportCondition(() => checked.length === 4)
+    assert.deepEqual(checked.slice(2).sort(), ['/first.md', '/second.md'])
+    assert.deepEqual(requests.sort(), ['first', 'second'], 'a second refresh can reuse the saved artifacts')
+    assert.equal(await repair('race'), false)
+    assert.equal(await fs.readFileText('/race.md'), page('race') + '\nconcurrent edit')
+    dirtyPath = '/dirty.md'
+    assert.equal(await repair('dirty'), false)
+    assert.ok(!requests.includes('dirty'))
+    assert.equal(await repair('missing'), false)
+    assert.equal(await fs.readFileText('/missing.md'), page('missing'))
+    assert.equal(failures.length, 3)
+  } finally { await act(async () => root.unmount()); host.remove(); useWebsiteImportSelectionSession.setState({ session: null }); globalThis.fetch = previousFetch; restore() }
 })

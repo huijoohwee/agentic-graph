@@ -112,9 +112,14 @@ export async function testMarkdownWorkspaceEditorHtmlViewSwitchShowsViewerPane()
     }
     const viewerPane = doc.querySelector('section[aria-label="Viewer"]') as HTMLElement | null
     if (!viewerPane) throw new Error('expected HTML view switch to keep the Viewer pane visible')
-    const table = Array.from(viewerPane.querySelectorAll('table')).find(candidate => candidate.tHead?.textContent === 'NameType')
-    if (table?.rows.length !== 3 || table.rows[2].cells[0]?.textContent !== 'Second') {
-      throw new Error('Expected the imported Markdown table to retain its columns and rows beside the HTML preview')
+    const tablePanel = () => [...viewerPane.querySelectorAll('article[aria-label="Markdown data view"]')]
+      .find(panel => panel.querySelector('summary[aria-label="Column type: Name"]'))
+    for (let i = 0; i < 80 && !tablePanel(); i++) await act(async () => { await tick() })
+    const panel = tablePanel()
+    const table = panel?.querySelector('table')
+    if (!panel?.querySelector('button[aria-label="Layout: Table View"]') || !table?.tHead?.textContent?.includes('Type')
+      || !table.tBodies[0]?.textContent?.includes('Second')) {
+      throw new Error('Expected column headers, source rows and the interactive Table View toolbar for an imported table')
     }
     const htmlPane = doc.querySelector('section[aria-label="HTML Viewer"] section[aria-label="Webpage Viewer"]')
     if (!htmlPane) throw new Error('expected HTML view switch to render HTML in its own pane')

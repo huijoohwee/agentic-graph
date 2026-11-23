@@ -253,6 +253,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
             loadError={loadError}
             textSizeClass={panelTypography.textSizeClass}
             entries={filteredEntries}
+            allEntries={entries}
             expandedPaths={expandedPaths}
             activePath={activePath}
             activeDocumentKey={activeDocumentKey}
