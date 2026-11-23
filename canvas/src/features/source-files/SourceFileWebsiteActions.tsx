@@ -50,8 +50,11 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, destinati
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
   const fileRequired = entry.kind !== 'file'
   const hasDiscovery = !!session && (ownsSession || discoveryContext)
-  const confirmSelection = ownsSession && !fileRequired && !!session.selected.size
   const importPage = !fileRequired && hasDiscovery && !!url && session.pages.some(page => page.url === url)
+  const selectedCount = session?.selected.size ?? 0
+  const checkedBatch = importPage && selectedCount > 1 && session.selected.has(url)
+  const confirmSelection = checkedBatch || (ownsSession && !fileRequired && selectedCount > 0)
+  const selectionLabel = `Import selected (${selectedCount})${ownsSession ? ` for ${entry.name}` : ''}`
   const refreshInventory = hasDiscovery && (ownsSession || fileRequired)
   const folderSelected = fileRequired ? folderPageUrls.filter(url => session?.selected.has(url)) : []
   const selectFolderPages = fileRequired && hasDiscovery && folderPageUrls.length > 0
@@ -65,7 +68,7 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, destinati
       disabled={(!refreshInventory && !startFolder && (fileRequired || !url)) || !!session?.busy || !!session?.importing}
       onClick={() => { onShowDetails?.(); if (refreshInventory) void discoverWebsiteSelection(session.url); else if (startFolder) onChooseFolderSource?.(); else if (session && urlOverride && session.pages.some(page => page.url === url)) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="import"
-      label={folderSelected.length ? `Import selected (${folderSelected.length}) in ${entry.name}` : selectFolderPages ? `Select pages to import in ${entry.name}` : startFolder ? `Choose pages to import in ${entry.name}` : confirmSelection ? `Import selected (${session.selected.size}) for ${entry.name}` : importPage ? `Import page ${entry.name}` : ownsSession && !fileRequired ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
+      label={folderSelected.length ? `Import selected (${folderSelected.length}) in ${entry.name}` : selectFolderPages ? `Select pages to import in ${entry.name}` : startFolder ? `Choose pages to import in ${entry.name}` : confirmSelection ? selectionLabel : importPage ? `Import page ${entry.name}` : ownsSession && !fileRequired ? selectionLabel : `Import unavailable for ${entry.name}`}
       disabled={(!confirmSelection && !importPage && !folderSelected.length && !selectFolderPages && !startFolder) || !!session?.busy || !!session?.importing}
       onClick={() => { onShowDetails?.(); if (folderSelected.length && session) void importSelectedWebsiteFolderPages(session.id, folderSelected).catch(reportSourceImportFailure); else if (selectFolderPages) toggleWebsiteSelection(folderPageUrls, true); else if (startFolder) onChooseFolderSource?.(); else if (confirmSelection) confirmWebsiteSelection(); else if (importPage) void importDiscoveredWebsitePage(session.id, url, destinationPath).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="more" label={clearsFilter ? 'Show more pages (clear filter)' : `Show more pages (${remaining} remaining)`} disabled={moreDisabled}
