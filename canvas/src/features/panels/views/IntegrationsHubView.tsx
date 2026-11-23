@@ -1,6 +1,8 @@
 import React from 'react'
 import SettingsView from '@/features/panels/views/SettingsView'
 import TradingTickerFixture from './TradingTickerFixture'
+import TradingCalendarFixture from './TradingCalendarFixture'
+import TradingProviderCoverage from './TradingProviderCoverage'
 
 export default function IntegrationsHubView({
   searchQuery = '',
@@ -24,6 +26,8 @@ export default function IntegrationsHubView({
     <>
       {(!searchQuery.trim() || 'trading ticker fixture synthetic quote read.ticker receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingTickerFixture />}
       {(!searchQuery.trim() || 'trading ticker provider signed quote read.ticker receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingTickerFixture provider />}
+      {(!searchQuery.trim() || 'trading earnings calendar fixture read.calendar rest receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingCalendarFixture />}
+      {(!searchQuery.trim() || 'moomoo openapi coverage feature families earnings calendar rest mcp integration'.includes(searchQuery.trim().toLowerCase())) && <TradingProviderCoverage />}
       <SettingsView
         searchQuery={searchQuery}
         requestedAnchorId={requestedAnchorId}
