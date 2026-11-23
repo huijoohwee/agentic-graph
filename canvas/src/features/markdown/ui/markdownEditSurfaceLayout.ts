@@ -17,11 +17,9 @@ export const MARKDOWN_QUOTE_LIKE_CONTENT_RESET_CLASS = [
   '[&_blockquote]:bg-transparent',
 ].join(' ')
 export const MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS = 'relative overflow-auto p-4'
-export const MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS = 'm-0 p-0 bg-transparent'
 export const MARKDOWN_CODE_FENCE_EDITOR_LAYOUT_CLASS = 'block m-0 whitespace-pre overflow-auto p-4'
 export const MARKDOWN_CODE_FENCE_LINE_SPACING_CLASS = 'leading-[1.5em]'
 export const MARKDOWN_CODE_FENCE_LINE_ROW_HEIGHT_CLASS = 'h-[1.5em]'
-export const MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS = 'text-xs leading-4'
 
 export const MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_WRAP_CLASS = 'whitespace-pre-wrap break-words'
 

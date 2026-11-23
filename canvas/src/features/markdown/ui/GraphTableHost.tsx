@@ -28,7 +28,6 @@ import { MarkdownDataViewInlineTextCellEditor } from '@/features/markdown/ui/Mar
 import { MarkdownDataViewColumnResizeHandle } from '@/features/markdown/ui/MarkdownDataViewColumnResizeHandle'
 import { MarkdownDataViewCellSelectPopover } from '@/features/markdown/ui/MarkdownDataViewCellSelectPopover'
 import { MARKDOWN_DATA_VIEW_DEFAULT_COLUMN_WIDTH_PX as defaultColumnWidthPx, readMarkdownDataViewDefaultColumnWidth as readDefaultColumnWidth } from '@/features/markdown/ui/markdownDataViewColumnSizing'
-import { MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME } from '@/features/markdown/ui/markdownDataViewTableClasses'
 import {
   MARKDOWN_DATA_VIEW_TABLE_CELL_PREVIEW_CHAR_LIMIT as cellPreviewCharLimit,
   readMarkdownDataViewTableCellDisplayText as readCellDisplayText,
@@ -58,7 +57,7 @@ export const graphTableHost: TableHostAdapter = {
     menuIconActionClass: UI_RESPONSIVE_MENU_ICON_ACTION_CLASSNAME,
     textTruncateClass: UI_TEXT_TRUNCATE,
     toolbarRowScrollClass: uiToolbarRowScrollClassName,
-    stickyHeaderClass: MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME,
+    stickyHeaderClass: 'agentic-table-head',
   },
   icons: { iconByColumnType },
   components: {

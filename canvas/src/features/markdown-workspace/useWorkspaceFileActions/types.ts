@@ -18,7 +18,7 @@ export type WorkspaceRefreshSnapshot = {
 
 export type WorkspaceRefreshOptions = {
   repairTablesFromCapture?: boolean
-  onTableRepair?: (result: { repaired: number; unresolved: number }) => void
+  onTableRepair?: (result: { repaired: number; unresolved: number; codeFences: number }) => void
   silent?: boolean
   signal?: AbortSignal
   browserSessionId?: string

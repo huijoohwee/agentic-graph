@@ -1,3 +1,4 @@
+import { CodeBlockText } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import { Database, Map as MapIcon, Network } from 'lucide-react'
 import type { RenderOpts } from '@/features/markdown/ui/MarkdownRendererTypes'
@@ -13,7 +14,6 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import {
   MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS,
-  MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS,
 } from '@/features/markdown/ui/markdownEditSurfaceLayout'
 import { UI_COPY } from '@/lib/config'
 import { HighlightedCode } from './HighlightedCode'
@@ -63,9 +63,8 @@ export function GeoJsonGeoPanelRenderer(props: {
   text: string
   req: MarkdownGeoDatasetRegistrationRequest
   opts: RenderOpts
-  monospaceCodeClass: string
 }) {
-  const { lang, text, req, opts, monospaceCodeClass } = props
+  const { lang, text, req, opts } = props
   const integration = opts.geoDatasetIntegration
   const isGeoJsonCodeBlock = integration?.isGeoJsonCodeBlock
   const register = integration?.registerGeoJsonFeatureCollection
@@ -197,14 +196,13 @@ export function GeoJsonGeoPanelRenderer(props: {
     }
   }, [renderGeo, req, shouldTreatAsGeoJson, trimmed])
   const codeFenceContentClassName = `${MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS} ${UI_THEME_TOKENS.code.bg} ${UI_THEME_TOKENS.code.text}`
-  const codeFencePreClassName = `${MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS} whitespace-pre ${monospaceCodeClass}`
 
   if (typeof window === 'undefined') {
     return (
       <section className={codeFenceContentClassName}>
-        <pre className={codeFencePreClassName}>
+        <CodeBlockText>
           <HighlightedCode code={text} lang={lang} highlightLines={null} />
-        </pre>
+        </CodeBlockText>
       </section>
     )
   }
@@ -220,9 +218,9 @@ export function GeoJsonGeoPanelRenderer(props: {
   if (!shouldTreatAsGeoJson) {
     return (
       <section className={codeFenceContentClassName}>
-        <pre className={codeFencePreClassName}>
+        <CodeBlockText>
           <HighlightedCode code={text} lang={lang} highlightLines={null} />
-        </pre>
+        </CodeBlockText>
       </section>
     )
   }
@@ -231,9 +229,9 @@ export function GeoJsonGeoPanelRenderer(props: {
 
   const fallbackNode = (
     <section className={codeFenceContentClassName}>
-      <pre className={codeFencePreClassName}>
+      <CodeBlockText>
         <HighlightedCode code={text} lang={lang} highlightLines={null} />
-      </pre>
+      </CodeBlockText>
     </section>
   )
 

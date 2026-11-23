@@ -240,7 +240,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     })
     setRefreshingFolderPaths(previous => new Set(previous).add(entry.path))
     let completed = 0
-    let repairedTables = 0, unchanged = 0, unresolved = 0
+    let repairedTables = 0, codeFences = 0, unchanged = 0, unresolved = 0
     let refreshed = 0
     let failed = 0
     let active = 0
@@ -272,8 +272,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         silent: true, repairTablesFromCapture,
         onTableRepair: result => {
           repairedTables += result.repaired
+          codeFences += result.codeFences
           unresolved += result.unresolved
-          if (!result.repaired && !result.unresolved) unchanged++
+          if (!result.codeFences && !result.repaired && !result.unresolved) unchanged++
         },
         signal: controller.signal,
         browserSessionId: importSession?.browserSessionId,
@@ -323,7 +324,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         id: `source-files:folder-refresh:${entry.path}`,
         kind: authBlocked ? 'error' : cancelled || unresolved ? 'warning' : failed ? (refreshed ? 'warning' : 'error') : 'success',
         message: repairTablesFromCapture
-          ? `Checked ${completed}/${paths.length} selected pages. ${repairedTables} tables repaired, ${unchanged} pages already current, ${unresolved} unmatched tables, ${failed} failed.${cancelled ? ' Cancelled.' : ''}`
+          ? `Checked ${completed}/${paths.length} selected pages. ${repairedTables} tables repaired, ${codeFences} code fences repaired, ${unchanged} pages already current, ${unresolved} unmatched tables, ${failed} failed.${cancelled ? ' Cancelled.' : ''}`
           : authBlocked
           ? `Refresh stopped after ${completed}/${paths.length} pages: ${conciseRefreshFailure(authenticatedSourceFailure!)} ${paths.length - completed} not started. Connect a matching authenticated browser session, then retry.`
           : cancelled
@@ -384,7 +385,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         ? <SourceImportAction action="cancel" label={`Cancel refreshing ${entry.name}`}
           title={`Cancel refresh of ${folderRefreshPaths.length} pages in ${entry.name}`}
           onClick={() => folderRefreshControllersRef.current.get(entry.path)?.abort(new Error('Folder refresh cancelled'))} />
-        : <SourceImportAction action="refresh" label={selectingPages ? `Repair tables in ${folderRefreshPaths.length} selected saved pages in ${entry.name}` : `Refresh ${folderRefreshPaths.length} pages in ${entry.name} from source`}
+        : <SourceImportAction action="refresh" label={selectingPages ? `Repair Markdown in ${folderRefreshPaths.length} selected saved pages in ${entry.name}` : `Refresh ${folderRefreshPaths.length} pages in ${entry.name} from source`}
           disabled={pending || activeFolderRefreshesRef.current.size > 0 || folderRefreshPaths.some(path => refreshingSourcePaths.has(path)) || !!importSession?.busy || !!importSession?.importing}
           onClick={() => { void refreshPages(entry, folderRefreshPaths, selectingPages) }} />)}
       <SourceFileWebsiteActions entry={currentEntry} source={sourcesByPath?.[entry.path]} urlOverride={projection.pageUrls.get(entry.path)} confirmationOwner={projection.ownerPath === entry.path}
@@ -459,7 +460,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const renderSelectionControl = (entry: WorkspaceEntry) => {
     if (repairSelection) {
       if (!projection.savedPaths.has(entry.path)) return null
-      return <WebsiteSelectionCheckbox label={`Select saved page ${entry.path} for table repair`} urls={[entry.path]}
+      return <WebsiteSelectionCheckbox label={`Select saved page ${entry.path} for Markdown repair`} urls={[entry.path]}
         selected={repairSelection} disabled={activeFolderRefreshesRef.current.size > 0}
         toggle={(_, checked) => setRepairSelection(previous => {
           if (!previous) return null
@@ -489,13 +490,13 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <section aria-label="Source Files import" className="px-1 py-1">
         <section aria-label="Choose folder(s)/page(s) to import" aria-busy={!!importSession?.busy} className={`border-b py-1 ${UI_THEME_TOKENS.panel.border}`}>
           {onRefreshFileFromSource && (repairSelection || projection.savedPaths.size > 0) && (repairSelection || !importSession?.selected.size) &&
-            <SourceImportAction action={repairSelection ? 'cancel' : 'refresh'} label={repairSelection ? 'Exit saved page selection' : 'Select saved pages for table repair'}
+            <SourceImportAction action={repairSelection ? 'cancel' : 'refresh'} label={repairSelection ? 'Exit saved page selection' : 'Select saved pages for Markdown repair'}
               aria-pressed={!!repairSelection} disabled={!!importSession?.importing || refreshingFolderPaths.size > 0}
               onClick={() => setRepairSelection(previous => previous ? null : new Set())} />}
           {refreshingFolderPaths.has(repairGroup.path)
             ? <SourceImportAction action="cancel" label="Cancel selected page repair" onClick={() => folderRefreshControllersRef.current.get(repairGroup.path)?.abort()} />
             : selectedSavedPaths.length > 0 && onRefreshFileFromSource && <SourceImportAction action="refresh"
-              label={`Repair tables in ${selectedSavedPaths.length} selected saved pages`}
+              label={`Repair Markdown in ${selectedSavedPaths.length} selected saved pages`}
               disabled={!!importSession?.importing || !!importSession?.busy || refreshingFolderPaths.size > 0 || selectedSavedPaths.some(path => refreshingSourcePaths.has(path))}
               onClick={() => void refreshPages(repairGroup, selectedSavedPaths, true)} />}
           {!repairSelection && <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}

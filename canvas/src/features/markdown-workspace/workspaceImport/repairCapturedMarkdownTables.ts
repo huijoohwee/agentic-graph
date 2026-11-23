@@ -4,11 +4,15 @@ import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
 
 type TableBlock = { start: number; rows: string[]; keys: string[]; heading: string; valid: boolean }
 
+type CodeFence = { start: number; label: number; language: string; body: string; heading: string }
+
 function scan(text: string) {
   const prefix = extractYamlFrontmatterHeaderBlock(text)?.rawBlock || ''
-  const lines = text.slice(prefix.length).match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) || []
+  const lines: string[] = text.slice(prefix.length).match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) || []
   const content = lines.map(line => line.replace(/[\r\n]+$/, ''))
   const blocks: TableBlock[] = []
+  const fences: CodeFence[] = []
+  let previousSingleLine = -1
   const headings: string[] = []
   for (const token of getMarkdownIt().parse(content.join('\n'), {})) {
     if (token.level || !token.map) continue
@@ -19,6 +23,13 @@ function scan(text: string) {
       headings[level - 1] = content[start]!.trim()
       continue
     }
+    if (token.type === 'fence') {
+      let above = start - 1
+      while (above >= 0 && !content[above]!.trim()) above--
+      const label = above === previousSingleLine ? above : -1
+      fences.push({ start, label, language: token.info.trim(), body: token.content, heading: headings.join('\n') })
+    }
+    if (token.type === 'paragraph_open' && end === start + 1) previousSingleLine = start
     if (token.type !== 'table_open' && token.type !== 'paragraph_open') continue
     const rows = content.slice(start, end)
     // Only a whole pipe-row paragraph can represent a damaged table. Markdown's block
@@ -27,7 +38,7 @@ function scan(text: string) {
     const keys = rows.map(row => JSON.stringify(markdownPipeRowCells(row)))
     blocks.push({ start, rows, keys, heading: headings.join('\n'), valid: token.type === 'table_open' })
   }
-  return { prefix, lines, blocks }
+  return { prefix, lines, blocks, fences }
 }
 
 function indexRows(tables: TableBlock[]) {
@@ -55,10 +66,39 @@ function matchTable(local: TableBlock, index: Map<string, Set<TableBlock>>) {
   if (strongest.length === 1) return strongest[0]
 }
 
+// Match the complete captured example. A caption present in the regenerated source is authored text.
+function repairFenceLabels(local: ReturnType<typeof scan>, source: ReturnType<typeof scan>) {
+  const byBody = new Map<string, CodeFence[]>()
+  for (const fence of source.fences) {
+    const matches = byBody.get(fence.body) || []
+    matches.push(fence)
+    byBody.set(fence.body, matches)
+  }
+  let repaired = 0
+  for (const fence of local.fences) {
+    if (fence.language || fence.label < 0) continue
+    const matches = byBody.get(fence.body) || []
+    const inSection = matches.filter(item => item.heading === fence.heading)
+    const candidates = inSection.length ? inSection : matches
+    const expected = candidates[0]
+    if (candidates.length !== 1 || !expected?.language || !/^[\w][\w.+#-]*$/u.test(expected.language)) continue
+    const label = local.lines[fence.label]!.trim().toLowerCase()
+    if (label !== expected.language.toLowerCase() || (expected.label >= 0 && source.lines[expected.label]!.trim().toLowerCase() === label)) continue
+    const opening = local.lines[fence.start]!
+    const labeled = opening.replace(/^ {0,3}(?:`{3,}|~{3,})/, marker => marker + expected.language)
+    if (labeled === opening) continue
+    local.lines.fill('', fence.label, fence.start)
+    local.lines[fence.start] = labeled
+    repaired++
+  }
+  return repaired
+}
+
 /** Repair structural lines only. All authored bytes, including mixed line endings, stay in place. */
 export function repairCapturedMarkdownTables(current: string, regenerated: string) {
   const local = scan(current)
-  const sources = scan(regenerated).blocks.filter(block => block.valid)
+  const sourceDocument = scan(regenerated)
+  const sources = sourceDocument.blocks.filter(block => block.valid)
   const index = indexRows(sources)
   const matches = new Map<TableBlock, TableBlock[]>()
   for (const block of local.blocks) {
@@ -93,12 +133,13 @@ export function repairCapturedMarkdownTables(current: string, regenerated: strin
       insertions.set(block.start + 1, [delimiter])
     } else unresolved++
   }
-  if (!insertions.size) return { text: current, repaired: 0, unresolved }
+  const codeFences = repairFenceLabels(local, sourceDocument)
+  if (!insertions.size && !codeFences) return { text: current, repaired: 0, unresolved, codeFences }
   for (const [at, lines] of insertions) {
     const previous = local.lines[at - 1] || ''
     const eol = previous.match(/(\r\n|\n|\r)$/)?.[0] || local.lines[at]?.match(/(\r\n|\n|\r)$/)?.[0] || '\n'
     const atEnd = at === local.lines.length && !/[\r\n]$/.test(previous)
     local.lines[at] = atEnd ? eol + lines.join(eol) : lines.join(eol) + eol + (local.lines[at] || '')
   }
-  return { text: local.prefix + local.lines.join(''), repaired: insertions.size, unresolved }
+  return { text: local.prefix + local.lines.join(''), repaired: insertions.size, unresolved, codeFences }
 }

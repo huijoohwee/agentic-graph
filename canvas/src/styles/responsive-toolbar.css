@@ -2151,7 +2151,6 @@
     white-space: nowrap;
   }
 
-  .kg-data-view-header-controls,
   .kg-data-view-actions,
   .kg-data-view-header-options,
   .kg-data-view-table-selector,
@@ -2483,7 +2482,6 @@
 
     .kg-graph-data-table-toolbar,
     .kg-graph-data-table-actions,
-    .kg-data-view-header-controls,
     .kg-data-view-actions,
     .kg-data-view-header-options,
     .kg-workspace-toolbar-controls {

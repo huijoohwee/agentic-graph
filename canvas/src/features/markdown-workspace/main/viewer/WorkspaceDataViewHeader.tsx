@@ -1,3 +1,4 @@
+import { TableToolbar } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui/icons'
@@ -16,7 +17,6 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { getDataViewIconButtonClassName } from '@/lib/ui/dataViewToolbarButton'
 import {
-  uiToolbarRowScrollClassName,
   uiToolbarRowScrollInlineClassName,
   uiToolbarRowScrollJustifyEndClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
@@ -87,7 +87,7 @@ export function WorkspaceDataViewHeader(props: {
   return (
     <WorkspaceHeader ariaLabel="Data view header" border="border" className="relative z-20 kg-data-view-header kg-data-view-new-record-hover-scope">
       {props.viewConfig?.recoveryError && <p role="alert" className="p-2 text-xs">{props.viewConfig.recoveryError}</p>}
-      <section className={`kg-data-view-header-controls ${uiToolbarRowScrollClassName} gap-2 px-3 py-1.5`} aria-label="Data view controls">
+      <TableToolbar label="Data view controls">
         <button
           type="button"
           className={squareIconButtonClassName}
@@ -222,7 +222,7 @@ export function WorkspaceDataViewHeader(props: {
             <WorkspaceDataViewNewRecordButton onClick={() => props.onNewRecord?.()} labelMode="icon" hoverRevealScope="container" />
           ) : null}
         </section>
-      </section>
+      </TableToolbar>
 
     </WorkspaceHeader>
   )
