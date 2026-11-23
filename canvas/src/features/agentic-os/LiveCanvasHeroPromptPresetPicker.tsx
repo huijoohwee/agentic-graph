@@ -5,9 +5,7 @@ import {
   defaultPromptPresetSelectionRuntime,
   type PromptPresetSelectionRuntime,
 } from '@/features/chat/promptPresetSelectionRuntime'
-import {
-  type PromptPreset,
-} from '@/features/chat/promptPresetCatalog'
+import type { PresetSummary } from '@/features/chat/gatewayPresetCatalog'
 import type { LiveCanvasHeroDemo } from './liveCanvasHeroDemoSource'
 
 export function LiveCanvasHeroPromptPresetPicker(props: {
@@ -37,7 +35,7 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
     return () => { active = false }
   }, [catalogError, loading, presets])
 
-  const selectPreset = React.useCallback(async (preset: PromptPreset) => {
+  const selectPreset = React.useCallback(async (preset: PresetSummary) => {
     if (loadingPresetId) return
     setInvocationError('')
     setLoadingPresetId(preset.id)

@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { TEST_VALIDATION_WORKSPACE_SEED_PATH } from '@/features/workspace-fs/workspaceFs'
@@ -140,7 +141,8 @@ export function testFloatingPanelPromptPresetsIsFirstClassViewAfterSkillsCommand
   }
 }
 
-export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
+export async function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
+  await checkGatewayPresetPickerReadback()
   const source = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'toolbar', 'FloatingPanelPromptPresetsView.tsx'), 'utf8')
   const selectionRuntimeSource = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'chat', 'promptPresetSelectionRuntime.ts'), 'utf8')
   for (const expected of [
@@ -154,7 +156,7 @@ export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
   ]) {
     if (!source.includes(expected)) throw new Error(`Prompt Presets view missing ${expected}`)
   }
-  for (const expected of ['loadPromptPresetCatalog()', 'loadPromptPresetInvocation(id)']) {
+  for (const expected of ['listGatewayPresets()', 'loadPromptPresetInvocation(id)']) {
     if (!selectionRuntimeSource.includes(expected)) throw new Error(`shared Prompt Presets selection runtime missing ${expected}`)
   }
 }
@@ -501,4 +503,25 @@ export function testFloatingPanelChatHistoryTransitionAdoptsGraphKeyCascade() {
     currentMessages: progressedMessages,
   })
   if (unrelated) throw new Error('unrelated graph histories must not adopt the preset transition')
+}
+
+async function checkGatewayPresetPickerReadback() {
+  const { listGatewayPresets, selectGatewayPreset } = await import('@/features/chat/gatewayPresetCatalog')
+  const listed = await listGatewayPresets()
+  if ('error' in listed) throw Error(listed.error)
+  const video = listed.presets.find(item => item.id === 'video-agent')
+  if (!video || video.slashCommand !== '/video-prompt-preset' || video.runtimeCommand !== '/video-agent') {
+    throw Error('Missing native selection and execution references')
+  }
+  if (listed.presets.some(item => 'prompt' in item)) throw Error('Catalog listing loaded prompt bodies')
+  const reads: string[] = []
+  const load = async (digest: string) => {
+    reads.push(digest)
+    return fs.readFileSync(createRequire(path.resolve(process.cwd(), 'package.json')).resolve('agentic-gateway/catalog/bodies/' + digest + '.txt'), 'utf8')
+  }
+  const selected = await selectGatewayPreset(video.slashCommand, load)
+  if ('error' in selected || !selected.prompt.startsWith('/video-agent')) throw Error('Alias selection failed')
+  if (reads.length !== 1 || reads[0] !== video.bodyDigest) throw Error('Expected exactly the pinned video body')
+  const corrupt = await selectGatewayPreset(video.id, async () => 'different')
+  if (!('error' in corrupt) || corrupt.error !== 'body_digest_mismatch') throw Error('Corrupt body accepted')
 }

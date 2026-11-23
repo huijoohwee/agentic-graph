@@ -1,19 +1,16 @@
-import {
-  loadPromptPresetCatalog,
-  type PromptPresetCatalogResult,
-} from './promptPresetCatalog'
+import type { PresetListResult } from './gatewayPresetCatalog'
 import {
   loadPromptPresetInvocation,
   type PromptPresetInvocationResult,
 } from './promptPresetInvocation'
 
 export type PromptPresetSelectionRuntime = {
-  loadCatalog: () => Promise<PromptPresetCatalogResult>
+  loadCatalog: () => Promise<PresetListResult>
   loadPrompt: (id: string) => Promise<PromptPresetInvocationResult>
 }
 
 export const defaultPromptPresetSelectionRuntime: PromptPresetSelectionRuntime = {
-  loadCatalog: () => loadPromptPresetCatalog(),
+  loadCatalog: async () => (await import('./gatewayPresetCatalog')).listGatewayPresets(),
   loadPrompt: id => loadPromptPresetInvocation(id),
 }
 
