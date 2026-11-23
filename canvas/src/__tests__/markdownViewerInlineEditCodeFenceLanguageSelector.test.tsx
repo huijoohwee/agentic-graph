@@ -1,4 +1,3 @@
-import { selectMenuValue } from './helpers/semanticMenu'
 import React from 'react'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -47,12 +46,13 @@ export async function testMarkdownViewerCodeFenceLanguageSelectorUpdatesFenceInf
     )
 
     await tick(2)
-    const select = dom.window.document.querySelector('button[data-kg-select][aria-label="Code fence language"]') as HTMLButtonElement | null
+    const select = dom.window.document.querySelector('select[aria-label="Code fence language"]') as HTMLSelectElement | null
     if (!select) throw new Error('expected code-fence language selector')
     if (select.value !== 'sql') {
       throw new Error(`expected code-fence language selector to reflect current language; value=${JSON.stringify(select.value)}`)
     }
-    selectMenuValue(select, 'typescript')
+    select.value = 'typescript'
+    select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
     await tick(1)
     if (calls.length !== 1) throw new Error(`expected one code-fence language mutation call; count=${calls.length}`)
     const first = calls[0]
@@ -105,11 +105,12 @@ export async function testMarkdownViewerCodeFenceLanguageSelectorAllowsAutoModeW
         toJSON: () => ({}),
       } as unknown as DOMRect
     }
-    const select = dom.window.document.querySelector('button[data-kg-select][aria-label="Code fence language"]') as HTMLButtonElement | null
+    const select = dom.window.document.querySelector('select[aria-label="Code fence language"]') as HTMLSelectElement | null
     if (!select) throw new Error('expected code-fence language selector')
     select.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     select.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
-    selectMenuValue(select, '__auto__')
+    select.value = '__auto__'
+    select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
     await tick(2)
 
     if (calls.length !== 1) throw new Error(`expected one code-fence language mutation call for auto mode; count=${calls.length}`)

@@ -32,7 +32,6 @@ import { useForbidBrowserZoomWheel } from '@/lib/ui/forbidBrowserZoom'
 import { MermaidVisibilityGate } from './MermaidVisibilityGate'
 import { buildMarkdownGeoDatasetRegistrationRequest } from '@/features/geospatial/markdownGeoDatasetRequest'
 import {
-  MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS,
   MARKDOWN_CODE_BLOCK_READ_SPACING_CLASS,
   MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS,
   MARKDOWN_CODE_FENCE_EDITOR_LAYOUT_CLASS,
@@ -214,7 +213,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     setWordWrapOverride(next !== baseWordWrapEnabled)
     setLocalWordWrapEnabled(next)
   }, [baseWordWrapEnabled, canToggleWordWrap, effectiveWordWrap])
-  const monospaceCodeClass = opts.markdownPresentationMode ? 'agentic-code-editor text-xl' : 'agentic-code-editor text-xs'
+  const monospaceCodeClass = opts.markdownPresentationMode ? 'agentic-code-editor text-xl' : 'agentic-code-editor'
 
   const annotatedRows: AnnotatedCodeRow[] | null = React.useMemo(() => {
     if (isMermaidLang || isAsciiDiagram) return null
@@ -250,7 +249,6 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     MARKDOWN_CODE_FENCE_EDITOR_LAYOUT_CLASS,
     monospaceCodeClass,
     MARKDOWN_CODE_FENCE_LINE_SPACING_CLASS,
-    isAsciiDiagram ? MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS : '',
     effectiveWrapClass,
     UI_THEME_TOKENS.code.bg,
     UI_THEME_TOKENS.code.text,
@@ -393,7 +391,6 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
               text={codeText}
               req={markdownGeoReq}
               opts={opts}
-              monospaceCodeClass={monospaceCodeClass}
             />
           ) : isHtmlLang ? (
             (() => {

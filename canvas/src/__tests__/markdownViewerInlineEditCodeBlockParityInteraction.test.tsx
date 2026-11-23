@@ -125,8 +125,8 @@ export async function testMarkdownViewerInlineEditAsciiCodeBlockKeepsCompactTypo
     const readPre = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!readPre) throw new Error('expected ascii code block read pre node')
     const readClass = String(readPre.className || '')
-    if (!readClass.includes('text-xs') || !readClass.includes('leading-4')) {
-      throw new Error(`expected ascii code block read surface to use compact typography SSOT; class=${JSON.stringify(readClass)}`)
+    if (!readPre.classList.contains('agentic-code-text')) {
+      throw new Error(`expected ascii code block read surface to use shared code typography; class=${JSON.stringify(readClass)}`)
     }
     const host = dom.window.document.querySelector('figure') as HTMLElement | null
     if (!host) throw new Error('expected code block host figure')
@@ -149,8 +149,8 @@ export async function testMarkdownViewerInlineEditAsciiCodeBlockKeepsCompactTypo
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected ascii code block editor')
     const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
-    if (!editorClass.includes('text-xs') || !editorClass.includes('leading-4')) {
-      throw new Error(`expected ascii code block editor to keep compact typography parity from read surface; class=${JSON.stringify(editorClass)}`)
+    if (!editor.closest('.agentic-code-text, .agentic-code-editor')) {
+      throw new Error(`expected ascii code block editor to use the shared code editor typography; class=${JSON.stringify(editorClass)}`)
     }
     if (!editorClass.includes('p-4')) {
       throw new Error(`expected ascii code block editor to keep code-fence content padding SSOT parity; class=${JSON.stringify(editorClass)}`)
@@ -250,7 +250,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapUpdatesReadAndEdi
     const pre = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!pre) throw new Error('expected code-fence read pre node')
     const beforeWrapClass = String(pre.className || '')
-    if (beforeWrapClass.includes('whitespace-pre-wrap')) {
+    if (pre.hasAttribute('data-wrap')) {
       throw new Error(`expected code-fence to start without wrap when base wrap class is empty; class=${JSON.stringify(beforeWrapClass)}`)
     }
     const toggle = dom.window.document.querySelector('button[aria-label="Toggle word wrap"]') as HTMLButtonElement | null
@@ -264,7 +264,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapUpdatesReadAndEdi
     const preAfter = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!preAfter) throw new Error('expected code-fence read pre node after wrap toggle')
     const afterWrapClass = String(preAfter.className || '')
-    if (!afterWrapClass.includes('whitespace-pre-wrap')) {
+    if (!preAfter.hasAttribute('data-wrap')) {
       throw new Error(`expected code-fence read surface to enable wrapped class after toggle; class=${JSON.stringify(afterWrapClass)}`)
     }
 
@@ -288,7 +288,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapUpdatesReadAndEdi
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code-fence editor after click-to-edit')
     const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
-    if (!editorClass.includes('whitespace-pre-wrap')) {
+    if (!editor.closest('pre.agentic-code-text[data-wrap]')) {
       throw new Error(`expected code-fence edit surface to reuse wrap toggle state; class=${JSON.stringify(editorClass)}`)
     }
 
@@ -321,7 +321,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapOffDisablesWrapIn
     const pre = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!pre) throw new Error('expected code-fence read pre node')
     const beforeToggleClass = String(pre.className || '')
-    if (!beforeToggleClass.includes('whitespace-pre-wrap')) {
+    if (!pre.hasAttribute('data-wrap')) {
       throw new Error(`expected code-fence to start with wrap enabled when base wrap class is present; class=${JSON.stringify(beforeToggleClass)}`)
     }
     const toggle = dom.window.document.querySelector('button[aria-label="Toggle word wrap"]') as HTMLButtonElement | null
@@ -334,7 +334,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapOffDisablesWrapIn
     const preAfterToggle = dom.window.document.querySelector('figure pre') as HTMLElement | null
     if (!preAfterToggle) throw new Error('expected code-fence read pre node after toggling wrap off')
     const afterToggleClass = String(preAfterToggle.className || '')
-    if (afterToggleClass.includes('whitespace-pre-wrap')) {
+    if (preAfterToggle.hasAttribute('data-wrap')) {
       throw new Error(`expected code-fence read surface to disable wrapped class after toggle off; class=${JSON.stringify(afterToggleClass)}`)
     }
 
@@ -358,7 +358,7 @@ export async function testMarkdownViewerCodeFenceToggleWordWrapOffDisablesWrapIn
     const editor = dom.window.document.querySelector('[contenteditable="true"]') as HTMLElement | null
     if (!editor) throw new Error('expected code-fence editor after click-to-edit')
     const editorClass = [editor.className,editor.parentElement?.className,editor.parentElement?.parentElement?.className,editor.parentElement?.parentElement?.parentElement?.className].join(' ')
-    if (editorClass.includes('whitespace-pre-wrap')) {
+    if (editor.closest('pre.agentic-code-text[data-wrap]')) {
       throw new Error(`expected code-fence edit surface wrap class to be disabled when toggle is off; class=${JSON.stringify(editorClass)}`)
     }
 

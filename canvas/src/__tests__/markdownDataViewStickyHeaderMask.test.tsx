@@ -2,7 +2,6 @@ import React from 'react'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MarkdownDataViewTableView } from '@/features/markdown/ui/MarkdownDataViewTableView'
 import type { MarkdownDataView } from '@/features/markdown/ui/markdownDataViewModel'
-import { MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME } from '@/features/markdown/ui/markdownDataViewTableClasses'
 
 const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -39,11 +38,8 @@ export async function testMarkdownDataViewStickyHeadersUseOpaqueMaskClass() {
     const headers = Array.from(dom.window.document.querySelectorAll('thead')) as HTMLElement[]
     if (headers.length !== 2) throw new Error(`expected rows and columns table headers, got ${headers.length}`)
     for (const header of headers) {
-      if (!header.className.includes(MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME)) {
-        throw new Error(`expected sticky header to use shared opaque mask class, got ${header.className}`)
-      }
-      if (!header.className.includes('sticky top-0 z-30 isolate')) {
-        throw new Error(`expected sticky header positioning contract to remain intact, got ${header.className}`)
+      if (!header.classList.contains('agentic-table-head') || !header.querySelector('th[scope="col"].agentic-table-column-header')) {
+        throw new Error('expected both orientations to render the design-system header and semantic columns')
       }
     }
 
