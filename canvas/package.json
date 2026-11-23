@@ -108,7 +108,7 @@
     "@types/d3": "^7.4.3",
     "@vladmandic/human": "^3.3.6",
     "agentic-design-system": "github:huijoohwee/agentic-design-system#690c1f104a4527605723c04ac6635248c94e4a86",
-    "agentic-gateway": "https://codeload.github.com/huijoohwee/agentic-gateway/tar.gz/0a2470352b49fb0c682191d1aee912d81abfcf0f",
+    "agentic-gateway": "https://codeload.github.com/huijoohwee/agentic-gateway/tar.gz/118397c60c9ea97290d638d24319fc6ee8c589cc",
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
