@@ -220,6 +220,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["videoAgent.timeline.multiVideoDisplayLanes","@/__tests__/videoAgentTimelineScale.test","testVideoSequenceBottomPanelExpandsMultipleVideoSourcesIntoDisplayLanes"],
   ["videoAgent.timeline.processFlowchartMediaTimelineSplit","@/__tests__/videoAgentTimelineScale.test","testVideoAgentImportRoutesProcessToFlowchartAndMediaToTimeline"],
   ["videoAgent.timeline.structuredDiagramFloatingPanelOpenEvent","@/__tests__/videoAgentTimelineScale.test","testVideoAgentStructuredDiagramFloatingPanelOpenEventRoutesMediaAndProcessPanels"],
+  ["ci.coverage.sourceContractScopeBinding","@/__tests__/ciCoverageMetaContract.test","testCiCoverageSourceContractScopeBinding"],
   ["videoAgent.richMedia.srcDocAudioBridge","@/__tests__/richMediaPanelSrcDocAudioBridge.test","testRichMediaPanelSrcDocBridgeControlsVideoAgentSourcePlaybackAudio"],
   ["videoAgent.validationConfig.userConfiguredImportUrls","@/__tests__/videoAgentValidationConfig.test","testVideoAgentValidationConfigSupportsUserConfiguredImportUrls"],
   ["videoAgent.pipeline.externalValidationInputsNoRepoHardcodes","@/__tests__/videoAgentValidationInput.test","testVideoAgentPipelineUsesExternalValidationInputsWithoutRepoHardcodes"],
