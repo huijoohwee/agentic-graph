@@ -8,7 +8,7 @@ type CodeFence = { start: number; label: number; language: string; body: string;
 
 function scan(text: string) {
   const prefix = extractYamlFrontmatterHeaderBlock(text)?.rawBlock || ''
-  const lines = text.slice(prefix.length).match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) || []
+  const lines: string[] = text.slice(prefix.length).match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) || []
   const content = lines.map(line => line.replace(/[\r\n]+$/, ''))
   const blocks: TableBlock[] = []
   const fences: CodeFence[] = []
