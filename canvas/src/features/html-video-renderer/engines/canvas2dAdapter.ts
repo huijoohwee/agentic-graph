@@ -144,6 +144,20 @@ export const canvas2dAdapter: RenderEngine = {
         __agenticGraphRenderFrame?: (timeMs: number) => Promise<void>
       }) | null
       if (!scene?.__agenticGraphRenderFrame) throw new Error('HTML video frame runtime unavailable')
+      const seek = scene.__agenticGraphRenderFrame.bind(scene)
+      const rasterAt = async (timeMs: number) => {
+        await seek(timeMs)
+        return html2canvas(renderRoot, {
+          width: spec.width, height: spec.height, windowWidth: spec.width, windowHeight: spec.height,
+          scale: 1, backgroundColor: null, logging: false, useCORS: true,
+        })
+      }
+      const paint = (raster: HTMLCanvasElement) => {
+        context.clearRect(0, 0, spec.width, spec.height)
+        context.drawImage(raster, 0, 0, spec.width, spec.height)
+      }
+      // A new capture track may sample immediately. Its first sample must already contain the scene.
+      paint(await rasterAt(0))
       stream = canvas.captureStream(spec.fps)
       recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: CANVAS_2D_RECORDER_VIDEO_BITS_PER_SECOND })
       const stopped = new Promise<void>((resolve, reject) => {
@@ -153,22 +167,15 @@ export const canvas2dAdapter: RenderEngine = {
       })
       // A recorder error can arrive while an asynchronous scene seek is still settling.
       void stopped.catch(() => {})
-      let startedAt = 0
-      for (let index = 0; index < frameCount; index++) {
+      recorder.start()
+      const startedAt = performance.now()
+      context.drawImage(canvas, 0, 0)
+      requestCanvasFrame(stream)
+      for (let index = 1; index < frameCount; index++) {
         const timeMs = index * frameDurationMs
-        await scene.__agenticGraphRenderFrame(timeMs)
-        const raster = await html2canvas(renderRoot, {
-          width: spec.width, height: spec.height, windowWidth: spec.width, windowHeight: spec.height,
-          scale: 1, backgroundColor: null, logging: false, useCORS: true,
-        })
-        if (index === 0) {
-          recorder.start()
-          startedAt = performance.now()
-        } else {
-          await wait(startedAt + timeMs - performance.now())
-        }
-        context.clearRect(0, 0, spec.width, spec.height)
-        context.drawImage(raster, 0, 0, spec.width, spec.height)
+        const raster = await rasterAt(timeMs)
+        await wait(startedAt + timeMs - performance.now())
+        paint(raster)
         requestCanvasFrame(stream)
       }
       await wait(startedAt + spec.durationMs - performance.now())

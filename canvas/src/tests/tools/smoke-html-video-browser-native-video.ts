@@ -116,7 +116,18 @@ const main = async () => {
       const html = '<div id="scene" style="width:64px;height:64px;background:red"></div>' +
         '<script>window.__hyperframesSeek=async function(seconds){await new Promise(resolve=>setTimeout(resolve,10));' +
         'document.getElementById("scene").style.background=seconds>=0.5?"blue":"red";parent.fixtureSeeks.push(seconds);}</script>'
-      const result = await run(html)
+      const prototype = HTMLCanvasElement.prototype
+      const captureStream = prototype.captureStream
+      const initialSamples: number[][] = []
+      prototype.captureStream = function (this: HTMLCanvasElement, fps?: number) {
+        initialSamples.push(Array.from(this.getContext('2d')!.getImageData(32, 32, 1, 1).data).slice(0, 3))
+        return captureStream.call(this, fps)
+      }
+      const result = await run(html).finally(() => { prototype.captureStream = captureStream })
+      const first = initialSamples[0]
+      if (initialSamples.length !== 1 || !first || first[0]! - Math.max(first[1]!, first[2]!) < 150) {
+        throw new Error('Capture track opened before the first scene frame: ' + JSON.stringify(initialSamples))
+      }
       if (!result.ok) throw new Error(JSON.stringify(result))
       const video = document.createElement('video')
       const loaded = new Promise<void>((resolve, reject) => {
