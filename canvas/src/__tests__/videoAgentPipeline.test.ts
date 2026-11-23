@@ -544,17 +544,12 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
   ) {
     throw new Error('expected Rich Media panel timeline bridge to drive projected frame images and bounding boxes without a custom renderer')
   }
-  const guardedFrameBefore = bridgedDom.window.document.querySelector('[data-kg-video-agent-frame-analysis] li:not([hidden])')?.getAttribute('data-kg-video-agent-frame')
-  bridgedDom.window.dispatchEvent(new bridgedDom.window.MessageEvent('message', {
-    data: {
-      type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE,
-      timeMs: result.pipeline.frameBoundingBoxes[0]?.timestampMs ?? 0,
-      playbackRate: 1,
-      playing: false,
-    },
-  }))
-  const guardedFrameAfter = bridgedDom.window.document.querySelector('[data-kg-video-agent-frame-analysis] li:not([hidden])')?.getAttribute('data-kg-video-agent-frame')
-  if (guardedFrameAfter !== guardedFrameBefore) {
+  const activeGuardFrame = () => bridgedDom.window.document.querySelector('[data-kg-video-agent-frame-analysis] li:not([hidden])')?.getAttribute('data-kg-video-agent-frame')
+  const guardedFrameBefore = activeGuardFrame()
+  bridgedDom.window.dispatchEvent(new bridgedDom.window.MessageEvent('message', { data: {
+    type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE, timeMs: result.pipeline.frameBoundingBoxes[0]?.timestampMs ?? 0, playbackRate: 1, playing: false,
+  } }))
+  if (activeGuardFrame() !== guardedFrameBefore) {
     throw new Error('expected Rich Media panel timeline bridge to reject messages whose source is not the parent window')
   }
   bridgedDom.window.close()
