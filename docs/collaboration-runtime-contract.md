@@ -303,8 +303,8 @@ ci_scopes:
       - ["npm", "run", "runtime:check"]
   canvas:
     roots: ["canvas/src/", "canvas/scripts/", "grph-shared/src/", "gympgrph/src/"]
-    commands:
-      - ["npm", "run", "check"]
+    commands: [["npm", "run", "check"]]
+  video_agent_contract: {roots: ["canvas/src/components/timeline/", "canvas/src/features/gitgraph/useGanttTimelineTransportSurfaceModel.ts", "canvas/src/lib/render/richMediaPanelSrcDoc.ts", "canvas/src/lib/render/richMediaTimelineSync.ts", "canvas/src/features/strybldr/", "canvas/src/lib/routing/queryParams.ts", "canvas/src/features/workspace-fs/workspaceFs.ts", "canvas/src/lib/video-download/", "canvas/vite.config.ts", "canvas/src/__tests__/videoAgentTimelineScale.test.ts", "canvas/src/__tests__/videoAgentPipeline.test.ts", "canvas/src/__tests__/videoDownloadImportUrl.test.ts", "canvas/src/__tests__/strybldrWorkspaceParserFallback.test.ts"], commands: [["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "videoAgent", "toolbar.importUrl.videoDownload", "strybldr.runAll.videoSourceWritesVideoAgentAnalysisPacket"], ["node", "--test", "mcp/__tests__/video-agent-workflow.test.mjs", "mcp/__tests__/video-agent-runtime.test.mjs", "mcp/__pbt__/video-agent.pbt.test.mjs"]]}
   storage_parent_child_browser:
     roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "canvas/src/lib/storage/", "canvas/src/features/source-files/sourceFilesInboundStorageApply", "canvas/scripts/run_storage_auth_browser_smoke.mjs", "canvas/scripts/verify_storage_auth_browser_smoke.mjs", "cloudflare/workers/agentic-graph-storage/storageOAuth", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "canvas/src/features/panels/views/preview-panel/ui/PreviewOverlay.tsx", "canvas/scripts/run_storage_parent_child_browser_smoke.mjs", "canvas/scripts/verify_storage_parent_child_browser_smoke.mjs", "canvas/scripts/lib/run-local-vite-browser-smoke.mjs", "canvas/scripts/lib/local-chromium-executable.mjs", "docs/documents/agentic-graph-storage-sync-document.companion.md"]
     commands:
