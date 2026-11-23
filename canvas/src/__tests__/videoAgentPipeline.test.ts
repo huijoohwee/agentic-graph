@@ -528,6 +528,7 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
     url: 'http://localhost',
   })
   bridgedDom.window.dispatchEvent(new bridgedDom.window.MessageEvent('message', {
+    source: bridgedDom.window.parent,
     data: {
       type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE,
       timeMs: laterFrame.timestampMs + 400,
@@ -542,6 +543,14 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
     || bridgedVisibleBox?.getAttribute('data-kg-video-agent-frame') !== String(laterFrame.frameIndex)
   ) {
     throw new Error('expected Rich Media panel timeline bridge to drive projected frame images and bounding boxes without a custom renderer')
+  }
+  const activeGuardFrame = () => bridgedDom.window.document.querySelector('[data-kg-video-agent-frame-analysis] li:not([hidden])')?.getAttribute('data-kg-video-agent-frame')
+  const guardedFrameBefore = activeGuardFrame()
+  bridgedDom.window.dispatchEvent(new bridgedDom.window.MessageEvent('message', { data: {
+    type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE, timeMs: result.pipeline.frameBoundingBoxes[0]?.timestampMs ?? 0, playbackRate: 1, playing: false,
+  } }))
+  if (activeGuardFrame() !== guardedFrameBefore) {
+    throw new Error('expected Rich Media panel timeline bridge to reject messages whose source is not the parent window')
   }
   bridgedDom.window.close()
 

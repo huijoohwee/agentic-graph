@@ -13,7 +13,7 @@ export const QUERY_PARAM_SHARE_TEXT = 'text' as const
 export const QUERY_PARAM_SHARE_URL = 'url' as const
 
 /** The verified installation routes select one exact local application revision. */
-export function isExplicitOfflineWorkspace(search = typeof window === 'undefined' ? '' : window.location.search): boolean {
+export function isExplicitOfflineWorkspace(search = typeof window === 'undefined' ? '' : window.location?.search ?? ''): boolean {
   const params = new URLSearchParams(search)
   const routes = ['studio-offline', 'python-learning-offline'].filter(key => params.has(key))
   if (routes.length !== 1) return false
