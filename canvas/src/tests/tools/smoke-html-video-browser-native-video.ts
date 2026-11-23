@@ -173,25 +173,35 @@ const main = async () => {
         const canvas = document.createElement('canvas')
         canvas.width = 320; canvas.height = 180
         const ctx = canvas.getContext('2d')!
-        const [preview, decoded] = [image, media.video].map(source => {
+        const [preview, decoded] = [image, media.video].map((source, index) => {
+          const surface = index === 0 ? 'preview' : 'decoded video'
           ctx.drawImage(source, 0, 0)
           const {data} = ctx.getImageData(0, 0, 320, 180)
-          const boxes = [false, true].map(yellow => {
-            let left = 320, top = 180, right = -1, bottom = -1
-            for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) {
-              const offset = 4 * (y * 320 + x)
-              const r = data[offset], g = data[offset+1], b = data[offset+2]
-              if (yellow ? r > 195 && g > 155 && b < 115 : Math.min(r,g,b) > 205) {
-                left = Math.min(left,x); right = Math.max(right,x); top = Math.min(top,y); bottom = Math.max(bottom,y)
+          // Match the two authored ink colors. Antialiased white glyph edges on
+          // the red card can also satisfy a broad red/green "yellow" threshold.
+          const boxes = [[255, 255, 255], [255, 221, 51]].map(([red, green, blue]) =>
+            [true, false].reduce((region, solid) => {
+              if (!region.length) return []
+              let left = 320, top = 180, right = -1, bottom = -1
+              for (let y = region[1]; y <= region[3]; y++) for (let x = region[0]; x <= region[2]; x++) {
+                const offset = 4 * (y * 320 + x)
+                const r = data[offset], g = data[offset+1], b = data[offset+2]
+                const matches = solid ? Math.max(Math.abs(r-red), Math.abs(g-green), Math.abs(b-blue)) <= 40
+                  : blue === 255 ? Math.min(r,g,b) > 205 : r > 195 && g > 155 && b < 115
+                if (matches) {
+                  left = Math.min(left,x); right = Math.max(right,x); top = Math.min(top,y); bottom = Math.max(bottom,y)
+                }
               }
-            }
-            return right < 0 ? [] : [left,top,right,bottom]
-          })
+              if (right < 0) return []
+              // Include antialiasing and codec edge pixels around the observed glyphs.
+              return solid ? [Math.max(0,left-4), Math.max(0,top-4), Math.min(319,right+4), Math.min(179,bottom+4)]
+                : [left,top,right,bottom]
+            }, [0,0,319,179]))
           const overlap = 4 * (90 * 320 + 140)
           const expected = seconds < 1 ? [131,64,48] : [24,90,80]
-          if (expected.some((v,i) => Math.abs(data[overlap+i]-v) > 10)) throw Error('Wrong visible panel at '+seconds)
+          if (expected.some((v,i) => Math.abs(data[overlap+i]-v) > 10)) throw Error('Wrong visible panel in '+surface+' at '+seconds)
           if (Boolean(boxes[0].length) !== (seconds < 2) || Boolean(boxes[1].length) !== (seconds >= 1)) {
-            throw Error('Wrong visible text at '+seconds)
+            throw Error('Wrong visible text in '+surface+' at '+seconds+': '+JSON.stringify({white:boxes[0], yellow:boxes[1]}))
           }
           return boxes
         })
