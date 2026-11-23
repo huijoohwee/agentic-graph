@@ -1,4 +1,5 @@
 import type { RenderEngine, RenderSpec } from '../htmlVideoRendererSsot'
+import { buildHtmlVideoFrameRuntime } from '../htmlVideoFlowNode'
 import { HTML_VIDEO_ENGINE_IDS } from '../htmlVideoRendererSsot'
 import { MEDIA_VIDEO_RECORDER_MIME_TYPE_CANDIDATES } from '@/lib/media/mediaFormatPreference'
 
@@ -16,8 +17,7 @@ const assertBrowserCanvasRuntime = () => {
 
 const escapeJsonForScript = (value: unknown): string => JSON.stringify(value ?? {}).replace(/</g, '\\u003c')
 
-const buildFrameStyle = (spec: Readonly<RenderSpec>, timeMs: number): string => {
-  const seconds = timeMs / 1000
+const buildFrameStyle = (spec: Readonly<RenderSpec>): string => {
   return `
 html,
 body {
@@ -33,27 +33,26 @@ main[data-kg-html-video-frame-host="1"] {
   margin: 0;
   overflow: hidden;
   box-sizing: border-box;
-  --kg-render-time-ms: ${timeMs};
-  --kg-render-time-s: ${seconds};
 }
 ${spec.css ?? ''}
 `
 }
 
-const buildFrameDocument = (spec: Readonly<RenderSpec>, timeMs: number): string => `<!doctype html>
+const buildFrameDocument = (spec: Readonly<RenderSpec>): string => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=${spec.width}, height=${spec.height}, initial-scale=1">
 <style>
-${buildFrameStyle(spec, timeMs)}
+${buildFrameStyle(spec)}
 </style>
 </head>
 <body>
-<main aria-label="HTML video frame raster host" data-kg-html-video-frame-host="1" data-kg-render-time-ms="${timeMs}" data-kg-render-time-s="${timeMs / 1000}">
+<main aria-label="HTML video frame raster host" data-kg-html-video-frame-host="1" data-kg-render-time-ms="0" data-kg-render-time-s="0">
 ${spec.html}
 </main>
 <script type="application/json" id="agentic-graph-html-video-data">${escapeJsonForScript(spec.data ?? {})}</script>
+<script>${buildHtmlVideoFrameRuntime(spec.durationMs, '[data-kg-html-video-frame-host="1"]')}</script>
 </body>
 </html>`
 
@@ -72,7 +71,7 @@ const waitForFrameDocument = (frame: HTMLIFrameElement): Promise<Document> => ne
   }
 })
 
-const createFrameRenderDocument = async (spec: Readonly<RenderSpec>, timeMs: number): Promise<{
+const createFrameRenderDocument = async (spec: Readonly<RenderSpec>): Promise<{
   host: HTMLIFrameElement
   renderRoot: HTMLElement
 }> => {
@@ -87,40 +86,17 @@ const createFrameRenderDocument = async (spec: Readonly<RenderSpec>, timeMs: num
   host.style.height = `${spec.height}px`
   host.style.border = '0'
   host.style.overflow = 'hidden'
-  host.srcdoc = buildFrameDocument(spec, timeMs)
+  host.srcdoc = buildFrameDocument(spec)
   const frameDocumentReady = waitForFrameDocument(host)
   document.body.appendChild(host)
-  const frameDocument = await frameDocumentReady
-  const renderRoot = frameDocument.querySelector('[data-kg-html-video-frame-host="1"]') as HTMLElement | null
-  if (!renderRoot || typeof renderRoot.getBoundingClientRect !== 'function') {
-    host.remove()
-    throw new Error('canvas-2d video renderer could not find isolated frame render root')
-  }
-  return { host, renderRoot }
-}
-
-const drawFrame = async (
-  context: CanvasRenderingContext2D,
-  spec: Readonly<RenderSpec>,
-  timeMs: number,
-  html2canvas: (element: HTMLElement, options: Record<string, unknown>) => Promise<HTMLCanvasElement>,
-): Promise<void> => {
-  const { host, renderRoot } = await createFrameRenderDocument(spec, timeMs)
   try {
-    const renderedCanvas = await html2canvas(renderRoot, {
-      width: spec.width,
-      height: spec.height,
-      windowWidth: spec.width,
-      windowHeight: spec.height,
-      scale: 1,
-      backgroundColor: null,
-      logging: false,
-      useCORS: true,
-    })
-    context.clearRect(0, 0, spec.width, spec.height)
-    context.drawImage(renderedCanvas, 0, 0, spec.width, spec.height)
-  } finally {
+    const frameDocument = await frameDocumentReady
+    const renderRoot = frameDocument.querySelector<HTMLElement>('[data-kg-html-video-frame-host="1"]')
+    if (!renderRoot) throw new Error('canvas-2d video renderer could not find isolated frame render root')
+    return { host, renderRoot }
+  } catch (error) {
     host.remove()
+    throw error
   }
 }
 
@@ -157,34 +133,62 @@ export const canvas2dAdapter: RenderEngine = {
 
     const mimeType = resolveCanvasRecorderMimeType()
     if (!mimeType) throw new Error('canvas-2d video rendering requires a native MediaRecorder video MIME type')
-    const stream = canvas.captureStream(spec.fps)
+    const frameCount = Math.max(1, Math.ceil(spec.durationMs * spec.fps / 1000))
+    const frameDurationMs = 1000 / spec.fps
     const chunks: Blob[] = []
-    const recorder = new MediaRecorder(stream, {
-      mimeType,
-      videoBitsPerSecond: CANVAS_2D_RECORDER_VIDEO_BITS_PER_SECOND,
-    })
-    const stopped = new Promise<void>((resolve, reject) => {
-      recorder.ondataavailable = event => {
-        if (event.data.size > 0) chunks.push(event.data)
-      }
-      recorder.onerror = event => reject(event instanceof ErrorEvent ? event.error : new Error('canvas-2d MediaRecorder failed'))
-      recorder.onstop = () => resolve()
-    })
-
-    const frameCount = Math.max(1, Math.ceil((spec.durationMs / 1000) * Math.max(1, spec.fps)))
-    const frameDurationMs = 1000 / Math.max(1, spec.fps)
+    const { host, renderRoot } = await createFrameRenderDocument(spec)
+    let stream: MediaStream | undefined
+    let recorder: MediaRecorder | undefined
     try {
-      recorder.start()
-      for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
-        const timeMs = Math.min(spec.durationMs, frameIndex * frameDurationMs)
-        await drawFrame(context, spec, timeMs, html2canvas)
-        requestCanvasFrame(stream)
-        await wait(frameDurationMs)
+      const scene = host.contentWindow as (Window & {
+        __agenticGraphRenderFrame?: (timeMs: number) => Promise<void>
+      }) | null
+      if (!scene?.__agenticGraphRenderFrame) throw new Error('HTML video frame runtime unavailable')
+      const seek = scene.__agenticGraphRenderFrame.bind(scene)
+      const rasterAt = async (timeMs: number) => {
+        await seek(timeMs)
+        return html2canvas(renderRoot, {
+          width: spec.width, height: spec.height, windowWidth: spec.width, windowHeight: spec.height,
+          scale: 1, backgroundColor: null, logging: false, useCORS: true,
+        })
       }
+      const paint = (raster: HTMLCanvasElement) => {
+        context.clearRect(0, 0, spec.width, spec.height)
+        context.drawImage(raster, 0, 0, spec.width, spec.height)
+      }
+      // A new capture track may sample immediately. Its first sample must already contain the scene.
+      paint(await rasterAt(0))
+      stream = canvas.captureStream(spec.fps)
+      recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: CANVAS_2D_RECORDER_VIDEO_BITS_PER_SECOND })
+      const stopped = new Promise<void>((resolve, reject) => {
+        recorder!.ondataavailable = event => { if (event.data.size) chunks.push(event.data) }
+        recorder!.onerror = () => reject(new Error('canvas-2d MediaRecorder failed'))
+        recorder!.onstop = () => resolve()
+      })
+      // A recorder error can arrive while an asynchronous scene seek is still settling.
+      void stopped.catch(() => {})
+      recorder.start()
+      const startedAt = performance.now()
+      context.drawImage(canvas, 0, 0)
+      requestCanvasFrame(stream)
+      for (let index = 1; index < frameCount; index++) {
+        const timeMs = index * frameDurationMs
+        const raster = await rasterAt(timeMs)
+        await wait(startedAt + timeMs - performance.now())
+        paint(raster)
+        requestCanvasFrame(stream)
+      }
+      await wait(startedAt + spec.durationMs - performance.now())
+      // Mark the end of the last frame's hold, including one-frame static exports.
+      context.drawImage(canvas, 0, 0)
+      requestCanvasFrame(stream)
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
       if (recorder.state !== 'inactive') recorder.stop()
       await stopped
     } finally {
-      stopMediaStream(stream)
+      if (recorder && recorder.state !== 'inactive') recorder.stop()
+      if (stream) stopMediaStream(stream)
+      host.remove()
     }
 
     if (!chunks.length) throw new Error('canvas-2d video renderer finalized without output chunks')

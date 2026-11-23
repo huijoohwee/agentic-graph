@@ -1,7 +1,7 @@
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import type { GraphNode } from '@/lib/graph/types'
 import type { HtmlVideoEngineRegistry } from './htmlVideoEngineRegistry'
-import { runHtmlVideoRenderJob, type HtmlVideoRunResult } from './htmlVideoRenderJob'
+import type { HtmlVideoRunResult } from './htmlVideoRenderJob'
 import { validateRenderSpec } from './htmlVideoRendererSpec'
 
 const readNodeProperties = (node: GraphNode): Record<string, unknown> => {
@@ -51,6 +51,84 @@ export function buildHtmlVideoRenderSpecCandidateFromNode(node: GraphNode): Reco
 
 const escapeJsonForScript = (value: unknown): string => JSON.stringify(value ?? {}).replace(/</g, '\\u003c')
 
+// Installed inside the scene document, so hooks, events and DOM writes share its realm.
+export function buildHtmlVideoFrameRuntime(durationMs: number, selector: string): string {
+  return [
+    '(function(){',
+    `const stage=document.querySelector(${JSON.stringify(selector)});`,
+    `const durationMs=${JSON.stringify(durationMs)};`,
+    'function syncCssAnimations(seconds){',
+    'if(!stage)return;',
+    'var nodes=[stage].concat(Array.prototype.slice.call(stage.querySelectorAll("*")));',
+    'for(var i=0;i<nodes.length;i+=1){',
+    'var node=nodes[i];',
+    'try{',
+    'var computed=window.getComputedStyle(node);',
+    'if(!computed||computed.animationName==="none")continue;',
+    'node.style.animationDelay="-"+Math.max(0,seconds)+"s";',
+    'node.style.animationPlayState="paused";',
+    '}catch(e){}',
+    '}',
+    '}',
+    `const data=JSON.parse(document.getElementById('agentic-graph-html-video-data').textContent || '{}');
+    window.__AGENTIC_OS_HTML_VIDEO_DATA__=data;
+    let pending=Promise.resolve();
+    let latest=0;
+    function fail(code,message){return Object.assign(new Error(message),{code});}
+    async function seek(timeMs,seq){
+      if(seq!==latest)return;
+      const seconds=timeMs/1000;
+      const detail={timeMs,seconds,data};
+      const protocol=window.__agenticGraphVideoProtocol;
+      if(protocol!==undefined){
+        if(protocol?.version!==1)throw fail('protocol_version_unsupported','Unsupported HTML video protocol version');
+        if(!Array.isArray(protocol.capabilities)||!protocol.capabilities.includes('seek')||typeof protocol.seek!=='function'){
+          throw fail('capability_missing','HTML video protocol requires seek');
+        }
+      }
+      window.__AGENTIC_OS_RENDER_TIME_MS__=timeMs;
+      const style=document.documentElement.style;
+      style.setProperty('--kg-render-time-ms',String(timeMs));
+      style.setProperty('--kg-render-time-s',String(seconds));
+      style.setProperty('--kg-render-progress',String(durationMs>0?timeMs/durationMs:0));
+      if(stage.hasAttribute('data-kg-html-video-frame-host')){
+        stage.dataset.kgRenderTimeMs=String(timeMs);
+        stage.dataset.kgRenderTimeS=String(seconds);
+      }
+      try{
+        if(protocol){await protocol.seek(timeMs,detail);}
+        else{
+          if(typeof window.__hyperframesSeek==='function')await window.__hyperframesSeek(seconds,detail);
+          for(const timeline of Object.values(window.__timelines || {})){
+            if(typeof timeline?.seek==='function')await timeline.seek(seconds,false);
+            else if(typeof timeline?.time==='function')await timeline.time(seconds);
+          }
+        }
+      }catch(error){throw fail('seek_failed',String(error?.message || error));}
+      if(seq!==latest)return;
+      syncCssAnimations(seconds);
+      window.dispatchEvent(new CustomEvent('agentic-graph:render-frame',{detail}));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    }
+    window.__agenticGraphRenderFrame=async function(timeMs){
+      const seq=++latest;
+      const ms=Math.min(durationMs,Math.max(0,Number(timeMs)||0));
+      const task=pending.then(()=>seek(ms,seq));
+      pending=task.catch(()=>{});
+      let timeout;
+      try{
+        return await Promise.race([task,new Promise((_,reject)=>{
+          timeout=setTimeout(()=>{
+            if(seq===latest)++latest;
+            reject(fail('seek_timeout','HTML video seek exceeded 1000 ms'));
+          },1000);
+        })]);
+      }finally{clearTimeout(timeout);}
+    };
+    })();`,
+  ].join('')
+}
+
 export function buildHtmlVideoPreviewSrcDocFromNode(node: GraphNode): string {
   const validation = validateRenderSpec(buildHtmlVideoRenderSpecCandidateFromNode(node))
   if (validation.ok === false) return ''
@@ -60,14 +138,11 @@ export function buildHtmlVideoPreviewSrcDocFromNode(node: GraphNode): string {
     '(function(){',
     'var frame=document.querySelector("[data-kg-html-video-preview-frame]");',
     'var stage=document.querySelector("[data-kg-html-video-preview-stage]");',
-    'var dataScript=document.getElementById("agentic-graph-html-video-data");',
     `var sourceWidth=${JSON.stringify(spec.width)};`,
     `var sourceHeight=${JSON.stringify(spec.height)};`,
     `var durationMs=${JSON.stringify(spec.durationMs)};`,
+    buildHtmlVideoFrameRuntime(spec.durationMs, '[data-kg-html-video-preview-stage]'),
     'var raf=0;',
-    'function readData(){',
-    'try{return dataScript&&dataScript.textContent?JSON.parse(dataScript.textContent):{};}catch(e){return {};}',
-    '}',
     'function fit(){',
     'raf=0;',
     'if(!frame||!stage)return;',
@@ -86,56 +161,30 @@ export function buildHtmlVideoPreviewSrcDocFromNode(node: GraphNode): string {
     'stage.style.setProperty("--kg-html-video-preview-height",sourceHeight+"px");',
     '}',
     'function schedule(){if(raf)return;raf=requestAnimationFrame(fit);}',
-    'function syncCssAnimations(seconds){',
-    'if(!stage)return;',
-    'var nodes=[stage].concat(Array.prototype.slice.call(stage.querySelectorAll("*")));',
-    'for(var i=0;i<nodes.length;i+=1){',
-    'var node=nodes[i];',
-    'try{',
-    'var computed=window.getComputedStyle(node);',
-    'if(!computed||computed.animationName==="none")continue;',
-    'node.style.animationDelay="-"+Math.max(0,seconds)+"s";',
-    'node.style.animationPlayState="paused";',
-    '}catch(e){}',
-    '}',
-    '}',
-    'var transportRaf=0;',
-    'function cancelTransportPlayback(){if(transportRaf){cancelAnimationFrame(transportRaf);transportRaf=0;}}',
+    'var transportRaf=0,transportGeneration=0;',
+    'function cancelTransportPlayback(){transportGeneration++;if(transportRaf){cancelAnimationFrame(transportRaf);transportRaf=0;}}',
     'function startTransportPlayback(startTimeMs,playbackRate){',
     'cancelTransportPlayback();',
     'var baseTimeMs=Number.isFinite(Number(startTimeMs))?Math.max(0,Number(startTimeMs)):0;',
     'var rate=Number.isFinite(Number(playbackRate))&&Number(playbackRate)>0?Number(playbackRate):1;',
-    'var baseNow=performance.now();',
-    'function tick(now){',
+    'var baseNow=performance.now(),generation=transportGeneration;',
+    'async function tick(now){',
     'var nextTimeMs=Math.min(durationMs,baseTimeMs+Math.max(0,now-baseNow)*rate);',
-    'window.__agenticGraphRenderFrame(nextTimeMs);',
+    'try{await window.__agenticGraphRenderFrame(nextTimeMs);}catch(error){reportFrameError(error);return;}',
+    'if(generation!==transportGeneration)return;',
     'if(nextTimeMs>=durationMs){transportRaf=0;return;}',
     'transportRaf=requestAnimationFrame(tick);',
     '}',
     'transportRaf=requestAnimationFrame(tick);',
     '}',
     'window.__AGENTIC_OS_TIMELINE_TRANSPORT_NATIVE_LOOP__=true;',
-    'window.__AGENTIC_OS_HTML_VIDEO_DATA__=readData();',
-    'window.__AGENTIC_OS_RENDER_TIME_MS__=0;',
-    'window.__agenticGraphRenderFrame=async function(timeMs){',
-    'var safeTimeMs=Number.isFinite(Number(timeMs))?Math.max(0,Math.min(durationMs,Number(timeMs))):0;',
-    'var seconds=safeTimeMs/1000;',
-    'window.__AGENTIC_OS_RENDER_TIME_MS__=safeTimeMs;',
-    'document.documentElement.style.setProperty("--kg-render-time-ms",String(safeTimeMs));',
-    'document.documentElement.style.setProperty("--kg-render-time-s",String(seconds));',
-    'document.documentElement.style.setProperty("--kg-render-progress",String(durationMs>0?safeTimeMs/durationMs:0));',
-    'try{if(typeof window.__hyperframesSeek==="function")window.__hyperframesSeek(seconds,{timeMs:safeTimeMs,data:window.__AGENTIC_OS_HTML_VIDEO_DATA__});}catch(e){}',
-    'try{if(Array.isArray(window.__timelines)){window.__timelines.forEach(function(timeline){if(timeline&&typeof timeline.seek==="function")timeline.seek(seconds,false);else if(timeline&&typeof timeline.time==="function")timeline.time(seconds);});}}catch(e){}',
-    'syncCssAnimations(seconds);',
-    'try{window.dispatchEvent(new CustomEvent("agentic-graph:render-frame",{detail:{timeMs:safeTimeMs,seconds:seconds,data:window.__AGENTIC_OS_HTML_VIDEO_DATA__}}));}catch(e){}',
-    'await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});',
-    '};',
-    'window.__agenticGraphRenderFrame(0);',
+    'function reportFrameError(error){stage.dataset.renderError=String(error.code || "seek_failed");window.dispatchEvent(new CustomEvent("agentic-graph:render-error",{detail:{code:stage.dataset.renderError,message:String(error.message)}}));}',
+    'window.__agenticGraphRenderFrame(0).catch(reportFrameError);',
     'window.addEventListener("message",function(event){',
     'var payload=event&&event.data;',
     'if(!payload||typeof payload!=="object"||payload.type!=="agentic-graph:timeline-transport-frame")return;',
     'var timeMs=Number.isFinite(Number(payload.timeMs))?Number(payload.timeMs):0;',
-    'window.__agenticGraphRenderFrame(timeMs);',
+    'window.__agenticGraphRenderFrame(timeMs).catch(reportFrameError);',
     'if(payload.playing){startTransportPlayback(timeMs,payload.playbackRate);}else{cancelTransportPlayback();}',
     '});',
     'try{if(window.ResizeObserver&&frame){var ro=new ResizeObserver(schedule);ro.observe(frame);}}catch(e){}',
@@ -178,6 +227,7 @@ export async function runHtmlVideoFlowNode(args: {
   workspacePath?: string | null
   fs?: WorkspaceFs | null
 }): Promise<HtmlVideoRunResult> {
+  const { runHtmlVideoRenderJob } = await import('./htmlVideoRenderJob')
   return runHtmlVideoRenderJob({
     spec: buildHtmlVideoRenderSpecCandidateFromNode(args.node),
     node: args.node,
