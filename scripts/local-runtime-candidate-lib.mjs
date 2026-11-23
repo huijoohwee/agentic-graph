@@ -7,6 +7,7 @@ import path from "node:path";
 import { parseRegisteredWorktrees as parseWorktreeRecords } from "./worktree-policy.mjs";
 
 export const SHA_PATTERN = /^[0-9a-f]{40}$/;
+export const CANONICAL_RUNTIME_STATUS_ARGS = Object.freeze(["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
 const BLOCKING_CONFIG_FILES = Object.freeze([
   /^\.env(?:\..+)?$/u,
   /^package(?:-lock)?\.json$/u,
@@ -30,16 +31,31 @@ const BLOCKING_AUTHORITY_ROOTS = Object.freeze({
     ".github/workflows",
   ]),
   "agentic-graph": Object.freeze([
-    "app",
-    "src",
+    ".github/workflows",
+    ".githooks",
+    "agentic_graph_parser",
     "api",
+    "app",
     "canvas",
+    "cloudflare",
     "components",
+    "config",
+    "contracts",
+    "data",
+    "ecs",
     "functions",
+    "grph-shared",
+    "gympgrph",
+    "mcp",
+    "packages",
     "public",
     "scripts",
+    "schemas",
     "server",
+    "sme-agent",
+    "src",
     "storage",
+    "web",
     "workers",
   ]),
 });
@@ -48,11 +64,7 @@ export function validateCanonicalRuntimeCandidate(evidence) {
   for (const repository of [evidence.agenticCanvasOs, evidence.agenticGraph]) {
     if (repository.branch !== "main") throw new Error(`${repository.id} canonical runtime checkout must be on main.`);
     const residue = normalizeCanonicalRuntimeResidue(repository);
-    if (!residue.runtimeSafe) {
-      throw new Error(
-        `${repository.id} canonical runtime checkout has runtime-blocking residue: ${summarizeCanonicalRuntimeResidue(residue.blocking)}.`,
-      );
-    }
+    assertCanonicalRuntimeWorkspace(repository.id, residue);
     if (!SHA_PATTERN.test(String(repository.headSha || ""))) throw new Error(`${repository.id} requires an exact 40-character SHA.`);
     if (repository === evidence.agenticGraph && repository.headSha !== repository.remoteSha) {
       throw new Error(`${repository.id} canonical HEAD must equal fetched origin/main.`);
@@ -194,7 +206,7 @@ function inspectRepository(id, root, deps, verifyProtected) {
   const headSha = deps.gitText(root, ["rev-parse", "HEAD"]).trim();
   const remoteSha = deps.gitText(root, ["rev-parse", "origin/main"]).trim();
   const treeSha = deps.gitText(root, ["rev-parse", "HEAD^{tree}"]).trim();
-  const statusPorcelain = deps.gitText(root, ["status", "--porcelain", "--untracked-files=all"]).trimEnd();
+  const statusPorcelain = deps.gitText(root, CANONICAL_RUNTIME_STATUS_ARGS);
   const residue = classifyCanonicalRuntimeResidue({ repositoryId: id, statusPorcelain });
   const profile = JSON.parse(readFileSync(path.join(root, ".agentic-os.json"), "utf8"));
   const requiredChecks = profile.requiredChecks;
@@ -248,6 +260,12 @@ export function classifyCanonicalRuntimeResidue({
   });
 }
 
+export function assertCanonicalRuntimeWorkspace(repositoryId, residue) {
+  if (!residue.runtimeSafe) {
+    throw new Error(`${repositoryId} canonical runtime checkout has runtime-blocking residue: ${summarizeCanonicalRuntimeResidue(residue.blocking)}.`);
+  }
+}
+
 function normalizeCanonicalRuntimeResidue(repository) {
   if (repository?.residue) return repository.residue;
   if (repository?.clean === true) {
@@ -297,27 +315,33 @@ function classifyCanonicalRuntimeResidueEntry(repositoryId, entry) {
 }
 
 function parseGitStatusPorcelain(statusPorcelain) {
-  return String(statusPorcelain || "")
-    .split(/\r?\n/u)
-    .map(line => line.trimEnd())
-    .filter(Boolean)
-    .map(line => {
-      const code = line.slice(0, 2);
-      const payload = line.slice(3);
-      const [fromPath, toPath] = payload.split(" -> ");
-      return Object.freeze({
-        code,
-        path: fromPath,
-        ...(toPath ? { toPath } : {}),
-      });
-    });
+  const text = String(statusPorcelain || "");
+  const nulDelimited = text.includes("\0");
+  const records = nulDelimited ? text.split("\0") : text.split(/\r?\n/u);
+  const entries = [];
+  for (let index = 0; index < records.length; index++) {
+    const record = records[index];
+    if (!record) continue;
+    const code = record.slice(0, 2);
+    const payload = record.slice(3);
+    if (/[RC]/u.test(code)) {
+      // With -z Git emits the destination first, then the original path as its own record.
+      const [path, toPath] = nulDelimited ? [records[++index], payload] : payload.split(" -> ");
+      entries.push(Object.freeze({ code, path, toPath }));
+    } else {
+      entries.push(Object.freeze({ code, path: payload }));
+    }
+  }
+  return entries;
 }
 
 function matchesBlockingRuntimeAuthority(repositoryId, pathName) {
   const normalizedPath = String(pathName || "").replace(/\\/gu, "/");
   const baseName = normalizedPath.split("/").at(-1) || normalizedPath;
   if (BLOCKING_CONFIG_FILES.some(pattern => pattern.test(baseName))) return true;
-  return (BLOCKING_AUTHORITY_ROOTS[repositoryId] || []).some(root => (
+  const roots = BLOCKING_AUTHORITY_ROOTS[repositoryId];
+  if (!roots) return true;
+  return roots.some(root => (
     normalizedPath === root || normalizedPath.startsWith(`${root}/`)
   ));
 }

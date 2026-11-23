@@ -4,7 +4,7 @@ Applies to human contributors and all agents, models, providers, editors and dev
 
 Before changing this repository, read and follow `docs/collaboration-runtime-contract.md` and `docs/conflict-resolution.md`.
 
-- The primary checkout at `$GITHUB_ROOT/agentic-graph` is the only canonical Dev runtime owner; it must uniquely own clean `main` at fetched `origin/main`. A linked `main` checkout elsewhere is not a canonical Dev substitute. Isolate each task in its own registered worktree, branch, semantic scope, and the shared AOS reservation.
+- The primary checkout at `$GITHUB_ROOT/agentic-graph` is the only canonical Dev runtime owner; it must uniquely own `main` at fetched `origin/main` and pass the `turn:end` workspace check. Unrelated untracked drafts may remain in place. A linked `main` checkout elsewhere is not a canonical Dev substitute. Isolate each task in its own registered worktree, branch, semantic scope, and the shared AOS reservation.
 - When another task owns that checkout, an already-created stopped-writer commit may be delivered only through `npm run release:publish:immutable -- ...`; the object lane must not switch or edit the checkout and must emit exact paired-SHA evidence.
 - Fetch `origin` before starting and create `agent/<device>/<semantic-scope>` from `origin/main`.
 - Never write the same branch from two devices; stop the sender before a commit-SHA handoff.
