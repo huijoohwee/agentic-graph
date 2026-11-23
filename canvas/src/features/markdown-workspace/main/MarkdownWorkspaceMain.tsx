@@ -403,7 +403,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       onShowInEditor={line => revealLineInEditor(line)}
       onInlineEditStateChange={disableDerivedMarkdownMutations ? undefined : handleInlineEditStateChange}
       onInlineDraftTextChange={disableDerivedMarkdownMutations ? undefined : handleInlineDraftTextChange}
-      markdownForcePlainTables={viewerMode === 'table'}
+      markdownForcePlainTables={viewerMode === 'table' || !!webpageMeta || !!websiteImportMeta}
     />
   ) : (
     <MarkdownWorkspaceDerivedViewer
