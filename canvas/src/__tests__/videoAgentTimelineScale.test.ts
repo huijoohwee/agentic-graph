@@ -391,7 +391,6 @@ export function testVideoAgentStructuredDiagramFloatingPanelOpenEventRoutesMedia
   for (const token of [
     "useMermaidGanttDocument({ purpose: 'media' })",
     'GanttTimelineTransportPlaybackRuntime',
-    '<GanttTimelineTransportPlaybackRuntime />',
     "useGanttTimelineTransportSession({ code, mode: 'media' })",
     'useGanttTimelineTransportPlaybackModel',
     'clockActive: true',
@@ -403,6 +402,15 @@ export function testVideoAgentStructuredDiagramFloatingPanelOpenEventRoutesMedia
   ]) {
     if (!`${timelineBottomText}\n${bottomPanelShellText}\n${transportPlaybackRuntimeText}\n${transportPlaybackModelText}\n${transportAudioBridgeText}\n${transportSurfaceText}\n${transportSurfaceModelText}`.includes(token)) {
       throw new Error(`expected video-agent BottomPanel Timeline to keep transport owner token: ${token}`)
+    }
+  }
+  const transportOwnerHaystack = `${timelineBottomText}\n${bottomPanelShellText}\n${transportPlaybackRuntimeText}\n${transportPlaybackModelText}\n${transportAudioBridgeText}\n${transportSurfaceText}\n${transportSurfaceModelText}`
+  if (!/<GanttTimelineTransportPlaybackRuntime\b[^>]*\/>/.test(transportOwnerHaystack)) {
+    throw new Error('expected video-agent BottomPanel Timeline to mount the transport playback runtime')
+  }
+  for (const token of ['active={!warehouseInspectionActive}', 'useWarehouseInspectionMode']) {
+    if (!bottomPanelShellText.includes(token)) {
+      throw new Error(`expected warehouse inspection mode to pause the transport playback runtime: ${token}`)
     }
   }
 }
@@ -428,7 +436,7 @@ export function testVideoAgentTimelineDenseFbfClipsDoNotForceOverlap() {
     'data-kg-timeline-clip-compact={compactTimelineBar ?',
     'data-kg-timeline-clip-select-surface={compactTimelineBar && !thumbnailSamples.length ?',
     'compactSourceTimeline',
-    'resolveVisibleVideoSequenceTimelineLaneCount(transportSession.timelineModel.taskSpans, { disabledLaneIds })',
+    'resolveVisibleVideoSequenceTimelineLaneCount(presentedSpans, { disabledLaneIds })',
     'const compactSourceTimeline = React.useMemo',
     'transportSession.timelineModel.taskSpans.every(span => isCompactSourceMediaSpan(span, resolveVideoSequenceTimelineLane(span)))',
     'scopes: compactSourceTimeline || workflowMode ? [] : transportSession.monitorScopes',
@@ -444,12 +452,12 @@ export function testVideoAgentTimelineDenseFbfClipsDoNotForceOverlap() {
     "&& !verticalMarker && !compactSourceMedia",
     "lane === 'fbf' && !verticalMarker",
     'compactTimelineBar ? 0 : (index % 2) * 2',
-    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
-    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
-    '.timeline-transport-track-clip--lane-fbf[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not([data-kg-video-sequence-dense-fbf="1"])',
+    '.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:focus-within:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
+    '.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:hover:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
+    '.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:has(.timeline-video-sequence-clip-thumbnail-strip[data-kg-video-sequence-clip-thumbnail-preview-active="1"]):not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
     '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]::before',
     '[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-move',
-    '[data-kg-timeline-clip-select-surface="1"] .timeline-transport-track-clip-move',
+    '.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not([data-kg-timeline-clip-select-surface="1"]):not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-transport-track-clip-move',
     'pointer-events: auto',
     '[data-kg-timeline-clip-compact="1"] .timeline-video-sequence-clip-timecode',
     '[data-kg-timeline-clip-compact="1"] .timeline-video-sequence-clip-meta',
@@ -466,7 +474,6 @@ export function testVideoAgentTimelineDenseFbfClipsDoNotForceOverlap() {
     'translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-compact-source-media-bar-height)) / 2)',
     'inset: 16px 10px 4px',
     'z-index: 8',
-    'background-size: var(--kg-video-sequence-frame-sample-cell) 100%',
     'inset: 15px 8px 5px',
     'flex: 1 1 0',
     'border-color: var(--kg-canvas-accent',
