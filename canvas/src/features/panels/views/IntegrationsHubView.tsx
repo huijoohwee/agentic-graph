@@ -1,5 +1,6 @@
 import React from 'react'
 import SettingsView from '@/features/panels/views/SettingsView'
+import TradingTickerFixture from './TradingTickerFixture'
 
 export default function IntegrationsHubView({
   searchQuery = '',
@@ -20,12 +21,15 @@ export default function IntegrationsHubView({
   }) => void
 }) {
   return (
-    <SettingsView
-      searchQuery={searchQuery}
-      requestedAnchorId={requestedAnchorId}
-      requestedAnchorSeq={requestedAnchorSeq}
-      mode="integrations"
-      onRegisterActions={onRegisterActions}
-    />
+    <>
+      {(!searchQuery.trim() || 'trading ticker fixture synthetic quote read.ticker receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingTickerFixture />}
+      <SettingsView
+        searchQuery={searchQuery}
+        requestedAnchorId={requestedAnchorId}
+        requestedAnchorSeq={requestedAnchorSeq}
+        mode="integrations"
+        onRegisterActions={onRegisterActions}
+      />
+    </>
   )
 }
