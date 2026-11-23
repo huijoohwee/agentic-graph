@@ -10,7 +10,7 @@ import { buildWebsiteSelectionTree, websiteFolderUrls } from '@/lib/websites/web
 import { NativeWebsiteCrawler } from '@/lib/websites/server/nativeWebsiteCrawler'
 import { createWebsiteImportHandler } from '@/lib/websites/server/websiteImportServer'
 import type { WebsiteImportManifestV1 } from '@/lib/websites/server/websiteImportTypes'
-import { collectSitemapUrls } from '@/lib/websites/server/websiteImportServerHelpers'
+import { collectSitemapUrls, indexInternalUrls } from '@/lib/websites/server/websiteImportServerHelpers'
 import { extractInternalUrlCandidatesFromHtml, extractXmlLocs, fetchTextWithLimit } from '@/lib/websites/server/websiteImportCore'
 import { WebsiteDiscoveryCache, newDiscoveryMetrics } from '@/lib/websites/server/websiteDiscoveryCache'
 
@@ -204,6 +204,63 @@ test('discovery recursively indexes nested same-site pages beyond the entry page
   }
 })
 
+test('redirected entry keeps the full linked inventory when recursive fetches reach their limit', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  const paths = Array.from({ length: 650 }, (_, i) => `/guide/page-${i}`)
+  const source = createServer((req, res) => {
+    if (req.url === '/guide/entry/') { res.writeHead(301, { Location: '/guide/entry' }); res.end(); return }
+    if (req.url === '/guide/entry') {
+      res.setHeader('Content-Type', 'text/html')
+      res.end('<title>Guide</title><script>history.replaceState(null,"","/guide/entry/")</script>'
+        + '<a href="/guide/entry/">Alias</a>' + paths.map(path => `<a href="${path}">Page</a>`).join(''))
+      return
+    }
+    res.writeHead(404); res.end()
+  })
+  const sourceBase = await listen(source), url = sourceBase + '/guide/entry/'
+  const api = createServer((req, res) => { void handleWebsiteDiscovery(req, res) })
+  const base = await listen(api)
+  try {
+    const response = await fetch(base, { method: 'POST', body: JSON.stringify({ url, rootUrl: url }) })
+    assert.equal(response.status, 200)
+    const result = await response.json()
+    assert.deepEqual(result.pages.map((page: { url: string }) => page.url), ['/guide/entry', ...paths].map(path => sourceBase + path))
+    assert.equal(result.pages[0].title, 'Guide')
+    assert.equal(result.limited, true)
+  } finally {
+    await close(api); await close(source)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
+test('index keeps new links within byte, time and inventory bounds and propagates caller cancellation', async () => {
+  const root = 'https://example.test/guide/', child = root + 'child'
+  const args = { rootUrl: root, seedUrls: [root], timeoutMs: 500, maxBytes: 1024, maxPages: 2000 }
+  const body = '<a href="child">Child</a>'
+  const result = await indexInternalUrls({ ...args, maxTotalBytes: body.length, readText: async (_url, options) => {
+    assert.equal(options.maxBytes, body.length); options.onBytes?.(body.length)
+    return { ok: true, text: body }
+  } })
+  assert.deepEqual(result, { urls: [root, child], limited: true })
+  const timed = await indexInternalUrls({ ...args, budgetMs: 30, readText: async (url, { signal }) => {
+    if (url === root) return { ok: true, text: body }
+    await new Promise(resolve => setTimeout(resolve, 50))
+    signal?.throwIfAborted()
+    return { ok: true, text: '' }
+  } })
+  assert.deepEqual(timed, result)
+  const seeds = Array.from({ length: 2100 }, (_, i) => root + i)
+  const full = await indexInternalUrls({ ...args, seedUrls: seeds, readText: async () => { throw new Error('Inventory is full') } })
+  assert.deepEqual(full, { urls: seeds.slice(0, 2000), limited: true })
+  const controller = new AbortController()
+  await assert.rejects(indexInternalUrls({ ...args, signal: controller.signal, readText: async () => {
+    controller.abort(new Error('Cancelled by caller'))
+    return { ok: true, text: body }
+  } }), /Cancelled by caller/)
+})
+
 test('overlapping discovery is rejected and client cancellation releases its admission', async () => {
   const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
   process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
@@ -307,6 +364,14 @@ test('collection discovery admits child subdomain detail pages for apex roots wh
     'https://agents-assemble.devpost.com/',
     'https://devpost.com/hackathons/open',
   ])
+})
+
+test('nested serialized routes keep their declared slash spelling', () => {
+  const root = 'https://example.test/guide/'
+  const routes = ['/guide/article', '/guide/article/', '/guide/folder/']
+  const state = JSON.stringify(JSON.stringify({ '/guide/group/': routes }))
+  const html = `<a href="/guide/article">Article</a><script>const state = ${state}</script>`
+  assert.deepEqual(extractInternalUrlCandidatesFromHtml(html, root), routes.map(route => new URL(route, root).href))
 })
 
 test('folder selection retains nested pages and distinct query variants', () => {

@@ -215,7 +215,9 @@ export function setWebsiteSelectionQuery(query: string) {
   if (session) updateSession(session.id, current => ({ ...current, query, visibleCount: 100 }))
 }
 
-export function chooseWebsiteImportPages(url: string, sourcePath?: string, selectAllOnDiscover = false): Promise<string[] | null> {
+type WebsiteSelectionOptions = { selectAllOnDiscover?: boolean; refreshInventory?: boolean }
+
+export function chooseWebsiteImportPages(url: string, sourcePath?: string, { selectAllOnDiscover = false, refreshInventory = false }: WebsiteSelectionOptions = {}): Promise<string[] | null> {
   const source = new URL(url)
   if (!['http:', 'https:'].includes(source.protocol)) throw new Error('Enter an HTTP or HTTPS website URL.')
   url = source.href
@@ -227,6 +229,10 @@ export function chooseWebsiteImportPages(url: string, sourcePath?: string, selec
   requestMarkdownExplorerSourceFilesOpen(sourcePath)
   void (async () => {
     try {
+      if (refreshInventory && globalThis.navigator?.onLine !== false) {
+        await discoverWebsiteSelection(url)
+        return
+      }
       const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
       const { readWebsiteInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
       const pages = await readWebsiteInventory(await getWorkspaceFs(), url)
@@ -239,8 +245,8 @@ export function chooseWebsiteImportPages(url: string, sourcePath?: string, selec
   return result
 }
 
-export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>, options?: { selectAllOnDiscover?: boolean }) {
-  const selection = chooseWebsiteImportPages(url, sourcePath, options?.selectAllOnDiscover)
+export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>, options?: WebsiteSelectionOptions) {
+  const selection = chooseWebsiteImportPages(url, sourcePath, options)
   const session = useWebsiteImportSelectionSession.getState().session
   const selectedUrls = await selection
   if (!selectedUrls?.length) return

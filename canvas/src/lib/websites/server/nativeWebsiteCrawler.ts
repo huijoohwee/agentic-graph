@@ -398,7 +398,10 @@ export class NativeWebsiteCrawler {
         await page.waitForLoadState('networkidle', { timeout: Math.min(1_500, this.navigationTimeoutMs) }).catch(() => void 0)
         await page.waitForTimeout(250)
       }
-      const finalUrl = page.url() || args.url
+      const renderedUrl = page.url() || args.url
+      // A client router can restore the entered alias after an HTTP redirect.
+      const finalUrl = args.discoveryOnly && renderedUrl === args.url && response.request().redirectedFrom()
+        ? response.url() : renderedUrl
       if (!await this.isUrlAllowed(finalUrl, args.signal)) throw new Error('Crawler redirect target is not allowed')
       const contentType = String(response.headers()['content-type'] || '').toLowerCase()
       const title = String(await page.title().catch(() => '')).trim()

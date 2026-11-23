@@ -126,6 +126,11 @@ export async function testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRe
   const originalFetch = globalThis.fetch
   const oldRevision = 'c'.repeat(40)
   const currentRevision = 'e'.repeat(40)
+  const semantics = Array.from({ length: 15 }, (_, index) => catalogEntry('#', `type-${index}`))
+  const catalog = [
+    { ...catalogEntry('/', 'revision-ready'), semantics: semantics.map(entry => entry.token) },
+    ...semantics, catalogEntry('@', 'revision-ready'),
+  ]
   const callsBySigil = new Map<string, number>()
   resetAgenticOsRemoteGrammarCatalogForTests()
 
@@ -139,14 +144,12 @@ export async function testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRe
     callsBySigil.set(query, calls)
     if (query !== '/') await new Promise(resolve => setTimeout(resolve, 5))
     const sourceRevision = query === '/' && calls === 1 ? oldRevision : currentRevision
-    const catalog = (['/', '#', '@'] as const).map(sigil => catalogEntry(sigil, 'revision-ready'))
-    const entry = catalog.find(candidate => candidate.token.startsWith(query))!
     return rpcResponse(body.id, {
       structuredContent: {
         ok: true,
         sourceRevision,
         ...buildAgenticOsTestCatalogMetadata(catalog),
-        catalog: [entry],
+        catalog: catalog.filter(entry => entry.token.startsWith(query)),
       },
     })
   }) as typeof fetch
@@ -159,9 +162,10 @@ export async function testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRe
     if (callsBySigil.get('/') !== 2 || callsBySigil.get('#') !== 1 || callsBySigil.get('@') !== 1) {
       throw new Error(`expected only the old-revision sigil to reconcile once, got ${JSON.stringify(Object.fromEntries(callsBySigil))}`)
     }
-    if (refreshed.counts.slash !== 1 || refreshed.counts.hash !== 1 || refreshed.counts.at !== 1
+    if (!refreshed.routingVerified) throw new Error('The complete source-authored route must verify after refresh')
+    if (refreshed.counts.slash !== 1 || refreshed.counts.hash !== semantics.length || refreshed.counts.at !== 1
       || refreshed.entries.some(entry => !entry.sourceUrl.includes(`/blob/${currentRevision}/catalog/dictionaries/`))) {
-      throw new Error(`expected one exact-revision entry per sigil, got ${JSON.stringify(refreshed)}`)
+      throw new Error(`expected every exact-revision entry, got ${JSON.stringify(refreshed)}`)
     }
   } finally {
     resetAgenticOsRemoteGrammarCatalogForTests()

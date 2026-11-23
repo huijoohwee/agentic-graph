@@ -275,7 +275,7 @@ export function LaunchDropdownImportUrlItem(props: {
       onClose()
       try {
         const { importWebsiteFromSourceFiles } = await import('@/features/source-files/websiteImportSelectionSession')
-        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND), { selectAllOnDiscover: true })
+        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND), { selectAllOnDiscover: true, refreshInventory: true })
       } catch (error) {
         reportSkillsCommandsResolutionFailure(error)
       }

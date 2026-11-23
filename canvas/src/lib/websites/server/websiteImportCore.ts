@@ -228,8 +228,10 @@ export const extractInternalUrlCandidatesFromHtml = (html: string, baseUrl: stri
   let m: RegExpExecArray | null
   while ((m = attrRe.exec(scan))) push(String(m[2] || ''))
 
-  const tokenRe = /["'`]\s*((?:https?:\/\/|\/\/|\/)[^"'`<>{}\s]{1,2000})\s*["'`]/gi
-  while ((m = tokenRe.exec(scan))) push(String(m[1] || ''))
+  // A serialized route can end in an escaped quote. The backslash belongs
+  // to the delimiter. Object keys can describe scopes without linking a page.
+  const tokenRe = /(["'`])\s*((?:https?:\/\/|\/\/|\/)[^"'`\\<>{}\s]{1,2000})\s*\\*\1(?!\s*:)/gi
+  while ((m = tokenRe.exec(scan))) push(String(m[2] || ''))
 
   return out
 }
