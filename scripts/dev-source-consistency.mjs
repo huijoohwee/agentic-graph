@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseFrontmatter, readContract, repoRoot, validateTaskBranch } from './collaboration-contract.mjs'
+import { assertCanonicalRuntimeWorkspace, CANONICAL_RUNTIME_STATUS_ARGS, classifyCanonicalRuntimeResidue } from './local-runtime-candidate-lib.mjs'
 import {
   countRegisteredWorktrees,
   evaluateWorktreePolicy,
@@ -15,7 +16,7 @@ const runGit = (args, cwd) => {
     const detail = String(result.stderr || result.stdout || '').trim()
     throw new Error(`git ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`)
   }
-  return String(result.stdout || '').trim()
+  return String(result.stdout || '').trimEnd()
 }
 
 const canonicalRef = source => `${source.canonical_remote}/${source.canonical_branch}`
@@ -70,10 +71,8 @@ const requireCanonicalSource = (state, source) => {
     )
   }
   if (source.clean_required && state.status) {
-    const taskBranchHint = source.task_divergence_allowed && state.branch === source.canonical_branch
-      ? ` Move local work to an agent/<device>/<semantic-scope> branch; npm run dev will select task mode there automatically.`
-      : ''
-    throw new Error(`${source.id} source requires a clean worktree; commit, stash, or remove local changes first.${taskBranchHint}`)
+    const repositoryId = source.runtime_repository ?? source.id
+    assertCanonicalRuntimeWorkspace(repositoryId, classifyCanonicalRuntimeResidue({ repositoryId, statusPorcelain: state.status }))
   }
   if (state.headSha !== state.canonicalSha) {
     if (satisfiesDeclaredPin(state, source)) {
@@ -189,7 +188,7 @@ export const checkDevSourceConsistency = async ({
       canonicalSha,
       pinnedRef,
       pinnedRefIsAncestor,
-      status: git(['status', '--porcelain'], sourceRoot),
+      status: git(CANONICAL_RUNTIME_STATUS_ARGS, sourceRoot),
       worktreeCount: countRegisteredWorktrees(porcelain),
       worktrees: parseRegisteredWorktrees(porcelain),
     })
