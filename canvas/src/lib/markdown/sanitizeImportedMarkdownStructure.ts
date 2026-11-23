@@ -1,3 +1,5 @@
+import { findMarkdownPipeTableEnd } from '@/features/markdown/ui/markdownDataViewSerialize'
+
 type SanitizeResult = { text: string; changed: boolean }
 
 const isMarkdownImage = (line: string): boolean => /^!\[[^\]\n]*\]\([^)]+\)$/.test(String(line || '').trim())
@@ -32,7 +34,14 @@ export const normalizeMarkdownImageProseAdjacency = (text: string): SanitizeResu
     out.push(next)
   }
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!
+    const end = inFence ? index : findMarkdownPipeTableEnd(lines, index)
+    if (end > index) {
+      out.push(lines.slice(index, end).join('\n'))
+      index = end - 1
+      continue
+    }
     const trimmed = line.trim()
     const mFence = trimmed.match(/^(```+|~~~+)(.*)$/)
     if (mFence) {
@@ -182,8 +191,15 @@ export const normalizeMarkdownDecorationResidue = (text: string): SanitizeResult
   let fence = ''
   let changed = false
   const out: string[] = []
-  for (const [index, line] of lines.entries()) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!
     if (index <= headerEnd) { out.push(line); continue }
+    const end = inFence ? index : findMarkdownPipeTableEnd(lines, index)
+    if (end > index) {
+      out.push(lines.slice(index, end).join('\n'))
+      index = end - 1
+      continue
+    }
     const trimmed = line.trim()
     const mFence = trimmed.match(/^(```+|~~~+)(.*)$/)
     if (mFence) {

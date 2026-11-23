@@ -1,6 +1,6 @@
 import { expandInlineTranscriptMarkdownLines } from './transcriptMarkdownLines'
 import { collapseRepeatedBlockquotePayload, restoreEncodedBlockquotePrefix } from './markdownStructuralEntities'
-import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
+import { findMarkdownPipeTableEnd, serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 
 function countUnescapedPipes(line: string): number {
   let count = 0
@@ -200,7 +200,8 @@ export function restoreWebpageMarkdownSyntaxFidelity(markdown: string): string {
   const lines = convertRawHtmlTables(String(markdown || '')).replace(/\r/g, '').split('\n')
   const out: string[] = []
   let inFence = false
-  for (const rawLine of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const rawLine = lines[index]!
     if (rawLine.startsWith(CANONICAL_HTML_TABLE_LINE_PREFIX)) {
       out.push(rawLine.slice(CANONICAL_HTML_TABLE_LINE_PREFIX.length))
       continue
@@ -213,6 +214,12 @@ export function restoreWebpageMarkdownSyntaxFidelity(markdown: string): string {
     }
     if (inFence) {
       out.push(normalizeRecoveredFenceCodeLine(rawLine))
+      continue
+    }
+    const end = findMarkdownPipeTableEnd(lines, index)
+    if (end > index) {
+      out.push(lines.slice(index, end).join('\n'))
+      index = end - 1
       continue
     }
     const withPrefixes = collapseRepeatedBlockquotePayload(restoreEncodedBlockquotePrefix(restoreLinePrefixes(rawLine)))

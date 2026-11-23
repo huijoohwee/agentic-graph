@@ -1,7 +1,7 @@
 import { normalizeInline } from '@/lib/websites/webpageMarkdownArtifactUtils'
 import { stripTrailingPunctuation } from '@/lib/websites/webpageMarkdownArtifactUtils'
 import { normalizeMarkdownAsciiBlocks } from 'grph-shared/markdown/asciiBlocks'
-import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
+import { findMarkdownPipeTableEnd, serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 
 type PricingTier = { title: string; audience: string; lines: string[] }
 
@@ -392,7 +392,7 @@ const isPlainCardBlock = (block: string): boolean => {
   if (!raw) return false
   if (
     raw.startsWith('```') ||
-    raw.includes('|---') ||
+    findMarkdownPipeTableEnd(raw.split('\n', 2), 0) > 0 ||
     raw.startsWith('#') ||
     raw.startsWith('* ') ||
     raw.startsWith('- ') ||
@@ -415,7 +415,7 @@ const isPlainListBlock = (block: string): boolean => {
   if (!raw) return false
   if (
     raw.startsWith('```') ||
-    raw.includes('|---') ||
+    findMarkdownPipeTableEnd(raw.split('\n', 2), 0) > 0 ||
     raw.startsWith('#') ||
     raw.startsWith('* ') ||
     raw.startsWith('- ') ||

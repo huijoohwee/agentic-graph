@@ -1,5 +1,6 @@
 import { extractYamlFrontmatterHeaderBlock, parseWebsiteImportFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { fetchWebsiteImportArtifact } from '@/lib/websites/webpageIframeSrcdoc'
+import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
 
 /** Rebuild derived Markdown from the saved capture without losing its provenance. */
 export async function refreshWebsiteImportMarkdown(text: string, url: string, signal?: AbortSignal): Promise<string | null> {
@@ -24,7 +25,9 @@ export async function refreshWebsiteImportMarkdown(text: string, url: string, si
     signal?.throwIfAborted()
     if (result.ok === false && result.code === 'HTML_INPUT_LIMIT_EXCEEDED') throw new Error('The saved HTML exceeds the conversion limit; the original content was kept')
     if (result.ok !== true || !result.markdown.trim()) throw new Error(result.ok === false ? result.error : 'The saved capture produced no Markdown')
-    return `${header.rawBlock.trimEnd()}\n\n${result.markdown.trim()}\n`
+    const body = sanitizeImportedMarkdownText(result.markdown, { sourceUrl: url, preserveBodyFidelity: true }).text.trim()
+    if (!body) throw new Error('The saved capture produced no Markdown')
+    return `${header.rawBlock.trimEnd()}\n\n${body}\n`
   } finally {
     clearTimeout(timeout)
     signal?.removeEventListener('abort', abortFromCaller)

@@ -3,6 +3,53 @@ import assert from 'node:assert/strict'
 import { refreshWebsiteImportMarkdown } from '@/features/markdown-workspace/workspaceImport/refreshWebsiteImportMarkdown'
 import { convertHtmlToMarkdownUnified } from '@/lib/markdown/htmlToMarkdownUnified'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { getMarkdownIt } from '@/features/markdown/markdownIt'
+import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '@/features/markdown-workspace/workspaceImport/webpageEntryText'
+import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
+import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
+
+function renderedTables(markdown: string) {
+  const fragment = document.createElement('template')
+  fragment.innerHTML = getMarkdownIt().render(markdown)
+  return [...fragment.content.querySelectorAll('table')].map(table =>
+    [...table.rows].map(row => [...row.cells].map(cell => cell.textContent)))
+}
+
+test('website import and saved-capture refresh persist tables that survive repeated cleanup and render with their original cells', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const url = 'https://example.test/article'
+  const header = '---\nkgWebsiteImportId: "20260928T034028Z"\nkgWebsiteNodeId: "capture"\ncustom: "retain"\n---'
+  const html = '<main><h1>Flight log</h1><table><thead><tr><th>Signal</th><th>Value</th></tr></thead><tbody><tr><td>A | B</td><td>1</td></tr><tr><td></td><td>—</td></tr></tbody></table><h2>Units</h2><table><tr><th>Unit</th></tr><tr><td>Hz</td></tr></table></main>'
+  const expected = [[['Signal', 'Value'], ['A | B', '1'], ['', '—']], [['Unit'], ['Hz']]]
+  globalThis.fetch = async () => new Response(html)
+  try {
+    const converted = await convertHtmlToMarkdownUnified({ html, baseUrl: url, fidelityLevel: 4 })
+    assert.ok(converted.ok)
+    const previous = header + '\n\n| Signal | Value |\n| A | 1 |'
+    const refreshed = await refreshWebsiteImportMarkdown(previous, url)
+    assert.ok(refreshed?.startsWith(header + '\n\n'))
+    const entries = [refreshed!, ...[true, false].map(preserveBodyFidelity =>
+      buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({ upstreamMarkdown: converted.markdown, url, view: 'html', preserveBodyFidelity }))]
+    for (const entry of entries) {
+      const body = entry.slice(extractYamlFrontmatterHeaderBlock(entry)!.rawBlock.length).trim()
+      assert.doesNotMatch(body, /<table\b/i)
+      const cleaned = sanitizeImportedMarkdownText(body).text
+      assert.equal(cleaned, body)
+      assert.deepEqual(renderedTables(cleaned), expected)
+    }
+  } finally { globalThis.fetch = previousFetch; restore() }
+})
+
+test('import preserves authored alignment, escaped pipes, empty cells, and images inside Markdown tables', () => {
+  const { restore } = initJsdomHarness()
+  try {
+    const input = ['A \\| B | C', ':--- | ---:', 'left \\| right | ![plot](plot.png)', '| | |'].join('\n')
+    const entry = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({ upstreamMarkdown: input, url: 'https://example.test', view: 'markdown' })
+    assert.ok(entry.includes(input), entry)
+    assert.deepEqual(renderedTables(input), [[['A | B', 'C'], ['left | right', ''], ['', '']]])
+    assert.equal(sanitizeImportedMarkdownText('Before\n\n|---|\n\nAfter').text.includes('|---|'), false)
+  } finally { restore() }
+})
 
 test('new conversion and saved-import refresh retain the whole article with sibling transcript and source metadata', async () => {
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
