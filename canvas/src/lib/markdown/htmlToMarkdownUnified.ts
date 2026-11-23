@@ -1,3 +1,4 @@
+import { normalizeHtmlCodeFences } from './htmlCodeFenceLanguage'
 import { stripOversizedHydrationAttributes, filterHastElements, stripHastComments, fillEmptyAnchorText, fillMissingMediaSrc, resolveUrlLoose, resolveHastUrls, collectHeadArtifacts, renderHeadSectionMarkdown, type HastNode, type HtmlHeadArtifacts } from './htmlToMarkdownHast'
 import { buildHtmlToMarkdownHandlers, replaceMediaEmbedsWithLinks } from './htmlToMarkdownMedia'
 import { postprocessMarkdownLayout, dedupeMarkdownParagraphs } from './htmlToMarkdownLayout'
@@ -97,7 +98,7 @@ export async function convertHtmlToMarkdownUnified(args: {
       hashText(fallbackMarkdown),
       preferContentRoot ? 'root:1' : 'root:0',
       injectTitleHeading ? 'title:1' : 'title:0',
-      'post:webpage:3',
+      'post:webpage:4',
       String(html.length),
       hashText(html),
     ].join('|')
@@ -164,6 +165,7 @@ export async function convertHtmlToMarkdownUnified(args: {
               ;(tree as HastNode).children = [bestRoot] as unknown as HastNode[]
             }
             if (fidelityLevel <= 2) replaceMediaEmbedsWithLinks(tree as HastNode)
+            normalizeHtmlCodeFences(tree as HastNode)
             stripHastComments(tree as HastNode)
             const filter = {
               remove: new Set([

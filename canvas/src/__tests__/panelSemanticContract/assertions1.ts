@@ -236,7 +236,7 @@ export function assertPhase1(fixture: SourceFixture) {
   }
 
   if (
-    !dataViewHeader.includes('kg-data-view-header-controls') ||
+    !dataViewHeader.includes('<TableToolbar') ||
     (!dataViewHeader.includes('UI_RESPONSIVE_ACTION_ROW_CLASSNAME') && !dataViewHeader.includes('getDataViewIconButtonClassName'))
   ) {
     throw new Error('Expected Data View header controls to stay inside viewport bounds')

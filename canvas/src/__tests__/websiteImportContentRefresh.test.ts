@@ -91,3 +91,24 @@ test('missing and oversized captures fail instead of replacing content with a su
     await assert.rejects(refreshWebsiteImportMarkdown('---\nkgWebsiteImportId: "20260928T000000Z"\nkgWebsiteNodeId: "oversized"\n---\nOriginal', 'https://example.test'), /exceeds the conversion limit/)
   } finally { globalThis.fetch = previousFetch; restore() }
 })
+
+test('import moves explicit source languages onto code fences and preserves code, captions and unlabeled examples', async () => {
+  const { restore } = initJsdomHarness()
+  try {
+    const html = [
+      '<article><h1>Examples</h1>',
+      '<div class="language-json"><span class="lang">json</span><pre><code>{\n  "count": 2\n}</code></pre></div>',
+      '<section><label class="code-language">c++</label><pre>int main() {}</pre></section>',
+      '<figure><figcaption>Output</figcaption><pre data-lang="bash"><code>echo "$value"</code></pre></figure>',
+      '<div class="language-js"><pre><code class="language-zig">const n = 1;</code></pre></div>',
+      '<p>Unrelated paragraph</p><pre><code>unmarked</code></pre></article>',
+    ].join('')
+    const result = await convertHtmlToMarkdownUnified({ html, fidelityLevel: 4 })
+    assert.ok(result.ok)
+    const tokens = getMarkdownIt().parse(result.markdown, {})
+    const examples = tokens.filter(token => token.type === 'fence')
+    assert.deepEqual(examples.map(token => token.info), ['json', 'c++', 'bash', 'zig', ''])
+    assert.equal(examples[0]!.content, '{\n  "count": 2\n}\n')
+    assert.deepEqual(tokens.filter(token => token.type === 'inline').map(token => token.content), ['Examples', 'Output', 'Unrelated paragraph'])
+  } finally { restore() }
+})

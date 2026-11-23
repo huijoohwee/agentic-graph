@@ -1,3 +1,4 @@
+import { CodeBlockText } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import { Columns, Eye, LayoutPanelTop } from 'lucide-react'
 import type { AnnotatedCodeRow } from '@/features/markdown/ui/markdownAnnotatedCode'
@@ -73,13 +74,11 @@ export const AnnotatedRow = React.memo(function AnnotatedRow({
   lang,
   wrapClass,
   isBeside,
-  textSizeClass,
 }: {
   row: AnnotatedCodeRow
   lang: string
   wrapClass: string
   isBeside: boolean
-  textSizeClass: string
 }) {
   if (!row.code.trim() && !row.annotation) return null
 
@@ -100,9 +99,9 @@ export const AnnotatedRow = React.memo(function AnnotatedRow({
 
   const codeBlock = (
     <section className={codeBlockClassName}>
-      <pre className={`m-0 p-0 bg-transparent ${wrapClass} ${textSizeClass}`}>
+      <CodeBlockText wrap={!!wrapClass}>
         <HighlightedCode code={row.code} lang={lang} highlightLines={null} />
-      </pre>
+      </CodeBlockText>
     </section>
   )
 

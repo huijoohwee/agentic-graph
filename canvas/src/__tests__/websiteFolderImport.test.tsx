@@ -151,8 +151,19 @@ test('repair inserts only structure, preserving local rows, metadata, fences, li
   const broken = meta + edited
   const expected = broken.replace('My notes.\r\n\r\n' + header, 'My notes.\r\n\r\n' + header + '\r\n' + separator)
   const result = repairCapturedMarkdownTables(broken, saved)
-  assert.deepEqual(result, { text: expected, repaired: 1, unresolved: 0 })
-  assert.deepEqual(repairCapturedMarkdownTables(expected, saved), { text: expected, repaired: 0, unresolved: 0 })
+  assert.deepEqual(result, { text: expected, repaired: 1, unresolved: 0, codeFences: 0 })
+  assert.deepEqual(repairCapturedMarkdownTables(expected, saved), { text: expected, repaired: 0, unresolved: 0, codeFences: 0 })
+})
+
+test('captured languages repair matching legacy fences without changing authored bytes', () => {
+  const source = '# Example\n\n~~~c++\n  int n;\n~~~\n'
+  const local = meta + '# Example\r\n\r\nMy note.\r\n\r\nc++\r\n\r\n~~~~\r\n  int n;\r\n~~~~'
+  const expected = local.replace('c++\r\n\r\n~~~~', '~~~~c++')
+  assert.equal(repairCapturedMarkdownTables(local, source).text, expected)
+  assert.equal(repairCapturedMarkdownTables(expected, source).codeFences, 0)
+  for (const captured of [source + source, source.replace('  int n;', '  int edited;'), source.replace('~~~c++', 'c++\n\n~~~c++')]) {
+    assert.equal(repairCapturedMarkdownTables(local, captured).text, local)
+  }
 })
 
 test('restores missing column headers, keeps renamed headers and never recreates a deleted or ambiguous table', () => {
@@ -163,7 +174,7 @@ test('restores missing column headers, keeps renamed headers and never recreates
   ]) assert.equal(repairCapturedMarkdownTables(damaged!, original).text, expected)
   for (const local of ['My replacement', ['```text', header, ...rows, '```'].join('\n'),
     [header, ...rows, '', header, ...rows].join('\n')]) {
-    assert.deepEqual(repairCapturedMarkdownTables(local, original), { text: local, repaired: 0, unresolved: 1 })
+    assert.deepEqual(repairCapturedMarkdownTables(local, original), { text: local, repaired: 0, unresolved: 1, codeFences: 0 })
   }
 })
 
@@ -214,9 +225,9 @@ test('checked saved pages repair from their own captures, leave other files alon
   })
   try {
     await act(async () => root.render(<Harness />))
-    await click('Select saved pages for table repair')
-    for (const id of ['first', 'second']) await click('Select saved page /' + id + '.md for table repair')
-    await click('Repair tables in 2 selected saved pages')
+    await click('Select saved pages for Markdown repair')
+    for (const id of ['first', 'second']) await click('Select saved page /' + id + '.md for Markdown repair')
+    await click('Repair Markdown in 2 selected saved pages')
     for (let i = 0; i < 80 && !(await fs.readFileText('/second.md'))?.includes(separator); i++)
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
     for (const id of ['first', 'second']) assert.equal(await fs.readFileText('/' + id + '.md'), page(id).replace(header, header + '\n' + separator))

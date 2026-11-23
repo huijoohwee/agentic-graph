@@ -115,7 +115,7 @@ export function useWorkspaceMutationActions(args: {
           const { repairCapturedMarkdownTables } = await import('../workspaceImport/repairCapturedMarkdownTables')
           const result = repairCapturedMarkdownTables(prevText, regenerated)
           refreshOptions.signal?.throwIfAborted()
-          if (result.repaired) {
+          if (result.repaired || result.codeFences) {
             const saved = await writeWorkspaceFileAndSync({
               path: normalized, text: result.text, getFs, lastLoadedRef, setEntries, setActiveText, setActiveMarkdownDocument,
               activeDocumentKey: workspaceDocumentKey(normalized), activeDocumentSourceUrl: sourceUrl,
@@ -128,7 +128,7 @@ export function useWorkspaceMutationActions(args: {
             })
             if (!saved) throw new Error('The page changed during repair. Its newer edits were kept. Retry after saving.')
           }
-          refreshOptions.onTableRepair?.({ repaired: result.repaired, unresolved: result.unresolved })
+          refreshOptions.onTableRepair?.({ repaired: result.repaired, unresolved: result.unresolved, codeFences: result.codeFences })
           return true
         }
         if (!sourceUrl) {

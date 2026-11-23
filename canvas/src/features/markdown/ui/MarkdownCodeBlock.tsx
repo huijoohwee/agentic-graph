@@ -1,10 +1,10 @@
-import { PanelSelect } from '@/lib/ui/panelFormControls'
+import { CodeBlockHeader, CodeBlockText } from 'agentic-design-system/react/viewer'
 import React from 'react'
 import { WrapText } from 'lucide-react'
 import type { TokensCode } from './MarkdownTokens'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import type { RenderOpts } from './MarkdownRendererTypes'
-import { parseCodeInfoMeta } from './markdownCodeInfo'
+import { changeFenceLanguage, codeFenceBodyRange, codeFenceLanguageOptions, parseCodeInfoMeta, CODE_FENCE_LANGUAGE_AUTO_VALUE } from './markdownCodeInfo'
 import { MarkdownBlockContainer } from './MarkdownBlockContainer'
 import { parseAnnotatedCode, type AnnotatedCodeRow } from './markdownAnnotatedCode'
 import { mergeMermaidInitConfig, splitMermaidBlockFrontmatter } from './mermaidBlockFrontmatter'
@@ -37,7 +37,6 @@ import {
   MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS,
   MARKDOWN_CODE_FENCE_EDITOR_LAYOUT_CLASS,
   MARKDOWN_CODE_FENCE_LINE_SPACING_CLASS,
-  MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS,
   MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_BASE_CLASS,
 } from './markdownEditSurfaceLayout'
 import {
@@ -65,23 +64,6 @@ type MarkdownCodeBlockProps = {
   fragmentTags?: string[]
   annotateDisplayMode?: AnnotateDisplayMode
 }
-
-const CODE_FENCE_LANGUAGE_AUTO_VALUE = '__auto__'
-const CODE_FENCE_LANGUAGE_OPTIONS = [
-  { value: CODE_FENCE_LANGUAGE_AUTO_VALUE, label: 'auto' },
-  { value: 'plaintext', label: 'plaintext' },
-  { value: 'javascript', label: 'javascript' },
-  { value: 'typescript', label: 'typescript' },
-  { value: 'json', label: 'json' },
-  { value: 'yaml', label: 'yaml' },
-  { value: 'markdown', label: 'markdown' },
-  { value: 'bash', label: 'bash' },
-  { value: 'python', label: 'python' },
-  { value: 'sql', label: 'sql' },
-  { value: 'html', label: 'html' },
-  { value: 'css', label: 'css' },
-  { value: 'xml', label: 'xml' },
-]
 
 export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
   token: t,
@@ -232,10 +214,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     setWordWrapOverride(next !== baseWordWrapEnabled)
     setLocalWordWrapEnabled(next)
   }, [baseWordWrapEnabled, canToggleWordWrap, effectiveWordWrap])
-  const monospaceCodeClass = React.useMemo(() => {
-    const base = String(opts.uiPanelMonospaceTextClass || '').trim() || 'font-mono text-xs'
-    return opts.markdownPresentationMode ? `${base} text-xl` : base
-  }, [opts.markdownPresentationMode, opts.uiPanelMonospaceTextClass])
+  const monospaceCodeClass = opts.markdownPresentationMode ? 'agentic-code-editor text-xl' : 'agentic-code-editor text-xs'
 
   const annotatedRows: AnnotatedCodeRow[] | null = React.useMemo(() => {
     if (isMermaidLang || isAsciiDiagram) return null
@@ -261,8 +240,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     onReorder: (source, target, position) => opts.onReorderLineBlock?.(source, target, position),
   })
 
-  const documentCodeFrameClassName = `rounded-lg border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} overflow-hidden`
-  const figureFrameClassName = cardPreviewMode ? CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME : documentCodeFrameClassName
+  const figureFrameClassName = cardPreviewMode ? CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME : 'agentic-code-frame'
   const figureClassName = `${figureFrameClassName} highlight highlight-source-${lang} transition-shadow duration-200`
   const codeBlockSpacingClassName = cardPreviewMode
     ? CARD_MARKDOWN_PREVIEW_BLOCK_SPACING_CLASS_NAME
@@ -280,36 +258,9 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     .filter(Boolean)
     .join(' ')
 
-  const editLineRange = React.useMemo(() => {
-    const src = opts.markdownSourceLines
-    if (!Array.isArray(src) || src.length === 0) return null
-    const start = Math.max(1, Math.floor(t.startLine || 1))
-    const end = Math.max(start, Math.floor(t.endLine || start))
-    const openLine = src[start - 1] || ''
-    const mOpen = openLine.match(/^(\s*)(```+|~~~+)(.*)$/)
-    if (!mOpen) return null
-    const fence = mOpen[2] || '```'
-    let closeIdx = -1
-    for (let i = Math.min(src.length - 1, end - 1); i > start - 1; i -= 1) {
-      const line = src[i] || ''
-      if (String(line || '').trimStart().startsWith(fence)) {
-        closeIdx = i
-        break
-      }
-    }
-    if (closeIdx < 0) return null
-    const innerStart = start + 1
-    const innerEnd = closeIdx
-    if (innerStart > innerEnd) return null
-    return { startLine: innerStart, endLine: innerEnd }
-  }, [opts.markdownSourceLines, t.endLine, t.startLine])
-  const normalizedLang = String(lang || '').trim().toLowerCase()
-  const languageSelectOptions = React.useMemo(() => {
-    if (!normalizedLang || normalizedLang === CODE_FENCE_LANGUAGE_AUTO_VALUE) return CODE_FENCE_LANGUAGE_OPTIONS
-    if (CODE_FENCE_LANGUAGE_OPTIONS.some(option => option.value === normalizedLang)) return CODE_FENCE_LANGUAGE_OPTIONS
-    return [{ value: normalizedLang, label: normalizedLang }, ...CODE_FENCE_LANGUAGE_OPTIONS]
-  }, [normalizedLang])
-  const languageSelectValue = normalizedLang || CODE_FENCE_LANGUAGE_AUTO_VALUE
+  const editLineRange = React.useMemo(() => codeFenceBodyRange(opts.markdownSourceLines, t.startLine, t.endLine), [opts.markdownSourceLines, t.startLine, t.endLine])
+  const languageSelectOptions = React.useMemo(() => codeFenceLanguageOptions(lang), [lang])
+  const languageSelectValue = lang || CODE_FENCE_LANGUAGE_AUTO_VALUE
   const canChangeFenceLanguage =
     blockControlsAllowed &&
     !!opts.onReplaceLineRange &&
@@ -319,77 +270,30 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     if (!opts.onReplaceLineRange) return
     const sourceLines = opts.markdownSourceLines
     if (!Array.isArray(sourceLines) || sourceLines.length === 0) return
-    const openLineIndex = Math.max(0, Math.floor(t.startLine) - 1)
-    const openLine = String(sourceLines[openLineIndex] || '')
-    const fenceMatch = openLine.match(/^(\s*)(`{3,}|~{3,})([\s\S]*)$/)
-    if (!fenceMatch) return
-    const indent = String(fenceMatch[1] || '')
-    const fence = String(fenceMatch[2] || '```')
-    const originalInfoChunk = String(fenceMatch[3] || '')
-    const prefersInfoSeparator = /^\s+/.test(originalInfoChunk)
-    const infoRaw = String(c.info || '').trim()
-    const existingLangToken = String(meta.lang || '').trim()
-    const trailingInfo = (() => {
-      if (!infoRaw) return ''
-      if (!existingLangToken) return infoRaw
-      if (infoRaw.toLowerCase().startsWith(existingLangToken.toLowerCase())) {
-        return infoRaw.slice(existingLangToken.length).trimStart()
-      }
-      return infoRaw
-    })()
-    const nextLanguageToken =
-      nextValue && nextValue !== CODE_FENCE_LANGUAGE_AUTO_VALUE ? String(nextValue).trim().toLowerCase() : ''
-    const nextInfo = [nextLanguageToken, trailingInfo].filter(Boolean).join(' ').trim()
-    const replacementOpenLine = `${indent}${fence}${nextInfo ? `${prefersInfoSeparator ? ' ' : ''}${nextInfo}` : ''}`
+    const replacementOpenLine = changeFenceLanguage(sourceLines[Math.max(0, t.startLine - 1)] || '', (c.info || '').trim(), lang, nextValue)
+    if (replacementOpenLine === null) return
     opts.onReplaceLineRange({
       startLine: t.startLine,
       endLine: t.startLine,
       replacementLines: [replacementOpenLine],
     })
-  }, [c.info, meta.lang, opts, t.startLine])
+  }, [c.info, lang, opts, t.startLine])
   const codeFenceContentSurfaceClassName = cardPreviewMode
     ? CARD_MARKDOWN_PREVIEW_CODE_SURFACE_CLASS_NAME
     : MARKDOWN_CODE_FENCE_CONTENT_SURFACE_BASE_CLASS
   const codeFenceContentClassName = `${codeFenceContentSurfaceClassName} ${UI_THEME_TOKENS.code.bg} ${UI_THEME_TOKENS.code.text}`
-  const codeFencePreClassName = `${MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS} ${MARKDOWN_CODE_FENCE_LINE_SPACING_CLASS} ${effectiveWrapClass} ${monospaceCodeClass}`
-
   const asciiNode = (
     <section className={codeFenceContentClassName}>
-      <pre className={`${codeFencePreClassName} ${MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS}`}>
+      <CodeBlockText>
         {codeText}
-      </pre>
+      </CodeBlockText>
     </section>
   )
 
   const headerNode = cardPreviewMode ? null : (
-    <header
-      className={`flex items-center justify-between px-3 py-1.5 border-b ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg}`}
-    >
-      {canChangeFenceLanguage ? (
-        <PanelSelect
-          value={languageSelectValue}
-          aria-label="Code fence language"
-          className={`flex-1 min-w-0 h-6 px-1 rounded border-0 outline-none font-mono text-xs font-semibold ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text}`}
-          onMouseDown={event => event.stopPropagation()}
-          onClick={event => event.stopPropagation()}
-          onDoubleClick={event => event.stopPropagation()}
-          onValueChange={selectedValueInput => {
-            handleLanguageSelectChange(selectedValueInput)
-          }}
-        >
-          {languageSelectOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </PanelSelect>
-      ) : (
-        <span className={`flex-1 font-mono text-xs ${UI_THEME_TOKENS.text.secondary} font-semibold uppercase`}>
-          {lang || 'text'}
-        </span>
-      )}
-
-      <menu className="flex items-center gap-2" aria-label={UI_COPY.markdownCodeBlockActionsLabel}>
+    <CodeBlockHeader language={lang} selector={canChangeFenceLanguage ? {
+      value: languageSelectValue, options: languageSelectOptions, onChange: handleLanguageSelectChange,
+    } : undefined} actionsLabel={UI_COPY.markdownCodeBlockActionsLabel} actions={<>
         <button
           type="button"
           aria-label={UI_COPY.markdownWorkspaceWordWrapToggleTitle}
@@ -437,8 +341,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
           clearOverride={clearOverride}
         />
         <ClipboardCopyButton text={codeText} disabled={!!opts.forbidCopy} />
-      </menu>
-    </header>
+    </>} />
   )
 
   const contentNode = (
@@ -598,9 +501,9 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
             })()
           ) : (
             <section className={codeFenceContentClassName}>
-              <pre className={codeFencePreClassName}>
+              <CodeBlockText wrap={canToggleWordWrap && effectiveWordWrap}>
                 <HighlightedCode code={codeText} lang={lang} highlightLines={highlightLines} />
-              </pre>
+              </CodeBlockText>
             </section>
           )}
         </section>
@@ -613,21 +516,18 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
               lang={lang}
               wrapClass={effectiveWrapClass}
               isBeside={isBeside}
-              textSizeClass={monospaceCodeClass}
             />
           ))}
         </section>
       ) : (
         <section className={codeFenceContentClassName}>
-          <pre className={codeFencePreClassName}>
+          <CodeBlockText wrap={canToggleWordWrap && effectiveWordWrap}>
             <HighlightedCode code={codeText} lang={lang} highlightLines={highlightLines} />
-          </pre>
+          </CodeBlockText>
         </section>
       )}
     </>
   )
-
-  const editStaticHeaderNode = headerNode
 
   const codeOuterClassName = [codeBlockSpacingClassName, figureClassName].filter(Boolean).join(' ')
   const codeGutterWrapperClassName = [
@@ -640,12 +540,11 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     .filter(Boolean)
     .join(' ')
 
-  if (!gutterLayoutEnabled) {
-    return (
+  const figure = (
       <MarkdownBlockContainer
         as="figure"
         ref={containerRef}
-        className={codeOuterClassName}
+        className={gutterLayoutEnabled ? figureClassName : codeOuterClassName}
         highlightClass={highlightClass}
         highlightStyle={highlightStyle}
         startLine={t.startLine}
@@ -661,13 +560,13 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
         editTypographyMode="none"
         editPreserveWhitespace
         editPreserveBlockHeight={false}
-        editStaticChildren={editStaticHeaderNode}
+        editStaticChildren={headerNode}
         editorClassName={editorCodeClassName}
       >
         {contentNode}
       </MarkdownBlockContainer>
-    )
-  }
+  )
+  if (!gutterLayoutEnabled) return figure
 
   return (
     <section
@@ -692,30 +591,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
           />
         </>
       ) : null}
-      <MarkdownBlockContainer
-        as="figure"
-        ref={containerRef}
-        className={figureClassName}
-        highlightClass={highlightClass}
-        highlightStyle={highlightStyle}
-        startLine={t.startLine}
-        endLine={t.endLine}
-        editLineRange={editLineRange || undefined}
-        inlineEditable={blockControlsAllowed && !!opts.onReplaceLineRange}
-        sourceLines={opts.markdownSourceLines}
-        onReplaceLineRange={opts.onReplaceLineRange}
-        onInlineEditStateChange={opts.onInlineEditStateChange}
-        onInlineDraftTextChange={opts.onInlineDraftTextChange}
-        forbidCopy={!!opts.forbidCopy}
-        editDisableRichUi
-        editTypographyMode="none"
-        editPreserveWhitespace
-        editPreserveBlockHeight={false}
-        editStaticChildren={editStaticHeaderNode}
-        editorClassName={editorCodeClassName}
-      >
-        {contentNode}
-      </MarkdownBlockContainer>
+      {figure}
     </section>
   )
 })

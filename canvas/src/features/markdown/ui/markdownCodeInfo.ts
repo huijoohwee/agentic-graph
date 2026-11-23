@@ -191,3 +191,69 @@ export const parseCodeInfoMeta = (token: TokensCode): CodeInfoMeta => {
     showLineNumbers,
   }
 }
+
+export const CODE_FENCE_LANGUAGE_AUTO_VALUE = '__auto__'
+const CODE_FENCE_LANGUAGE_OPTIONS = [
+  { value: CODE_FENCE_LANGUAGE_AUTO_VALUE, label: 'auto' },
+  { value: 'plaintext', label: 'plaintext' },
+  { value: 'javascript', label: 'javascript' },
+  { value: 'typescript', label: 'typescript' },
+  { value: 'json', label: 'json' },
+  { value: 'yaml', label: 'yaml' },
+  { value: 'markdown', label: 'markdown' },
+  { value: 'bash', label: 'bash' },
+  { value: 'python', label: 'python' },
+  { value: 'sql', label: 'sql' },
+  { value: 'html', label: 'html' },
+  { value: 'css', label: 'css' },
+  { value: 'xml', label: 'xml' },
+]
+
+export function codeFenceLanguageOptions(language: string) {
+  if (!language || CODE_FENCE_LANGUAGE_OPTIONS.some(option => option.value === language)) return CODE_FENCE_LANGUAGE_OPTIONS
+  return [{ value: language, label: language }, ...CODE_FENCE_LANGUAGE_OPTIONS]
+}
+
+export function codeFenceBodyRange(src: readonly string[] | undefined, startLine: number, endLine?: number) {
+  if (!Array.isArray(src) || src.length === 0) return null
+  const start = Math.max(1, Math.floor(startLine || 1))
+  const end = Math.max(start, Math.floor(endLine || start))
+  const openLine = src[start - 1] || ''
+  const mOpen = openLine.match(/^(\s*)(```+|~~~+)(.*)$/)
+  if (!mOpen) return null
+  const fence = mOpen[2] || '```'
+  let closeIdx = -1
+  for (let i = Math.min(src.length - 1, end - 1); i > start - 1; i -= 1) {
+    const line = src[i] || ''
+    if (String(line || '').trimStart().startsWith(fence)) {
+      closeIdx = i
+      break
+    }
+  }
+  if (closeIdx < 0) return null
+  const innerStart = start + 1
+  const innerEnd = closeIdx
+  if (innerStart > innerEnd) return null
+  return { startLine: innerStart, endLine: innerEnd }
+}
+
+export function changeFenceLanguage(openLine: string, infoRaw: string, existingLangToken: string, nextValue: string) {
+  const fenceMatch = openLine.match(/^(\s*)(`{3,}|~{3,})([\s\S]*)$/)
+  if (!fenceMatch) return null
+  const indent = String(fenceMatch[1] || '')
+  const fence = String(fenceMatch[2] || '```')
+  const originalInfoChunk = String(fenceMatch[3] || '')
+  const prefersInfoSeparator = /^\s+/.test(originalInfoChunk)
+  const trailingInfo = (() => {
+    if (!infoRaw) return ''
+    if (!existingLangToken) return infoRaw
+    if (infoRaw.toLowerCase().startsWith(existingLangToken.toLowerCase())) {
+      return infoRaw.slice(existingLangToken.length).trimStart()
+    }
+    return infoRaw
+  })()
+  const nextLanguageToken =
+    nextValue && nextValue !== CODE_FENCE_LANGUAGE_AUTO_VALUE ? String(nextValue).trim().toLowerCase() : ''
+  const nextInfo = [nextLanguageToken, trailingInfo].filter(Boolean).join(' ').trim()
+  return `${indent}${fence}${nextInfo ? `${prefersInfoSeparator ? ' ' : ''}${nextInfo}` : ''}`
+}

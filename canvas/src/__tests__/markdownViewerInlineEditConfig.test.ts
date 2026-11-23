@@ -340,13 +340,14 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!codeText.includes('editPreserveBlockHeight={false}')) {
     throw new Error('expected code-fence inline edit to disable host min-height preservation and avoid synthetic bottom-gap drift near block border')
   }
-  if (!codeText.includes('CODE_FENCE_LANGUAGE_OPTIONS') || !codeText.includes('Code fence language')) {
+  if (!codeText.includes('codeFenceLanguageOptions(lang)') || !codeText.includes('<CodeBlockHeader language={lang}')) {
     throw new Error('expected code-fence header language control to expose selectable language options for read-viewer fence mutation')
   }
   if (!codeText.includes('handleLanguageSelectChange') || !codeText.includes('replacementOpenLine')) {
     throw new Error('expected code-fence language selector to rewrite the opening fence line while preserving trailing info metadata')
   }
-  if (!codeText.includes('onMouseDown={event => event.stopPropagation()}') || !codeText.includes('onDoubleClick={event => event.stopPropagation()}')) {
+  const sharedHeader = readUtf8(path.resolve(root, '..', 'node_modules', 'agentic-design-system', 'packages', 'react-viewer', 'src', 'document-blocks.tsx'))
+  if (!sharedHeader.includes('onMouseDown={event => event.stopPropagation()}') || !sharedHeader.includes('onDoubleClick={event => event.stopPropagation()}')) {
     throw new Error('expected code-fence language selector interactions to avoid triggering inline contenteditable open')
   }
   if (codeText.includes('p-3 bg-transparent whitespace-pre')) {
