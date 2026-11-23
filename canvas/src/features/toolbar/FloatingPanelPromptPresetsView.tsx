@@ -1,9 +1,6 @@
 import React from 'react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
-import {
-  isPromptPresetCatalogError,
-  type PromptPreset,
-} from '@/features/chat/promptPresetCatalog'
+import type { PresetSummary } from '@/features/chat/gatewayPresetCatalog'
 import {
   defaultPromptPresetSelectionRuntime,
   type PromptPresetSelectionRuntime,
@@ -40,7 +37,7 @@ const defaultFloatingPanelPromptPresetsRuntime: FloatingPanelPromptPresetsRuntim
   }),
 }
 
-function renderPromptPresetTokenChip(preset: PromptPreset): React.ReactNode {
+function renderPromptPresetTokenChip(preset: PresetSummary): React.ReactNode {
   const className = resolveInlineInvocationChipClassName({
     value: preset.slashCommand,
     extraClassName: 'max-w-[7.5rem]',
@@ -70,7 +67,7 @@ export function FloatingPanelPromptPresetsView({
   runtime?: FloatingPanelPromptPresetsRuntime
 }) {
   const search = useFloatingPanelCatalogSearch()
-  const [presets, setPresets] = React.useState<PromptPreset[]>([])
+  const [presets, setPresets] = React.useState<PresetSummary[]>([])
   const [catalogError, setCatalogError] = React.useState('')
   const [invocationError, setInvocationError] = React.useState('')
   const [loading, setLoading] = React.useState(true)
@@ -81,7 +78,7 @@ export function FloatingPanelPromptPresetsView({
     setLoading(true)
     void runtime.loadCatalog().then(result => {
       if (!active) return
-      if (isPromptPresetCatalogError(result)) {
+      if ('error' in result) {
         setCatalogError(result.error)
         setPresets([])
       } else {
@@ -109,7 +106,7 @@ export function FloatingPanelPromptPresetsView({
     ],
   )), [presets, search.normalizedSearchQuery])
 
-  const invokePreset = React.useCallback(async (preset: PromptPreset) => {
+  const invokePreset = React.useCallback(async (preset: PresetSummary) => {
     if (invokingId) return
     setInvocationError('')
     if (preset.executionSurface === 'card-run') {
