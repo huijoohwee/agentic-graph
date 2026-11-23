@@ -237,9 +237,8 @@ export async function testHtmlVideoHeadlessBrowserAdapterIsNativeFossRuntimeAdap
     'FFmpeg exited with code',
     'AGENTIC_OS_HTML_VIDEO_FFMPEG_BIN',
     'AGENTIC_OS_HTML_VIDEO_FFMPEG_VIDEO_CODEC',
-    'window.__agenticGraphRenderFrame',
-    'window.__hyperframesSeek',
-    'window.__timelines',
+    '__agenticGraphRenderFrame',
+    "buildHtmlVideoFrameRuntime(spec.durationMs, 'body')",
     "DEFAULT_MP4_VIDEO_CODEC = 'mpeg4'",
   ]) {
     if (!adapterText.includes(required)) throw new Error(`expected headless browser adapter to include ${required}`)
@@ -283,7 +282,7 @@ export async function testHtmlVideoCanvas2dAdapterIsBrowserNativeRecorderRuntime
     "document.createElement('iframe')",
     "host.setAttribute('aria-label', 'HTML video frame raster host')",
     "host.setAttribute('sandbox', 'allow-scripts allow-same-origin')",
-    'host.srcdoc = buildFrameDocument(spec, timeMs)',
+    'host.srcdoc = buildFrameDocument(spec)',
     'const renderRoot = frameDocument.querySelector',
     'host.remove()',
   ]) {

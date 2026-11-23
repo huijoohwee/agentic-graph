@@ -1,4 +1,5 @@
 import type { RenderEngine, RenderSpec } from '../htmlVideoRendererSsot'
+import { buildHtmlVideoFrameRuntime } from '../htmlVideoFlowNode'
 import { HTML_VIDEO_ENGINE_IDS } from '../htmlVideoRendererSsot'
 
 export const AGENTIC_OS_HTML_VIDEO_FFMPEG_BIN = 'AGENTIC_OS_HTML_VIDEO_FFMPEG_BIN' as const
@@ -50,38 +51,7 @@ ${spec.css ?? ''}
 <body>
 ${spec.html}
 <script type="application/json" id="agentic-graph-html-video-data">${dataJson}</script>
-<script>
-(() => {
-  const readData = () => {
-    const element = document.getElementById('agentic-graph-html-video-data');
-    try {
-      return JSON.parse(element && element.textContent ? element.textContent : '{}');
-    } catch {
-      return {};
-    }
-  };
-  const data = readData();
-  window.__AGENTIC_OS_HTML_VIDEO_DATA__ = data;
-  window.__AGENTIC_OS_RENDER_TIME_MS__ = 0;
-  window.__agenticGraphRenderFrame = async (timeMs) => {
-    const seconds = timeMs / 1000;
-    window.__AGENTIC_OS_RENDER_TIME_MS__ = timeMs;
-    document.documentElement.style.setProperty('--kg-render-time-ms', String(timeMs));
-    document.documentElement.style.setProperty('--kg-render-time-s', String(seconds));
-    if (typeof window.__hyperframesSeek === 'function') {
-      await window.__hyperframesSeek(seconds, { timeMs, data });
-    }
-    if (window.__timelines && typeof window.__timelines === 'object') {
-      for (const timeline of Object.values(window.__timelines)) {
-        if (timeline && typeof timeline.seek === 'function') timeline.seek(seconds, false);
-        else if (timeline && typeof timeline.time === 'function') timeline.time(seconds);
-      }
-    }
-    window.dispatchEvent(new CustomEvent('agentic-graph:render-frame', { detail: { timeMs, seconds, data } }));
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  };
-})();
-</script>
+<script>${buildHtmlVideoFrameRuntime(spec.durationMs, 'body')}</script>
 </body>
 </html>`
 }

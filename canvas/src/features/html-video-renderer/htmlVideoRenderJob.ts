@@ -14,14 +14,18 @@ export type HtmlVideoRunOk = {
   kind: 'video'
   blob: Blob
   engineId: string
+  renderLog?: string[]
   outputPath: string | null
   outputManifestPath: string | null
   outputStorageUrl: string | null
 }
 
+const seekFailures = ['protocol_version_unsupported', 'capability_missing', 'seek_failed', 'seek_timeout'] as const
+type SeekFailure = typeof seekFailures[number]
+
 export type HtmlVideoRunError = {
   ok: false
-  errorCode: 'invalid_spec' | 'engine_not_configured' | 'render_failed' | 'artifact_write_failed'
+  errorCode: 'invalid_spec' | 'engine_not_configured' | 'render_failed' | 'artifact_write_failed' | SeekFailure
   engineId?: string
   reason?: string
   field?: string
@@ -59,7 +63,7 @@ export function buildRenderJobId(spec: Readonly<RenderSpec>, engineId: string): 
 }
 
 const readErrorReason = (error: unknown): string => {
-  return error instanceof Error ? error.message : String(error || 'unknown error')
+  return error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error || 'unknown error')
 }
 
 const readVideoBlobMimeType = (blob: Blob): string => String(blob.type || '').toLowerCase().split(';')[0]?.trim() || ''
@@ -126,9 +130,10 @@ export async function runHtmlVideoRenderJob(args: {
   try {
     result = await resolution.engine.render(validation.spec)
   } catch (error) {
+    const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
     return {
       ok: false,
-      errorCode: 'render_failed',
+      errorCode: seekFailures.find(value => value === code) ?? 'render_failed',
       engineId,
       reason: readErrorReason(error),
     }
@@ -137,6 +142,16 @@ export async function runHtmlVideoRenderJob(args: {
   const resultError = validateRenderResult(result, validation.spec, engineId)
   if (resultError) return { ok: false, errorCode: 'render_failed', engineId, reason: resultError }
 
+  // Native engines own diagnostics. Copy a bounded UTF-8 prefix into the result and manifest.
+  const renderLog: string[] = []
+  let logBytes = 0
+  const encoder = new TextEncoder()
+  for (const line of result.renderLog ?? []) {
+    if (typeof line !== 'string' || line.length > 4096) break
+    logBytes += encoder.encode(line).byteLength + 1
+    if (logBytes > 4096) break
+    renderLog.push(line)
+  }
   const asset: GeneratedBinaryAsset = {
     blob: result.blob,
     renderUrl: buildRenderUrl(result.blob, renderJobId),
@@ -159,12 +174,14 @@ export async function runHtmlVideoRenderJob(args: {
         ['fps', String(result.fps)],
         ['width', String(result.width)],
         ['height', String(result.height)],
+        ...(renderLog.length ? [['renderLog', renderLog.join('\n')] as const] : []),
       ],
     })
     return {
       ok: true,
       renderJobId,
       kind: 'video',
+      renderLog,
       blob: result.blob,
       engineId,
       outputPath: output.outputPath,
