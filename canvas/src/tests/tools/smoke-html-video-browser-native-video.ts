@@ -97,6 +97,25 @@ const main = async () => {
         registry,
       })
     })
+    const authored = await readFile(new URL(import.meta.resolve('agentic-gateway/examples/hyperframes/cards.html')), 'utf8')
+    await page.evaluate(async ({ run, source }) => {
+      for (const input of [
+        source.replace('data-start="0.5"', 'data-start="warm.end"'),
+        source.replace('</body>', '<script src="https://invalid.example/external.js"></script></body>'),
+      ]) {
+        const refused = await run(input)
+        if (refused.ok || refused.errorCode !== 'invalid_spec') throw Error('Unsupported HyperFrames input was accepted')
+      }
+      const base = '/src/features/html-video-renderer/'
+      const { buildHtmlVideoRenderSpecCandidateFromNode, buildHtmlVideoPreviewSrcDocFromNode } = await import(base + 'htmlVideoFlowNode.ts')
+      const node = {properties:{html:source, width:320, height:240, duration_ms:5000, fps:2}}
+      const spec = buildHtmlVideoRenderSpecCandidateFromNode(node)
+      if (spec.width !== 64 || spec.height !== 64 || spec.durationMs !== 1000 ||
+          JSON.stringify(spec.data.hyperframesClips) !== '[{"id":"warm","start":0,"end":500},{"id":"cool","start":500,"end":1000}]' ||
+          !buildHtmlVideoPreviewSrcDocFromNode(node).includes('data-composition-id="cards"')) {
+        throw Error('HyperFrames dimensions, timing or preview drifted')
+      }
+    }, { run: runNode, source: authored })
     // Load the native job and rasterizer once, then disconnect the browser.
     const warmupDownload = page.waitForEvent('download')
     await page.evaluate(async run => {

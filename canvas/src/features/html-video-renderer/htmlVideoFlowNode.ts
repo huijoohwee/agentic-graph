@@ -1,3 +1,4 @@
+import { importHyperframesHtml } from 'agentic-gateway/connectors/hyperframes'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import type { GraphNode } from '@/lib/graph/types'
 import type { HtmlVideoEngineRegistry } from './htmlVideoEngineRegistry'
@@ -32,13 +33,24 @@ const readDataJson = (value: unknown): Record<string, unknown> | undefined => {
 
 export function buildHtmlVideoRenderSpecCandidateFromNode(node: GraphNode): Record<string, unknown> {
   const properties = readNodeProperties(node)
+  const html = typeof properties.html === 'string' ? properties.html : ''
+  if (properties.source_format === 'hyperframes' || (/^\s*<!doctype html/i.test(html) && /\bdata-composition-id\s*=/i.test(html))) {
+    const scene = importHyperframesHtml(html, document)
+    return {
+      html: scene.html,
+      durationMs: scene.durationMs, width: scene.width, height: scene.height,
+      fps: readInteger(properties.fps) ?? 30,
+      data: { hyperframesClips: scene.clips },
+      ...(typeof properties.engine_hint === 'string' ? { engineHint: properties.engine_hint } : {}),
+    }
+  }
   const data = readDataJson(properties.data_json)
   const durationMs = readInteger(properties.duration_ms)
   const fps = readInteger(properties.fps)
   const width = readInteger(properties.width)
   const height = readInteger(properties.height)
   return {
-    html: typeof properties.html === 'string' ? properties.html : '',
+    html,
     ...(typeof properties.css === 'string' ? { css: properties.css } : {}),
     ...(data ? { data } : {}),
     ...(durationMs != null ? { durationMs } : {}),
@@ -106,6 +118,12 @@ export function buildHtmlVideoFrameRuntime(durationMs: number, selector: string)
         }
       }catch(error){throw fail('seek_failed',String(error?.message || error));}
       if(seq!==latest)return;
+      if(Array.isArray(data.hyperframesClips)){
+        for(const clip of data.hyperframesClips){
+          const element=document.getElementById(clip.id);
+          if(element&&stage.contains(element))element.style.visibility=timeMs>=clip.start&&timeMs<clip.end?'visible':'hidden';
+        }
+      }
       syncCssAnimations(seconds);
       window.dispatchEvent(new CustomEvent('agentic-graph:render-frame',{detail}));
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -130,7 +148,9 @@ export function buildHtmlVideoFrameRuntime(durationMs: number, selector: string)
 }
 
 export function buildHtmlVideoPreviewSrcDocFromNode(node: GraphNode): string {
-  const validation = validateRenderSpec(buildHtmlVideoRenderSpecCandidateFromNode(node))
+  let candidate: Record<string, unknown>
+  try { candidate = buildHtmlVideoRenderSpecCandidateFromNode(node) } catch { return '' }
+  const validation = validateRenderSpec(candidate)
   if (validation.ok === false) return ''
   const spec = validation.spec
   const previewFrameScript = [
@@ -228,8 +248,12 @@ export async function runHtmlVideoFlowNode(args: {
   fs?: WorkspaceFs | null
 }): Promise<HtmlVideoRunResult> {
   const { runHtmlVideoRenderJob } = await import('./htmlVideoRenderJob')
+  let spec: Record<string, unknown>
+  try { spec = buildHtmlVideoRenderSpecCandidateFromNode(args.node) } catch (error) {
+    return { ok: false, errorCode: 'invalid_spec', field: 'html', reason: String(error) }
+  }
   return runHtmlVideoRenderJob({
-    spec: buildHtmlVideoRenderSpecCandidateFromNode(args.node),
+    spec,
     node: args.node,
     registry: args.registry,
     workspacePath: args.workspacePath,
