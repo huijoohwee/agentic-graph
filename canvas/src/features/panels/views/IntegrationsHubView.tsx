@@ -23,6 +23,7 @@ export default function IntegrationsHubView({
   return (
     <>
       {(!searchQuery.trim() || 'trading ticker fixture synthetic quote read.ticker receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingTickerFixture />}
+      {(!searchQuery.trim() || 'trading ticker provider signed quote read.ticker receipt moomoo'.includes(searchQuery.trim().toLowerCase())) && <TradingTickerFixture provider />}
       <SettingsView
         searchQuery={searchQuery}
         requestedAnchorId={requestedAnchorId}
