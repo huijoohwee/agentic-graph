@@ -68,7 +68,16 @@ export function XrPhysicsRunReadyDemoRuntime() {
       }
       return undefined
     }
-    if (!sourceFilesBootstrapReady) return undefined
+    if (!sourceFilesBootstrapReady) {
+      surfaceInitializedRef.current = false
+      pausedForGameplayRef.current = false
+      cameraDefaultsAppliedRef.current = false
+      if (ownsDocumentLaunchRef.current && !dedicatedDemo) {
+        ownsDocumentLaunchRef.current = false
+        if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
+      }
+      return undefined
+    }
     if (gameplayOverlayActive) {
       if (readXrNativeControllerDemo().phase === 'running') {
         pausedForGameplayRef.current = true
