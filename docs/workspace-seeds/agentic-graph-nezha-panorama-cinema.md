@@ -5,7 +5,7 @@ status: "draft"
 runtime_status: "draft"
 runtime_claim: "local-preview-implemented; runtime-readiness-unverified"
 publish_scope: "local-only"
-kgCanvasSurfaceMode: "geo-xr"
+kgCanvasSurfaceMode: "xr"
 kgCanvasRenderMode: "3d"
 kgCanvas3dMode: "xr"
 kgCanvas2dRenderer: "flow"
@@ -192,7 +192,7 @@ flow:
 
 # Nezha Panorama Cinema
 
-This remains a non-activating design seed. Opening it renders the local Geo+XR preview with Media
+This remains a non-activating design seed. Opening it renders the local XR preview with Media
 and the shared Timeline available. The local preview parses twenty source-linked shot markers from the
 Nezha panorama contact sheet and exposes explicit local image import plus the shared neutral-volume
 environment kit. It does not request capture permissions or make a native runtime-readiness claim.
@@ -223,7 +223,7 @@ blocked.
 
 The shared environment catalog supplies the `neutral-volume` stage through its existing contract: an
 open rehearsal floor with left/right framing flats, a back flat, and a raised focus deck. No
-geospatial context is attached, so the Geo+XR composite renders the stage without a map layer. The
+geospatial context is attached, so the XR stage renders without a map layer. The
 Timeline action selects this kit and composes it on the shared XR surface. The contact sheet is
 cropped into twenty visible timeline markers by the shared `contact_sheet_layout` (5 columns × 4
 rows, row-major panel indexing). No 3D character or prop proxies are assigned; the supplied panorama
@@ -233,7 +233,7 @@ stays a 2D reference.
 
 The contact sheet itself contains twenty consecutive panels arranged as four journey rows of five
 scenes. The rows below are shot markers referencing regions of that single source image. Subject,
-line and foreshadow fields are concise Chinese glosses of each panel's printed beat. In the Geo+XR
+line and foreshadow fields are concise Chinese glosses of each panel's printed beat. In the XR
 Timeline, the active shot owns the shared playhead and lights the selected panel crop.
 
 | Shot | Start–end | Panel | Journey | Scene |
@@ -273,6 +273,6 @@ layout, and persisted camera joins are not yet proven.
 
 The planned runtime stays local-first and works after explicit asset import with network access off.
 It needs no camera, microphone, model call, remote map, or paid service. The explicit Timeline action
-selects the local neutral-volume kit and hands the selected shot back to the shared Geo+XR owner.
+selects the local neutral-volume kit and hands the selected shot back to the shared XR owner.
 Workspace save, Git commit, publication, deployment, and production readiness remain separate
 outcomes.

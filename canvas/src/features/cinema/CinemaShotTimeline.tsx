@@ -14,6 +14,9 @@ import {
 import { readXrPhysicsRuntime } from '@/features/three/xrPhysicsRuntime'
 import { activateGeoXrSurfaceAtomically } from '@/features/geospatial/geoXrSurfaceActivation'
 import { requestGeospatialFitToBounds } from '@/features/geospatial/gympgrphBridge'
+import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
+import { openImmersiveMedia, setImmersiveMediaSource } from '@/features/immersive-media/immersiveMediaRuntime'
+import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 import {
   publishCinemaShotFocus,
   publishCinemaShotSchedule,
@@ -271,19 +274,40 @@ export function CinemaShotTimeline({ sourceText, compact = false, xrTimeline = f
         setSurfaceStatus(`${stage.label} could not be selected for this scene.`)
         return
       }
-      const opened = await activateGeoXrSurfaceAtomically({}, {
-        panelView: 'media',
-        openPanel: true,
-        timeline: true,
-      })
+      const surfaceMode = parseCanvasWorkspaceFrontmatterPreset(sourceText)?.canvasSurfaceMode
+      const isGeoXr = surfaceMode === 'geo-xr'
+      const opened = isGeoXr
+        ? await activateGeoXrSurfaceAtomically({}, {
+            panelView: 'media',
+            openPanel: true,
+            timeline: true,
+          })
+        : activateXrSceneSurface({
+            panelView: 'media',
+            openPanel: true,
+            timeline: true,
+          })
       if (!opened) {
-        setSurfaceStatus('Geo+XR Media could not open for this document layout. Keep the Timeline active or choose a supported block layout.')
+        setSurfaceStatus(isGeoXr
+          ? 'Geo+XR Media could not open for this document layout. Keep the Timeline active or choose a supported block layout.'
+          : 'XR Media could not open for this document layout. Keep the Timeline active or choose a supported block layout.')
         return
       }
-      if (stage.geospatialContext?.purpose === 'regional-viewport-only') {
+      if (isGeoXr && stage.geospatialContext?.purpose === 'regional-viewport-only') {
         await waitForGeoMapLayout()
         const previewBounds = resolveXrMotionReferenceStagePreviewBounds(stage.id)
         if (previewBounds) await requestGeospatialFitToBounds(previewBounds)
+      }
+      // Render the contact sheet as the immersive panorama environment for XR surfaces.
+      // Prefer the locally imported blob URL; fall back to the public asset path so the
+      // panorama renders even before the user runs the explicit reference import.
+      const contactSheet = model.contactSheetAssetId ? loadedAssets.get(model.contactSheetAssetId) : undefined
+      const contactSheetAsset = model.assets.find(asset => asset.id === model.contactSheetAssetId)
+      const panoramaUrl = contactSheet?.url
+        || (contactSheetAsset ? `/${contactSheetAsset.name}` : '')
+      if (panoramaUrl) {
+        setImmersiveMediaSource({ kind: 'image', url: panoramaUrl })
+        openImmersiveMedia()
       }
       // A bounds fit owns the map briefly. Nudge the shared transport so the current shot
       // resumes ownership after that fit, including when the playhead was already parked.
@@ -358,7 +382,7 @@ export function CinemaShotTimeline({ sourceText, compact = false, xrTimeline = f
   return <section className={`grid ${compact ? 'gap-1 p-2' : 'gap-2 p-3'} text-xs`} aria-label="Cinema timeline context" data-kg-cinema-shot-timeline="1" data-kg-cinema-duration-seconds={model.durationSeconds}>
     <header className="flex flex-wrap items-start justify-between gap-2">
       <div><b>{model.title}</b><p className="opacity-70">{model.shots.length} source-linked shots · {model.durationSeconds.toFixed(1)} seconds · {assets.length}/{model.assets.length} local reference assets</p></div>
-      <button type="button" className="App-toolbar__btn" onClick={openMedia} data-kg-cinema-open-media="1">Open Geo+XR · Media</button>
+      <button type="button" className="App-toolbar__btn" onClick={openMedia} data-kg-cinema-open-media="1">{parseCanvasWorkspaceFrontmatterPreset(sourceText)?.canvasSurfaceMode === 'geo-xr' ? 'Open Geo+XR · Media' : 'Open XR · Media'}</button>
     </header>
     {surfaceStatus ? <p role="status" className="text-xs text-amber-700 dark:text-amber-300">{surfaceStatus}</p> : null}
     {error ? <p role="alert" className="text-xs text-red-700">{error}</p> : null}
