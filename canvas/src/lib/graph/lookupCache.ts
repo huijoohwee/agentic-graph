@@ -1,3 +1,4 @@
+import { createRecordRelation } from '@agentic-base/views-react/record-links'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
@@ -86,7 +87,9 @@ function buildGraphLookup(cacheKey: string, graphData: GraphData): CachedGraphLo
   const { nodes, edges } = readGraphCollections(graphData)
   const nodeById = new Map<string, GraphNode>()
   const edgeById = new Map<string, GraphEdge>()
-  const incidentEdgesByNodeId = new Map<string, GraphEdge[]>()
+  const endpointIds = new Set<string>()
+  const edgeKeys: string[] = []
+  const links: { source: string; target: string }[] = []
 
   for (let i = 0; i < nodes.length; i += 1) {
     const node = nodes[i]
@@ -102,16 +105,23 @@ function buildGraphLookup(cacheKey: string, graphData: GraphData): CachedGraphLo
 
     const sourceId = String(unwrapGraphCellValue(edge?.source) ?? '').trim()
     const targetId = String(unwrapGraphCellValue(edge?.target) ?? '').trim()
-    if (sourceId) {
-      const current = incidentEdgesByNodeId.get(sourceId)
-      if (current) current.push(edge)
-      else incidentEdgesByNodeId.set(sourceId, [edge])
+    // Position identifies the exact original edge, including anonymous and repeated edges.
+    const edgeKey = String(i)
+    edgeKeys.push(edgeKey)
+    for (const endpoint of [sourceId, targetId]) {
+      if (!endpoint) continue
+      endpointIds.add(endpoint)
+      links.push({ source: edgeKey, target: JSON.stringify(endpoint) })
     }
-    if (targetId && targetId !== sourceId) {
-      const current = incidentEdgesByNodeId.get(targetId)
-      if (current) current.push(edge)
-      else incidentEdgesByNodeId.set(targetId, [edge])
-    }
+  }
+
+  const incidence = createRecordRelation({
+    sources: edgeKeys, targets: Array.from(endpointIds, id => JSON.stringify(id)), links,
+  })
+  // Existing graph consumers iterate this Map and depend on the original edge objects and order.
+  const incidentEdgesByNodeId = new Map<string, GraphEdge[]>()
+  for (const id of endpointIds) {
+    incidentEdgesByNodeId.set(id, incidence.to(JSON.stringify(id)).map(link => edges[Number(link.source)]!))
   }
 
   return {
