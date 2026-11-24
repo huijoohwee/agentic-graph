@@ -5,8 +5,8 @@ import { lsJson, lsSetJson } from '@/lib/persistence'
 import { normalizeMarkdownWorkspaceSelectionPath } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionPath'
 import { isInitializationWorkspacePath } from '@/features/workspace-fs/workspaceFs'
 import {
-  clearRetainedLocalDocDeepLinkPath,
   readLocalDocDeepLinkPathFromCurrentLocation,
+  setLocalDocDeepLinkPath,
 } from '@/features/canvas/canvasDocDeepLink'
 
 export type MarkdownExplorerInitialPathSource = 'deep-link' | 'persisted'
@@ -54,13 +54,7 @@ export const useMarkdownExplorerStore = create<MarkdownExplorerState>(set => ({
     const normalized = normalizeMarkdownWorkspaceSelectionPath(path)
     set(prev => {
       if (prev.activePath === normalized) return prev
-      const retainedDeepLinkPath = resolveInitialMarkdownExplorerActivePath(
-        readLocalDocDeepLinkPathFromCurrentLocation(),
-        'deep-link',
-      )
-      if (retainedDeepLinkPath && retainedDeepLinkPath !== normalized) {
-        clearRetainedLocalDocDeepLinkPath()
-      }
+      setLocalDocDeepLinkPath(normalized)
       lsSetJson(LS_KEYS.markdownExplorerActivePath, normalized)
       return {
         activePath: normalized,

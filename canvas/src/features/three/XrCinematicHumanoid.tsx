@@ -6,18 +6,34 @@ import type { XrSceneLibraryAsset } from './xrSceneLibrary'
 type Profile = NonNullable<XrSceneLibraryAsset['visualProfile']>
 type Dimensions = readonly [width: number, height: number, depth: number]
 
-const LOOKS: Readonly<Record<Profile, Readonly<{
-  suit: string
-  trim: string
-  joint: string
+/** Profile-invariant human features: skin tone, hair and material response.
+ * Suit/trim/joint are derived from the subject's supplied color so each
+ * character matches its panorama palette instead of a hardcoded dark look. */
+const PROFILE_BASES: Readonly<Record<Profile, Readonly<{
   skin: string
   hair: string
   metalness: number
 }>>> = {
-  'bionic-operative': { suit: '#101b26', trim: '#35c6d8', joint: '#172a39', skin: '#b58e7b', hair: '#10131a', metalness: 0.36 },
-  'corporate-executive': { suit: '#111418', trim: '#c49758', joint: '#273442', skin: '#b68f77', hair: '#17191d', metalness: 0.24 },
-  'security-android': { suit: '#c6d1d9', trim: '#50d7e8', joint: '#202a33', skin: '#dbe4ea', hair: '#1b2932', metalness: 0.72 },
-  'cinema-protagonist': { suit: '#2b3843', trim: '#9ab6c5', joint: '#3d4d58', skin: '#b48f7b', hair: '#17222c', metalness: 0.12 },
+  'bionic-operative': { skin: '#b58e7b', hair: '#10131a', metalness: 0.36 },
+  'corporate-executive': { skin: '#b68f77', hair: '#17191d', metalness: 0.24 },
+  'security-android': { skin: '#dbe4ea', hair: '#1b2932', metalness: 0.72 },
+  'cinema-protagonist': { skin: '#b48f7b', hair: '#17222c', metalness: 0.12 },
+}
+
+function deriveLook(profile: Profile, baseColor: string) {
+  const base = new THREE.Color(baseColor)
+  const suit = base.clone()
+  const trim = base.clone().lerp(new THREE.Color('#f0d090'), 0.4)
+  const joint = base.clone().lerp(new THREE.Color('#000000'), 0.35)
+  const profileBase = PROFILE_BASES[profile]
+  return {
+    suit: `#${suit.getHexString()}`,
+    trim: `#${trim.getHexString()}`,
+    joint: `#${joint.getHexString()}`,
+    skin: profileBase.skin,
+    hair: profileBase.hair,
+    metalness: profileBase.metalness,
+  }
 }
 
 /** Silhouette proportions per character design: shoulder span, torso girth and head scale. */
@@ -127,14 +143,14 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
   size: Dimensions
 }) {
   const [width, height, depth] = size
-  const look = LOOKS[profile]
+  const look = deriveLook(profile, color)
   const android = profile === 'security-android'
   const operative = profile === 'bionic-operative'
   const protagonist = profile === 'cinema-protagonist'
   const crouch = pose?.crouch || 0
   const faceY = depth * 0.29
   const torsoZ = height * 0.58 - crouch * height * 0.1
-  const trim = profile === 'bionic-operative' ? look.trim : profile === 'corporate-executive' ? look.trim : '#54d9ed'
+  const trim = look.trim
   const build = BUILDS[profile]
   const executive = profile === 'corporate-executive'
   const headZ = height * 0.87 - crouch * height * 0.08
@@ -151,7 +167,7 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
       </mesh>
       {operative ? <mesh position={[0, 0, height * 0.29]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[width * 0.19, width * 0.34, height * 0.53, 24, 2]} />
-        <Pbr color="#080c12" metalness={0.16} roughness={0.34} />
+        <Pbr color={look.joint} metalness={0.16} roughness={0.34} />
       </mesh> : null}
       <mesh position={[0, faceY, torsoZ + height * 0.01]}>
         <boxGeometry args={[width * 0.23, depth * 0.028, height * 0.28]} />
@@ -159,11 +175,11 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
       </mesh>
       {executive ? <mesh position={[0, faceY * build.girth, torsoZ + height * 0.07]} rotation={[0.35, 0, 0]}>
         <torusGeometry args={[width * 0.13, width * 0.016, 6, 24, Math.PI]} />
-        <Pbr color="#d6a54a" metalness={0.92} roughness={0.22} emissive="#6b4a12" emissiveIntensity={0.2} />
+        <Pbr color={look.trim} metalness={0.92} roughness={0.22} emissive={look.joint} emissiveIntensity={0.2} />
       </mesh> : null}
       {executive ? ([-1, 1] as const).map(side => <mesh key={`lapel:${side}`} position={[side * width * 0.1, faceY * build.girth + depth * 0.01, torsoZ + height * 0.05]} rotation={[0, side * 0.32, 0]}>
         <boxGeometry args={[width * 0.07, depth * 0.03, height * 0.2]} />
-        <Pbr color="#0b0f14" metalness={0.2} roughness={0.42} />
+        <Pbr color={look.joint} metalness={0.2} roughness={0.42} />
       </mesh>) : null}
       {executive ? <mesh position={[0, faceY * build.girth + depth * 0.035, torsoZ + height * 0.015]}>
         <boxGeometry args={[width * 0.085, depth * 0.027, height * 0.31]} />
@@ -171,32 +187,32 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
       </mesh> : null}
       {executive ? <mesh position={[0, faceY * build.girth + depth * 0.056, torsoZ - height * 0.025]} rotation={[0.06, 0, 0]}>
         <boxGeometry args={[width * 0.045, depth * 0.018, height * 0.2]} />
-        <Pbr color="#8a2930" metalness={0.32} roughness={0.38} />
+        <Pbr color={look.trim} metalness={0.32} roughness={0.38} />
       </mesh> : null}
       {protagonist ? <>
         <mesh position={[0, -depth * 0.025, height * 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[width * 0.22, width * 0.42, height * 0.5, 16, 1, true]} />
-          <Pbr color="#202c37" metalness={0.12} roughness={0.66} emissive="#08131d" emissiveIntensity={0.18} />
+          <Pbr color={look.joint} metalness={0.12} roughness={0.66} emissive={look.joint} emissiveIntensity={0.18} />
         </mesh>
         <mesh position={[0, depth * 0.265, torsoZ + height * 0.18]} rotation={[0.2, 0, 0]} castShadow>
           <boxGeometry args={[width * 0.4, depth * 0.13, height * 0.11]} />
-          <Pbr color="#263541" metalness={0.2} roughness={0.48} emissive="#08131d" emissiveIntensity={0.12} />
+          <Pbr color={look.joint} metalness={0.2} roughness={0.48} emissive={look.joint} emissiveIntensity={0.12} />
         </mesh>
         {([-1, 1] as const).map(side => <mesh key={`coat-tail:${side}`} position={[side * width * 0.15, -depth * 0.015, height * 0.27]} rotation={[0.015, side * 0.025, side * 0.035]} castShadow receiveShadow>
           <boxGeometry args={[width * 0.28, depth * 0.28, height * 0.52]} />
-          <Pbr color="#25333e" metalness={0.2} roughness={0.62} emissive="#08131d" emissiveIntensity={0.14} />
+          <Pbr color={look.suit} metalness={0.2} roughness={0.62} emissive={look.joint} emissiveIntensity={0.14} />
         </mesh>)}
         {[-1, 1].map(side => <mesh key={`coat-seam:${side}`} position={[side * width * 0.21, depth * 0.145, height * 0.29]}>
           <boxGeometry args={[width * 0.012, depth * 0.012, height * 0.42]} />
-          <Pbr color="#8295a0" metalness={0.34} roughness={0.44} />
+          <Pbr color={look.trim} metalness={0.34} roughness={0.44} />
         </mesh>)}
         <mesh position={[0, depth * 0.24, torsoZ + height * 0.14]} rotation={[0.18, 0, 0]}>
           <boxGeometry args={[width * 0.36, depth * 0.14, height * 0.12]} />
-          <Pbr color="#242f39" metalness={0.28} roughness={0.58} />
+          <Pbr color={look.suit} metalness={0.28} roughness={0.58} />
         </mesh>
         {([-1, 1] as const).map(side => <mesh key={`coat-lapel:${side}`} position={[side * width * 0.085, depth * 0.22, torsoZ + height * 0.11]} rotation={[0.25, side * 0.18, side * 0.28]}>
           <boxGeometry args={[width * 0.09, depth * 0.08, height * 0.2]} />
-          <Pbr color="#455762" metalness={0.2} roughness={0.52} />
+          <Pbr color={look.joint} metalness={0.2} roughness={0.52} />
         </mesh>)}
         {pose?.propCue === 'tablet' ? <group position={[width * 0.16, depth * 0.58, height * 0.48]} rotation={[-0.24, 0, -0.12]}>
           <mesh castShadow receiveShadow><boxGeometry args={[width * 0.52, depth * 0.075, height * 0.22]} /><Pbr color="#101820" metalness={0.7} roughness={0.28} /></mesh>
@@ -276,7 +292,7 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
         </mesh>
         <mesh position={[width * 0.19, depth * 0.08, height * 0.66]}>
           <boxGeometry args={[width * 0.09, depth * 0.07, height * 0.08]} />
-          <Pbr color="#0e2631" metalness={0.72} roughness={0.24} emissive={trim} emissiveIntensity={0.65} />
+          <Pbr color={look.joint} metalness={0.72} roughness={0.24} emissive={trim} emissiveIntensity={0.65} />
         </mesh>
       </> : null}
       {protagonist ? <>
@@ -284,18 +300,18 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
         {[-1, 1].map(side => <Capsule key={`wet-hair:${side}`} position={[side * width * 0.16, depth * 0.015, headZ - height * 0.09]} length={height * 0.19} radius={width * 0.058} color="#151f2a" metalness={0.08} />)}
         <mesh position={[0, depth * 0.015, torsoZ + height * 0.2]} rotation={[0, 0, Math.PI / 2]}>
           <torusGeometry args={[width * 0.11, width * 0.012, 6, 20, Math.PI]} />
-          <Pbr color="#55646e" metalness={0.56} roughness={0.3} />
+          <Pbr color={look.trim} metalness={0.56} roughness={0.3} />
         </mesh>
       </> : null}
       {android ? <>
         {/* Bulky security armour: chest plate, pauldrons and blue status lights. */}
         <mesh position={[0, depth * 0.08, torsoZ + height * 0.07]} castShadow>
           <boxGeometry args={[width * 0.62, depth * 0.62, height * 0.2]} />
-          <Pbr color="#e4ebef" metalness={0.62} roughness={0.26} />
+          <Pbr color={look.suit} metalness={0.62} roughness={0.26} />
         </mesh>
         {[-1, 1].map(side => <mesh key={`pauldron:${side}`} position={[side * width * 0.45, 0, height * 0.75]} castShadow>
           <boxGeometry args={[width * 0.3, depth * 0.62, height * 0.07]} />
-          <Pbr color="#d2dce3" metalness={0.66} roughness={0.28} />
+          <Pbr color={look.suit} metalness={0.66} roughness={0.28} />
         </mesh>)}
         {[-1, 1].map(side => <mesh key={`status:${side}`} position={[side * width * 0.2, depth * 0.4, torsoZ + height * 0.12]}>
           <boxGeometry args={[width * 0.07, depth * 0.02, height * 0.02]} />
@@ -303,16 +319,16 @@ export function XrCinematicHumanoid({ profile, color, pose, size }: {
         </mesh>)}
         <mesh position={[0, 0, torsoZ - height * 0.12]}>
           <torusGeometry args={[width * 0.25, width * 0.022, 6, 28]} />
-          <Pbr color="#2a3a46" metalness={0.7} roughness={0.3} emissive={trim} emissiveIntensity={0.45} />
+          <Pbr color={look.joint} metalness={0.7} roughness={0.3} emissive={trim} emissiveIntensity={0.45} />
         </mesh>
       </> : null}
       {android ? <mesh position={[0, depth * 0.23, torsoZ + height * 0.02]}>
         <boxGeometry args={[width * 0.13, depth * 0.035, height * 0.12]} />
-        <Pbr color="#243a48" metalness={0.6} roughness={0.32} emissive={trim} emissiveIntensity={0.28} />
+        <Pbr color={look.joint} metalness={0.6} roughness={0.32} emissive={trim} emissiveIntensity={0.28} />
       </mesh> : null}
       {profile === 'corporate-executive' ? <mesh position={[0, depth * 0.24, torsoZ - height * 0.04]}>
         <boxGeometry args={[width * 0.08, depth * 0.025, height * 0.018]} />
-        <Pbr color={color || trim} metalness={0.72} roughness={0.26} />
+        <Pbr color={trim} metalness={0.72} roughness={0.26} />
       </mesh> : null}
     </group>
   )
