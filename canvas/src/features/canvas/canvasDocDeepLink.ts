@@ -189,6 +189,25 @@ export function clearRetainedLocalDocDeepLinkPath(): void {
   }
 }
 
+export function setLocalDocDeepLinkPath(relativePath: string | null): void {
+  if (typeof window === 'undefined') return
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const trimmed = String(relativePath || '').trim().replace(/^\/+/, '')
+    if (trimmed) {
+      params.set(LOCAL_DOC_PARAM, trimmed)
+    } else {
+      params.delete(LOCAL_DOC_PARAM)
+    }
+    const next = params.toString()
+    const nextUrl = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash || ''}`
+    const nextState = buildLocalDocHistoryState(trimmed || null)
+    window.history.replaceState(nextState, '', nextUrl)
+  } catch {
+    void 0
+  }
+}
+
 export function buildDocViewUrl(workspaceId: string, canonicalPath: string): string {
   return resolveConfiguredStorageDocUrl(buildAgenticGraphStorageDocPath(workspaceId, canonicalPath))
 }

@@ -64,8 +64,8 @@ export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFr
       throw new Error('expected selecting the address-bar document not to clear its reload intent')
     }
     useMarkdownExplorerStore.getState().setActivePath('/docs/other.md')
-    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
-      throw new Error('expected the address-bar document to remain authoritative until the URL changes')
+    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/other.md') {
+      throw new Error('expected selecting a different document to update the address-bar URL')
     }
     if (window.history.state?.routerKey !== 'preserved') {
       throw new Error('expected local document URL stability to preserve unrelated history state')
