@@ -29,7 +29,7 @@ type MarkdownExplorerState = {
   activePath: WorkspacePath | null
   requestedRevealLine: number | null
   lastSetActivePath: { path: WorkspacePath; atMs: number } | null
-  setActivePath: (path: WorkspacePath | null) => void
+  setActivePath: (path: WorkspacePath | null, options?: { syncUrl?: boolean }) => void
   requestRevealLine: (line: number | null) => void
 }
 
@@ -50,11 +50,11 @@ export const useMarkdownExplorerStore = create<MarkdownExplorerState>(set => ({
   activePath: readInitialMarkdownExplorerActivePath(),
   requestedRevealLine: null,
   lastSetActivePath: null,
-  setActivePath: (path: WorkspacePath | null) => {
+  setActivePath: (path: WorkspacePath | null, options?: { syncUrl?: boolean }) => {
     const normalized = normalizeMarkdownWorkspaceSelectionPath(path)
     set(prev => {
       if (prev.activePath === normalized) return prev
-      setLocalDocDeepLinkPath(normalized)
+      if (options?.syncUrl !== false) setLocalDocDeepLinkPath(normalized)
       lsSetJson(LS_KEYS.markdownExplorerActivePath, normalized)
       return {
         activePath: normalized,

@@ -51,7 +51,7 @@ export function restoreSupersededCanvasImportGraphState(
 }
 
 export function restoreSupersededCanvasImportActivePath(path: string | null): void {
-  useMarkdownExplorerStore.getState().setActivePath(path)
+  useMarkdownExplorerStore.getState().setActivePath(path, { syncUrl: false })
 }
 
 export async function compensateSupersededCanvasImport(args: {
@@ -277,6 +277,7 @@ async function commitRemoteDeepLink(
     { normalizeWorkspaceImportResult, activateFirstImportedWorkspaceFile },
     { applyWorkspaceImportToCanvas },
     { createWorkspaceFsMutationTransaction },
+    { isMaterializedWorkspaceSourceProofCurrent, materializeActiveWorkspaceEntryIntoSourceFiles },
   ] = await Promise.all([
     import('@/features/workspace-fs/workspaceFs') as Promise<typeof import('@/features/workspace-fs/workspaceFs')>,
     import('@/features/workspace-fs/path') as Promise<typeof import('@/features/workspace-fs/path')>,
@@ -286,6 +287,7 @@ async function commitRemoteDeepLink(
     import('@/features/markdown-workspace/useWorkspaceFileActions/importRuntimeActions') as Promise<typeof import('@/features/markdown-workspace/useWorkspaceFileActions/importRuntimeActions')>,
     import('@/features/workspace-fs/applyWorkspaceImportToCanvas') as Promise<typeof import('@/features/workspace-fs/applyWorkspaceImportToCanvas')>,
     import('@/features/workspace-fs/workspaceFsMutationTransaction') as Promise<typeof import('@/features/workspace-fs/workspaceFsMutationTransaction')>,
+    import('@/features/source-files/sourceFilesRuntimeMaterialization') as Promise<typeof import('@/features/source-files/sourceFilesRuntimeMaterialization')>,
   ])
 
   const fs = await getWorkspaceFs()
@@ -346,20 +348,55 @@ async function commitRemoteDeepLink(
         createdPaths: res.createdPaths,
         applyToGraph: true,
         jsonSourceDocuments: res.jsonSourceDocuments,
+        syncUrl: false,
       })
       if (!isCurrentIntent()) throw new Error('Shared document intent was superseded during activation')
       if (!activated) throw new Error('Shared document did not become the active Canvas source')
       const activePath = normalizeWorkspacePath(useMarkdownExplorerStore.getState().activePath || '/')
+      const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({
+        activePathOverride: activePath,
+        fs: transaction.fs,
+        applyToGraph: true,
+        sourceFilesSnapshot: useGraphStore.getState().sourceFiles,
+        workspaceEntries: await transaction.fs.listEntries(),
+        sourcesByPath: loadWorkspaceSourceIndex(),
+        premergedSourceFiles: useGraphStore.getState().sourceFiles,
+      })
       const activeDocument = useGraphStore.getState()
       const activeSourceFile = findComposedSourceFileByPath({
         sourceFiles: activeDocument.sourceFiles,
         targetPath: activePath,
         enabledOnly: true,
       })
-      if (!createdPathSet.has(activePath)
-        || activeDocument.markdownDocumentName !== workspaceDocumentKey(activePath)
-        || !activeSourceFile) {
-        throw new Error('Shared document source ownership did not survive activation')
+      const normalizedImportedSourceUrl = (() => {
+        try {
+          return new URL(String(prepared.content.normalizedUrl || prepared.docUrl || '').trim(), 'https://airvio.co').toString()
+        } catch {
+          return String(prepared.content.normalizedUrl || prepared.docUrl || '').trim()
+        }
+      })()
+      const activeSourceUrl = activeSourceFile?.source?.kind === 'url'
+        ? (() => {
+            try {
+              return new URL(String(activeSourceFile.source.url || '').trim(), 'https://airvio.co').toString()
+            } catch {
+              return String(activeSourceFile.source.url || '').trim()
+            }
+          })()
+        : ''
+      const createdPathOwned = createdPathSet.has(activePath) || (!!activeSourceUrl && activeSourceUrl === normalizedImportedSourceUrl)
+      const documentOwned = activeDocument.markdownDocumentName === workspaceDocumentKey(activePath)
+      const proofCurrent = !!sourceFilesProof && isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)
+      const sourceOwned = !!activeSourceFile
+      if (!documentOwned || !proofCurrent || !sourceOwned) {
+        throw new Error(
+          `Shared document source ownership did not survive activation `
+          + `(createdPath=${createdPathOwned ? 'ok' : 'missing'}, `
+          + `document=${documentOwned ? 'ok' : String(activeDocument.markdownDocumentName || 'missing')}, `
+          + `proof=${proofCurrent ? 'ok' : 'stale'}, `
+          + `sourceFile=${sourceOwned ? 'ok' : 'missing'}, `
+          + `activePath=${activePath})`,
+        )
       }
     } catch (error) {
       const graphStateAfterFailedCommit = useGraphStore.getState()

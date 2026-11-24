@@ -357,43 +357,6 @@ export async function testWorkspaceImportUrlAcceptsAbsoluteFsPathViaViteFsFetch(
   }
 }
 
-export async function testWorkspaceImportUrlFetchesRootRelativeStorageMarkdownAsUrl(): Promise<void> {
-  resetWorkspaceUrlContentCacheForTests()
-  const g = globalThis as GlobalWithFetch
-  const prev = g.fetch
-  const calls: string[] = []
-  g.fetch = (async (input: unknown) => {
-    const calledUrl = input instanceof URL ? input.toString() : String(input || '')
-    calls.push(calledUrl)
-    return new Response('# Shared Storage Doc\n\nFetched from storage.\n', {
-      status: 200,
-      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-    })
-  }) as unknown as typeof fetch
-  try {
-    const sourceUrl = '/api/storage/doc-default/huijoohwee%2Fdocs%2Fshared-storage-doc.md'
-    const res = await fetchWorkspaceUrlContent(sourceUrl, { mode: 'import', viewHint: 'markdown' })
-    if (calls.join(',') !== sourceUrl) {
-      throw new Error(`expected root-relative storage markdown to fetch directly as a URL, got ${calls.join(',')}`)
-    }
-    if (calls.some(call => call.includes('/__codebase_file') || call.includes('/@fs') || call.includes('/__fetch_remote'))) {
-      throw new Error(`expected storage URL import to avoid local/proxy fetch fallbacks, got ${calls.join(',')}`)
-    }
-    if (res.name !== 'shared-storage-doc.md') {
-      throw new Error(`expected filename from root-relative storage URL, got ${res.name}`)
-    }
-    if (res.normalizedUrl !== sourceUrl) {
-      throw new Error(`expected root-relative storage URL identity to be preserved, got ${res.normalizedUrl}`)
-    }
-    if (!res.text.includes('Shared Storage Doc')) {
-      throw new Error('expected storage markdown body to be imported verbatim')
-    }
-  } finally {
-    g.fetch = prev
-    resetWorkspaceUrlContentCacheForTests()
-  }
-}
-
 export async function testWorkspaceImportUrlGlbFetchesBinaryManifest(): Promise<void> {
   resetWorkspaceUrlContentCacheForTests()
   const g = globalThis as GlobalWithFetch

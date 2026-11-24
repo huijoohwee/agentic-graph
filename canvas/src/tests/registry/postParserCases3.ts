@@ -173,7 +173,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.importUrl.thinking.plainTextPreservesStructure","@/__tests__/workspaceImportUrlStubNoFetch.test","testPlainTextToMarkdownPreservesThinkingTranscriptMarkdownStructure"],
   ["workspace.importUrl.thinking.plainTextSplitsNarrativeTail","@/__tests__/workspaceImportUrlStubNoFetch.test","testPlainTextToMarkdownSplitsThinkingNarrativeTailsFromInlineListLines"],
   ["workspace.importUrl.thinking.restoreVisibleSyntaxTokens","@/__tests__/workspaceImportUrlStubNoFetch.test","testWorkspaceImportUrlRestoresVisibleMarkdownSyntaxTokens"],
-  ["workspace.importUrl.rootRelativeStorageMarkdown.directFetch","@/__tests__/workspaceImportUrlStubNoFetch.test","testWorkspaceImportUrlFetchesRootRelativeStorageMarkdownAsUrl"],
+  ["workspace.importUrl.rootRelativeStorageMarkdown.directFetch","@/__tests__/workspaceImportUrlStorageDirectFetch.test","testWorkspaceImportUrlFetchesRootRelativeStorageMarkdownAsUrl"],
   ["workspace.importUrl.thinking.genericToggleHints","@/__tests__/workspaceImportUrlThinkingFidelity.test","testWorkspaceImportUrlThinkingUsesGenericToggleHints"],
   ["workspace.importUrl.fidelity.isAutomatic","@/__tests__/workspaceImportUrlThinkingFidelity.test","testWorkspaceImportUrlChoosesFidelityWithoutAUserSetting"],
   ["workspace.importUrl.thinking.visibleTokenSet","@/__tests__/workspaceImportUrlThinkingFidelity.test","testThinkingPlainTextMarkdownPreservesVisibleSyntaxTokens"],

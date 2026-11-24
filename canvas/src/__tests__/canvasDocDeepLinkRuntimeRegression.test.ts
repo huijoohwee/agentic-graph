@@ -53,8 +53,9 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
     throw new Error('Expected local document deep links not to pre-apply YAML canvas presets before active document graph ownership changes')
   }
   const selectIndex = text.indexOf('setActivePath(targetPath)')
+  const rollbackSelectIndex = text.indexOf('setActivePath(path, { syncUrl: false })')
   const graphApplyIndex = text.indexOf('applyActiveMarkdownDocumentPayload({')
-  if (selectIndex < 0 || graphApplyIndex < 0 || selectIndex > graphApplyIndex) {
+  if (selectIndex < 0 || rollbackSelectIndex < 0 || graphApplyIndex < 0 || selectIndex > graphApplyIndex) {
     throw new Error('Expected local document deep links to select the target path before non-blocking graph work')
   }
   const selectionSourceIndex = text.indexOf("setSelectionSource('editor')")
@@ -176,6 +177,7 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
   }
   if (text.includes('applyWorkspaceImportToCanvasBestEffort')
     || !text.includes("import('@/features/workspace-fs/applyWorkspaceImportToCanvas')")
+    || !text.includes("import('@/features/source-files/sourceFilesRuntimeMaterialization')")
     || !text.includes('fetchUrlContent: async () => prepared.content')
     || !text.includes('createWorkspaceFsMutationTransaction(fs)')
     || !text.includes('rollbackWorkspace: () => transaction.rollback()')
@@ -183,6 +185,9 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
     || !text.includes('...removedSourcePaths')
     || !text.includes('setWorkspaceEntrySource(path, null)')
     || !text.includes("if (res.createdPaths.length === 0) throw new Error('Shared document import created no workspace file')")
+    || !text.includes('syncUrl: false')
+    || !text.includes('const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({')
+    || !text.includes('isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)')
     || !text.includes('if (!activated) throw new Error')) {
     throw new Error('Expected shared document imports to fail closed on source projection or activation failure')
   }
@@ -192,6 +197,7 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
   }
   if (!text.includes('findComposedSourceFileByPath({')
     || !text.includes('enabledOnly: true')
+    || !text.includes('activeSourceUrl === normalizedImportedSourceUrl')
     || text.includes("normalizeWorkspacePath(String(file?.source?.path || ''))")) {
     throw new Error('Expected remote source ownership to reuse the shared workspace-aware enabled SourceFile selector')
   }

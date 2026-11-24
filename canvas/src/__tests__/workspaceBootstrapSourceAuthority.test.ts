@@ -10,6 +10,8 @@ import type { SourceFile } from '@/hooks/store/types'
 import { XR_PHYSICS_WORKSPACE_SEED_PATH } from '@/features/workspace-fs/workspaceFs'
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
+import { readLocalDocDeepLinkPathFromCurrentLocation } from '@/features/canvas/canvasDocDeepLink'
+import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 
 async function verifyLessonFilesAreReadyBeforeSourceBootstrapReturns() {
   useGraphStore.getState().resetAll()
@@ -269,6 +271,97 @@ export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAft
     restore()
   }
   await verifyLateStartupSelections()
+}
+
+export async function testWorkspaceBootstrapDefaultStarterDoesNotClaimRootAliasUrlOwnership() {
+  const { restore } = initJsdomHarness(
+    '<!doctype html><html><head><meta name="x-agentic-graph-root-alias" content="/agentic-graph/" /></head><body></body></html>',
+  )
+  const previous = useGraphStore.getState()
+  const explorer = useMarkdownExplorerStore.getState()
+  const startupPath = XR_PHYSICS_WORKSPACE_SEED_PATH
+  const startupText = '# Physics Playground seed\n'
+  const baseFs = createMemoryWorkspaceFs({
+    initialEntries: [
+      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+      { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+      { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: 1 },
+      {
+        path: startupPath,
+        parentPath: startupPath.slice(0, startupPath.lastIndexOf('/')) || '/',
+        kind: 'file',
+        name: startupPath.split('/').at(-1)!,
+        text: startupText,
+        updatedAtMs: 1,
+      },
+    ],
+  })
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => false }
+  try {
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.setState({
+      ...explorer,
+      activePath: null,
+      lastSetActivePath: null,
+    }, true)
+    window.history.replaceState({ routerKey: 'home' }, '', '/?kgReleaseProof=test-proof')
+    const startup = await resolveInitialWorkspaceStartupState({ fs })
+    assert.equal(startup.activePath, startupPath)
+    assert.equal(useMarkdownExplorerStore.getState().activePath, startupPath)
+    assert.equal(readLocalDocDeepLinkPathFromCurrentLocation(), null)
+    assert.equal(window.location.search, '?kgReleaseProof=test-proof')
+  } finally {
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
+}
+
+export async function testWorkspaceBootstrapPublishedShareKeepsUrlOwnership() {
+  const { restore } = initJsdomHarness()
+  const previous = useGraphStore.getState()
+  const explorer = useMarkdownExplorerStore.getState()
+  const startupPath = XR_PHYSICS_WORKSPACE_SEED_PATH
+  const startupText = '# Physics Playground seed\n'
+  const shareToken = encodePublishedDocShareToken({
+    canonicalPath: startupPath.replace(/^\//, ''),
+    workspaceId: null,
+  })
+  const baseFs = createMemoryWorkspaceFs({
+    initialEntries: [
+      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+      { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+      { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: 1 },
+      {
+        path: startupPath,
+        parentPath: startupPath.slice(0, startupPath.lastIndexOf('/')) || '/',
+        kind: 'file',
+        name: startupPath.split('/').at(-1)!,
+        text: startupText,
+        updatedAtMs: 1,
+      },
+    ],
+  })
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => false }
+  try {
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.setState({
+      ...explorer,
+      activePath: null,
+      lastSetActivePath: null,
+    }, true)
+    window.history.replaceState({ routerKey: 'share-preview' }, '', `/agentic-graph/?kgShare=${encodeURIComponent(shareToken)}&kgPreview=1`)
+    const startup = await resolveInitialWorkspaceStartupState({ fs })
+    assert.equal(startup.activePath, startupPath)
+    assert.equal(useMarkdownExplorerStore.getState().activePath, startupPath)
+    assert.equal(readLocalDocDeepLinkPathFromCurrentLocation(), null)
+    assert.equal(window.location.pathname, '/agentic-graph/')
+    assert.equal(window.location.search, `?kgShare=${encodeURIComponent(shareToken)}&kgPreview=1`)
+  } finally {
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
 }
 
 type SupersessionCase = 'selection' | 'unsaved' | 'stale-fs' | 'failure' | 'churn'
