@@ -166,6 +166,7 @@ export async function activateFirstImportedWorkspaceFile(args: {
   createdPaths: string[]
   applyToGraph?: boolean
   jsonSourceDocuments?: WorkspaceImportResult['jsonSourceDocuments']
+  syncUrl?: boolean
 }): Promise<boolean> {
   const createdPaths = Array.isArray(args.createdPaths)
     ? args.createdPaths.map(path => String(path || '').trim()).filter(Boolean)
@@ -191,7 +192,7 @@ export async function activateFirstImportedWorkspaceFile(args: {
     let activationText = String((hydrated?.text || (await args.fs.readFileText(activationPath).catch(() => ''))) || '')
     let activationName = workspaceDocumentKey(activationPath) || workspaceBasename(activationPath) || activationPath
     try {
-      useMarkdownExplorerStore.getState().setActivePath(activationPath)
+      useMarkdownExplorerStore.getState().setActivePath(activationPath, { syncUrl: args.syncUrl })
     } catch {
       try {
         useMarkdownExplorerStore.setState({

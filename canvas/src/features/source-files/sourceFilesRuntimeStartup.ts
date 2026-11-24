@@ -5,6 +5,7 @@ import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/work
 import {
   CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE,
   DEFAULT_TEST_VALIDATION_WORKSPACE_SEED_REL_PATH,
+  isInitializationWorkspacePath,
   resolveWorkspaceStartupActivePath,
   TEST_VALIDATION_WORKSPACE_SEED_PATH,
   TEST_VALIDATION_WORKSPACE_SEED_REL_PATH,
@@ -15,6 +16,8 @@ import { resolveMarkdownWorkspaceCanonicalSelection } from '@/lib/markdown-works
 import { buildWorkspaceEntriesIndex, hasWorkspaceFileEntry } from '@/lib/markdown-workspace-runtime/workspaceEntriesIndex'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
+import { isRouterRootAliasRuntime } from '@/lib/routing/basePath'
+import { parseDocDeepLink, readLocalDocDeepLinkPathFromCurrentLocation } from '@/features/canvas/canvasDocDeepLink'
 
 export function buildInitialWorkspaceStartupSnapshot(args: {
   currentActivePath: WorkspacePath | null
@@ -95,6 +98,23 @@ export function shouldInitializeWorkspaceStartupDefaultStarter(args: {
   preferCustomValidationSeed?: boolean
 }): boolean {
   return !args.activePath && !args.hasDesiredActiveText && !args.preferCustomValidationSeed
+}
+
+export function shouldSyncWorkspaceStartupActivePathToUrl(args: {
+  snapshotActivePath: WorkspacePath | null
+  currentActivePath: WorkspacePath | null
+  latestActivePath: WorkspacePath | null
+  preferCustomValidationSeed?: boolean
+}): boolean {
+  if (!args.snapshotActivePath) return false
+  if (args.preferCustomValidationSeed) return true
+  const currentDeepLink = typeof window === 'undefined'
+    ? null
+    : parseDocDeepLink(String(window.location.search || ''))
+  if (currentDeepLink) return currentDeepLink.kind === 'local'
+  if (!isRouterRootAliasRuntime(import.meta.env?.BASE_URL || '/')) return true
+  if (readLocalDocDeepLinkPathFromCurrentLocation()) return true
+  return !isInitializationWorkspacePath(args.snapshotActivePath)
 }
 
 export function resolveWorkspaceStartupDefaultStarterPath(workspaceEntries: WorkspaceEntry[]): WorkspacePath | null {
@@ -250,7 +270,16 @@ export async function resolveInitialWorkspaceStartupState(args?: { fs?: Workspac
     preferCustomValidationSeed,
   })
   if (activePathToApply) {
-    useMarkdownExplorerStore.getState().setActivePath(activePathToApply)
+    if (shouldSyncWorkspaceStartupActivePathToUrl({
+      snapshotActivePath: activePathToApply,
+      currentActivePath,
+      latestActivePath,
+      preferCustomValidationSeed,
+    })) {
+      useMarkdownExplorerStore.getState().setActivePath(activePathToApply)
+    } else {
+      useMarkdownExplorerStore.getState().setActivePath(activePathToApply, { syncUrl: false })
+    }
   }
   return snapshot
 }

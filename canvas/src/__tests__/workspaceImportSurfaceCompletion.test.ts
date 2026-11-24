@@ -5,6 +5,7 @@ import {
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
 } from 'gympgrph'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { activateFirstImportedWorkspaceFile } from '@/features/markdown-workspace/useWorkspaceFileActions/importRuntimeActions'
 import { waitForCanvasFrontmatterSurfaceTransition } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
@@ -125,5 +126,51 @@ export async function testImportedWorkspaceActivationRejectsFailedSurfaceOwnersh
   if (failures.length === 1) throw failures[0]
   if (failures.length > 1) {
     throw new AggregateError(failures, failures.map(error => String((error as Error)?.message ?? error)).join('; '))
+  }
+}
+
+export async function testImportedWorkspaceActivationCanPreservePublishedUrlOwnership() {
+  const { restore } = initJsdomHarness()
+  try {
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.setState({
+      activePath: null,
+      lastSetActivePath: null,
+    })
+    window.history.replaceState({ routerKey: 'share-preview' }, '', '/agentic-graph/share/test-token?kgPreview=1')
+    const path = '/docs/shared-preview.md'
+    const text = [
+      '---',
+      'title: "Published preview"',
+      'kgCanvasRenderMode: "2d"',
+      'kgCanvas2dRenderer: "storyboard"',
+      'kgDocumentSemanticMode: "document"',
+      'kgFrontmatterModeEnabled: true',
+      '---',
+      '',
+      '# Published preview',
+      '',
+    ].join('\n')
+    const fs = createMemoryWorkspaceFs({
+      initialEntries: [
+        { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+        { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+        { path, parentPath: '/docs', kind: 'file', name: 'shared-preview.md', text, updatedAtMs: 1 },
+      ],
+    })
+
+    const activated = await activateFirstImportedWorkspaceFile({
+      fs,
+      createdPaths: [path],
+      applyToGraph: true,
+      syncUrl: false,
+    })
+
+    assert.equal(activated, true, 'expected imported published preview to activate')
+    assert.equal(useMarkdownExplorerStore.getState().activePath, path, 'expected explorer selection to update')
+    assert.equal(window.location.pathname, '/agentic-graph/share/test-token')
+    assert.equal(window.location.search, '?kgPreview=1')
+  } finally {
+    restore()
   }
 }
