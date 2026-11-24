@@ -366,7 +366,7 @@
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
     "agentic-design-system": "github:huijoohwee/agentic-design-system#690c1f104a4527605723c04ac6635248c94e4a86",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/b2966d88f57abfec7f4f1c0211c9740526a98c67",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/1b7f3726fd250127d93d8a0ccaa08ae356974385",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
