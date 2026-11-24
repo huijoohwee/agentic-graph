@@ -326,6 +326,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["workspace.selection.sameDocumentGraphPublication.preservesOpenWidgets","@/__tests__/sourceFilesSwitchingFlowLayout.test","testSameDocumentGraphPublicationPreservesOpenWidgetPresentationState"],
   ["workspace.import.activation.settlesSurfaceBeforeReturning","@/__tests__/workspaceImportSurfaceCompletion.test","testImportedWorkspaceActivationSettlesSurfaceBeforeReturning"],
   ["workspace.import.activation.rejectsFailedSurfaceOwnership","@/__tests__/workspaceImportSurfaceCompletion.test","testImportedWorkspaceActivationRejectsFailedSurfaceOwnership"],
+  ["workspace.import.activation.preservePublishedUrlOwnership","@/__tests__/workspaceImportSurfaceCompletion.test","testImportedWorkspaceActivationCanPreservePublishedUrlOwnership"],
   ["ui.flowWidget.cache.readyEmpty","@/__tests__/flowWidgetDocumentCacheLifecycle.test","testWidgetReadyEmptyClearsPlacement"],
   ["ui.flowWidget.cache.anonymous","@/__tests__/flowWidgetDocumentCacheLifecycle.test","testWidgetAnonymousGraphClearsOnlyActivePlacement"],
   ["ui.flowWidget.cache.pendingLayout","@/__tests__/flowWidgetDocumentCacheLifecycle.test","testWidgetPendingLayoutChangeUsesStoredEvidence"],

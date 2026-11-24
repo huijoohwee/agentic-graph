@@ -31,6 +31,7 @@ import {
   workspaceImportUrlContentFormatExtension,
   workspaceImportUrlContentFormatMime,
 } from './urlContentFormat'
+import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import type { FetchWorkspaceUrlContentOpts } from './urlContentWebpageOptions'
 export { setWorkspaceWebpageDomExportForTests } from './webpageMarkdownFidelity'
 const urlContentCacheGenerations = new Map<string, number>()
@@ -58,7 +59,30 @@ const isRootRelativeFetchUrl = (value: string): boolean => {
   if (/^\/__codebase_(file|asset)(?:\?|$)/.test(raw)) return false
   return !isLikelyAbsoluteFsPath(raw)
 }
+
+const readPublishedStorageCanonicalPath = (rawUrl: string): string => {
+  const trimmed = String(rawUrl || '').trim()
+  if (!trimmed) return ''
+  let pathname = ''
+  try {
+    pathname = new URL(trimmed, 'https://airvio.co').pathname
+  } catch {
+    return ''
+  }
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/'
+  if (normalizedPath.startsWith(AGENTIC_OS_STORAGE_ROUTE_PATHS.defaultDocPrefix)) {
+    return decodeURIComponent(normalizedPath.slice(AGENTIC_OS_STORAGE_ROUTE_PATHS.defaultDocPrefix.length)).trim()
+  }
+  if (!normalizedPath.startsWith(AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix)) return ''
+  const suffix = normalizedPath.slice(AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix.length)
+  const firstSlash = suffix.indexOf('/')
+  if (firstSlash < 1) return ''
+  return decodeURIComponent(suffix.slice(firstSlash + 1)).trim()
+}
+
 const deriveFetchFilename = (rawUrl: string, fallback: string): string => {
+  const storageCanonicalPath = readPublishedStorageCanonicalPath(rawUrl)
+  if (storageCanonicalPath) return storageCanonicalPath
   const derived = deriveFilenameFromUrl(rawUrl, fallback)
   if (derived !== fallback) return derived
   const pathOnly = String(rawUrl || '').replace(/^file:\/\//i, '').split(/[?#]/)[0] || ''

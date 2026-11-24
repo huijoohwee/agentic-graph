@@ -371,22 +371,45 @@ export async function testWorkspaceImportUrlFetchesRootRelativeStorageMarkdownAs
     })
   }) as unknown as typeof fetch
   try {
-    const sourceUrl = '/api/storage/doc-default/huijoohwee%2Fdocs%2Fshared-storage-doc.md'
-    const res = await fetchWorkspaceUrlContent(sourceUrl, { mode: 'import', viewHint: 'markdown' })
-    if (calls.join(',') !== sourceUrl) {
-      throw new Error(`expected root-relative storage markdown to fetch directly as a URL, got ${calls.join(',')}`)
-    }
-    if (calls.some(call => call.includes('/__codebase_file') || call.includes('/@fs') || call.includes('/__fetch_remote'))) {
-      throw new Error(`expected storage URL import to avoid local/proxy fetch fallbacks, got ${calls.join(',')}`)
-    }
-    if (res.name !== 'shared-storage-doc.md') {
-      throw new Error(`expected filename from root-relative storage URL, got ${res.name}`)
-    }
-    if (res.normalizedUrl !== sourceUrl) {
-      throw new Error(`expected root-relative storage URL identity to be preserved, got ${res.normalizedUrl}`)
-    }
-    if (!res.text.includes('Shared Storage Doc')) {
-      throw new Error('expected storage markdown body to be imported verbatim')
+    const sourceUrls = [
+      '/api/storage/doc-default/huijoohwee%2Fdocs%2Fshared-storage-doc.md',
+      'https://airvio.co/api/storage/doc-default/huijoohwee%2Fdocs%2Fshared-storage-doc.md',
+    ]
+    for (const sourceUrl of sourceUrls) {
+      calls.length = 0
+      const res = await fetchWorkspaceUrlContent(sourceUrl, { mode: 'import', viewHint: 'markdown' })
+      const expectedFetchUrl = new URL(sourceUrl, 'https://airvio.co').toString()
+      const normalizedCalls = calls.map(call => new URL(call, 'https://airvio.co').toString())
+      if (normalizedCalls.length === 0 || normalizedCalls.some(call => call !== expectedFetchUrl)) {
+        throw new Error(`expected storage markdown to fetch directly from ${expectedFetchUrl}, got ${calls.join(',')}`)
+      }
+      if (calls.some(call => call.includes('/__codebase_file') || call.includes('/@fs') || call.includes('/__fetch_remote'))) {
+        throw new Error(`expected storage URL import to avoid local/proxy fetch fallbacks, got ${calls.join(',')}`)
+      }
+      if (res.name !== 'huijoohwee/docs/shared-storage-doc.md') {
+        throw new Error(`expected storage URL import to preserve the decoded canonical path, got ${res.name}`)
+      }
+      if (res.normalizedUrl !== sourceUrl) {
+        throw new Error(`expected storage URL identity to be preserved, got ${res.normalizedUrl}`)
+      }
+      if (!res.text.includes('Shared Storage Doc')) {
+        throw new Error('expected storage markdown body to be imported verbatim')
+      }
+      const fs = createMemoryWorkspaceFs()
+      const imported = await importWorkspaceUrl({
+        fs,
+        urlRaw: sourceUrl,
+        viewHint: 'markdown',
+        mirrorToHost: false,
+        fetchUrlContent: async () => res,
+      })
+      if (imported.createdPaths.length !== 1 || imported.createdPaths[0] !== '/huijoohwee/docs/shared-storage-doc.md') {
+        throw new Error(`expected storage URL import to materialize the canonical workspace path, got ${JSON.stringify(imported.createdPaths)}`)
+      }
+      const importedText = await fs.readFileText('/huijoohwee/docs/shared-storage-doc.md')
+      if (!importedText?.includes('Shared Storage Doc')) {
+        throw new Error('expected canonical storage path import to persist fetched markdown text')
+      }
     }
   } finally {
     g.fetch = prev

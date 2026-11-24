@@ -356,6 +356,9 @@ export async function importWorkspaceUrl(args: {
         mirrorToHost: args.mirrorToHost,
       })
     : null
+  const importedWorkspacePath = !sharePrimaryPath && !exactDestination && !webpageUrlArtifactPath && fetched.name.includes('/')
+    ? normalizeWorkspacePath(fetched.name)
+    : ''
   const createdPath = primaryVideo ? await materializePrimaryVideo() : sharePrimaryPath
     ? (await writeWorkspaceFileTextEnsuringFile({
         fs: args.fs,
@@ -366,7 +369,13 @@ export async function importWorkspaceUrl(args: {
       ? exactDestination
       : webpageUrlArtifactPath
         ? webpageUrlArtifactPath
-        : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
+        : importedWorkspacePath
+          ? (await writeWorkspaceFileTextEnsuringFile({
+              fs: args.fs,
+              path: importedWorkspacePath,
+              text: fetched.text,
+            }), importedWorkspacePath)
+          : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
   try {
     args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Writing' })
   } catch {

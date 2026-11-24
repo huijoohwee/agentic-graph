@@ -17,6 +17,10 @@ export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFr
   const previousActivePath = useMarkdownExplorerStore.getState().activePath
   const { restore } = initJsdomHarness()
   try {
+    const readNormalizedLocalDocPath = () => resolveInitialMarkdownExplorerActivePath(
+      readLocalDocDeepLinkPathFromCurrentLocation(),
+      'deep-link',
+    )
     const readme = resolveInitialMarkdownExplorerActivePath(WORKSPACE_README_SEED_PATH)
     if (readme !== null) {
       throw new Error(`expected persisted README initialization path to be ignored on cold boot, got ${String(readme)}`)
@@ -55,20 +59,27 @@ export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFr
     if (window.history.state?.routerKey !== 'preserved') {
       throw new Error('expected stable local document URLs to preserve existing history state')
     }
-    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
+    if (readNormalizedLocalDocPath() !== '/docs/README.md') {
       throw new Error('expected the live local document URL to remain the reload source of truth')
     }
 
     useMarkdownExplorerStore.getState().setActivePath('/docs/README.md')
-    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
+    if (readNormalizedLocalDocPath() !== '/docs/README.md') {
       throw new Error('expected selecting the address-bar document not to clear its reload intent')
     }
     useMarkdownExplorerStore.getState().setActivePath('/docs/other.md')
-    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/other.md') {
+    if (readNormalizedLocalDocPath() !== '/docs/other.md') {
       throw new Error('expected selecting a different document to update the address-bar URL')
     }
     if (window.history.state?.routerKey !== 'preserved') {
       throw new Error('expected local document URL stability to preserve unrelated history state')
+    }
+    useMarkdownExplorerStore.getState().setActivePath('/docs/bootstrap-only.md', { syncUrl: false })
+    if (readNormalizedLocalDocPath() !== '/docs/other.md') {
+      throw new Error('expected syncUrl=false to preserve the previous local document deep link')
+    }
+    if (useMarkdownExplorerStore.getState().activePath !== '/docs/bootstrap-only.md') {
+      throw new Error('expected syncUrl=false to keep the explorer selection itself')
     }
 
     window.history.replaceState({ routerKey: 'preserved' }, '', '/?kgDoc=%2Fdocs%2Fold-local.md')
