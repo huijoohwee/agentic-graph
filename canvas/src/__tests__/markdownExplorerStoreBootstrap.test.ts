@@ -1,3 +1,6 @@
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter, useLocation } from 'react-router-dom'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { DOCS_SSOT_VALIDATION_WORKSPACE_PATH } from '@/tests/lib/docsSsotFixture'
 import {
@@ -15,8 +18,41 @@ import {
 
 export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFromPersistedPaths() {
   const previousActivePath = useMarkdownExplorerStore.getState().activePath
-  const { restore } = initJsdomHarness()
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container as unknown as HTMLElement)
+  const observedSearches: string[] = []
+  const LocationProbe = () => {
+    const location = useLocation()
+    observedSearches.push(location.search)
+    return React.createElement('output', null, location.search)
+  }
   try {
+    window.history.replaceState({ routerKey: 'preserved' }, '', '/?kgReleaseProof=test-proof')
+    await act(async () => {
+      root.render(React.createElement(BrowserRouter, null, React.createElement(LocationProbe)))
+    })
+    await act(async () => {
+      useMarkdownExplorerStore.getState().setActivePath(XR_PHYSICS_WORKSPACE_SEED_PATH)
+    })
+    const expectedSearch = `?kgReleaseProof=test-proof&kgDoc=${encodeURIComponent(XR_PHYSICS_WORKSPACE_SEED_PATH.replace(/^\/+/, ''))}`
+    if (!observedSearches.includes(expectedSearch)) {
+      throw new Error(`Expected local document URL synchronization to notify the router, got ${JSON.stringify(observedSearches)}`)
+    }
+    if (window.location.search !== expectedSearch) {
+      throw new Error(`Expected the browser URL to retain the local document intent, got ${window.location.search}`)
+    }
+    if (window.history.state?.routerKey !== 'preserved') {
+      throw new Error('Expected router-visible local document synchronization to preserve unrelated history state')
+    }
+    await act(async () => {
+      useMarkdownExplorerStore.getState().setActivePath(null)
+    })
+    if (!observedSearches.includes('?kgReleaseProof=test-proof')) {
+      throw new Error(`Expected clearing the local document selection to notify the router, got ${JSON.stringify(observedSearches)}`)
+    }
+
     const readNormalizedLocalDocPath = () => resolveInitialMarkdownExplorerActivePath(
       readLocalDocDeepLinkPathFromCurrentLocation(),
       'deep-link',
@@ -93,7 +129,10 @@ export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFr
       throw new Error('expected remote document consumption to clear stale retained local document intent')
     }
   } finally {
-    useMarkdownExplorerStore.getState().setActivePath(previousActivePath)
+    await act(async () => {
+      root.unmount()
+    })
+    useMarkdownExplorerStore.getState().setActivePath(previousActivePath, { syncUrl: false })
     restore()
   }
 }

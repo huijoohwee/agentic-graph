@@ -203,6 +203,11 @@ export function setLocalDocDeepLinkPath(relativePath: string | null): void {
     const nextUrl = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash || ''}`
     const nextState = buildLocalDocHistoryState(trimmed || null)
     window.history.replaceState(nextState, '', nextUrl)
+    try {
+      window.dispatchEvent(new PopStateEvent('popstate', { state: nextState }))
+    } catch {
+      window.dispatchEvent(new Event('popstate'))
+    }
   } catch {
     void 0
   }
