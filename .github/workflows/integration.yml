@@ -183,7 +183,7 @@ jobs:
             agentic-graph/package-lock.json
 
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@1b7f3726fd250127d93d8a0ccaa08ae356974385
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@b9b13e19b16f0b55eb169fa4bfaa1cfce4241d75
         with:
           checkout: agentic-graph
 
