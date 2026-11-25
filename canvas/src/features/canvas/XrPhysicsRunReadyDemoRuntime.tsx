@@ -1,6 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { findComposedSourceFileByPath } from '@/features/source-files/composedSourceSelection'
 import {
   isXrPhysicsRuntimeRunReadyDemoActive,
   isXrPhysicsRunReadyDemoActive,
@@ -24,6 +25,9 @@ export function XrPhysicsRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
+  const sourceFiles = useGraphStore(state => state.sourceFiles)
+  const source = findComposedSourceFileByPath({ sourceFiles, targetPath: markdownDocumentName })
+  const sourceReady = Boolean(source?.enabled && source.text === markdownDocumentText && source.status === 'parsed')
   const active = isXrPhysicsRuntimeRunReadyDemoActive(
     markdownDocumentName,
     markdownDocumentText,
@@ -34,6 +38,16 @@ export function XrPhysicsRunReadyDemoRuntime() {
   const pausedForGameplayRef = React.useRef(false)
   const unmountTeardownTokenRef = React.useRef(0)
   const cameraDefaultsAppliedRef = React.useRef(false)
+  const launchSource = {
+    markdownDocumentName,
+    markdownDocumentText,
+    sourceId: source?.id,
+    sourceRevision: source?.parsedGraphRevision,
+    sourceText: source?.text,
+    sourceEnabled: source?.enabled,
+    sourceStatus: source?.status,
+  }
+  const launchSourceRef = React.useRef(launchSource)
   const runtime = React.useSyncExternalStore(
     subscribeXrNativeControllerDemo,
     readXrNativeControllerDemo,
@@ -58,6 +72,26 @@ export function XrPhysicsRunReadyDemoRuntime() {
     }
   }, [])
   React.useLayoutEffect(() => {
+    const previousSource = launchSourceRef.current
+    if (
+      previousSource.markdownDocumentName !== markdownDocumentName
+      || previousSource.markdownDocumentText !== markdownDocumentText
+      || previousSource.sourceId !== source?.id
+      || previousSource.sourceRevision !== source?.parsedGraphRevision
+      || previousSource.sourceText !== source?.text
+      || previousSource.sourceEnabled !== source?.enabled
+      || previousSource.sourceStatus !== source?.status
+    ) {
+      launchSourceRef.current = launchSource
+      surfaceInitializedRef.current = false
+      pausedForGameplayRef.current = false
+      cameraDefaultsAppliedRef.current = false
+      if (ownsDocumentLaunchRef.current && !dedicatedDemo) {
+        ownsDocumentLaunchRef.current = false
+        if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
+        return undefined
+      }
+    }
     if (!active) {
       surfaceInitializedRef.current = false
       pausedForGameplayRef.current = false
@@ -73,6 +107,16 @@ export function XrPhysicsRunReadyDemoRuntime() {
       pausedForGameplayRef.current = false
       cameraDefaultsAppliedRef.current = false
       if (ownsDocumentLaunchRef.current && !dedicatedDemo) {
+        ownsDocumentLaunchRef.current = false
+        if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
+      }
+      return undefined
+    }
+    if (!dedicatedDemo && !sourceReady) {
+      surfaceInitializedRef.current = false
+      pausedForGameplayRef.current = false
+      cameraDefaultsAppliedRef.current = false
+      if (ownsDocumentLaunchRef.current) {
         ownsDocumentLaunchRef.current = false
         if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
       }
@@ -115,6 +159,21 @@ export function XrPhysicsRunReadyDemoRuntime() {
     })
     if (launched && !dedicatedDemo) ownsDocumentLaunchRef.current = true
     return undefined
-  }, [active, dedicatedDemo, gameplayOverlayActive, markdownDocumentName, markdownDocumentText, phase, revision, sourceFilesBootstrapReady])
+  }, [
+    active,
+    dedicatedDemo,
+    gameplayOverlayActive,
+    markdownDocumentName,
+    markdownDocumentText,
+    phase,
+    revision,
+    source?.enabled,
+    source?.id,
+    source?.parsedGraphRevision,
+    source?.status,
+    source?.text,
+    sourceFilesBootstrapReady,
+    sourceReady,
+  ])
   return null
 }
