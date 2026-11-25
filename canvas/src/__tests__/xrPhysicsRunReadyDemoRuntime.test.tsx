@@ -34,6 +34,7 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 import { buildParsedSourceFile } from '@/tests/lib/xrRunReadySourceTestHelpers'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import type { GraphSchema } from '@/lib/graph/schema'
 
 const waitForUnmountTeardown = async (): Promise<void> => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -289,6 +290,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     markdownDocumentText: before.markdownDocumentText,
     markdownDocumentApplyViewPreset: before.markdownDocumentApplyViewPreset,
     sourceFiles: before.sourceFiles,
+    schema: before.schema,
   }
   useGraphStore.setState({
     canvasRenderMode: '2d',
@@ -367,16 +369,50 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
 
     process.env[WORKSPACE_RUN_READY_DEMO_ENV] = CARE_AGENT_RUN_READY_DEMO_ID
     await act(async () => {
-      useGraphStore.getState().setMarkdownDocument(canonicalDocsPath, '# Canonical XR physics demo', {
+      useGraphStore.getState().setMarkdownDocument(canonicalDocsPath, importedSourceText, {
         autoEnableFrontmatter: false,
         applyViewPreset: false,
       })
       useGraphStore.setState({
-        sourceFiles: [buildParsedSourceFile(canonicalDocsPath, '# Canonical XR physics demo')],
+        sourceFiles: [buildParsedSourceFile(canonicalDocsPath, importedSourceText)],
       })
     })
     if (readXrNativeControllerDemo().phase !== 'off') {
       throw new Error('expected an explicit non-XR demo selector to block document-driven XR activation')
+    }
+
+    delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+    await act(async () => {
+      useGraphStore.setState({
+        canvasRenderMode: '2d',
+        canvasRenderModeLastFree: '2d',
+        canvasRenderModeIsAuto: false,
+        canvas3dMode: '3d',
+        schema: { layout: { mode: 'radial' } } as GraphSchema,
+      })
+    })
+    if (readXrNativeControllerDemo().phase !== 'off') {
+      throw new Error('expected radial layout to block XR surface activation without launching the playground')
+    }
+
+    await act(async () => {
+      useGraphStore.setState({
+        schema: { layout: { mode: 'block' } } as GraphSchema,
+      })
+    })
+    const retried = readXrNativeControllerDemo()
+    const retriedGraph = useGraphStore.getState()
+    if (
+      retried.phase !== 'running'
+      || retriedGraph.canvasRenderMode !== '3d'
+      || retriedGraph.canvas3dMode !== 'xr'
+    ) {
+      throw new Error(`expected a schema layout change to retry and activate the XR surface, got ${JSON.stringify({
+        runtime: retried,
+        canvasRenderMode: retriedGraph.canvasRenderMode,
+        canvas3dMode: retriedGraph.canvas3dMode,
+        schemaLayoutMode: retriedGraph.schema?.layout?.mode,
+      })}`)
     }
   } finally {
     if (root) {
