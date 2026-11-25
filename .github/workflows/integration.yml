@@ -223,6 +223,7 @@ jobs:
       - name: Exercise the Gateway preset picker and chat handoff
         working-directory: agentic-graph/canvas
         run: |
+          npm run prepare:linked-packages
           node --import tsx --import ./src/tests/lib/registerCssLoader.ts --input-type=module <<'NODE'
           import { testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff } from './src/__tests__/floatingPanelChatVideoPreset.test.ts'
           await testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff()
