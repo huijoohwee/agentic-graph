@@ -4,7 +4,14 @@ import { findComposedSourceFileByPath } from '@/features/source-files/composedSo
 
 const readUtf8 = (absPath: string): string => fs.readFileSync(absPath, { encoding: 'utf8' })
 
-export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () => {
+export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = async () => {
+  const { resolveSharedDocumentWorkspaceImportName } = await import('@/features/canvas/CanvasDocDeepLinkRuntime')
+  if (resolveSharedDocumentWorkspaceImportName('/agentic-canvas-os/docs/shared/source.md') !== '/docs/shared/source.md') {
+    throw new Error('Expected published storage paths to use the canonical explorer docs path before import')
+  }
+  if (resolveSharedDocumentWorkspaceImportName('/notes/source.md') !== '/notes/source.md') {
+    throw new Error('Expected non-docs shared document paths to remain unchanged')
+  }
   const text = readUtf8(path.resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasDocDeepLinkRuntime.tsx'))
   const canvasViewportText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'))
   const helperText = readUtf8(path.resolve(process.cwd(), 'src', 'features', 'canvas', 'canvasDocDeepLink.ts'))
@@ -144,6 +151,9 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
   }
   if (!text.includes("link.kind === 'default-remote'")) {
     throw new Error('Expected the deep-link runtime to route default-workspace shared documents through the shared storage markdown reader')
+  }
+  if (!text.includes('resolveSharedDocumentWorkspaceImportName(importedName)')) {
+    throw new Error('Expected shared document imports to canonicalize storage paths before workspace materialization')
   }
   if (!text.includes('preferDirectFetch: true')) {
     throw new Error('Expected the storage deep-link runtime to fetch its configured CORS endpoint directly without a failing proxy preflight')
