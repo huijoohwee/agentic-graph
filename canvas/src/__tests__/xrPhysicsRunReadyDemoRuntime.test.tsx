@@ -32,6 +32,7 @@ import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { buildParsedSourceFile } from '@/tests/lib/xrRunReadySourceTestHelpers'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 
 const waitForUnmountTeardown = async (): Promise<void> => {
@@ -65,7 +66,9 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     markdownDocumentName: before.markdownDocumentName,
     markdownDocumentText: before.markdownDocumentText,
     markdownDocumentApplyViewPreset: before.markdownDocumentApplyViewPreset,
+    sourceFiles: before.sourceFiles,
   }
+  const canonicalDocumentText = '---\nrun_ready_demo:\n  id: xr-v2\n---\n# Canonical XR physics demo'
   const runtimeElement = () => React.createElement(
     React.StrictMode,
     null,
@@ -77,8 +80,9 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     useGraphStore.setState({
       markdownDocumentName: canonicalDocsPath,
-      markdownDocumentText: '---\nrun_ready_demo:\n  id: xr-v2\n---\n# Canonical XR physics demo',
+      markdownDocumentText: canonicalDocumentText,
       markdownDocumentApplyViewPreset: false,
+      sourceFiles: [buildParsedSourceFile(canonicalDocsPath, canonicalDocumentText)],
     })
     exitXrNativeControllerDemo()
     resetSharedXrNativeControllerDemo()
@@ -115,6 +119,7 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
       markdownDocumentName: unrelatedPath,
       markdownDocumentText: '# Unrelated document',
       markdownDocumentApplyViewPreset: false,
+      sourceFiles: [buildParsedSourceFile(unrelatedPath, '# Unrelated document')],
     })
     const beforeDedicatedLaunch = readXrNativeControllerDemo()
     root = createRoot(container)
@@ -137,8 +142,9 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     useGraphStore.setState({
       markdownDocumentName: canonicalDocsPath,
-      markdownDocumentText: '---\nrun_ready_demo:\n  id: xr-v2\n---\n# Canonical XR physics demo',
+      markdownDocumentText: canonicalDocumentText,
       markdownDocumentApplyViewPreset: false,
+      sourceFiles: [buildParsedSourceFile(canonicalDocsPath, canonicalDocumentText)],
     })
     exitXrNativeControllerDemo()
     developAndRunXrNativeControllerDemo()
@@ -282,6 +288,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     markdownDocumentName: before.markdownDocumentName,
     markdownDocumentText: before.markdownDocumentText,
     markdownDocumentApplyViewPreset: before.markdownDocumentApplyViewPreset,
+    sourceFiles: before.sourceFiles,
   }
   useGraphStore.setState({
     canvasRenderMode: '2d',
@@ -293,6 +300,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     markdownDocumentName: unrelatedPath,
     markdownDocumentText: '# Unrelated document',
     markdownDocumentApplyViewPreset: false,
+    sourceFiles: [buildParsedSourceFile(unrelatedPath, '# Unrelated document')],
   })
   exitXrNativeControllerDemo()
   let root: ReturnType<typeof createRoot> | null = null
@@ -315,6 +323,9 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
       useGraphStore.getState().setMarkdownDocument(importedPath, importedSourceText, {
         autoEnableFrontmatter: false,
         applyViewPreset: false,
+      })
+      useGraphStore.setState({
+        sourceFiles: [buildParsedSourceFile(importedPath, importedSourceText, { id: 'source:imported-xr' })],
       })
     })
     const running = readXrNativeControllerDemo()
@@ -346,6 +357,9 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
         autoEnableFrontmatter: false,
         applyViewPreset: false,
       })
+      useGraphStore.setState({
+        sourceFiles: [buildParsedSourceFile(unrelatedPath, '# Unrelated document')],
+      })
     })
     if (readXrNativeControllerDemo().phase !== 'off') {
       throw new Error('expected leaving the source-authored XR document to release the native playground runtime')
@@ -356,6 +370,9 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
       useGraphStore.getState().setMarkdownDocument(canonicalDocsPath, '# Canonical XR physics demo', {
         autoEnableFrontmatter: false,
         applyViewPreset: false,
+      })
+      useGraphStore.setState({
+        sourceFiles: [buildParsedSourceFile(canonicalDocsPath, '# Canonical XR physics demo')],
       })
     })
     if (readXrNativeControllerDemo().phase !== 'off') {
