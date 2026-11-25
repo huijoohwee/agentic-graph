@@ -351,7 +351,6 @@ async function commitRemoteDeepLink(
         syncUrl: false,
       })
       if (!isCurrentIntent()) throw new Error('Shared document intent was superseded during activation')
-      if (!activated) throw new Error('Shared document did not become the active Canvas source')
       const activePath = normalizeWorkspacePath(useMarkdownExplorerStore.getState().activePath || '/')
       const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({
         activePathOverride: activePath,
@@ -388,10 +387,11 @@ async function commitRemoteDeepLink(
       const documentOwned = activeDocument.markdownDocumentName === workspaceDocumentKey(activePath)
       const proofCurrent = !!sourceFilesProof && isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)
       const sourceOwned = !!activeSourceFile
-      if (!documentOwned || !proofCurrent || !sourceOwned) {
+      if (!activated || !documentOwned || !proofCurrent || !sourceOwned) {
         throw new Error(
           `Shared document source ownership did not survive activation `
-          + `(createdPath=${createdPathOwned ? 'ok' : 'missing'}, `
+          + `(activated=${activated ? 'ok' : 'false'}, `
+          + `createdPath=${createdPathOwned ? 'ok' : 'missing'}, `
           + `document=${documentOwned ? 'ok' : String(activeDocument.markdownDocumentName || 'missing')}, `
           + `proof=${proofCurrent ? 'ok' : 'stale'}, `
           + `sourceFile=${sourceOwned ? 'ok' : 'missing'}, `
