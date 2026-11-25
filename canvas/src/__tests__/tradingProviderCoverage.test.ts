@@ -1,40 +1,27 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { TRADING_PROVIDER_COVERAGE, COVERAGE_INDEX, coverageSummary } from '../features/panels/views/tradingCoverageInventory'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { JSDOM } from 'jsdom'
+import catalog from 'agentic-gateway/connectors/moomoo-catalog.json' with { type: 'json' }
+import { publicRoutes, namingDictionaries } from 'agentic-gateway/connectors/moomoo-coverage'
+import { coverageSummary, providerCoverage } from 'agentic-trading-platform/src/provider-coverage.mjs'
+import TradingProviderCoverage from '../features/panels/views/TradingProviderCoverage'
 
-const statuses = ['mapped', 'candidate', 'paper-candidate', 'excluded']
-const transports = ['MCP', 'REST', 'MCP+REST', 'PUSH']
-const hex = (value: string) => /^[a-f0-9]{64}$/.test(value)
-
-test('the Integrations coverage inventory is evidence-led and excludes live dispatch', () => {
-  assert.ok(TRADING_PROVIDER_COVERAGE.length >= 20)
-  assert.ok(hex(COVERAGE_INDEX.index_sha256))
-  assert.equal(COVERAGE_INDEX.known_sources, COVERAGE_INDEX.imported_sources + COVERAGE_INDEX.incomplete_sources)
-  const ids = new Set<string>()
-  for (const entry of TRADING_PROVIDER_COVERAGE) {
-    assert.ok(!ids.has(entry.id)); ids.add(entry.id)
-    assert.ok(statuses.includes(entry.status))
-    assert.ok(transports.includes(entry.transport))
-    for (const item of entry.sources) {
-      assert.ok(hex(item.sha256), item.path)
-      assert.ok(item.url.startsWith('https://open.moomoo.com/'))
-    }
-    if (entry.status === 'excluded') {
-      assert.deepEqual(entry.operations, [])
-      assert.deepEqual(entry.mcp, [])
-    }
-  }
-})
-
-test('mapped reads mirror the Trading runtime: MCP market family and REST-only earnings calendar', () => {
+test('Integrations renders the pinned Gateway directory and Trading mapping evidence', () => {
+  const doc: Document = new JSDOM(renderToStaticMarkup(React.createElement(TradingProviderCoverage))).window.document
+  const panel = doc.querySelector('[aria-label="Moomoo OpenAPI coverage"]')!
   const summary = coverageSummary()
-  assert.ok(summary.mappedOperations.includes('read.calendar'))
-  assert.ok(summary.mappedOperations.includes('read.ticker'))
-  assert.deepEqual(summary.restOnlyMapped, ['calendar'])
-  assert.ok(summary.excluded.includes('trading') && summary.excluded.includes('crypto-trading'))
-  const calendar = TRADING_PROVIDER_COVERAGE.find(entry => entry.id === 'calendar')!
-  assert.equal(calendar.transport, 'REST')
-  assert.deepEqual(calendar.mcp, [])
-  assert.equal(calendar.sources[0].sha256, '36da3343d16f677f29c49f8194f6c645b5ce273bda0ccc2a1c442c8f29bf4bc2')
-  assert.equal(summary.families, TRADING_PROVIDER_COVERAGE.length)
+  assert.ok(panel.textContent?.includes(summary.mapped_operations.length + ' mapped read operations'))
+  assert.equal(panel.querySelectorAll('section[data-status]').length, providerCoverage.length)
+  for (const entry of providerCoverage) {
+    const family = Array.from(panel.querySelectorAll('section')).find(item => item.getAttribute('aria-label') === entry.label)!
+    assert.equal(family.getAttribute('data-status'), entry.status)
+    for (const source of entry.sources) assert.ok(Array.from(family.querySelectorAll('a')).some(a => a.href === source.url))
+  }
+  const routes = publicRoutes(catalog)
+  for (const transport of ['REST', 'MCP', 'Push']) assert.ok(panel.textContent?.includes(routes.filter(r => r.transport === transport).length + ' ' + transport))
+  const quote = routes.find(r => r.label === 'quote_stock_quote' && r.transport === 'MCP')
+  assert.ok(panel.textContent?.includes(quote.label + ' · ' + quote.sources[0].http))
+  assert.deepEqual(Array.from(panel.querySelectorAll('nav a'), a => a.getAttribute('href')), namingDictionaries(catalog).map(d => d.url))
 })
