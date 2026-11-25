@@ -20,6 +20,12 @@ import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
 import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
+import { onGeospatialModeChanged } from '@/features/geospatial/events'
+import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+
+const subscribeGeospatialMode = (listener: () => void): (() => void) => (
+  onGeospatialModeChanged(() => listener())
+)
 
 export function XrPhysicsRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
@@ -29,6 +35,11 @@ export function XrPhysicsRunReadyDemoRuntime() {
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
   const canvas3dMode = useGraphStore(state => state.canvas3dMode)
   const schemaLayoutMode = useGraphStore(state => state.schema?.layout?.mode)
+  const geospatialModeEnabled = React.useSyncExternalStore(
+    subscribeGeospatialMode,
+    readGeospatialOverlayEnabledPreference,
+    readGeospatialOverlayEnabledPreference,
+  )
   const source = findComposedSourceFileByPath({ sourceFiles, targetPath: markdownDocumentName })
   const sourceReady = Boolean(source?.enabled && source.text === markdownDocumentText && source.status === 'parsed')
   const active = isXrPhysicsRuntimeRunReadyDemoActive(
@@ -167,6 +178,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
     canvasRenderMode,
     dedicatedDemo,
     gameplayOverlayActive,
+    geospatialModeEnabled,
     markdownDocumentName,
     markdownDocumentText,
     phase,
