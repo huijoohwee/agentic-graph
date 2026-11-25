@@ -273,6 +273,47 @@ export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAft
   await verifyLateStartupSelections()
 }
 
+export async function testWorkspaceBootstrapMaterializesActiveSourceWithUnrelatedWorkspaceSource() {
+  const { restore } = initJsdomHarness()
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  const activePath = XR_PHYSICS_WORKSPACE_SEED_PATH
+  const activeText = '---\nkgCanvasRenderMode: "3d"\nkgCanvas3dMode: "xr"\n---\n# Active XR source\n'
+  const previousSource = loadWorkspaceSourceIndex()[activePath]
+  const baseFs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+    { path: activePath, parentPath: '/docs/workspace-seeds', kind: 'file', name: activePath.split('/').at(-1)!, text: activeText, updatedAtMs: 1 },
+    { path: '/docs/unrelated.md', parentPath: '/docs', kind: 'file', name: 'unrelated.md', text: '# Unrelated source', updatedAtMs: 1 },
+  ] })
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => false }
+  const unrelated: SourceFile = { id: 'workspace-unrelated', name: 'unrelated.md', text: '# Unrelated source', enabled: true, status: 'idle',
+    source: { kind: 'local', path: 'workspace:/docs/unrelated.md' } }
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.setState({ sourceFiles: [unrelated] })
+    setWorkspaceEntrySource(activePath, { kind: 'url', url: 'https://example.test/xr.md' }, { persist: 'sync' })
+    useMarkdownExplorerStore.getState().setActivePath(activePath)
+    const startup = await resolveInitialWorkspaceStartupState({ fs })
+    assert.equal(startup.activePath, activePath)
+    assert.ok(startup.workspaceEntries.some(entry => entry.path === activePath && entry.kind === 'file' && entry.text === activeText),
+      'an unrelated workspace source cannot prove that the active XR source was materialized')
+    const result = await materializeBootstrapWorkspaceSourceFiles({ fs, startupState: startup,
+      existingSourceFiles: [unrelated], sourcesByPath: { [activePath]: { kind: 'url', url: 'https://example.test/xr.md' } } })
+    const activeSource = result.sourceFiles.find(file => file.source?.path === `workspace:${activePath}`)
+    assert.ok(activeSource, 'bootstrap must create the missing active XR Source File')
+    assert.equal(activeSource.text, activeText)
+    assert.equal(activeSource.status, 'parsed')
+    assert.ok(result.sourceFiles.some(file => file.id === unrelated.id), 'bootstrap must retain unrelated workspace sources')
+    assert.ok(result.activePathKey)
+  } finally {
+    invalidateCachedWorkspaceActiveEntrySnapshot(activePath)
+    setWorkspaceEntrySource(activePath, previousSource ?? null, { persist: 'sync' })
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
+}
+
 export async function testWorkspaceBootstrapDefaultStarterDoesNotClaimRootAliasUrlOwnership() {
   const { restore } = initJsdomHarness(
     '<!doctype html><html><head><meta name="x-agentic-graph-root-alias" content="/agentic-graph/" /></head><body></body></html>',
