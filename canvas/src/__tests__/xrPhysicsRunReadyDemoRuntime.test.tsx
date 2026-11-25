@@ -29,12 +29,14 @@ import {
   resolveWorkspaceRunReadyDemoIdForDocumentPath,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
+import { emitGeospatialModeChanged } from 'grph-shared/geospatial/events'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 import { buildParsedSourceFile } from '@/tests/lib/xrRunReadySourceTestHelpers'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import type { GraphSchema } from '@/lib/graph/schema'
+import { writeGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
 const waitForUnmountTeardown = async (): Promise<void> => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -414,6 +416,46 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
         schemaLayoutMode: retriedGraph.schema?.layout?.mode,
       })}`)
     }
+
+    writeGeospatialOverlayEnabledPreference(true)
+    await act(async () => {
+      useGraphStore.getState().setMarkdownDocument(unrelatedPath, '# Unrelated document', {
+        autoEnableFrontmatter: false, applyViewPreset: false,
+      })
+      useGraphStore.setState({ sourceFiles: [buildParsedSourceFile(unrelatedPath, '# Unrelated document')] })
+    })
+    await act(async () => {
+      useGraphStore.getState().setMarkdownDocument(importedPath, importedSourceText, {
+        autoEnableFrontmatter: false, applyViewPreset: false,
+      })
+      useGraphStore.setState({
+        canvasRenderMode: '2d', canvasRenderModeLastFree: '2d', canvasRenderModeIsAuto: false,
+        canvas3dMode: '3d', schema: { layout: { mode: 'block' } } as GraphSchema,
+        sourceFiles: [buildParsedSourceFile(importedPath, importedSourceText, { id: 'source:imported-xr' })],
+      })
+      emitGeospatialModeChanged({ enabled: true })
+    })
+    const geospatialBlocked = readXrNativeControllerDemo()
+    const geospatialBlockedGraph = useGraphStore.getState()
+    if (geospatialBlocked.phase !== 'off' || geospatialBlockedGraph.canvasRenderMode !== '2d' || geospatialBlockedGraph.canvas3dMode !== '3d') {
+      throw new Error(`expected Geospatial Mode to block XR surface activation, got ${JSON.stringify({
+        runtime: geospatialBlocked,
+        canvas: `${geospatialBlockedGraph.canvasRenderMode}/${geospatialBlockedGraph.canvas3dMode}`,
+      })}`)
+    }
+
+    await act(async () => {
+      writeGeospatialOverlayEnabledPreference(false)
+      emitGeospatialModeChanged({ enabled: false })
+    })
+    const geospatialRetried = readXrNativeControllerDemo()
+    const geospatialRetriedGraph = useGraphStore.getState()
+    if (geospatialRetried.phase !== 'running' || geospatialRetriedGraph.canvasRenderMode !== '3d' || geospatialRetriedGraph.canvas3dMode !== 'xr') {
+      throw new Error(`expected leaving Geospatial Mode to retry and activate the XR surface, got ${JSON.stringify({
+        runtime: geospatialRetried,
+        canvas: `${geospatialRetriedGraph.canvasRenderMode}/${geospatialRetriedGraph.canvas3dMode}`,
+      })}`)
+    }
   } finally {
     if (root) {
       try {
@@ -423,6 +465,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
       }
     }
     exitXrNativeControllerDemo()
+    writeGeospatialOverlayEnabledPreference(false)
     completeSourceFilesBootstrap()
   resetGraphStoreForTests()
     selectXrNativeControllerCameraMode('fixed-follow')
