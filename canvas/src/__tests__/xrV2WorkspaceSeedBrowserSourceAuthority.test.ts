@@ -43,8 +43,10 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
 
   const activationRuntime = read('canvas/src/features/canvas/XrV2RunReadyDemoRuntime.tsx')
   assert.match(activationRuntime, /useSourceFilesBootstrapReady/u)
-  assert.match(activationRuntime, /if \(!sourceFilesBootstrapReady\) return/u)
-  assert.match(activationRuntime, /if \(canvasRenderMode !== '3d' \|\| canvas3dMode !== 'xr'\) return/u)
+  assert.match(activationRuntime, /findComposedSourceFileByPath/u)
+  assert.match(activationRuntime, /const sourceReady = Boolean\(source\?\.enabled && source\.text === documentText && source\.status === 'parsed'\)/u)
+  assert.match(activationRuntime, /if \(!sourceFilesBootstrapReady \|\| !sourceReady\)/u)
+  assert.match(activationRuntime, /if \(canvasRenderMode !== '3d' \|\| canvas3dMode !== 'xr'\) \{\s+stopOwnedRuntime\(\)\s+return/u)
   const physicsRuntime = read('canvas/src/features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   assert.match(physicsRuntime, /activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)/u)
 
