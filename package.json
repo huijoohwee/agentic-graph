@@ -360,7 +360,7 @@
     "spatial-workspace:full-app": "node canvas/scripts/run_spatial_workspace_full_app_smoke.mjs --build"
   },
   "dependencies": {
-    "@agentic-base/views-react": "github:huijoohwee/agentic-base#1d1299d0f717023f677b1d48414463dd101185f7",
+    "@agentic-base/views-react": "github:huijoohwee/agentic-base#0157d4c1f34be78096a1588778f23903538dfbe3",
     "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
