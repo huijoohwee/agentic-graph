@@ -254,6 +254,14 @@ function hasMaterializedActivePathDrifted(
       : currentExplorerActivePath !== activePath
   )
 }
+function retainEquivalentMaterializationPeers(before: SourceFile[], current: SourceFile[], activeFileId: string): boolean {
+  if (current.length !== before.length) return false
+  return before.every(file => {
+    if (file.id === activeFileId) return true
+    const next = current.find(candidate => candidate.id === file.id)
+    return !!next && areSourceFileRecordsEqual(file, next)
+  })
+}
 async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: WorkspacePath, explorerActivePathAtStart: WorkspacePath | null): Promise<boolean> {
   const before = useGraphStore.getState()
   const sourcePath = resolveWorkspaceSourcePathKey(activePath)
@@ -270,8 +278,7 @@ async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: Workspa
   await parseAndApplySourceFile(file.id, { applyComposedGraph: false })
   const current = useGraphStore.getState()
   const latest = current.sourceFiles.find(value => value.id === file.id)
-  if (changedDocument() || current.sourceFiles.length !== before.sourceFiles.length
-    || before.sourceFiles.some(value => value.id !== file.id && !current.sourceFiles.includes(value))
+  if (changedDocument() || !retainEquivalentMaterializationPeers(before.sourceFiles, current.sourceFiles, file.id)
     || !latest || !latest.enabled || !sameMaterializationSourceIdentities([file], [latest])
     || String(latest.source?.path || '') !== sourcePath) return false
   if (latest.status !== 'parsed' && latest.status !== 'error') throw new Error(`Active SourceFile ${file.name} parsing did not complete.`)
@@ -378,7 +385,7 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
     if (!await parseActiveWorkspaceSourceBeforeDocumentApply(args.activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
     const afterParse = useGraphStore.getState(), parsed = afterParse.sourceFiles.find(file => file.id === active[0]!.id)
     if (!parsed || !sameMaterializationSourceIdentities(active, [parsed]) || afterParse.sourceFiles.length !== enabled.length
-      || enabled.some(file => file.id !== parsed.id && !afterParse.sourceFiles.includes(file))
+      || !retainEquivalentMaterializationPeers(enabled, afterParse.sourceFiles, parsed.id)
       || hasMaterializationDocumentDrifted(args.activePath, before, afterParse, parsed.text)
       || hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
     if (parsed.status !== 'parsed') throw new Error(parsed.error || `Active SourceFile ${parsed.name} parsing did not complete.`)
