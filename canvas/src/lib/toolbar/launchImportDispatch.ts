@@ -1,3 +1,4 @@
+import { importWithFallback } from 'agentic-gateway/transfer/browser-files'
 import type {
   MarkdownWorkspaceActionBridge,
   WorkspaceBridgeImportResult,
@@ -158,19 +159,12 @@ export async function runLaunchImportLocalFiles(args: {
     if (await importAgentRunFile(snapshot[0]!)) return { handled: true }
   }
   const bridgeImport = args.bridge.importLocalFiles
-  if (typeof bridgeImport === 'function') {
-    let result: void | WorkspaceBridgeImportResult = undefined
-    try {
-      result = await bridgeImport(snapshot)
-    } catch {
-      void 0
-    }
-    if (isHandledWorkspaceImport(result)) {
-      await presentLaunchImportedImage({ files: snapshot, result })
-      return result
-    }
-  }
-  const result = await args.fallback(snapshot)
+  const result = await importWithFallback({
+    primary: bridgeImport && (() => bridgeImport(snapshot)),
+    fallback: () => args.fallback(snapshot),
+    accepts: isHandledWorkspaceImport,
+    recover: () => true,
+  })
   await presentLaunchImportedImage({ files: snapshot, result })
   return result
 }
@@ -189,15 +183,12 @@ export async function runLaunchImportLocalFolderPreview(args: {
     )
   }
   const bridgeImport = args.bridge.importLocalFolder
-  if (typeof bridgeImport === 'function') {
-    try {
-      const result = await bridgeImport(snapshot)
-      if (isHandledWorkspaceImport(result)) return result
-    } catch {
-      void 0
-    }
-  }
-  return args.fallback(snapshot)
+  return importWithFallback({
+    primary: bridgeImport && (() => bridgeImport(snapshot)),
+    fallback: () => args.fallback(snapshot),
+    accepts: isHandledWorkspaceImport,
+    recover: () => true,
+  })
 }
 
 export function hasLaunchAgentGraphFolderImporter(bridge: MarkdownWorkspaceActionBridge): boolean {
@@ -302,22 +293,17 @@ export async function runLaunchImportUrl(args: {
     return result
   }
   const bridgeImport = args.bridge.importUrl
-  if (typeof bridgeImport === 'function') {
-    let result: void | WorkspaceBridgeImportResult
-    try {
-      result = await bridgeImport(url, args.opts)
-    } catch {
-      const fallbackResult = await args.fallback(url, args.opts)
-      await presentLaunchImportedImage({ url, result: fallbackResult })
-      return fallbackResult
-    }
-    if (isAgentGraphImportResult(result)) return finishAgentGraphImport(result)
-    if (isHandledWorkspaceImport(result)) {
-      await presentLaunchImportedImage({ url, result })
-      return result
-    }
-  }
-  const result = await args.fallback(url, args.opts)
+  let graph: WorkspaceAgentGraphImportResult | undefined
+  const result = await importWithFallback({
+    primary: bridgeImport && (() => bridgeImport(url, args.opts)),
+    fallback: () => args.fallback(url, args.opts),
+    accepts(result) {
+      if (isAgentGraphImportResult(result)) graph = result
+      return Boolean(graph) || isHandledWorkspaceImport(result)
+    },
+    recover: () => true,
+  })
+  if (graph) return finishAgentGraphImport(graph)
   await presentLaunchImportedImage({ url, result })
   return result
 }
