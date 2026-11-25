@@ -3,6 +3,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import type { UiToastInput } from '@/hooks/store/store-types/core'
 import { findComposedSourceFileByPath } from '@/features/source-files/composedSourceSelection'
+import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { normalizeMarkdownWorkspaceSelectionPath } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionPath'
 import {
   beginSourceFilesDocumentIntent,
   clearSourceFilesDocumentIntent,
@@ -34,6 +36,11 @@ type GraphStoreSnapshot = ReturnType<typeof useGraphStore.getState>
 
 const documentDeepLinkImports = new Map<string, Promise<void>>()
 const remoteDeepLinkImportTails = new WeakMap<Map<string, Promise<void>>, Promise<void>>()
+
+export function resolveSharedDocumentWorkspaceImportName(name: string): string {
+  const normalized = normalizeWorkspacePath(String(name || '').trim())
+  return normalizeMarkdownWorkspaceSelectionPath(normalized) || normalized
+}
 
 export function restoreSupersededCanvasImportGraphState(
   stateBeforeCommit: GraphStoreSnapshot,
@@ -251,7 +258,14 @@ async function prepareRemoteDeepLink(
     viewHint: 'markdown',
     preferDirectFetch: true,
   })
-  return Object.freeze({ docUrl, content })
+  const importedName = String(content.name || '').trim()
+  return Object.freeze({
+    docUrl,
+    content: Object.freeze({
+      ...content,
+      name: importedName ? resolveSharedDocumentWorkspaceImportName(importedName) : importedName,
+    }),
+  })
 }
 
 async function commitRemoteDeepLink(
