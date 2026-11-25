@@ -98,6 +98,32 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = async
   if (!text.includes('forceApplyToGraph: options.applyToGraph')) {
     throw new Error('Expected repeated preview links to force the selected source graph into the embedded canvas')
   }
+  const localHandlerText = text.slice(
+    text.indexOf('async function handleLocalDeepLink('),
+    text.indexOf('type PreparedRemoteDeepLink'),
+  )
+  const localMaterializationIndex = localHandlerText.indexOf('const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({')
+  const localProofIndex = localHandlerText.indexOf('isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)')
+  const localSourceIndex = localHandlerText.indexOf('findComposedSourceFileByPath({')
+  const localSuccessIndex = localHandlerText.indexOf("kind: 'success'")
+  if (
+    localMaterializationIndex < 0
+    || localProofIndex < localMaterializationIndex
+    || localSourceIndex < localMaterializationIndex
+    || localSuccessIndex < localProofIndex
+    || localSuccessIndex < localSourceIndex
+    || !localHandlerText.includes("import('@/features/source-files/sourceFilesRuntimeMaterialization')")
+    || !localHandlerText.includes('activePathOverride: targetPath')
+    || !localHandlerText.includes('workspaceEntries: entries')
+    || !localHandlerText.includes('sourceFilesSnapshot: useGraphStore.getState().sourceFiles')
+    || !localHandlerText.includes('applyToGraph: options.applyToGraph')
+    || !localHandlerText.includes('enabledOnly: true')
+    || !localHandlerText.includes('activeSourceFile.text === activeDocument.markdownDocumentText')
+    || !localHandlerText.includes("activeSourceFile.status === 'parsed'")
+    || localHandlerText.includes('premergedSourceFiles:')
+  ) {
+    throw new Error('Expected local document links to materialize and prove their exact active SourceFile before completion')
+  }
   const missingFileGuardIndex = text.indexOf("if (!entry || entry.kind !== 'file')")
   const missingFileIntentClearIndex = text.indexOf('clearRetainedLocalDocDeepLinkPath()', missingFileGuardIndex)
   const localOpenCatchIndex = text.indexOf("const message = err instanceof Error ? err.message : 'Failed to open document'")
