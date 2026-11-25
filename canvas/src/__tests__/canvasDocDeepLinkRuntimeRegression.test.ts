@@ -188,7 +188,9 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = () =>
     || !text.includes('syncUrl: false')
     || !text.includes('const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({')
     || !text.includes('isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)')
-    || !text.includes('if (!activated) throw new Error')) {
+    || text.includes("if (!activated) throw new Error('Shared document did not become the active Canvas source')")
+    || !text.includes("`Shared document source ownership did not survive activation `")
+    || !text.includes("`(activated=${activated ? 'ok' : 'false'}, `")) {
     throw new Error('Expected shared document imports to fail closed on source projection or activation failure')
   }
   if (!persistedWorkspaceFsText.includes('options?.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(p)')
