@@ -45,7 +45,7 @@ test('production fidelity smokes both XR v2 config routes before browser launch'
 test('MiaoXYZ Pages output is generated from an exact, pinned source repository revision', () => {
   assert.deepEqual(MIAOXYZ_SOURCE_PIN, {
     repository: 'huijoohwee/MiaoXYZ',
-    revision: 'e0080f11a6004e6cb07e6c0ee6c37d237edfae29',
+    revision: '58ce56416688594b252b43b376c49b5aa33dc3a3',
   })
   assert.ok(productionMirrorArtifactEntries.includes('content/MiaoXYZ'))
   for (const pattern of [
