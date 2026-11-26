@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { parseArgs } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 import {
@@ -18,6 +19,19 @@ export const DEV_DATABASE_NAME = 'agentic-miaoxyz-dev'
 export const DEV_DATABASE_ID = 'df2511e9-f7b1-4110-8421-b84038371263'
 const VERSION_ID = /^[0-9a-f-]{36}$/iu
 const SUBDOMAIN = /^[a-z0-9-]+$/u
+
+export const parseHostedDevReleaseArgs = args => ({ ...parseArgs({
+  args,
+  options: {
+    'repo-root': { type: 'string' },
+    candidate: { type: 'string' },
+    'expected-candidate-digest': { type: 'string' },
+    receipt: { type: 'string' },
+    'dev-receipt': { type: 'string' },
+  },
+  strict: true,
+  allowPositionals: false,
+}).values })
 
 export const createDevConfig = sourceConfig => {
   const dev = structuredClone(sourceConfig)
@@ -324,12 +338,9 @@ export const verifyPromotion = ({ repoRoot, candidatePath, devReceiptPath, expec
   return validateDevPromotionReceipt({ receipt, candidate, config: createDevConfig(readWorkerConfig(repoRoot)) })
 }
 
-const args = new Map(process.argv.slice(3).filter(value => value.startsWith('--')).map(value => {
-  const index = value.indexOf('=')
-  return index < 0 ? [value.slice(2), ''] : [value.slice(2, index), value.slice(index + 1)]
-}))
-const requiredArg = name => requireText(args.get(name), `--${name}`)
-const root = path.resolve(args.get('repo-root') || path.join(import.meta.dirname, '..'))
+const args = parseHostedDevReleaseArgs(process.argv.slice(3))
+const requiredArg = name => requireText(args[name], `--${name}`)
+const root = path.resolve(args['repo-root'] || path.join(import.meta.dirname, '..'))
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv[2] === 'deploy') {
