@@ -56,8 +56,7 @@ function buildShootGraph(): GraphData {
 }
 function resetToNativeCameraGrammar() { resetAgenticOsRemoteGrammarCatalogForTests() }
 export function testXrShootWorkflowMarksRigsRetimeAndExports() {
-  const priorGraphState = useGraphStore.getState()
-  const priorCamera = readCameraFramingRuntime()
+  const priorGraphState = useGraphStore.getState(), priorCamera = readCameraFramingRuntime()
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
     runXrShootWorkflow()
@@ -96,8 +95,7 @@ function runXrShootWorkflow() {
     || !shouldApplySharedCameraFramingRevision({ appliedRevision: 4, appliedContextKey: 'xr:graph', revision: 4, contextKey: 'xr:graph', forcedReapply: true })) {
     throw new Error('expected pausing at the same playhead to preserve its track pose until a new frame or forced reapply arrives')
   }
-  const shootCameraSource = readSource('features', 'strybldr', 'XrShootCameraSection.tsx')
-  const cameraPanelSource = readSource('features', 'strybldr', 'StrybldrCameraFloatingPanelView.tsx')
+  const shootCameraSource = readSource('features', 'strybldr', 'XrShootCameraSection.tsx'), cameraPanelSource = readSource('features', 'strybldr', 'StrybldrCameraFloatingPanelView.tsx')
   const sharedCameraSource = readSource('features', 'strybldr', 'StrybldrCameraFramingSection.tsx')
   const cameraControlSource = readSource('features', 'strybldr', 'StrybldrCameraPanel.tsx')
   const cameraOpticsSource = readSource('features', 'strybldr', 'StrybldrCameraOpticsSection.tsx')
