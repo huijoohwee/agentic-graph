@@ -3,11 +3,18 @@ import test from 'node:test'
 import { createFakeAgenticGraphStorageBrowserSession } from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-browser-session'
 import { buildAgenticGraphStorageMediaWorkspace } from '../../../../canvas/src/lib/storage/agentic-graph-storage-media-object-key'
 import { createAgenticGraphStorageWorker } from '../index'
+import { readD1Blob, writeD1Blob } from '../d1BlobStore'
+import type { D1DatabaseLike } from '../db'
 import { AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA, mintAgenticGraphStorageMediaCapability } from '../storageMediaCapability'
 
 const ORIGIN = 'http://localhost'
 const fixtureFor = (workspaceId: string) => createFakeAgenticGraphStorageBrowserSession(workspaceId, { role: 'owner' })
 type Fixture = Awaited<ReturnType<typeof fixtureFor>>
+const store = (fixture: Fixture, objectKey: string, body: string, customMetadata: Record<string, string>) =>
+  writeD1Blob({ db: fixture.env.DB as unknown as D1DatabaseLike, objectKey, body: new TextEncoder().encode(body),
+    contentType: 'image/png', contentHash: null, customMetadata })
+const readStored = (fixture: Fixture, objectKey: string) =>
+  readD1Blob(fixture.env.DB as unknown as D1DatabaseLike, objectKey)
 const mint = (fixture: Fixture, workspaceId: string, objectKey: string, operation: 'read' | 'write') =>
   mintAgenticGraphStorageMediaCapability({ env: fixture.env, workspaceId, objectKey, operation,
     subjectUserId: fixture.userId, ttlSeconds: 300 })
@@ -31,7 +38,7 @@ const legacyWriteToken = async (fixture: Fixture, workspaceId: string, objectKey
   return `${Buffer.from(bytes).toString('base64url')}.${Buffer.from(signature).toString('base64url')}`
 }
 
-test('a workspace cannot borrow another workspace run identity within its own R2 prefix', async () => {
+test('a workspace cannot borrow another workspace run identity within its own D1 media prefix', async () => {
   const fixture = await fixtureFor('workspace:b')
   const a = await buildAgenticGraphStorageMediaWorkspace('workspace:a')
   const b = await buildAgenticGraphStorageMediaWorkspace('workspace:b')
@@ -43,9 +50,7 @@ test('asset POST cannot create globally colliding D1 identities from legacy owne
   const workspaceId = 'workspace:legacy-catalog'
   const fixture = await fixtureFor(workspaceId)
   const objectKey = 'airvio/runs/unscoped/image/artifact.png'
-  await fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.put(objectKey, 'legacy', {
-    customMetadata: { agenticGraphWorkspaceId: workspaceId, agenticGraphCapabilitySchema: AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA },
-  })
+  await store(fixture, objectKey, 'legacy', { agenticGraphWorkspaceId: workspaceId, agenticGraphCapabilitySchema: AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA })
   const response = await fixture.fetch(`${ORIGIN}/api/storage/media/assets`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
       apiVersion: '2026-05-04', workspaceId, objectKey, runId: 'unscoped', stageId: 'image', shotId: 'artifact',
@@ -54,10 +59,11 @@ test('asset POST cannot create globally colliding D1 identities from legacy owne
   })
   assert.equal(response.status, 403)
   assert.equal(fixture.env.DB.mediaArtifacts.size, 0)
-  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 1, 'Existing bytes are preserved')
+  assert.equal((await readStored(fixture, objectKey))?.body?.byteLength, 'legacy'.length, 'Existing D1 bytes are preserved')
+  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 0, 'The production media path leaves R2 untouched')
 })
 
-test('workspace namespace prevents concurrent same-name uploads from sharing an R2 key', async () => {
+test('workspace namespace prevents concurrent same-name uploads from sharing a D1 key', async () => {
   const fixture = await fixtureFor('workspace:a')
   const a = await buildAgenticGraphStorageMediaWorkspace('workspace:a')
   const b = await buildAgenticGraphStorageMediaWorkspace('workspace:b')
@@ -68,12 +74,12 @@ test('workspace namespace prevents concurrent same-name uploads from sharing an 
   const [capA, capB] = await Promise.all([mint(fixture, 'workspace:a', keyA, 'write'), mint(fixture, 'workspace:b', keyB, 'write')])
   const results = await Promise.all([put(fixture, keyA, capA.token, 'a-bytes'), put(fixture, keyB, capB.token, 'b-bytes')])
   assert.deepEqual(results.map(result => result.status), [200, 200])
-  const bucket = fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  assert.equal(bucket.objects.size, 2)
-  assert.equal(new TextDecoder().decode(bucket.objects.get(keyA)!.bytes), 'a-bytes')
-  assert.equal(new TextDecoder().decode(bucket.objects.get(keyB)!.bytes), 'b-bytes')
-  assert.equal(bucket.objects.get(keyA)!.customMetadata.agenticGraphWorkspaceId, 'workspace:a')
-  assert.equal(bucket.objects.get(keyB)!.customMetadata.agenticGraphWorkspaceId, 'workspace:b')
+  const storedA = await readStored(fixture, keyA), storedB = await readStored(fixture, keyB)
+  assert.equal(new TextDecoder().decode(storedA?.body), 'a-bytes')
+  assert.equal(new TextDecoder().decode(storedB?.body), 'b-bytes')
+  assert.equal(storedA?.object.custom_metadata.agenticGraphWorkspaceId, 'workspace:a')
+  assert.equal(storedB?.object.custom_metadata.agenticGraphWorkspaceId, 'workspace:b')
+  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 0)
 })
 
 test('both capability issue and use reject a write into another workspace namespace', async () => {
@@ -86,20 +92,18 @@ test('both capability issue and use reject a write into another workspace namesp
   const oldToken = await legacyWriteToken(fixture, 'workspace:b', objectKey)
   const rejected = await put(fixture, objectKey, oldToken, 'must-not-overwrite')
   assert.equal(rejected.status, 403)
-  const stored = fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.get(objectKey)!
-  assert.equal(new TextDecoder().decode(stored.bytes), 'owner-bytes')
-  assert.equal(stored.customMetadata.agenticGraphWorkspaceId, 'workspace:a')
+  const stored = await readStored(fixture, objectKey)
+  assert.equal(new TextDecoder().decode(stored?.body), 'owner-bytes')
+  assert.equal(stored?.object.custom_metadata.agenticGraphWorkspaceId, 'workspace:a')
 })
 
-test('legacy owned objects remain readable while legacy write tokens cannot overwrite them', async () => {
+test('D1-owned objects remain readable while legacy write tokens cannot overwrite them', async () => {
   const workspaceId = 'workspace:legacy'
   const fixture = await fixtureFor(workspaceId)
   const objectKey = 'airvio/runs/legacy/image/asset.png'
-  await fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.put(objectKey, 'retained-bytes', {
-    httpMetadata: { contentType: 'image/png' }, customMetadata: {
+  await store(fixture, objectKey, 'retained-bytes', {
       agenticGraphWorkspaceId: workspaceId, agenticGraphOwnerUserId: fixture.userId,
       agenticGraphCapabilitySchema: AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA,
-    },
   })
   const read = await mint(fixture, workspaceId, objectKey, 'read')
   const response = await createAgenticGraphStorageWorker().fetch(new Request(new URL(read.urlPath, ORIGIN)), fixture.env)
@@ -108,5 +112,6 @@ test('legacy owned objects remain readable while legacy write tokens cannot over
   await assert.rejects(() => mint(fixture, workspaceId, objectKey, 'write'), /workspace/i)
   const oldToken = await legacyWriteToken(fixture, workspaceId, objectKey)
   assert.equal((await put(fixture, objectKey, oldToken, 'must-not-overwrite')).status, 403)
-  assert.equal(new TextDecoder().decode(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.get(objectKey)!.bytes), 'retained-bytes')
+  assert.equal(new TextDecoder().decode((await readStored(fixture, objectKey))?.body), 'retained-bytes')
+  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 0)
 })

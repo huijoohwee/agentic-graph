@@ -25,6 +25,7 @@ export const CORE_RUNTIME_MIGRATIONS = Object.freeze([
   '0015_storage_publication_contract.sql', '0016_storage_browser_identity.sql',
   '0019_storage_chunk_document_identity.sql', '0020_storage_child_sync_state.sql',
   '0021_storage_oauth_budget.sql', '0022_agentic_graph_r2_free_quota.sql',
+  '0023_graph_d1_blob_store.sql',
 ])
 // Audited trigger/index changes preserve the prior storage schema and data.
 // Compatibility tests exercise prior writes with these exact migrations retained.
@@ -32,6 +33,7 @@ export const CORE_FORWARD_MIGRATION_DIGESTS = Object.freeze({
   '0021_storage_oauth_budget.sql': '85ef7abf28e21844fe58988db032a801ea9c7651b63ad9eb17ff54190c89d1b6',
   '0019_storage_chunk_document_identity.sql': '30be8ef3558b82bf1fcc830fbaf0d0e880ccbfdcc72303f008e65e09b09a53e6',
   '0020_storage_child_sync_state.sql': 'd16a3dcd4317b1c23bb9b862640ec2c6b850c159481698b7f7a3c829db8b0c0b',
+  '0023_graph_d1_blob_store.sql': '7b38eac721b1b8567f255c4de49a29c365d59b3398708bdfbcbd173a91b95581',
 })
 
 export const validateCoreConfiguration = environment => {

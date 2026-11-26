@@ -1,0 +1,213 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "production-deployed-with-runtime-readback",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "sourceReleaseReceipt": {
+    "schema": "agentic-graph-source-release-receipt/v1",
+    "repository": "github.com/huijoohwee/agentic-graph",
+    "lane": {
+      "ref": "agent/device-cba000d3779d/miaoxyz-production-release",
+      "head": "ef69679688c8111f8f0fdd93ee4a2bb001c0dca8",
+      "paths": [
+        ".github/workflows/miaoxyz-production-release.yml",
+        ".github/workflows/release.yml",
+        "cloudflare/workers/miaoxyz/README.md",
+        "cloudflare/workers/miaoxyz/dev.vars.example",
+        "cloudflare/workers/miaoxyz/migrations/0001_initial.sql",
+        "cloudflare/workers/miaoxyz/migrations/0002_delivery_fee.sql",
+        "cloudflare/workers/miaoxyz/package-lock.json",
+        "cloudflare/workers/miaoxyz/package.json",
+        "cloudflare/workers/miaoxyz/public/app-canvas.js",
+        "cloudflare/workers/miaoxyz/public/app-catalog.js",
+        "cloudflare/workers/miaoxyz/public/app-core.js",
+        "cloudflare/workers/miaoxyz/public/app-editor.js",
+        "cloudflare/workers/miaoxyz/public/app-interactions.js",
+        "cloudflare/workers/miaoxyz/public/app-requests.js",
+        "cloudflare/workers/miaoxyz/public/app.js",
+        "cloudflare/workers/miaoxyz/public/flower-mark.svg",
+        "cloudflare/workers/miaoxyz/public/index.html",
+        "cloudflare/workers/miaoxyz/public/styles-base.css",
+        "cloudflare/workers/miaoxyz/public/styles-layout.css",
+        "cloudflare/workers/miaoxyz/src/operator.ts",
+        "cloudflare/workers/miaoxyz/src/requests.ts",
+        "cloudflare/workers/miaoxyz/src/validation.ts",
+        "cloudflare/workers/miaoxyz/src/worker.ts",
+        "cloudflare/workers/miaoxyz/tsconfig.json",
+        "cloudflare/workers/miaoxyz/worker-configuration.d.ts",
+        "cloudflare/workers/miaoxyz/wrangler.jsonc",
+        "docs/collaboration-runtime-contract.md",
+        "docs/documents/agentic-graph-cross-repo-publish-topology.md",
+        "docs/documents/prd-tad-adr-mvp-gtm-miaoxyz.md",
+        "package.json",
+        "scripts/check-collaboration-runtime.mjs",
+        "scripts/miaoxyz-production-release-authorization.mjs",
+        "scripts/miaoxyz-production-release-candidate.mjs",
+        "scripts/miaoxyz-production-release-core.mjs",
+        "scripts/miaoxyz-production-release-deploy.mjs",
+        "scripts/miaoxyz-production-release.mjs"
+      ]
+    },
+    "review": {
+      "number": 1923,
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/1923",
+      "state": "MERGED",
+      "baseRevision": "f310d2d126216647a5de3d75b653bd70dfc9272d",
+      "mergeRevision": "68e67a7b75f411da93646e5843b59cf1437b6c01",
+      "mergedAt": "2026-11-09T06:54:23Z",
+      "requiredCheck": "Integration Gate",
+      "checkRunsObserved": 0,
+      "selectedChecksVerified": false,
+      "protectionProven": false
+    },
+    "releaseCandidate": {
+      "revision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+      "tree": "88d2cdf5d5a8d059cee8ddff825d2bf2e7a1d401",
+      "candidateDigest": "33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a",
+      "workflowRunId": "45739179725"
+    },
+    "integrationObservation": {
+      "kind": "historical-full-tree-match",
+      "matchedMerge": "68e67a7b75f411da93646e5843b59cf1437b6c01",
+      "matchedTree": "14c504b3d5e5425c0c322f11f3a93700cadcdeaa",
+      "candidateDescendsFromMerge": true,
+      "currentMain": "a65205177d1e332ae4c238d9b6ab6c8c87a849a0"
+    },
+    "receiptDigest": "e98a6d84b49c1a672367f0ee0350be91fe1dc02bda77a090f2fe2da255e2a24b"
+  },
+  "release": {
+    "workflowRunId": "45739179725",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/45739179725",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/45739179725#environment-production",
+    "sourceRevision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+    "candidateDigest": "33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a",
+    "lifecycleCandidateDigest": "2a6c7cad5266ad33469adf4e9b0f7b7fa11076a1b778a6de65d3793384a0a0a2",
+    "targetDigest": "ae48d0f7b29837d5c420f7f0b44b18c1869101540d84966f67ae4fdc6ab01262",
+    "sourceReleaseReceiptDigest": "e98a6d84b49c1a672367f0ee0350be91fe1dc02bda77a090f2fe2da255e2a24b",
+    "deploymentReceiptDigest": "1a8d5feb54c41eec683605d34d27743c9bdde6e9c22a56a194157176a8e4ffbe",
+    "runtimeVerificationReceiptDigest": "689185d57a1fb74e5026057b988e46ec0efdefa024f57fdfd36b9d173ed0c633",
+    "workerArtifactDigest": "6cb028a9dd73f893121db8c364b463d89ad6f06dae76b31d7daf123aa3aeb018",
+    "wranglerConfigDigest": "429ad79b76b65c97263eee7ab842c4e256ac8aa2279e62c6cba1aab7ee8f5674",
+    "migrationsDigest": "f0830be068aad25a1d13f00a941e4ea9366a7974f80abc41d890ebb7b226c4b6",
+    "development": {
+      "status": "local-runtime-smoke-passed",
+      "hostedDeployment": false,
+      "runtimeReceipt": {
+        "status": "local-runtime-smoke-passed",
+        "mode": "loopback-only",
+        "url": "http://127.0.0.1:8791/",
+        "method": "GET",
+        "observedAt": "2026-11-26T09:37:27Z",
+        "httpStatus": 200,
+        "contentType": "text/html; charset=utf-8",
+        "responseBytes": 29929,
+        "responseSha256": "ed694c9f64ef9628e65d47f856801ba22dcb0d51bd848f8aba220e617c80c06a",
+        "wrangler": "4.158.0",
+        "d1": "local-only",
+        "hostedDevDeployment": false,
+        "productionWorkerFilesUnchangedSinceCandidate": true
+      }
+    },
+    "production": {
+      "status": "deployed-and-live-readback-passed",
+      "worker": "agentic-miaoxyz-production",
+      "route": "https://airvio.co/MiaoXYZ*",
+      "versionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23",
+      "migrationsApplied": true,
+      "probePassed": true,
+      "readback": {
+        "status": "live-route-readback-passed",
+        "url": "https://airvio.co/MiaoXYZ/",
+        "method": "GET",
+        "observedAt": "2026-11-26T09:16:34Z",
+        "httpStatus": 200,
+        "contentType": "text/html",
+        "responseBytes": 31178,
+        "responseSha256": "f49e737c6d7b2580cc10bc31e9bdae60733efde82642d03d0aad6a80a1575aa8",
+        "deployedVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23"
+      },
+      "rollbackBaselineVersion": "1f9f203b-eb21-4de8-b195-d044e0da8a68",
+      "rollbackAttempted": false
+    }
+  },
+  "runtimeVerificationReceipt": {
+    "schema": "agentic-miaoxyz-runtime-verification-receipt/v1",
+    "candidateRevision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+    "candidateDigest": "33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a",
+    "workerArtifactDigest": "6cb028a9dd73f893121db8c364b463d89ad6f06dae76b31d7daf123aa3aeb018",
+    "deploymentReceiptDigest": "1a8d5feb54c41eec683605d34d27743c9bdde6e9c22a56a194157176a8e4ffbe",
+    "development": {
+      "status": "local-runtime-smoke-passed",
+      "mode": "loopback-only",
+      "url": "http://127.0.0.1:8791/",
+      "method": "GET",
+      "observedAt": "2026-11-26T09:37:27Z",
+      "httpStatus": 200,
+      "contentType": "text/html; charset=utf-8",
+      "responseBytes": 29929,
+      "responseSha256": "ed694c9f64ef9628e65d47f856801ba22dcb0d51bd848f8aba220e617c80c06a",
+      "wrangler": "4.158.0",
+      "d1": "local-only",
+      "hostedDevDeployment": false,
+      "productionWorkerFilesUnchangedSinceCandidate": true
+    },
+    "production": {
+      "status": "live-route-readback-passed",
+      "url": "https://airvio.co/MiaoXYZ/",
+      "method": "GET",
+      "observedAt": "2026-11-26T09:16:34Z",
+      "httpStatus": 200,
+      "contentType": "text/html",
+      "responseBytes": 31178,
+      "responseSha256": "f49e737c6d7b2580cc10bc31e9bdae60733efde82642d03d0aad6a80a1575aa8",
+      "deployedVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23"
+    },
+    "readbacksAreReadOnly": true,
+    "receiptDigest": "689185d57a1fb74e5026057b988e46ec0efdefa024f57fdfd36b9d173ed0c633"
+  },
+  "deploymentReceipt": {
+    "schema": "agentic-miaoxyz-production-deployment-receipt/v1",
+    "status": "deployed",
+    "preserveRequired": false,
+    "sourceRevision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+    "candidateDigest": "33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a",
+    "targetDigest": "ae48d0f7b29837d5c420f7f0b44b18c1869101540d84966f67ae4fdc6ab01262",
+    "baselineDigest": "e1e0a186b36830d1d0954d97ad4dc1bb268cbcbc480b4a992773a48836f99a48",
+    "migrationAttempted": true,
+    "migrationsApplied": true,
+    "deploymentAttempted": true,
+    "deployedVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23",
+    "probePassed": true,
+    "rollbackPassed": false,
+    "failureCode": "",
+    "recordedAt": "2026-11-26T02:24:15.030Z",
+    "receiptDigest": "1a8d5feb54c41eec683605d34d27743c9bdde6e9c22a56a194157176a8e4ffbe"
+  },
+  "historicalSourceCheckGap": {
+    "requiredCheck": "Integration Gate",
+    "checkRunsObserved": 0,
+    "localCleanupRecoveryRecorded": true,
+    "historicalProtectionOrMergeMethodClaimed": false
+  },
+  "handover": {
+    "workerDelivery": "Production Worker deployed, reviewed migrations applied, public route GET returned HTTP 200.",
+    "productReadiness": "Not established by this deployment: no florist catalog, buyer notice, request-intake validation, or product VCC results are bound here.",
+    "developmentGap": "The repository defines local Wrangler development only; no hosted Dev target or Dev-to-Prod promotion job exists. This report distinguishes local smoke from a hosted Dev deployment.",
+    "nextOwnerAction": "Decide whether local preview plus the existing human-authorized direct Production workflow is the accepted MiaoXYZ delivery path, or provision and protect a separate hosted Dev target before full staged END ADLC."
+  },
+  "deliveryScopeDisposition": {
+    "laneRef": "agent/device-cba000d3779d/miaoxyz-delivery-evidence-45739179725",
+    "disposition": "no-deploy",
+    "paths": [
+      "docs/documents/prd-tad-adr-mvp-gtm-miaoxyz.md",
+      "docs/reports/miaoxyz-production-delivery-evidence-45739179725.json"
+    ],
+    "artifactManifest": "scripts/production-mirror-artifact-entries.mjs",
+    "pathClassification": {
+      "docs/documents/prd-tad-adr-mvp-gtm-miaoxyz.md": "planning handover document; not listed in the explicit Production artifact entries",
+      "docs/reports/miaoxyz-production-delivery-evidence-45739179725.json": "delivery evidence record; not listed in the explicit Production artifact entries"
+    },
+    "reason": "The exact paths docs/documents/prd-tad-adr-mvp-gtm-miaoxyz.md and docs/reports/miaoxyz-production-delivery-evidence-45739179725.json are excluded from the product artifact by scripts/production-mirror-artifact-entries.mjs. This documentation lane changes no Worker runtime artifact, Pages mirror entry, route, migration, D1 state, or deployment authority.",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/45739179725",
+    "authorizesDeployment": false
+  }
+}

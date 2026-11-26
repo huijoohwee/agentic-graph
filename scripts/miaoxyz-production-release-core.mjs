@@ -2,12 +2,14 @@ import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { inspectMiaoxyzProductSource, resolveMiaoxyzProductRoot } from './miaoxyz-worker-source-sync.mjs'
 
-export const MIAOXYZ_CANDIDATE_SCHEMA = 'agentic-miaoxyz-production-candidate/v2'
+export const MIAOXYZ_CANDIDATE_SCHEMA = 'agentic-miaoxyz-production-candidate/v3'
 export const MIAOXYZ_GOVERNANCE_SCHEMA = 'agentic-miaoxyz-production-governance-evidence/v1'
 export const MIAOXYZ_BASELINE_SCHEMA = 'agentic-miaoxyz-production-baseline/v3'
 
-export const routePatterns = ['airvio.co/MiaoXYZ*']
+export const routePatterns = ['airvio.co/MiaoXYZ/api', 'airvio.co/MiaoXYZ/api/*']
+export const lifecycleCandidateSchema = 'agentic-miaoxyz-lifecycle-candidate/v2'
 export const approvalNames = [
   'PRIVACY_BASELINE_APPROVED',
   'DATA_REGION_APPROVED',
@@ -54,27 +56,16 @@ export const requireSha = (value, label) => {
   if (!shaPattern.test(String(value || ''))) throw new Error(`${label} must be an exact Git SHA`)
 }
 export const repoRootFrom = value => path.resolve(value || path.join(import.meta.dirname, '..'))
-export const appRootFrom = repoRoot => path.join(repoRoot, 'cloudflare/workers/miaoxyz')
+export const appRootFrom = (repoRoot, productRoot) => path.resolve(
+  productRoot || process.env.MIAOXYZ_PRODUCT_SOURCE_ROOT || resolveMiaoxyzProductRoot(repoRoot),
+)
 export const gitText = (repoRoot, args) => execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).trim()
 
-export const readCommittedWorkerFiles = repoRoot => {
-  const prefix = 'cloudflare/workers/miaoxyz/'
-  const listed = execFileSync('git', ['ls-files', '-z', '--', prefix], { cwd: repoRoot })
-    .toString('utf8')
-    .split('\0')
-    .filter(Boolean)
-    .filter(file => !file.includes('/node_modules/') && !file.includes('/.wrangler/'))
-    .filter(file => !/(?:^|\/)(?:\.dev\.vars(?:\..*)?|\.env(?:\..*)?)$/u.test(file))
-    .sort()
-  if (!listed.length) throw new Error('MiaoXYZ source must be tracked in the exact reviewed commit')
-  return listed.map(relativePath => ({
-    relativePath,
-    digest: digestBytes(fs.readFileSync(path.join(repoRoot, relativePath))),
-  }))
-}
+export const readCommittedWorkerFiles = (repoRoot, productRoot) =>
+  inspectMiaoxyzProductSource({ repoRoot, productRoot: appRootFrom(repoRoot, productRoot) }).workerFiles
 
-export const readWorkerConfig = repoRoot => JSON.parse(fs.readFileSync(
-  path.join(appRootFrom(repoRoot), 'wrangler.jsonc'),
+export const readWorkerConfig = (repoRoot, productRoot) => JSON.parse(fs.readFileSync(
+  path.join(appRootFrom(repoRoot, productRoot), 'wrangler.jsonc'),
   'utf8',
 ))
 
@@ -86,7 +77,7 @@ export const validateProductionConfig = (config, governanceEvidence) => {
     ? production.routes.map(route => route.pattern).sort()
     : []
   if (JSON.stringify(configuredRoutes) !== JSON.stringify([...routePatterns].sort())) {
-    issues.push('production route must exactly target airvio.co/MiaoXYZ* so query-bearing app URLs reach the Worker')
+    issues.push('production routes must exactly target the MiaoXYZ API paths; Pages owns the storefront')
   }
   if (production?.routes?.some(route => route.zone_name !== 'airvio.co')) {
     issues.push('the production route must use the airvio.co zone')

@@ -8,6 +8,7 @@ import {
   type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import type { D1DatabaseLike } from './db'
+import { readD1Blob } from './d1BlobStore'
 import {
   handleBlobRead,
   handleBlobUpload,
@@ -169,9 +170,8 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
           || body?.shotId !== fileName.slice(0, fileName.lastIndexOf('.'))) {
           return errorResponse(400, 'bad_request', 'media artifact identity must match its workspace object key')
         }
-        const bucket = args.env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-        const object = objectKey && bucket?.head ? await bucket.head(objectKey) : null
-        if (!object || object.customMetadata?.agenticGraphWorkspaceId !== workspaceId) {
+        const stored = objectKey ? await readD1Blob(args.db, objectKey, false) : null
+        if (!stored || stored.object.custom_metadata.agenticGraphWorkspaceId !== workspaceId) {
           return errorResponse(403, 'forbidden', 'media object ownership does not match the workspace')
         }
         try {
