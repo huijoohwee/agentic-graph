@@ -1,7 +1,6 @@
 import { type AgenticGraphStorageWorkerEnv } from './contract'
 import { readDb } from './db'
 import { readAgenticGraphStorageBrowserSessionConfiguration } from './storageBrowserSession'
-import { getZeroCostR2GateStatus } from '../../shared/r2-cost-gate.mjs'
 
 const hasCanvasRoomBinding = (value: unknown): boolean => {
   if (!value || typeof value !== 'object') return false
@@ -30,22 +29,34 @@ export const inspectStorageCoreBindings = (env: AgenticGraphStorageWorkerEnv) =>
 }
 
 const AUTH_TABLES = ['auth_identities', 'auth_sessions', 'users', 'workspace_memberships']
-const R2_FREE_QUOTA_COLUMNS = [
-  'scope_id', 'month_key', 'day_key', 'class_a_used', 'class_b_used',
-  'uploaded_bytes_lifetime', 'daily_reservations', 'updated_at',
-]
+const D1_BLOB_COLUMNS = {
+  agentic_graph_d1_blob_quota: ['id', 'used_bytes', 'limit_bytes'],
+  agentic_graph_d1_blob_objects: ['object_key', 'content_type', 'content_hash', 'custom_metadata_json', 'size_bytes', 'etag', 'updated_at'],
+  agentic_graph_d1_blob_chunks: ['object_key', 'chunk_index', 'body'],
+} as const
 
-const hasR2FreeQuotaLedger = async (env: AgenticGraphStorageWorkerEnv): Promise<boolean> => {
+const hasD1BlobStore = async (env: AgenticGraphStorageWorkerEnv): Promise<boolean> => {
   const db = readDb(env)
   if (!db) return false
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    const result = await Promise.race([
-      db.prepare('PRAGMA table_info(agentic_graph_r2_free_quota)').all<{ name: string }>(),
+    return await Promise.race([
+      (async () => {
+        for (const [table, required] of Object.entries(D1_BLOB_COLUMNS)) {
+          const result = await db.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>()
+          const columns = new Set(result.results?.map(row => row.name))
+          if (!required.every(column => columns.has(column))) return false
+        }
+        const stateResult = await db.prepare('SELECT used_bytes, limit_bytes FROM agentic_graph_d1_blob_quota WHERE id = 1')
+          .all<{ used_bytes: number; limit_bytes: number }>()
+        const state = stateResult.results?.[0]
+        if (!state || state.limit_bytes !== 67108864 || state.used_bytes < 0 || state.used_bytes > state.limit_bytes) return false
+        const actualResult = await db.prepare('SELECT COALESCE(SUM(size_bytes), 0) AS used_bytes FROM agentic_graph_d1_blob_objects')
+          .all<{ used_bytes: number }>()
+        return actualResult.results?.[0]?.used_bytes === state.used_bytes
+      })(),
       new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 3000) }),
     ])
-    const columns = new Set(result.results?.map(row => row.name))
-    return R2_FREE_QUOTA_COLUMNS.every(column => columns.has(column))
   } catch { return false }
   finally { clearTimeout(timer) }
 }
@@ -71,15 +82,8 @@ export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEn
     finally { clearTimeout(timer) }
     if (authSchema !== 'ready') reasons.push('storage-auth-schema-unavailable')
   }
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  const costGate = getZeroCostR2GateStatus(bucket)
-  const quotaLedgerReady = costGate === 'quota-ledger' ? await hasR2FreeQuotaLedger(env) : true
-  const blobStorage = costGate === 'blocked' || !quotaLedgerReady ? 'blocked'
-    : bucket && typeof bucket.get === 'function' && typeof bucket.put === 'function' ? 'ready' : 'missing'
-  if (blobStorage === 'blocked') reasons.push(costGate === 'quota-ledger'
-    ? 'storage-blob-free-quota-ledger-unavailable'
-    : 'storage-blob-provider-cost-evidence-unavailable')
-  if (blobStorage === 'missing') reasons.push('storage-blob-binding-missing')
+  const blobStorage = await hasD1BlobStore(env) ? 'ready' : 'blocked'
+  if (blobStorage === 'blocked') reasons.push('storage-blob-d1-quota-or-schema-unavailable')
   return { scope: 'core', runtime: core.runtime, ok: reasons.length === 0,
     dependencies: { ...core.dependencies, authSchema, blobStorage }, reasons }
 }

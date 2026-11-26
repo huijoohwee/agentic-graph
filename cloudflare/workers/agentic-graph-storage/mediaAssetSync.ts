@@ -11,6 +11,7 @@ import {
 import { normalizeNumber, normalizeString } from './db'
 import type { D1DatabaseLike } from './db'
 import { readMediaObjectKey } from './media'
+import { deleteD1Blob, readD1Blob, readD1BlobDatabase } from './d1BlobStore'
 import {
   deleteMediaArtifact,
   findMediaArtifactByHash,
@@ -226,16 +227,15 @@ const handleMediaAssetDelete = async (
     const status = auth.code === MEDIA_AUTH_UNAUTHENTICATED_CODE ? 401 : 403
     return errorResponse(status, auth.code, auth.authError)
   }
-  const deleted = await deleteMediaArtifact(db, params.workspaceId, params.artifactId)
   const objectKey = serializeMediaArtifact(existing).objectKey
-  let r2Status: 'deleted' | 'binding_missing' | 'skipped' = 'skipped'
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  if (bucket && typeof bucket.delete === 'function') {
-    await bucket.delete(objectKey)
-    r2Status = 'deleted'
-  } else {
-    r2Status = 'binding_missing'
+  const blobDb = readD1BlobDatabase(env)
+  if (!blobDb) return errorResponse(503, 'server_error', 'D1 blob storage is unavailable')
+  const blob = await readD1Blob(blobDb, objectKey, false)
+  if (blob && blob.object.custom_metadata.agenticGraphWorkspaceId !== params.workspaceId) {
+    return errorResponse(403, 'forbidden', 'media object ownership does not match the workspace')
   }
+  if (blob) await deleteD1Blob(blobDb, objectKey)
+  const deleted = await deleteMediaArtifact(db, params.workspaceId, params.artifactId)
   return json(200, {
     ok: true,
     apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
@@ -243,7 +243,7 @@ const handleMediaAssetDelete = async (
     artifactId: params.artifactId,
     objectKey,
     storage: {
-      r2: r2Status,
+      r2: 'skipped',
       d1: deleted ? 'deleted' : 'missing',
     },
   })
@@ -268,8 +268,8 @@ const isValidMediaObjectKey = (objectKey: string): boolean => {
   })
 }
 
-const readR2ObjectEtag = (object: { httpEtag?: string; etag?: string } | null | undefined): string | null =>
-  normalizeString(object?.httpEtag || object?.etag || '') || null
+const readBlobEtag = (object: { etag?: string } | null | undefined): string | null =>
+  normalizeString(object?.etag || '') || null
 
 const normalizeObjectKey = (value: string): string =>
   normalizeString(value).replace(/^\/+/, '')
@@ -383,13 +383,13 @@ export const handleMediaAssetPersist = async (
     const status = auth.code === MEDIA_AUTH_UNAUTHENTICATED_CODE ? 401 : 403
     return errorResponse(status, auth.code, auth.authError)
   }
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  if (!bucket || typeof bucket.head !== 'function') {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTIC_OS_STORAGE_BLOB_BUCKET with head support')
-  }
-  const object = await bucket.head(objectKey)
+  const stored = await readD1Blob(db, objectKey, false)
+  const object = stored?.object
   if (!object) {
     return errorResponse(404, 'not_found', `media object not found: ${objectKey}`)
+  }
+  if (object.custom_metadata.agenticGraphWorkspaceId !== body.workspaceId) {
+    return errorResponse(403, 'forbidden', 'media object ownership does not match the workspace')
   }
 
   const requestedArtifactId = buildArtifactId(body.runId, body.stageId, body.shotId)
@@ -420,7 +420,7 @@ export const handleMediaAssetPersist = async (
     request: normalizedBody,
     artifactId,
     publicPath,
-    objectEtag: readR2ObjectEtag(object),
+    objectEtag: readBlobEtag(object),
   })
   const durableObjectStatus = await notifyCanvasRoom({
     env,
@@ -439,7 +439,7 @@ export const handleMediaAssetPersist = async (
     durableR2Url: publicPath,
     contentHash: body.contentHash,
     storage: {
-      r2: 'confirmed',
+      r2: 'skipped',
       d1: existing && existing.id !== requestedArtifactId ? 'reused' : 'persisted',
       kv: access.status,
       durableObject: durableObjectStatus,

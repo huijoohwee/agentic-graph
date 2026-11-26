@@ -13,6 +13,8 @@ import { createFixture } from '../../../../canvas/src/__tests__/helpers/native-a
 import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID, buildAgenticGraphStorageDocPath,
   buildAgenticGraphStorageDefaultDocPath, buildAgenticGraphStorageLlmsPath,
   buildAgenticGraphStorageSourceFilesIndexPath } from '../contract'
+import { readD1Blob } from '../d1BlobStore'
+import type { D1DatabaseLike } from '../db'
 const SESSION_TOKEN = 'production-storage-session-token'
 const WORKSPACE_ID = 'workspace:storage-security'
 
@@ -416,7 +418,8 @@ test('production blob reads and writes require a role-bound workspace session an
     body: 'bounded-blob',
   }), env)
   assert.equal(write.status, 200)
-  assert.equal(bucket.objects.size, 1)
+  assert.equal(bucket.objects.size, 0)
+  assert.equal(db.d1BlobObjects.size, 1)
   assert.equal((await worker.fetch(new Request(path), env)).status, 401)
   const read = await worker.fetch(new Request(path, { headers: sessionHeaders() }), env)
   assert.equal(read.status, 200)
@@ -427,7 +430,7 @@ test('production blob reads and writes require a role-bound workspace session an
   ), env)
   assert.equal(crossTenant.status, 403)
 })
-test('production media uses signed workspace capabilities and R2 ownership metadata', async () => {
+test('production media uses signed workspace capabilities and D1 ownership metadata', async () => {
   const worker = createAgenticGraphStorageWorker()
   const db = new FakeAgenticGraphStorageD1Database()
   const bucket = new FakeAgenticGraphStorageR2Bucket()
@@ -459,9 +462,9 @@ test('production media uses signed workspace capabilities and R2 ownership metad
     body: 'workspace-owned-media',
   }), env)
   assert.equal(authenticatedRawWrite.status, 200)
-  assert.equal(bucket.objects.size, 1)
-  const stored = bucket.objects.get(objectKey)
-  assert.equal(stored?.customMetadata.agenticGraphWorkspaceId, WORKSPACE_ID)
+  assert.equal(bucket.objects.size, 0)
+  const stored = await readD1Blob(db as unknown as D1DatabaseLike, objectKey, false)
+  assert.equal(stored?.object.custom_metadata.agenticGraphWorkspaceId, WORKSPACE_ID)
   const readCapability = await mint('read')
   const read = await worker.fetch(new Request(`https://storage.example${readCapability.urlPath}`), env)
   assert.equal(read.status, 200)
@@ -495,7 +498,7 @@ test('production media uses signed workspace capabilities and R2 ownership metad
     },
   ), env)
   assert.equal(malformedAssetMutation.status, 400)
-  assert.equal(bucket.objects.size, 1)
+  assert.equal(bucket.objects.size, 0)
   const memberList = await worker.fetch(new Request(
     `https://storage.example/api/storage/media/assets?workspaceId=${encodeURIComponent(WORKSPACE_ID)}`,
     { headers: sessionHeaders() },
