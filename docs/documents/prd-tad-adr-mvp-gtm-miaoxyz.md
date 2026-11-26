@@ -1,37 +1,37 @@
 ---
 title: "MiaoXYZ Bouquet Commerce"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-revision: "0.3.0"
-date: "2026-10-28"
+version: "0.4.0"
+revision: "0.4.0"
+date: "2026-11-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product Owner"
 continuity_id: "miaoxyz-bouquet-commerce"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "implementation"
 universal_scope: false
-worktree_id: "device-cba000d3779d--miaoxyz-bouquet-commerce"
+worktree_id: "device-cba000d3779d--miaoxyz-independent-source-mirror"
 agent_id: "codex"
 lifecycle_status: "implementation-in-progress"
 action: "/fix"
-scope: "#miaoxyz-bouquet-commerce"
+scope: "#miaoxyz-independent-source-mirror"
 actor: "@Codex"
-base_sha: "d7b367354a4875726965bdf342aa1ab618d6075c"
+base_sha: "413150ce075e8fba007dde4bb529187633433ff8"
 ---
 
 # MiaoXYZ Bouquet Commerce
 
-**Join:** `miaoxyz-bouquet-commerce@0.3.0` · **As of:** 2026-10-28 · **Accountable document owner:** Product Owner
-**Grounding state:** A Cloudflare Worker and D1 implementation candidate now exists in the canonical `agentic-graph` Dev source lane, based on fetched `origin/main` revision `d7b367354a4875726965bdf342aa1ab618d6075c`; the loopback Worker preview renders eight synthetic designs in memory, labels sample prices, and disables request submission. Use `?preview=empty` to inspect the actual local catalog. The composition editor covers florist-published recipes, layer edits, wrapping finishes, comparison, history, and tab-local snapshots. No florist catalog records, immutable release, remote Dev deployment, Production deployment, customer research, privacy approval, data region, or market evidence is recorded.
+**Join:** `miaoxyz-bouquet-commerce@0.4.0` · **As of:** 2026-11-26 · **Accountable document owner:** Product Owner
+**Grounding state:** The independent Dev source is `github.com/huijoohwee/MiaoXYZ` at exact `main` revision `e0080f11a6004e6cb07e6c0ee6c37d237edfae29`; developers can run it with `npm run dev` from that repository. The original Worker/D1 preview and florist-controlled product behavior remain in that source. This Graph lane proposes a protected Pages publisher that checks out that exact source, mirrors only its `public/` files, and records the source revision in the generated artifact. The publisher change is not yet merged. The Worker release controller still points at the former Graph copy, so the Worker side of the source migration remains open. This lane changes no live Worker, Pages project, route, or D1 data. Product research, privacy, region and market evidence remain as stated below.
 
-**Governing baseline:** [PRD, TAD & ADR Guidelines](https://github.com/huijoohwee/huijoohwee.github.io/blob/b10771228c625fa2167a663d63d09af9f1f2f2b9/guidelines/prd-tad-adr-mvp-gtm-guidelines.md), version 3.4.0, source revision `b10771228c625fa2167a663d63d09af9f1f2f2b9`. The PRD, TAD, ADR, MVP and GTM sections below share this exact continuity revision.
+**Governing baseline:** Gateway reference `guideline/prd-tad-adr-mvp-gtm` resolves to the PRD, TAD & ADR Guidelines at version 3.5.1, source revision `3c737e4500894c76b253f8b6d4d65a2a17cedbae`; see the pinned [Gateway reference index](https://github.com/huijoohwee/agentic-gateway/blob/cdb000925729a729732206a32de36e6bc7db011c/references/README.md). The PRD, TAD, ADR, MVP and GTM sections below share this exact continuity revision.
 
 ## Product Context and CID
 
@@ -162,7 +162,7 @@ The canonical source is `agentic-graph` at baseline revision `d7b367354a48757269
 
 ### Architecture Overview and Boundaries
 
-The implementation candidate is a single-origin Cloudflare Worker named `agentic-miaoxyz`, with bundled HTML/CSS/JavaScript assets, Worker API handlers, and an `agentic-miaoxyz-dev` D1 database. Production uses `agentic-miaoxyz-production` and declares `airvio.co/MiaoXYZ`; this route is source configuration only and has not been attached to the live zone. The Worker owns catalog reads and validation, deterministic price calculation, request idempotency, request transitions, staff settings, and retention cleanup. D1 stores catalog revisions, settings, request snapshots, state history and short-lived rate-limit digests. The bundled flower mark is original; product photography is not required by the UI.
+Local Dev uses the `github.com/huijoohwee/MiaoXYZ` source repository and its `npm run dev` Worker with local D1. The intended production boundary separates static delivery from the API: the protected Graph publisher consumes an exact MiaoXYZ source commit and generates `content/MiaoXYZ`; Pages serves that generated tree at `/MiaoXYZ`, while the MiaoXYZ Worker serves `/MiaoXYZ/api` and `/MiaoXYZ/api/*`. The source repository owns the Worker, public assets and migrations. The existing Graph Worker release controller still compiles its embedded copy; migrating that controller to the exact MiaoXYZ source revision is a required follow-up before the source boundary is complete. No production route or data change is made by this authoring lane. D1 stores catalog revisions, settings, request snapshots, state history and short-lived rate-limit digests.
 
 No AI component, third-party product-data source, payment processor, delivery API, email sender, external account or agent gateway is used. The browser does not persist a buyer draft. The Worker is authoritative for price snapshots, availability rules and submitted requests. Store only the minimum data required for florist follow-up and fulfillment.
 
@@ -247,7 +247,7 @@ flowchart LR
 | Worker API and pricing | Serve catalog/settings; validate catalog, choices, finishes, flower recipes, dates and price; create idempotent requests | JSON under `/api`; integer SGD cents; max 32 KiB request body and 256 KiB catalog; same-origin requests | Reject stale/invalid input; compute price from the current revision; return safe generic service errors |
 | Operator surface | Edit settings/catalog and process allowed request states | Shared bearer token; immutable catalog revisions; status history records operator class and time | Reject invalid transitions; queue and catalog endpoints require authorization |
 | D1 store | Own settings, catalog revisions, request snapshots, status history, rate-limit counters and operator event metadata | SQL migrations; batched writes; local synthetic D1 for preview | Production backup, restore and data export remain prerequisites; no production data is present |
-| Static asset delivery | Serve bundled CSS, JavaScript and original SVG mark | Cloudflare Worker Assets binding; same-origin only | CSP and security headers; no remote image URLs or asset fetches |
+| Static asset delivery | Serve bundled CSS, JavaScript and original SVG mark | Local Dev uses Worker Assets; Production is generated from pinned MiaoXYZ `public/` into the Pages mirror | Exact source revision marker; no remote image URLs or asset fetches; mirror is generated and never an authoring surface |
 
 ### Topology
 
@@ -256,17 +256,17 @@ flowchart TB
   Buyer[Buyer browser]
   Staff[Florist operator browser]
   subgraph Cloudflare[Cloudflare application boundary]
-    Worker[Worker: agentic-miaoxyz]
-    Assets[Bundled static assets]
+    Pages[Pages: generated MiaoXYZ storefront at /MiaoXYZ]
+    Worker[Worker: agentic-miaoxyz API at /MiaoXYZ/api]
     D1[(D1: settings, catalog, requests)]
   end
+  Buyer -->|static storefront| Pages
   Buyer -->|catalog / request| Worker
   Staff -->|Bearer-authenticated settings / catalog / queue| Worker
-  Worker --> Assets
   Worker -->|SQL migrations and batched writes| D1
 ```
 
-**Topology constraints:** Local development uses synthetic local D1 only. No Cloudflare Dev database or production database is provisioned by this candidate. Production route configuration targets `airvio.co/MiaoXYZ`; the exact route and zone binding must be reviewed through the protected release process. Production remains blocked until the owner approves a data region, privacy and retention notice, staff access policy, alerting, D1 backup/restore and rate-limit evidence. No real buyer data may be entered in local preview.
+**Topology constraints:** Local development uses synthetic local D1 only. The independent source repo owns static and Worker code. The protected Graph workflow owns generated Pages publication; the Pages path must not be edited as source. The API Worker is configured to target `/MiaoXYZ/api` and `/MiaoXYZ/api/*`; its release controller still needs migration from the embedded Graph copy. Production remains subject to the existing reviewed release gates for data region, privacy and retention notice, staff access policy, alerting, D1 backup/restore and rate-limit evidence. This source/mirror change does not deploy a Worker, publish the mirror, apply migrations or enter real buyer data.
 
 ### Orchestration / Harness Flow
 
@@ -293,7 +293,7 @@ The three dimensions are explicitly outside this product increment: Agentic OS-r
 
 | Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback | State |
 |---|---|---|---|---|---|---|
-| Source review | Authoring | Mirror | None; not built | None | Retain prior source revision; reject candidate | `closed` |
+| Source review | MiaoXYZ protected `main` | Generated Pages mirror at `/MiaoXYZ` | MiaoXYZ PR #1 merged at `e0080f11`; Graph publisher PR is pending | Verify the exact source marker and Pages artifact before publication | Retain the previous generated artifact and reject the candidate | `open` |
 | Customer availability | Mirror | Delivery | None; no deploy authorization | None | Restore exact prior delivered revision and verify request intake disabled during rollback | `closed` |
 | Runtime recovery | Delivery | Previous delivery | None; no runbook or live deployment | None | Restore previous exact artifact and reconcile requests | `closed` |
 
@@ -313,12 +313,12 @@ No paid service or production resource is authorized by this specification. Do n
 
 | Capability | Current owner / revision | Decision | Smallest proposed delta | Check / status |
 |---|---|---|---|---|
-| Buyer catalog and filtering | New `cloudflare/workers/miaoxyz/public` surface, baseline `d7b367354a4875726965bdf342aa1ab618d6075c` | New, product-owned schema and buyer view | Worker catalog API and bundled buyer page | Local empty-state preview rendered; catalog content remains absent |
-| Design system and assets | New Worker `public` assets | New, original style tokens and SVG mark | Bundled CSS and original SVG mark; no external asset dependency | Code is present; product photo rights/need remain unassessed |
-| Request storage and staff access | New Worker API and D1 migrations | New request store and operator queue | Bearer-token protected operator API and status history | Local schema migrated; production auth policy and data region remain unapproved |
-| Deployment and observability | `cloudflare/workers/miaoxyz/wrangler.jsonc` | Cloudflare Worker + D1 for Dev candidate | Worker `agentic-miaoxyz`; production Worker `agentic-miaoxyz-production`; route config `airvio.co/MiaoXYZ` | Wrangler local preview and TypeScript check succeeded; no remote deployment, production IDs, backup/restore or billing evidence |
+| Buyer catalog and filtering | `github.com/huijoohwee/MiaoXYZ` at `e0080f11a6004e6cb07e6c0ee6c37d237edfae29` | Product-owned schema and buyer view | Independent Worker source plus generated Pages assets | Local Worker check passes; protected mirror publisher is pending Graph PR review |
+| Design system and assets | MiaoXYZ source repository `public/` | Product-owned tokens and original SVG mark | Publish the exact pinned `public/` tree; no external asset dependency | Source files are versioned; production mirror publication is pending |
+| Request storage and staff access | MiaoXYZ source repository Worker and migrations | Request store and operator queue | Worker API with D1 schema, access and retention controls | Local schema and Worker checks pass; production data and deployment evidence remain release-bound |
+| Deployment and observability | MiaoXYZ `wrangler.jsonc`; Graph protected release controller | Pages mirror plus API Worker | Pages publisher now being separated; Worker release source still needs migration from Graph's embedded copy | No production change from this lane; do not treat Worker source split as complete yet |
 
-Canonical source baseline: `agentic-graph` revision `d7b367354a4875726965bdf342aa1ab618d6075c`. Candidate code is in `cloudflare/workers/miaoxyz`; the product PRD is colocated in `docs/documents`. Existing source capabilities were not reused. The candidate has not been merged, immutably published, deployed to Cloudflare Dev, or released to Production.
+The initial implementation baseline was Graph revision `d7b367354a4875726965bdf342aa1ab618d6075c`. The current MiaoXYZ code source is `github.com/huijoohwee/MiaoXYZ` at `e0080f11a6004e6cb07e6c0ee6c37d237edfae29`; Graph owns the protected publication and release orchestration. This PR changes the Pages publisher only. A separate protected change must move Worker candidate compilation, migration checks and deployment inputs to that exact MiaoXYZ source before Worker-side source authority is complete.
 
 ## ADR: Architecture Decision Records
 
@@ -351,6 +351,19 @@ Canonical source baseline: `agentic-graph` revision `d7b367354a4875726965bdf342a
 **Recovery / revisit trigger:** Reopen if region, cost or export review fails; if production recovery cannot be demonstrated; if the florist cannot maintain current availability; or if customer research shows request-only intake blocks conversion. Preserve request exports and catalog revisions when changing provider or schema. Production release requires a reviewed exact candidate and the repository’s protected authorization workflow.
 
 **Evidence:** Local D1 migrations applied; Worker TypeScript check passed; local Worker served the static preview and catalog empty state. No VCC has passed, no provider quote or data-region approval exists, no remote Worker deployment or live workload exists, and no customer payment has been observed.
+
+### ADR-002: Independent MiaoXYZ Source and Generated Pages Mirror
+
+**Status:** Accepted for source ownership; Pages publisher implementation is in review; Worker release-controller migration remains open.
+**Context:** The product needs one Dev source repository and a protected path into the production Pages mirror. Treating a generated mirror or an embedded Worker copy as an authoring source can split revisions and break fidelity.
+
+**Decision:** `github.com/huijoohwee/MiaoXYZ` is the independent source of truth for the product's Worker, migrations and `public/` storefront assets. Developers run Dev with `npm run dev` from that repository. The protected `agentic-graph` release workflow checks out an exact reviewed MiaoXYZ commit, generates `content/MiaoXYZ`, and records the source repository and commit in `.well-known/source-revision.json`. The protected mirror publisher owns `airvio.co/MiaoXYZ`; nobody edits its generated files as source. The intended Production split serves storefront assets through Pages and sends only `/MiaoXYZ/api` requests to the MiaoXYZ Worker.
+
+**Current gap:** The Graph Pages publisher change is pending its protected PR checks. The existing Worker release controller still builds from `cloudflare/workers/miaoxyz` inside Graph. A successor protected source change must bind the Worker candidate to the same exact MiaoXYZ repository commit and remove the embedded copy as an independent authority. Until both protected changes are integrated and a separate exact candidate is authorized, do not claim that Dev-to-Production source parity is fully enforced.
+
+**Consequences:** Pages publication becomes a deterministic generated artifact tied to a source revision. The mirror can be regenerated or rolled back from the prior artifact. Worker releases must carry both Graph release-policy revision and exact MiaoXYZ source revision; D1 migrations and production deployment remain under their existing candidate and authorization gates. This decision does not itself publish the mirror or modify Cloudflare.
+
+**Revisit trigger:** Reopen if the Pages publisher cannot prove source identity, the Worker candidate cannot bind to the same MiaoXYZ source commit, or the generated route collides with an unrelated path. Verify generated file equality and the visible source-revision marker before publication.
 
 ## MVP: First Validated Slice
 

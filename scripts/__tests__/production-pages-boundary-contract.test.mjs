@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
+import { MIAOXYZ_SOURCE_PIN } from '../pages-mirror-sync.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const read = (...parts) => fs.readFileSync(path.resolve(repoRoot, ...parts), 'utf8')
@@ -39,4 +40,21 @@ test('production fidelity smokes both XR v2 config routes before browser launch'
     "model_type, 'depth_anything'",
   ]) assert.ok(productionFidelityScript.includes(fragment))
   assert.ok(productionFidelityScript.indexOf('await verifyXrV2DepthConfigRoutes()') < productionFidelityScript.indexOf('chromium.launch'))
+})
+
+test('MiaoXYZ Pages output is generated from an exact, pinned source repository revision', () => {
+  assert.deepEqual(MIAOXYZ_SOURCE_PIN, {
+    repository: 'huijoohwee/MiaoXYZ',
+    revision: 'e0080f11a6004e6cb07e6c0ee6c37d237edfae29',
+  })
+  assert.ok(productionMirrorArtifactEntries.includes('content/MiaoXYZ'))
+  for (const pattern of [
+    /Resolve pinned MiaoXYZ source/,
+    /Check out pinned MiaoXYZ source/,
+    /repository: huijoohwee\/MiaoXYZ/,
+    /ref: '?\$\{\{ steps\.miaoxyz_source\.outputs\.revision \}\}'?/,
+    /MIAOXYZ_SOURCE_ROOT:/,
+    /MIAOXYZ_SOURCE_REVISION:/,
+    /MiaoXYZ source commit:/,
+  ]) assert.match(releaseWorkflow, pattern)
 })

@@ -61,6 +61,8 @@ const createBaseMirror = async root => {
     writeFile(root, '.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/agentic-graph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/gamexr/index.html', 'old gamexr\n'),
+    writeFile(root, 'content/MiaoXYZ/index.html', 'old generated MiaoXYZ\n'),
+    writeFile(root, 'content/MiaoXYZ/.well-known/source-revision.json', '{"revision":"old"}\n'),
     writeFile(root, 'content/agentic-base/index.html', '<h1>old Base demo</h1>\n'),
     writeFile(root, 'content/agentic-sheets/index.html', '<h1>old Sheets fixture</h1>\n'),
     writeFile(root, 'content/agentic-graph/assets/old/entry.js', 'old content asset\n'),
@@ -179,6 +181,8 @@ test('the uploaded and reconciled artifact carries generated discovery aliases a
   initializeRepository(mirror)
   runGit(root, ['clone', '--quiet', mirror, target])
   await writeFile(mirror, 'content/gamexr/index.html', 'reviewed GameXR\n')
+  await writeFile(mirror, 'content/MiaoXYZ/index.html', 'generated MiaoXYZ\n')
+  await writeFile(mirror, 'content/MiaoXYZ/.well-known/source-revision.json', '{"revision":"e0080f11a6004e6cb07e6c0ee6c37d237edfae29"}\n')
   const generated = await buildAgentReadyStaticFiles()
   for (const [name, value] of Object.entries(generated)) await writeFile(mirror, name, value.body)
   const productEntry = '<main id="root"></main><script type="module" src="/agentic-graph/assets/current.js"></script>\n'
@@ -186,12 +190,16 @@ test('the uploaded and reconciled artifact carries generated discovery aliases a
   await createProductionMirrorArtifactManifest({ mirrorRoot: mirror })
   await stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact })
   assert.equal(await fs.readFile(path.join(artifact, 'content/gamexr/index.html'), 'utf8'), 'reviewed GameXR\n')
+  assert.equal(await fs.readFile(path.join(artifact, 'content/MiaoXYZ/index.html'), 'utf8'), 'generated MiaoXYZ\n')
+  assert.equal(await fs.readFile(path.join(artifact, 'content/MiaoXYZ/.well-known/source-revision.json'), 'utf8'), '{"revision":"e0080f11a6004e6cb07e6c0ee6c37d237edfae29"}\n')
   assert.equal(await fs.readFile(path.join(artifact, '81rv10/index.html'), 'utf8'), productEntry)
   assert.equal(await fs.readFile(path.join(artifact, 'pitch/agentic-drone-as-a-service/index.html'), 'utf8'), '<h1>Drone pitch</h1>\n')
   await assert.rejects(fs.stat(path.join(artifact, '81rv10/proposals/keep.md')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.join(artifact, '.well-known/unrelated.json')), { code: 'ENOENT' })
   await reconcileProductionMirrorArtifact({ artifactRoot: artifact, mirrorRoot: target })
   assert.equal(await fs.readFile(path.join(target, 'content/gamexr/index.html'), 'utf8'), 'reviewed GameXR\n')
+  assert.equal(await fs.readFile(path.join(target, 'content/MiaoXYZ/index.html'), 'utf8'), 'generated MiaoXYZ\n')
+  assert.equal(await fs.readFile(path.join(target, 'content/MiaoXYZ/.well-known/source-revision.json'), 'utf8'), '{"revision":"e0080f11a6004e6cb07e6c0ee6c37d237edfae29"}\n')
   for (const [name, value] of Object.entries(generated)) assert.equal(await fs.readFile(path.join(target, name), 'utf8'), value.body, name)
   assert.equal(await fs.readFile(path.join(target, '81rv10/index.html'), 'utf8'), productEntry)
   assert.equal(await fs.readFile(path.join(target, '81rv10/proposals/keep.md'), 'utf8'), 'authored proposal\n')
