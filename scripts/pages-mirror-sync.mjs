@@ -344,7 +344,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   }
   for (const relativePath of miaoxyzFilesToRemove) await fs.rm(path.resolve(miaoxyzTargetDir, relativePath), { force: true })
   await removeEmptyDirs(miaoxyzTargetDir)
-  if (miaoxyzMarkerNeedsUpdate) await writeTextFile(miaoxyzMarkerBody, miaoxyzMarkerPath)
+  if (miaoxyzMarkerNeedsUpdate) await writeTextFile(miaoxyzMarkerPath, miaoxyzMarkerBody)
   await fs.mkdir(targetDir, { recursive: true })
   let copiedCount = 0
   for (const relativePath of sourceFiles) {
