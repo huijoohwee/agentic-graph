@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import packageJson from '../../../package.json' with { type: 'json' };
+import { readAgenticOsSourcePin } from '../../../contracts/agentic-os-package-pin.mjs';
 
 export async function writeNativeProofFixture(root) {
   const content = '---\nschema: unavailable\nstatus: unavailable\n---\n';
@@ -18,7 +19,7 @@ export async function writeNativeProofFixture(root) {
 }
 
 export function pinnedAgentDocsFetch(requests = []) {
-  const revision = packageJson.dependencies['agentic-os'].split('/').at(-1);
+  const revision = readAgenticOsSourcePin(packageJson).revision;
   const root = fileURLToPath(new URL('../', import.meta.resolve('agentic-os/invocation')));
   const prefix = `https://raw.githubusercontent.com/huijoohwee/agentic-os/${revision}/`;
   return async input => {

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { readAgenticOsSourcePin } from '../contracts/agentic-os-package-pin.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const contractPath = path.join(root, 'docs/runtime-readiness-contract.md')
@@ -62,8 +63,8 @@ export const verifyPackagePinParity = (identity, packageSource, lockSource) => {
   const manifest = JSON.parse(packageSource)
   const lock = JSON.parse(lockSource)
   const pins = [
-    manifest.dependencies?.['agentic-os'],
-    lock.packages?.['']?.dependencies?.['agentic-os'],
+    readAgenticOsSourcePin(manifest).value,
+    readAgenticOsSourcePin(lock.packages?.['']).value,
     lock.packages?.['node_modules/agentic-os']?.resolved,
   ]
   if (pins.some(pin => pin !== expected)) {
