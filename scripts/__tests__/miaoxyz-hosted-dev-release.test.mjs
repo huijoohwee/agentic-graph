@@ -95,7 +95,7 @@ test('the protected release workflow gates Production on the same successful Dev
   const verify = stagedWorkflow.jobs.miaoxyz_verify
   const dev = stagedWorkflow.jobs.miaoxyz_dev_deploy
   const production = stagedWorkflow.jobs.miaoxyz_deploy
-  assert.equal(verify.environment, undefined)
+  assert.equal(verify.environment.name, 'miaoxyz-candidate-read')
   assert.equal(dev.environment.name, 'development')
   assert.deepEqual(production.needs, ['miaoxyz_verify', 'miaoxyz_dev_deploy'])
   assert.match(production.if, /needs\.miaoxyz_dev_deploy\.result == 'success'/)
