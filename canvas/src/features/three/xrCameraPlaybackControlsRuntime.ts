@@ -20,8 +20,7 @@ import {
 } from './xrMotionReferenceRuntime'
 import { xrChoreographyCanDriveCamera } from './xrCameraControlOwnership'
 import { resolveXrSceneCameraMinimumY, resolveXrSceneCameraWorldScale } from './xrNativeControllerCameraFraming'
-import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
-import { useThreeViewportInputOwnership } from './threeViewportInputOwnership'
+import { readThreeViewportInputOwnership } from './threeViewportInputOwnership'
 
 type CameraPlaybackReapplyListener = () => void
 const cameraPlaybackReapplyListeners = new Set<CameraPlaybackReapplyListener>()
@@ -33,15 +32,6 @@ const subscribeCameraPlaybackReapply = (listener: CameraPlaybackReapplyListener)
 }
 
 const readCameraPlaybackReapplyRevision = (): number => cameraPlaybackReapplyRevision
-
-type FreeOrbitPlaybackSnapshot = Readonly<{
-  position: PerspectiveCamera['position']
-  quaternion: PerspectiveCamera['quaternion']
-  up: PerspectiveCamera['up']
-  target: OrbitControls['target']
-  fov: number
-  focus: number
-}>
 
 export function requestXrMotionReferenceCameraPlaybackReapply(): void {
   cameraPlaybackReapplyRevision += 1
@@ -73,7 +63,6 @@ export function useXrMotionReferenceCameraPlayback({
     readCameraPlaybackReapplyRevision,
     readCameraPlaybackReapplyRevision,
   )
-  const viewportInputOwnership = useThreeViewportInputOwnership()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const nativeControllerDemo = isXrPhysicsRunReadyDemoActive(
@@ -81,27 +70,14 @@ export function useXrMotionReferenceCameraPlayback({
     markdownDocumentText,
   )
   const previousPlayingRef = React.useRef(false)
-  const prePlaybackPoseRef = React.useRef<FreeOrbitPlaybackSnapshot | null>(null)
   const cameraTrackAvailable = xrChoreographyCanDriveCamera({
     mode,
     xrEmptyWorld,
     cameraMarkCount: runtime.plan.camera.length,
   })
 
-  React.useLayoutEffect(() => {
-    if (!playing || previousPlayingRef.current || !cameraTrackAvailable) return
-    prePlaybackPoseRef.current = {
-      position: camera.position.clone(),
-      quaternion: camera.quaternion.clone(),
-      up: camera.up.clone(),
-      target: controls.target.clone(),
-      fov: camera.fov,
-      focus: camera.focus,
-    }
-  }, [camera, cameraTrackAvailable, controls, playing])
-
   const applyTrackedPose = React.useCallback(() => {
-    if (paused || viewportInputOwnership.blocksProgrammaticCamera || !cameraTrackAvailable) return
+    if (paused || readThreeViewportInputOwnership().blocksProgrammaticCamera || !cameraTrackAvailable) return
     const pose = sampleXrMotionReferenceCameraPose(runtime.plan.camera, runtime.playheadSeconds, runtime.plan.cast, runtime.plan.subjects)
     const settings = sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
     if (!pose || !settings) return
@@ -122,7 +98,7 @@ export function useXrMotionReferenceCameraPlayback({
       },
       minimumY: resolveXrSceneCameraMinimumY({ stageId: stage.id, worldScale: scale }),
     })
-  }, [camera, cameraTrackAvailable, controls, nativeControllerDemo, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds, viewportInputOwnership.blocksProgrammaticCamera])
+  }, [camera, cameraTrackAvailable, controls, nativeControllerDemo, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds])
 
   React.useEffect(() => {
     applyTrackedPose()
@@ -130,20 +106,7 @@ export function useXrMotionReferenceCameraPlayback({
 
   React.useEffect(() => {
     const playbackStarted = playing && !previousPlayingRef.current
-    const playbackStopped = !playing && previousPlayingRef.current
     previousPlayingRef.current = playing
     if (playbackStarted) applyTrackedPose()
-    if (!playbackStopped) return
-    const snapshot = prePlaybackPoseRef.current
-    prePlaybackPoseRef.current = null
-    if (!snapshot || mode !== 'xr' || xrEmptyWorld || readXrNativeControllerCamera().mode !== 'free-orbit') return
-    camera.position.copy(snapshot.position)
-    camera.quaternion.copy(snapshot.quaternion)
-    camera.up.copy(snapshot.up)
-    camera.fov = snapshot.fov
-    camera.focus = snapshot.focus
-    controls.target.copy(snapshot.target)
-    camera.updateProjectionMatrix()
-    controls.update()
-  }, [applyTrackedPose, camera, controls, mode, playing, xrEmptyWorld])
+  }, [applyTrackedPose, playing])
 }

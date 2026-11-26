@@ -21,7 +21,21 @@ import {
   readXrPhysicsRuntime,
   subscribeXrPhysicsRuntime,
 } from './xrPhysicsRuntime'
-import { controlXrSharedAssetControls, inspectXrSharedAssetControls } from './xrSharedAssetControlRuntime'
+import {
+  controlXrSharedAssetControls,
+  inspectXrSharedAssetControls,
+} from './xrSharedAssetControlRuntime'
+import {
+  applyXrSharedObjectControllerMotion,
+  readXrSharedObjectControllerPrecisionMode,
+  setXrSharedObjectControllerPrecisionMode,
+  subscribeXrSharedObjectControllerPrecisionMode,
+} from './xrObjectControllerPrecisionModeRuntime'
+import { createXrNativeControllerInput } from './xrNativeControllerInput'
+import {
+  THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND,
+  THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND,
+} from './threeKeyboardChoreography'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
 import { inspectMotionControlTargets } from './motionControlTargetRuntime'
 import type { MotionControlCompanionTarget } from './motionControlSurfaceRuntime'
@@ -69,6 +83,11 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
     readXrPhysicsRuntime,
     readXrPhysicsRuntime,
   )
+  const precisionMode = React.useSyncExternalStore(
+    subscribeXrSharedObjectControllerPrecisionMode,
+    readXrSharedObjectControllerPrecisionMode,
+    readXrSharedObjectControllerPrecisionMode,
+  )
   const gameModeRuntime = React.useSyncExternalStore(
     subscribeGameModeSnapshot,
     readGameModeSnapshot,
@@ -84,6 +103,12 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
   const xr3d = targets.surfaces.xr3d
   const objectIdentification = xr3d.objectIdentification
   const selectedObject = objectIdentification.records.find(record => record.selected) || null
+  const [movementFeedback, setMovementFeedback] = React.useState('')
+  const precisionModeDescription = precisionMode === 'gesture'
+    ? `Gesture · with modifier ${THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND.toFixed(1)} m/s · without ${THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND.toFixed(1)} m/s`
+    : `${precisionMode === 'fine' ? 'Fine' : 'Standard'} · ${(precisionMode === 'fine'
+      ? THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND
+      : THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND).toFixed(1)} m/s`
   const animation = targets.surfaces.animation
   const gameMode = targets.surfaces.gameMode
   const sharedAsset = inspectXrSharedAssetControls()
@@ -99,6 +124,41 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
     onOpenTarget('xr-3d')
     requestXrSimulationWorkbenchOpen()
   }, [onOpenTarget])
+  const nudgeSelectedObject = React.useCallback((direction: Readonly<{
+    label: string
+    moveX: number
+    moveZ: number
+  }>) => {
+    if (!selectedObject) return
+    const selection = controlXrSharedAssetControls({ operation: 'select-target', targetId: selectedObject.id })
+    if (!selection.ok) {
+      setMovementFeedback(selection.message)
+      return
+    }
+    const speed = precisionMode === 'standard'
+      ? THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND
+      : THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND
+    const result = applyXrSharedObjectControllerMotion({
+      controllerInput: createXrNativeControllerInput({
+        moveX: direction.moveX,
+        moveZ: direction.moveZ,
+        modifier: true,
+        source: 'keyboard',
+      }),
+      deltaSeconds: 0.04 / speed,
+    })
+    setMovementFeedback(result.applied
+      ? `${selectedObject.label} moved 0.04 m ${direction.label}.`
+      : result.reason === 'obstructed'
+        ? `Move blocked by a collision.`
+        : result.reason === 'physics-owned'
+          ? `Physics currently owns ${selectedObject.label}.`
+        : result.reason === 'invalid-mark'
+          ? `${selectedObject.label} has no motion mark to move.`
+          : result.reason === 'inactive'
+            ? `${selectedObject.label} is not ready for movement. Select it again to prepare its path.`
+            : `${selectedObject.label} did not move (${result.reason}).`)
+  }, [precisionMode, selectedObject])
 
   return (
     <section
@@ -144,6 +204,39 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
               {selectedObject.category} · catalog size {selectedObject.catalogDimensionsMeters.join(' × ')} m · {selectedObject.physicsBodyAttached ? `${selectedObject.physicsBodyMode} body` : 'physics not attached'}
             </p>
           ) : null}
+          {selectedObject ? (
+            <>
+              <section className="grid gap-1" aria-label="Move selected object" data-kg-motion-control-object-nudges="0.04m">
+                <p className={cn('m-0 text-xs font-medium', UI_THEME_TOKENS.text.secondary)}>Move selected object · 0.04 m per tap</p>
+                <div className="grid grid-cols-2 gap-1" role="group" aria-label="Move selected object">
+                  <button type="button" className="App-toolbar__btn" onClick={() => nudgeSelectedObject({ label: 'forward', moveX: 0, moveZ: -1 })} data-kg-motion-control-object-nudge="forward">↑ Forward</button>
+                  <button type="button" className="App-toolbar__btn" onClick={() => nudgeSelectedObject({ label: 'backward', moveX: 0, moveZ: 1 })} data-kg-motion-control-object-nudge="backward">↓ Backward</button>
+                  <button type="button" className="App-toolbar__btn" onClick={() => nudgeSelectedObject({ label: 'left', moveX: -1, moveZ: 0 })} data-kg-motion-control-object-nudge="left">← Left</button>
+                  <button type="button" className="App-toolbar__btn" onClick={() => nudgeSelectedObject({ label: 'right', moveX: 1, moveZ: 0 })} data-kg-motion-control-object-nudge="right">→ Right</button>
+                </div>
+                <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)} aria-live="polite" data-kg-motion-control-object-nudge-status="1">{movementFeedback || 'Select an object, then tap a direction to move it.'}</p>
+              </section>
+              <PanelField label="Object movement speed">
+                <PanelSelect
+                  value={precisionMode}
+                  onValueChange={value => { setXrSharedObjectControllerPrecisionMode(value) }}
+                  aria-label="Object movement speed"
+                  data-kg-motion-control-precision-selector="page-session"
+                >
+                  <option value="gesture">Gesture</option>
+                  <option value="fine">Fine</option>
+                  <option value="standard">Standard</option>
+                </PanelSelect>
+              </PanelField>
+              <p
+                className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
+                aria-live="polite"
+                data-kg-motion-control-precision-active-mode={precisionMode}
+              >
+                {precisionModeDescription}
+              </p>
+            </>
+          ) : null}
           <button
             type="button"
             className="App-toolbar__btn justify-self-start"
@@ -154,7 +247,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             Fine-tune physics
           </button>
         </section>
-        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Live pose feeds the selected XR humanoid and the native physics controller without writing camera frames or pose history.</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>For live pose, press Start and keep one full body in frame. The bounding box only changes the overlay; use the direction buttons to move the selected object without pose input.</p>
         <TargetInvocation invocation={xr3d.invocation} />
         <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {xr3d.webMcpTool}</p>
       </article>
