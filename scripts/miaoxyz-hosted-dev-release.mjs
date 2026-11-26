@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { parseArgs } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 import {
@@ -18,6 +19,19 @@ export const DEV_DATABASE_NAME = 'agentic-miaoxyz-dev'
 export const DEV_DATABASE_ID = 'df2511e9-f7b1-4110-8421-b84038371263'
 const VERSION_ID = /^[0-9a-f-]{36}$/iu
 const SUBDOMAIN = /^[a-z0-9-]+$/u
+
+export const parseHostedDevReleaseArgs = args => ({ ...parseArgs({
+  args,
+  options: {
+    'repo-root': { type: 'string' },
+    candidate: { type: 'string' },
+    'expected-candidate-digest': { type: 'string' },
+    receipt: { type: 'string' },
+    'dev-receipt': { type: 'string' },
+  },
+  strict: true,
+  allowPositionals: false,
+}).values })
 
 export const createDevConfig = sourceConfig => {
   const dev = structuredClone(sourceConfig)
@@ -96,8 +110,9 @@ export const validateDevDatabaseInfo = (info, database) => {
   return location
 }
 
-export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORKER_NAME }) => {
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, {
+export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORKER_NAME, subdomain }) => {
+  if (!SUBDOMAIN.test(String(subdomain || ''))) throw new Error('MiaoXYZ Dev workers.dev subdomain variable is invalid')
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}/subdomain`, {
     headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(15000),
   })
@@ -106,8 +121,9 @@ export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORK
     throw new Error(`MiaoXYZ Dev workers.dev subdomain read failed with HTTP ${response.status}`)
   }
   const payload = await response.json()
-  const subdomain = payload?.success === true && payload.errors?.length === 0 ? payload.result?.subdomain : null
-  if (!SUBDOMAIN.test(String(subdomain || ''))) throw new Error('MiaoXYZ Dev workers.dev subdomain response is invalid')
+  if (payload?.success !== true || payload.errors?.length !== 0 || payload.result?.enabled !== true || payload.result?.previews_enabled !== false) {
+    throw new Error('MiaoXYZ Dev Worker must be enabled on workers.dev with preview URLs disabled')
+  }
   return `https://${workerName}.${subdomain}.workers.dev`
 }
 
@@ -218,6 +234,8 @@ export const deployDev = async ({ repoRoot, candidatePath, expectedCandidateDige
   const sourceConfig = readWorkerConfig(repoRoot)
   const devConfig = createDevConfig(sourceConfig)
   const { dev, database } = validateDevConfig(devConfig, sourceConfig.env?.production?.d1_databases?.[0]?.database_id)
+  const workersDevSubdomain = requireText(process.env.CLOUDFLARE_WORKERS_DEV_SUBDOMAIN, 'Cloudflare Workers.dev subdomain')
+  if (!SUBDOMAIN.test(workersDevSubdomain)) throw new Error('Cloudflare Workers.dev subdomain is invalid')
   const configPath = path.join(appRootFrom(repoRoot), `.wrangler-dev-release-${randomUUID()}.jsonc`)
   writeJson(configPath, devConfig, 0o600)
   let before
@@ -292,7 +310,7 @@ export const deployDev = async ({ repoRoot, candidatePath, expectedCandidateDige
     }
     deployedVersionId = newlyActive[0].versionId
     const token = requireText(process.env.CLOUDFLARE_API_TOKEN, 'Cloudflare API token')
-    origin = await workersDevOrigin({ accountId: candidate.baseline.accountId, token, workerName: dev.name })
+    origin = await workersDevOrigin({ accountId: candidate.baseline.accountId, token, workerName: dev.name, subdomain: workersDevSubdomain })
     probePassed = await probeDev({ origin, sourceRevision: candidate.source.revision,
       candidateDigest: candidate.candidateDigest, expectedVersionId: deployedVersionId })
     if (!probePassed) throw new Error('MiaoXYZ Dev workers.dev health readback failed')
@@ -324,12 +342,9 @@ export const verifyPromotion = ({ repoRoot, candidatePath, devReceiptPath, expec
   return validateDevPromotionReceipt({ receipt, candidate, config: createDevConfig(readWorkerConfig(repoRoot)) })
 }
 
-const args = new Map(process.argv.slice(3).filter(value => value.startsWith('--')).map(value => {
-  const index = value.indexOf('=')
-  return index < 0 ? [value.slice(2), ''] : [value.slice(2, index), value.slice(index + 1)]
-}))
-const requiredArg = name => requireText(args.get(name), `--${name}`)
-const root = path.resolve(args.get('repo-root') || path.join(import.meta.dirname, '..'))
+const args = parseHostedDevReleaseArgs(process.argv.slice(3))
+const requiredArg = name => requireText(args[name], `--${name}`)
+const root = path.resolve(args['repo-root'] || path.join(import.meta.dirname, '..'))
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv[2] === 'deploy') {
