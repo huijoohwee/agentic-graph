@@ -22,10 +22,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/browser-history-job-history-fetch-rollforward",
       "laneHead": "1dc59795b1cbcf26e123f242f30eceb7dc407a49",
-      "paths": [
-        "scripts/__tests__/production-browser-preflight.test.mjs",
-        "scripts/production-browser-history.mjs"
-      ],
+      "paths": ["scripts/__tests__/production-browser-preflight.test.mjs","scripts/production-browser-history.mjs"],
       "disposition": "deployed",
       "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
@@ -41,10 +38,7 @@
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/delivery-receipts-closeout",
       "laneHead": "5c1308fb8ef87320fbecfe8a165eb173359f1bba",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json",
-        "docs/reports/production-delivery-evidence-39163971889.json"
-      ],
+      "paths": [".agentic-os-delivery-dispositions.json","docs/reports/production-delivery-evidence-39163971889.json"],
       "disposition": "no-deploy",
       "candidateRevision": "a3a017ab2de24e913259ac30166433aac9a862bc",
       "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
@@ -536,6 +530,8 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
     },
+    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-runtime-parity-evidence","laneHead":"7949288fea556b2172d12d96b5fd00713e7a3ed7","paths":["docs/reports/miaoxyz-runtime-parity-closeout.json"],"disposition":"no-deploy","candidateRevision":"d2724583bd1789b43195f1ae6ac51de5136809e0","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-runtime-parity-closeout.json","evidenceDigest":"3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2122","reason":"The only changed path docs/reports/miaoxyz-runtime-parity-closeout.json is a read-only parity evidence report and is excluded from the product artifact; no Worker, Pages, route, migration, or D1 mutation is included."},
+    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-source-bound-worker-build-contract-fix","laneHead":"30cd8bdeba0ac4098c837764c02bc67c83a47360","paths":[".github/workflows/miaoxyz-production-release.yml","scripts/__tests__/production-pages-boundary-contract.test.mjs","scripts/miaoxyz-production-release-candidate.mjs","scripts/miaoxyz-production-release-core.mjs","scripts/miaoxyz-production-release-deploy.mjs","scripts/miaoxyz-production-release-source.json","scripts/miaoxyz-worker-source-sync.mjs","scripts/pages-mirror-sync.mjs"],"disposition":"no-deploy","candidateRevision":"d2724583bd1789b43195f1ae6ac51de5136809e0","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-runtime-parity-closeout.json","evidenceDigest":"3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2122","reason":"The exact source-lane paths .github/workflows/miaoxyz-production-release.yml, scripts/__tests__/production-pages-boundary-contract.test.mjs, scripts/miaoxyz-production-release-candidate.mjs, scripts/miaoxyz-production-release-core.mjs, scripts/miaoxyz-production-release-deploy.mjs, scripts/miaoxyz-production-release-source.json, scripts/miaoxyz-worker-source-sync.mjs, scripts/pages-mirror-sync.mjs are all excluded from the product artifact. They affect release control, source synchronization, or a contract test only. Production and local Dev app assets and catalog data match the retained report."},
     {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/production-baseline-capture-fix",
@@ -595,5 +591,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "bd93ebd1831ea255653a2c3cc991867e22f84b48ab9fa60a9f22ea7dbabcdfec"
+  "receiptDigest": "845fdd50de0d8d4ada380a6f7a49a68b2334749733b6945e4c0839472f7e2da8"
 }
