@@ -26,6 +26,29 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
           fetch-depth: 2
+      - name: Resolve exact MiaoXYZ product source pin
+        id: miaoxyz_source
+        run: |
+          node --input-type=module - <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs'
+          const pin = JSON.parse(readFileSync('scripts/miaoxyz-production-release-source.json', 'utf8'))
+          if (pin.schema !== 'agentic-graph/miaoxyz-source-pin/v1' || pin.repository !== 'huijoohwee/MiaoXYZ' || !/^[0-9a-f]{40}$/.test(pin.revision)) throw Error('MiaoXYZ source pin is invalid')
+          appendFileSync(process.env.GITHUB_OUTPUT, `revision=${pin.revision}\n`)
+          NODE
+      - name: Checkout exact pinned MiaoXYZ product source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: huijoohwee/MiaoXYZ
+          ref: ${{ steps.miaoxyz_source.outputs.revision }}
+          path: MiaoXYZ-source
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify pinned source is current protected MiaoXYZ main
+        env:
+          MIAOXYZ_SOURCE_REVISION: ${{ steps.miaoxyz_source.outputs.revision }}
+        run: |
+          test "$(git -C MiaoXYZ-source rev-parse HEAD)" = "$MIAOXYZ_SOURCE_REVISION"
+          test "$(git -C MiaoXYZ-source ls-remote origin refs/heads/main | cut -f1)" = "$MIAOXYZ_SOURCE_REVISION"
       - name: Enforce protected main and exact source
         env:
           SOURCE_SHA: ${{ inputs.source_sha }}
@@ -49,7 +72,7 @@ jobs:
         with:
           node-version: 22
       - name: Install pinned MiaoXYZ Wrangler
-        run: npm ci --prefix cloudflare/workers/miaoxyz
+        run: npm ci --prefix MiaoXYZ-source
       - name: Install Agentic Graph release-script dependencies
         env:
           AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
@@ -58,8 +81,9 @@ jobs:
       - name: Build shared Graph runtime dependency
         run: npm run build --workspace=grph-shared
       - name: Check generated Worker bindings
-        run: npm run types:check --prefix cloudflare/workers/miaoxyz
+        run: npm run types:check --prefix MiaoXYZ-source
       - name: Compile exact Production Worker without mutation
+        env: { MIAOXYZ_PRODUCT_SOURCE_ROOT: '${{ github.workspace }}/MiaoXYZ-source' }
         run: node ./scripts/miaoxyz-production-release.mjs dry-run --repo-root .
       - name: Prepare exact MiaoXYZ candidate and read-only rollback baseline
         id: candidate
@@ -68,6 +92,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           SOURCE_SHA: ${{ inputs.source_sha }}
+          MIAOXYZ_PRODUCT_SOURCE_ROOT: ${{ github.workspace }}/MiaoXYZ-source
         run: |
           node ./scripts/miaoxyz-production-release.mjs prepare \
             --repo-root . \
@@ -109,12 +134,35 @@ jobs:
           ref: ${{ inputs.source_sha }}
           fetch-depth: 1
           persist-credentials: false
+      - name: Resolve exact MiaoXYZ product source pin
+        id: miaoxyz_source
+        run: |
+          node --input-type=module - <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs'
+          const pin = JSON.parse(readFileSync('scripts/miaoxyz-production-release-source.json', 'utf8'))
+          if (pin.schema !== 'agentic-graph/miaoxyz-source-pin/v1' || pin.repository !== 'huijoohwee/MiaoXYZ' || !/^[0-9a-f]{40}$/.test(pin.revision)) throw Error('MiaoXYZ source pin is invalid')
+          appendFileSync(process.env.GITHUB_OUTPUT, `revision=${pin.revision}\n`)
+          NODE
+      - name: Checkout exact pinned MiaoXYZ product source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: huijoohwee/MiaoXYZ
+          ref: ${{ steps.miaoxyz_source.outputs.revision }}
+          path: MiaoXYZ-source
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify pinned source is current protected MiaoXYZ main
+        env:
+          MIAOXYZ_SOURCE_REVISION: ${{ steps.miaoxyz_source.outputs.revision }}
+        run: |
+          test "$(git -C MiaoXYZ-source rev-parse HEAD)" = "$MIAOXYZ_SOURCE_REVISION"
+          test "$(git -C MiaoXYZ-source ls-remote origin refs/heads/main | cut -f1)" = "$MIAOXYZ_SOURCE_REVISION"
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
       - name: Install pinned MiaoXYZ Wrangler
-        run: npm ci --prefix cloudflare/workers/miaoxyz
+        run: npm ci --prefix MiaoXYZ-source
       - name: Install Agentic Graph release-script dependencies
         env:
           AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
@@ -132,6 +180,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/approvals" > "$RUNNER_TEMP/miaoxyz-production-approvals.json"
       - name: Verify exact candidate before production mutation
+        env: { MIAOXYZ_PRODUCT_SOURCE_ROOT: '${{ github.workspace }}/MiaoXYZ-source' }
         run: |
           node ./scripts/miaoxyz-production-release.mjs verify \
             --repo-root . \
@@ -144,6 +193,7 @@ jobs:
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           MIAOXYZ_OPERATOR_ACCESS_TOKEN: ${{ secrets.MIAOXYZ_OPERATOR_ACCESS_TOKEN }}
           MIAOXYZ_RATE_LIMIT_HMAC_SECRET: ${{ secrets.MIAOXYZ_RATE_LIMIT_HMAC_SECRET }}
+          MIAOXYZ_PRODUCT_SOURCE_ROOT: ${{ github.workspace }}/MiaoXYZ-source
           EXPECTED_CANDIDATE_DIGEST: ${{ needs.miaoxyz_verify.outputs.candidate_digest }}
           RELEASE_REPOSITORY: ${{ github.repository }}
           RELEASE_RUN_ID: ${{ github.run_id }}

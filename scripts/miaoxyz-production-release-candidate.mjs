@@ -6,10 +6,11 @@ import { validateLocalReviewCandidate } from './production-release-authorization
 import { normalizeReleaseEvidence } from './lib/production-release-lifecycle-evidence.mjs'
 import {
   MIAOXYZ_BASELINE_SCHEMA, MIAOXYZ_CANDIDATE_SCHEMA, MIAOXYZ_GOVERNANCE_SCHEMA,
-  appRootFrom, digest, digestBytes, digestPattern, gitText, readCommittedWorkerFiles,
+  appRootFrom, digest, digestBytes, digestPattern, gitText, lifecycleCandidateSchema, readCommittedWorkerFiles,
   readWorkerConfig, requireDigest, requireSha, requireText, routePatterns, validateProductionConfig,
   versionPattern,
 } from './miaoxyz-production-release-core.mjs'
+import { inspectMiaoxyzProductSource } from './miaoxyz-worker-source-sync.mjs'
 
 export const collectVersions = value => {
   const found = new Map()
@@ -34,12 +35,12 @@ export const collectVersions = value => {
   return versions
 }
 
-export const wranglerPath = repoRoot => path.join(appRootFrom(repoRoot), 'node_modules/.bin/wrangler')
-export const runWrangler = (repoRoot, args, { allowMissingScript = false } = {}) => {
-  const appRoot = appRootFrom(repoRoot)
+const productRootFrom = repoRoot => appRootFrom(repoRoot, process.env.MIAOXYZ_PRODUCT_SOURCE_ROOT || undefined)
+export const wranglerPath = (repoRoot, productRoot = productRootFrom(repoRoot)) => path.join(productRoot, 'node_modules/.bin/wrangler')
+export const runWrangler = (repoRoot, args, { allowMissingScript = false, productRoot = productRootFrom(repoRoot) } = {}) => {
   try {
-    return execFileSync(wranglerPath(repoRoot), [...args, '--config', 'wrangler.jsonc'], {
-      cwd: appRoot,
+    return execFileSync(wranglerPath(repoRoot, productRoot), [...args, '--config', 'wrangler.jsonc'], {
+      cwd: productRoot,
       encoding: 'utf8',
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -79,8 +80,8 @@ export const cloudflareApiResult = async (url, token, { method = 'GET', body } =
 }
 
 const MIAOXYZ_MIGRATION_STATE_SCHEMA = 'agentic-miaoxyz-applied-migrations/v1'
-const migrationsFor = repoRoot => {
-  const migrationDirectory = path.join(appRootFrom(repoRoot), 'migrations')
+const migrationsFor = (repoRoot, productRoot = productRootFrom(repoRoot)) => {
+  const migrationDirectory = path.join(productRoot, 'migrations')
   const files = fs.readdirSync(migrationDirectory).filter(file => file.endsWith('.sql')).sort()
   if (!files.length || files.some(file => !/^\d+_[A-Za-z0-9_-]+\.sql$/u.test(file))) {
     throw new Error('MiaoXYZ local D1 migration inventory is missing or malformed')
@@ -88,7 +89,7 @@ const migrationsFor = repoRoot => {
   return { migrationDirectory, files }
 }
 
-export const captureAppliedMigrationNames = async ({ repoRoot, accountId, databaseId, migrationsTable = 'd1_migrations' }) => {
+export const captureAppliedMigrationNames = async ({ repoRoot, productRoot = productRootFrom(repoRoot), accountId, databaseId, migrationsTable = 'd1_migrations' }) => {
   const token = requireText(process.env.CLOUDFLARE_API_TOKEN, 'read-only Cloudflare API token')
   const account = requireText(accountId, 'Cloudflare account ID').toLowerCase()
   const database = requireText(databaseId, 'MiaoXYZ production D1 ID').toLowerCase()
@@ -112,7 +113,7 @@ export const captureAppliedMigrationNames = async ({ repoRoot, accountId, databa
   }
   if (tables.length === 0) return []
   const rows = await query(`SELECT name FROM "${migrationsTable}" ORDER BY name`)
-  const localMigrations = new Set(migrationsFor(repoRoot).files)
+  const localMigrations = new Set(migrationsFor(repoRoot, productRoot).files)
   const names = rows.map(row => row?.name)
   if (names.some(name => typeof name !== 'string' || !localMigrations.has(name)) ||
       new Set(names).size !== names.length) {
@@ -149,23 +150,47 @@ export const captureRouteInventory = async () => {
   return { accountId, zoneId, routes: scopedRoutes }
 }
 
+const miaoApiPath = '/MiaoXYZ/api'
+const routeCanMatchApex = route => {
+  const pattern = route.pattern.replace(/^https?:\/\//iu, '')
+  const slash = pattern.indexOf('/')
+  const hostname = (slash < 0 ? pattern : pattern.slice(0, slash)).toLowerCase()
+  return hostname === 'airvio.co' || hostname === '*airvio.co' || hostname === '*'
+}
+const routeOverlapsMiaoApi = route => {
+  if (!routeCanMatchApex(route)) return false
+  const pattern = route.pattern.replace(/^https?:\/\//iu, '')
+  const slash = pattern.indexOf('/')
+  const routePath = slash < 0 ? '/' : pattern.slice(slash)
+  const wildcardIndex = routePath.indexOf('*')
+  if (wildcardIndex < 0) return routePath === miaoApiPath || routePath.startsWith(`${miaoApiPath}/`)
+  const routePrefix = routePath.slice(0, wildcardIndex)
+  return routePrefix === '' || miaoApiPath.startsWith(routePrefix) ||
+    `${miaoApiPath}/`.startsWith(routePrefix) || routePrefix.startsWith(`${miaoApiPath}/`)
+}
+
 export const validateRouteOwnership = (routeInventory, workerName) => {
   for (const route of routeInventory.routes) {
-    const pattern = route.pattern.replace(/^https?:\/\//iu, '')
-    const slash = pattern.indexOf('/')
-    const hostname = (slash < 0 ? pattern : pattern.slice(0, slash)).toLowerCase()
-    if (hostname !== 'airvio.co' && hostname !== '*airvio.co' && hostname !== '*') continue
-    const routePath = slash < 0 ? '/' : pattern.slice(slash)
-    const literalPathPrefix = routePath.split('*', 1)[0]
-    if (routePath !== '/MiaoXYZ' && !routePath.startsWith('/MiaoXYZ/') && literalPathPrefix !== '/MiaoXYZ') continue
+    if (!routeOverlapsMiaoApi(route)) continue
     if (route.script !== workerName) {
       throw new Error(`MiaoXYZ route overlap is owned by ${route.script || 'a route without a Worker'}: ${route.pattern}`)
     }
   }
 }
 
-export const captureProductionBaseline = async repoRoot => {
-  const config = readWorkerConfig(repoRoot)
+export const assertMiaoxyzApiRouteSet = (routeInventory, workerName) => {
+  validateRouteOwnership(routeInventory, workerName)
+  const actual = routeInventory.routes.filter(routeOverlapsMiaoApi)
+    .map(route => ({ pattern: route.pattern.replace(/^https?:\/\//iu, ''), script: route.script }))
+    .sort((left, right) => left.pattern.localeCompare(right.pattern))
+  const expected = [...routePatterns].sort().map(pattern => ({ pattern, script: workerName }))
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error('MiaoXYZ Production route inventory does not match the exact API-only route set')
+  }
+}
+
+export const captureProductionBaseline = async (repoRoot, productRoot = productRootFrom(repoRoot)) => {
+  const config = readWorkerConfig(repoRoot, productRoot)
   const production = config.env?.production
   if (!production) throw new Error('production Wrangler environment is missing')
   const database = production.d1_databases?.find(binding => binding.binding === 'DB')
@@ -176,14 +201,14 @@ export const captureProductionBaseline = async repoRoot => {
   validateRouteOwnership(routeInventory, production.name)
   const statusText = runWrangler(repoRoot, [
     'deployments', 'status', '--name', production.name, '--json', '--env', 'production',
-  ], { allowMissingScript: true })
+  ], { allowMissingScript: true, productRoot })
   let status = null
   if (statusText.trim()) {
     try { status = JSON.parse(statusText) } catch { throw new Error('Wrangler deployment status did not return JSON') }
   }
   const d1InfoText = runWrangler(repoRoot, [
     'd1', 'info', database.database_name, '--json', '--env', 'production',
-  ])
+  ], { productRoot })
   let d1Info
   try { d1Info = JSON.parse(d1InfoText) } catch { throw new Error('Wrangler D1 info did not return JSON') }
   const d1Database = d1Info?.result && typeof d1Info.result === 'object' ? d1Info.result : d1Info
@@ -201,6 +226,7 @@ export const captureProductionBaseline = async repoRoot => {
   }
   const appliedMigrations = await captureAppliedMigrationNames({
     repoRoot,
+    productRoot,
     accountId: routeInventory.accountId,
     databaseId: database.database_id,
     migrationsTable: database.migrations_table ?? 'd1_migrations',
@@ -254,13 +280,15 @@ export const validateBaseline = baseline => {
   return baseline
 }
 
-export const artifactDigests = repoRoot => readCommittedWorkerFiles(repoRoot)
-export const migrationsDigest = repoRoot => {
-  const { migrationDirectory, files } = migrationsFor(repoRoot)
-  return digest(files.map(file => ({ file, digest: digestBytes(fs.readFileSync(path.join(migrationDirectory, file))) })))
+export const artifactDigests = (repoRoot, productRoot) => productRoot
+  ? inspectMiaoxyzProductSource({ repoRoot, productRoot }).workerFiles
+  : readCommittedWorkerFiles(repoRoot)
+export const migrationsDigest = (repoRoot, productRoot = productRootFrom(repoRoot)) => {
+  const { migrationDirectory, files } = migrationsFor(repoRoot, productRoot)
+  return digest(files.map(file => ({ relativePath: `migrations/${file}`, digest: digestBytes(fs.readFileSync(path.join(migrationDirectory, file))) })))
 }
 
-export const createCandidateCore = ({ repoRoot, sourceRevision, sourceTree, localReview, releaseEvidence, governanceEvidence, baseline }) => {
+export const createCandidateCore = ({ repoRoot, productRoot, sourceRevision, sourceTree, localReview, releaseEvidence, governanceEvidence, baseline }) => {
   requireSha(sourceRevision, 'source revision')
   requireSha(sourceTree, 'source tree')
   validateLocalReviewCandidate(localReview)
@@ -272,11 +300,13 @@ export const createCandidateCore = ({ repoRoot, sourceRevision, sourceTree, loca
     sourceRevision,
   })
   validateBaseline(baseline)
-  if (baseline.d1DatabaseId !== readWorkerConfig(repoRoot).env?.production?.d1_databases?.find(binding => binding.binding === 'DB')?.database_id) {
+  const productSource = inspectMiaoxyzProductSource({ repoRoot, productRoot })
+  const config = readWorkerConfig(repoRoot, productSource.root)
+  if (baseline.d1DatabaseId !== config.env?.production?.d1_databases?.find(binding => binding.binding === 'DB')?.database_id) {
     throw new Error('MiaoXYZ baseline D1 identity drifted from Wrangler configuration')
   }
-  const { production, databaseId } = validateProductionConfig(readWorkerConfig(repoRoot), governanceEvidence)
-  const files = artifactDigests(repoRoot)
+  const { production, databaseId } = validateProductionConfig(config, governanceEvidence)
+  const files = productSource.workerFiles
   const target = {
     workerName: production.name,
     routes: routePatterns,
@@ -286,12 +316,21 @@ export const createCandidateCore = ({ repoRoot, sourceRevision, sourceTree, loca
     schema: MIAOXYZ_CANDIDATE_SCHEMA,
     status: 'awaiting-human-authorization',
     source: { repository: 'huijoohwee/agentic-graph', revision: sourceRevision, tree: sourceTree },
+    productSource: {
+      repository: productSource.repository,
+      revision: productSource.revision,
+      tree: productSource.tree,
+      treeDigest: productSource.treeDigest,
+      manifestDigest: productSource.manifestDigest,
+    },
     target,
     worker: {
       artifactDigest: digest(files),
       fileCount: files.length,
-      wranglerConfigDigest: digest(readWorkerConfig(repoRoot)),
-      migrationsDigest: migrationsDigest(repoRoot),
+      pagesArtifactDigest: productSource.pagesArtifactDigest,
+      pagesFileCount: productSource.pagesFiles.length,
+      wranglerConfigDigest: digest(config),
+      migrationsDigest: productSource.migrationDigest,
     },
     database: { name: 'agentic-miaoxyz-production', id: databaseId },
     governance: {
@@ -312,18 +351,20 @@ export const createMiaoxyzCandidate = input => {
   const candidateDigest = digest(core)
   const targetDigest = digest(core.target)
   const lifecycleCandidateDigest = digest({
-    schema: 'agentic-miaoxyz-lifecycle-candidate/v1',
+    schema: lifecycleCandidateSchema,
     sourceRevision: core.source.revision,
+    productSourceRevision: core.productSource.revision,
     candidateDigest,
     targetDigest,
     artifactDigest: core.worker.artifactDigest,
+    pagesArtifactDigest: core.worker.pagesArtifactDigest,
     rollbackBaselineDigest: digest(core.baseline),
     releaseEvidenceDigest: core.releaseEvidenceDigest,
   })
   return Object.freeze({ ...core, candidateDigest, lifecycleCandidateDigest, targetDigest })
 }
 
-export const validateMiaoxyzCandidate = (candidate, repoRoot) => {
+export const validateMiaoxyzCandidate = (candidate, repoRoot, productRoot) => {
   if (!candidate || candidate.schema !== MIAOXYZ_CANDIDATE_SCHEMA || candidate.status !== 'awaiting-human-authorization') {
     throw new Error('MiaoXYZ Production candidate schema or state is invalid')
   }
@@ -337,11 +378,13 @@ export const validateMiaoxyzCandidate = (candidate, repoRoot) => {
   if (candidateDigest !== digest(core)) throw new Error('MiaoXYZ candidate digest drifted')
   if (targetDigest !== digest(core.target)) throw new Error('MiaoXYZ target digest drifted')
   const expectedLifecycleDigest = digest({
-    schema: 'agentic-miaoxyz-lifecycle-candidate/v1',
+    schema: lifecycleCandidateSchema,
     sourceRevision: core.source.revision,
+    productSourceRevision: core.productSource?.revision,
     candidateDigest,
     targetDigest,
     artifactDigest: core.worker.artifactDigest,
+    pagesArtifactDigest: core.worker.pagesArtifactDigest,
     rollbackBaselineDigest: digest(core.baseline),
     releaseEvidenceDigest: core.releaseEvidenceDigest,
   })
@@ -349,8 +392,14 @@ export const validateMiaoxyzCandidate = (candidate, repoRoot) => {
   requireSha(core.source.revision, 'MiaoXYZ source revision')
   requireSha(core.source.tree, 'MiaoXYZ source tree')
   if (core.source.repository !== 'huijoohwee/agentic-graph') throw new Error('MiaoXYZ candidate repository identity is invalid')
+  requireSha(core.productSource?.revision, 'MiaoXYZ product source revision')
+  requireSha(core.productSource?.tree, 'MiaoXYZ product source tree')
+  requireDigest(core.productSource?.treeDigest, 'MiaoXYZ product source tree digest')
+  requireDigest(core.productSource?.manifestDigest, 'MiaoXYZ release source manifest digest')
+  if (core.productSource?.repository !== 'huijoohwee/MiaoXYZ') throw new Error('MiaoXYZ product source repository identity is invalid')
   for (const [value, label] of [
     [core.worker?.artifactDigest, 'Worker artifact digest'],
+    [core.worker?.pagesArtifactDigest, 'Pages artifact digest'],
     [core.worker?.wranglerConfigDigest, 'Wrangler config digest'],
     [core.worker?.migrationsDigest, 'D1 migrations digest'],
     [core.localReviewCandidateDigest, 'local review candidate digest'],
@@ -363,20 +412,26 @@ export const validateMiaoxyzCandidate = (candidate, repoRoot) => {
   if (!Number.isSafeInteger(core.worker?.fileCount) || core.worker.fileCount < 1) {
     throw new Error('MiaoXYZ candidate Worker file count is invalid')
   }
-  const config = readWorkerConfig(repoRoot)
+  const product = inspectMiaoxyzProductSource({ repoRoot, productRoot, revision: core.productSource.revision })
+  const config = readWorkerConfig(repoRoot, product.root)
   const { production, databaseId } = validateProductionConfig(config, {
     schema: MIAOXYZ_GOVERNANCE_SCHEMA,
     status: 'approved',
     ...core.governance,
   })
-  const files = artifactDigests(repoRoot)
+  const files = product.workerFiles
   if (core.target?.workerName !== production.name ||
       JSON.stringify(core.target?.routes) !== JSON.stringify(routePatterns) ||
       core.target?.basePath !== production.vars.APP_BASE_PATH ||
       core.worker.artifactDigest !== digest(files) ||
       core.worker.fileCount !== files.length ||
+      core.worker.pagesArtifactDigest !== product.pagesArtifactDigest ||
+      core.worker.pagesFileCount !== product.pagesFiles.length ||
+      core.productSource.tree !== product.tree ||
+      core.productSource.treeDigest !== product.treeDigest ||
+      core.productSource.manifestDigest !== product.manifestDigest ||
       core.worker.wranglerConfigDigest !== digest(config) ||
-      core.worker.migrationsDigest !== migrationsDigest(repoRoot) ||
+      core.worker.migrationsDigest !== product.migrationDigest ||
       core.database?.name !== 'agentic-miaoxyz-production' ||
       core.database?.id !== databaseId ||
       core.baseline?.d1DatabaseId !== databaseId ||

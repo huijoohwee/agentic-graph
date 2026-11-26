@@ -22,12 +22,11 @@ import {
   XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
   XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
 } from './xr-v2/production-publish-contract.mjs'
+import { inspectMiaoxyzProductSource, readMiaoxyzSourcePin } from './miaoxyz-worker-source-sync.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-export const MIAOXYZ_SOURCE_PIN = Object.freeze({
-  repository: 'huijoohwee/MiaoXYZ',
-  revision: 'e0080f11a6004e6cb07e6c0ee6c37d237edfae29',
-})
+const miaoxyzSourcePin = readMiaoxyzSourcePin(path.resolve(__dirname, '..'))
+export const MIAOXYZ_SOURCE_PIN = Object.freeze({ repository: miaoxyzSourcePin.repository, revision: miaoxyzSourcePin.revision })
 const joinRelativePath = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
@@ -91,6 +90,11 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   if (!/^[0-9a-f]{40}$/.test(miaoxyzSourceRevision) || miaoxyzSourceRevision !== MIAOXYZ_SOURCE_PIN.revision) {
     throw new Error(`MiaoXYZ source must match the pinned protected main commit ${MIAOXYZ_SOURCE_PIN.revision}`)
   }
+  const miaoxyzProductSource = inspectMiaoxyzProductSource({
+    repoRoot: agenticGraphRoot,
+    productRoot: miaoxyzSourceRoot,
+    revision: miaoxyzSourceRevision,
+  })
   const baseDemoSyncPlan = await planAgenticBaseDemoSync({ graphRoot: agenticGraphRoot, mirrorRoot })
   const sheetsSyncPlan = await planSheetsSync({ graphRoot: agenticGraphRoot, mirrorRoot })
   const offlineAssetManifestPath = path.resolve(
@@ -155,7 +159,15 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   if (!await existsDir(miaoxyzPublicDir)) throw new Error(`Missing pinned MiaoXYZ public assets: ${miaoxyzPublicDir}`)
 
   const sourceFiles = await listFiles(distDir)
-  const miaoxyzSourceFiles = await listFiles(miaoxyzPublicDir)
+  const miaoxyzSourceFiles = (await listFiles(miaoxyzPublicDir)).sort((left, right) => left.localeCompare(right))
+  const pinnedPublicFiles = miaoxyzProductSource.pagesFiles
+    .filter(record => record.relativePath.startsWith('content/MiaoXYZ/'))
+    .map(record => record.relativePath.slice('content/MiaoXYZ/'.length))
+    .filter(relativePath => relativePath !== '.well-known/source-revision.json')
+    .sort((left, right) => left.localeCompare(right))
+  if (JSON.stringify(miaoxyzSourceFiles) !== JSON.stringify(pinnedPublicFiles)) {
+    throw new Error('MiaoXYZ Pages directory contains files outside the tracked pinned source manifest')
+  }
   const miaoxyzMarkerPath = path.resolve(miaoxyzTargetDir, '.well-known', 'source-revision.json')
   const miaoxyzMarkerBody = `${JSON.stringify({
     schema: 'miaoxyz-generated-pages-source/v1',
