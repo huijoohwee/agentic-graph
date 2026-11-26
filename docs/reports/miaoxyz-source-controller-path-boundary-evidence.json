@@ -1,0 +1,58 @@
+{
+  "schema": "agentic-graph-miaoxyz-source-controller-path-boundary/v1",
+  "observedAt": "2026-11-26T14:55:10.431Z",
+  "decision": "no-deploy",
+  "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2120",
+  "sourceLane": {
+    "ref": "agent/device-cba000d3779d/miaoxyz-source-bound-worker-build-contract-fix",
+    "head": "30cd8bdeba0ac4098c837764c02bc67c83a47360",
+    "baseRevision": "b8c45599954534250a63e53e075e8b7b63d02100",
+    "paths": [
+      ".github/workflows/miaoxyz-hosted-staged-release.yml",
+      ".github/workflows/miaoxyz-production-release.yml",
+      ".github/workflows/release.yml",
+      "docs/collaboration-runtime-contract.md",
+      "scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs",
+      "scripts/__tests__/production-pages-boundary-contract.test.mjs",
+      "scripts/check-collaboration-runtime.mjs",
+      "scripts/miaoxyz-hosted-dev-release.mjs",
+      "scripts/miaoxyz-production-release-candidate.mjs",
+      "scripts/miaoxyz-production-release-core.mjs",
+      "scripts/miaoxyz-production-release-deploy.mjs",
+      "scripts/miaoxyz-production-release-source.json",
+      "scripts/miaoxyz-worker-source-sync.mjs",
+      "scripts/pages-mirror-sync.mjs"
+    ]
+  },
+  "pathAssessment": {
+    ".github/workflows/miaoxyz-hosted-staged-release.yml": ".github/workflows/miaoxyz-hosted-staged-release.yml is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    ".github/workflows/miaoxyz-production-release.yml": ".github/workflows/miaoxyz-production-release.yml is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    ".github/workflows/release.yml": ".github/workflows/release.yml is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "docs/collaboration-runtime-contract.md": "docs/collaboration-runtime-contract.md is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs": "scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/__tests__/production-pages-boundary-contract.test.mjs": "scripts/__tests__/production-pages-boundary-contract.test.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/check-collaboration-runtime.mjs": "scripts/check-collaboration-runtime.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-hosted-dev-release.mjs": "scripts/miaoxyz-hosted-dev-release.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-production-release-candidate.mjs": "scripts/miaoxyz-production-release-candidate.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-production-release-core.mjs": "scripts/miaoxyz-production-release-core.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-production-release-deploy.mjs": "scripts/miaoxyz-production-release-deploy.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-production-release-source.json": "scripts/miaoxyz-production-release-source.json is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/miaoxyz-worker-source-sync.mjs": "scripts/miaoxyz-worker-source-sync.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset.",
+    "scripts/pages-mirror-sync.mjs": "scripts/pages-mirror-sync.mjs is release governance, release-source synchronization, a contract test, or documentation; it is excluded from the MiaoXYZ product artifact. It changes no Worker application file, catalog data, or published asset."
+  },
+  "artifactBoundary": {
+    "workerRoot": "cloudflare/workers/miaoxyz/",
+    "productArtifactsChanged": false,
+    "reason": "The exact registered source-lane paths are all outside the MiaoXYZ Worker product root and Pages product artifact. They affect release control, source synchronization, a release contract test, or collaboration documentation."
+  },
+  "runtimeParityReference": {
+    "path": "docs/reports/miaoxyz-runtime-parity-closeout.json",
+    "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823",
+    "reportSha256": "3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf",
+    "catalogByteIdentical": true,
+    "assetsByteIdentical": true,
+    "productionWorkerVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23"
+  },
+  "reason": "All exact paths .github/workflows/miaoxyz-hosted-staged-release.yml, .github/workflows/miaoxyz-production-release.yml, .github/workflows/release.yml, docs/collaboration-runtime-contract.md, scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs, scripts/__tests__/production-pages-boundary-contract.test.mjs, scripts/check-collaboration-runtime.mjs, scripts/miaoxyz-hosted-dev-release.mjs, scripts/miaoxyz-production-release-candidate.mjs, scripts/miaoxyz-production-release-core.mjs, scripts/miaoxyz-production-release-deploy.mjs, scripts/miaoxyz-production-release-source.json, scripts/miaoxyz-worker-source-sync.mjs, scripts/pages-mirror-sync.mjs are excluded from the product artifact. This is a no-deploy disposition for release-control and source-governance code; no MiaoXYZ Worker artifact, catalog, route, migration, or D1 data changed.",
+  "authorizesDeployment": false
+}
