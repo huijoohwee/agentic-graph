@@ -1,5 +1,5 @@
 // =============================================================================
-// Media R2 surface — agentic-graph-storage worker
+// Media D1 surface — agentic-graph-storage worker
 // agentic-graph-widget-canvas-media spec · Tasks 7.1, 7.2
 // Requirements R3.3, R4.1, R4.2, R4.4, R4.5, R4.6, R9.3, R9.4, R9.5
 //
@@ -14,10 +14,9 @@
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
   type AgenticGraphStorageErrorResponse,
-  type AgenticGraphStorageR2BucketLike,
-  type AgenticGraphStorageR2ObjectLike,
 } from './contract'
 import { normalizeString } from './db'
+import { D1_BLOB_MAX_OBJECT_BYTES, readD1Blob, readD1BlobDatabase, readD1BlobRequest, writeD1Blob } from './d1BlobStore'
 import {
   MEDIA_AUTH_UNAUTHENTICATED_CODE,
   MEDIA_AUTH_UNAUTHORIZED_CODE,
@@ -39,12 +38,11 @@ export const AGENTIC_OS_MEDIA_ROUTE_PREFIX = '/api/storage/media/'
 
 // -----------------------------------------------------------------------------
 // Env duck-type — avoids import cycle with the canvas contract.
-// Media bytes share the canonical generated-artifact R2 bucket so uploaded
-// objects appear under the operator-owned agentic-graph-storage-blobs/airvio/ prefix.
+// Media bytes share the bounded D1 blob store and preserve the airvio/runs key namespace.
 // -----------------------------------------------------------------------------
 
 export interface AgenticGraphStorageMediaEnv {
-  AGENTIC_OS_STORAGE_BLOB_BUCKET?: AgenticGraphStorageR2BucketLike
+  DB?: unknown
   [key: string]: unknown
 }
 
@@ -103,7 +101,7 @@ export const isAgenticGraphStorageMediaRoute = (
 // Key extraction
 //
 // Path format:  /api/storage/media/airvio/runs/{runId}/{stageId}/{shotId}.{ext}
-// R2 object key: airvio/runs/{runId}/{stageId}/{shotId}.{ext}
+// D1 object key: airvio/runs/{runId}/{stageId}/{shotId}.{ext}
 //
 // Validation mirrors blob.ts: no traversal segments, no control characters.
 // -----------------------------------------------------------------------------
@@ -145,22 +143,10 @@ export const readMediaObjectKey = (pathname: string): string | null => {
 }
 
 // -----------------------------------------------------------------------------
-// Bucket helper
+// D1 binding helper
 // -----------------------------------------------------------------------------
 
-const readMediaBucket = (env: AgenticGraphStorageMediaEnv): AgenticGraphStorageR2BucketLike | null => {
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  if (!bucket || typeof bucket.put !== 'function' || typeof bucket.get !== 'function') return null
-  return bucket
-}
-
-// -----------------------------------------------------------------------------
-// R2 etag helper (mirrors blob.ts)
-// -----------------------------------------------------------------------------
-
-const readR2ObjectEtag = (
-  object: AgenticGraphStorageR2ObjectLike | null | undefined,
-): string | null => normalizeString(object?.httpEtag || object?.etag || '') || null
+const readMediaDb = (env: AgenticGraphStorageMediaEnv) => readD1BlobDatabase(env)
 
 // -----------------------------------------------------------------------------
 // Auth enforcement helper
@@ -205,14 +191,16 @@ export const handleMediaWrite = async (
     return errorResponse(400, 'bad_request', 'invalid media object key; expected airvio/runs/{runId}/{stageId}/{shotId}.{ext}')
   }
 
-  // Auth check — must come before any R2 or data access
+  // Auth check — must come before any D1 access
   const authError = await enforceAuth(request, objectKey, authProvider)
   if (authError) return authError
 
-  const bucket = readMediaBucket(env)
-  if (!bucket) {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTIC_OS_STORAGE_BLOB_BUCKET')
-  }
+  const db = readMediaDb(env)
+  if (!db) return errorResponse(503, 'server_error', 'D1 blob storage is unavailable')
+  const upload = await readD1BlobRequest(request)
+  if (!upload.ok) return errorResponse(upload.reason === 'too-large' ? 413 : 400, 'bad_request',
+    upload.reason === 'too-large' ? `media payload exceeds ${D1_BLOB_MAX_OBJECT_BYTES} byte limit` : 'media upload body length is invalid')
+  const bytes = upload.body
 
   const contentType =
     normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
@@ -222,18 +210,16 @@ export const handleMediaWrite = async (
     ) || null
 
   const storedAtMs = Date.now()
-
-  const object = await bucket.put(objectKey, request.body || null, {
-    httpMetadata: {
-      contentType,
-    },
-    customMetadata: {
-      ...(contentHash ? { contentHash } : {}),
-      storedAtMs: String(storedAtMs),
-    },
-  })
-
-  const etag = readR2ObjectEtag(object)
+  let saved: Awaited<ReturnType<typeof writeD1Blob>>
+  try {
+    saved = await writeD1Blob({ db, objectKey, body: bytes, contentType, contentHash, nowMs: storedAtMs,
+      customMetadata: { ...(contentHash ? { contentHash } : {}), storedAtMs: String(storedAtMs) } })
+  } catch (error) {
+    if (String(error).includes('graph_d1_blob_quota_exceeded')) {
+      return errorResponse(507, 'server_error', 'D1 blob storage quota is exhausted')
+    }
+    throw error
+  }
 
   const responseBody = {
     ok: true,
@@ -241,8 +227,8 @@ export const handleMediaWrite = async (
     objectKey,
     contentType,
     contentHash,
-    etag,
-    storedAtMs,
+    etag: `"${saved.etag}"`,
+    storedAtMs: saved.uploadedAtMs,
     publicPath: `${AGENTIC_OS_MEDIA_ROUTE_PREFIX}${objectKey}`,
   }
 
@@ -275,34 +261,26 @@ export const handleMediaRead = async (
     return errorResponse(400, 'bad_request', 'invalid media object key; expected airvio/runs/{runId}/{stageId}/{shotId}.{ext}')
   }
 
-  // Auth check — must come before any R2 or data access
+  // Auth check — must come before any D1 access
   const authError = await enforceAuth(request, objectKey, authProvider)
   if (authError) return authError
 
-  const bucket = readMediaBucket(env)
-  if (!bucket) {
-    return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTIC_OS_STORAGE_BLOB_BUCKET')
-  }
-
-  const object =
-    request.method === 'HEAD' && typeof bucket.head === 'function'
-      ? await bucket.head(objectKey)
-      : await bucket.get(objectKey)
-
-  if (!object) {
+  const db = readMediaDb(env)
+  if (!db) return errorResponse(503, 'server_error', 'D1 blob storage is unavailable')
+  const stored = await readD1Blob(db, objectKey, request.method !== 'HEAD')
+  if (!stored) {
     return errorResponse(404, 'not_found', `media object not found: ${objectKey}`)
   }
 
   const headers = new Headers(MEDIA_CORS_HEADERS)
-  if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers)
-  if (!headers.get('content-type')) headers.set('content-type', 'application/octet-stream')
+  headers.set('content-type', stored.object.content_type || 'application/octet-stream')
   headers.set('cache-control', headers.get('cache-control') || 'public, max-age=31536000, immutable')
-
-  const etag = readR2ObjectEtag(object)
-  if (etag) headers.set('etag', etag)
+  headers.set('content-length', String(stored.object.size_bytes))
+  headers.set('etag', `"${stored.object.etag}"`)
+  headers.set('last-modified', new Date(stored.object.updated_at).toUTCString())
   headers.set('x-agentic-graph-storage-object-key', objectKey)
 
-  return new Response(request.method === 'HEAD' ? null : object.body || null, {
+  return new Response(request.method === 'HEAD' ? null : stored.body || null, {
     status: 200,
     headers,
   })

@@ -5,6 +5,8 @@ import { buildAgenticGraphStorageMediaWorkspace } from '../../../../canvas/src/l
 import { AGENTIC_OS_STORAGE_API_VERSION, buildAgenticGraphStorageMediaPath } from '../contract'
 import { createAgenticGraphStorageWorker } from '../index'
 import { authenticateAgenticGraphStorageSyncRequest } from '../storageSyncSecurity'
+import { readD1Blob, writeD1Blob } from '../d1BlobStore'
+import type { D1DatabaseLike } from '../db'
 
 const WORKSPACE = 'workspace:browser-media-security'
 const CAPABILITY = '/api/storage/media-capabilities'
@@ -18,6 +20,10 @@ type Fixture = Awaited<ReturnType<typeof createFixture>>
 const request = (fixture: Fixture, path: string, init: RequestInit = {}) => fixture.fetch(
   new URL(path, fixture.origin), { ...init, credentials: 'same-origin' },
 )
+const storeBlob = (fixture: Fixture, objectKey: string, value: string) => writeD1Blob({
+  db: fixture.env.DB as unknown as D1DatabaseLike, objectKey, body: new TextEncoder().encode(value),
+  contentType: 'application/octet-stream', contentHash: null,
+})
 const mint = (fixture: Fixture, operation: 'read' | 'write' = 'write', workspaceId = WORKSPACE) =>
   request(fixture, CAPABILITY, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ workspaceId, objectKey: fixture.objectKey, operation, ttlSeconds: 300 }) })
@@ -130,7 +136,7 @@ test('artifact cookies preserve default bearer and raw-media boundaries while re
   assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 0)
 })
 
-test('browser blob delivery preserves byte limits, workspace ownership and read-only roles', async () => {
+test('browser D1 blob delivery preserves byte limits, workspace ownership and read-only roles', async () => {
   const fixture = await createFixture()
   fixture.env.AGENTIC_OS_STORAGE_BLOB_MAX_BYTES = '8'
   const path = `/api/storage/blob/${encodeURIComponent(WORKSPACE)}/invoice.pdf`
@@ -143,7 +149,8 @@ test('browser blob delivery preserves byte limits, workspace ownership and read-
   fixture.env.DB.workspaceMemberships.get(fixture.membershipId)!.role = 'viewer'
   assert.equal((await write('replace')).status, 403)
   assert.equal(await (await request(fixture, path)).text(), '%PDF')
-  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 1)
+  assert.equal(fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size, 0)
+  assert.equal(fixture.env.DB.d1BlobObjects.size, 1)
 })
 
 test('media replay and deletion preserve reserved characters and literal percent escapes in object keys', async () => {
@@ -184,14 +191,13 @@ test('media replay and deletion preserve reserved characters and literal percent
   assert.equal(catalog.artifacts.length, 1)
   assert.equal(catalog.artifacts[0].objectKey, fixture.objectKey)
   assert.equal(catalog.artifacts[0].publicPath, path)
-  const bucket = fixture.env.AGENTIC_OS_STORAGE_BLOB_BUCKET
   const similarKey = fixture.objectKey.replace('%23', '#')
-  await bucket.put(similarKey, 'other-owned-bytes')
+  await storeBlob(fixture, similarKey, 'other-owned-bytes')
   const deleted = await request(fixture,
     `${ASSETS}?workspaceId=${encodeURIComponent(WORKSPACE)}&artifactId=${encodeURIComponent(artifact.artifactId)}`,
     { method: 'DELETE' })
   assert.equal(deleted.status, 200)
-  assert.equal(bucket.objects.has(fixture.objectKey), false)
-  assert.equal(new TextDecoder().decode(bucket.objects.get(similarKey)!.bytes), 'other-owned-bytes',
+  assert.equal(await readD1Blob(fixture.env.DB as unknown as D1DatabaseLike, fixture.objectKey), null)
+  assert.equal(new TextDecoder().decode((await readD1Blob(fixture.env.DB as unknown as D1DatabaseLike, similarKey))?.body), 'other-owned-bytes',
     'Deleting a literal percent key must not delete the decoded-looking neighbor')
 })

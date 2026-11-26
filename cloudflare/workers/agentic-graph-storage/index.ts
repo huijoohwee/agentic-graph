@@ -73,7 +73,6 @@ import {
 import { handleSecuredAgenticGraphStorageDocumentRoute } from './storageDocumentRouteSecurity'
 import { isStorageSyncTimestamp } from './storageSyncCursor'
 import { inspectStorageCoreBindings, probeStorageCoreReadiness } from './storageCoreReadiness'
-import { withZeroCostR2Bindings } from '../../shared/r2-cost-gate.mjs'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -399,10 +398,7 @@ const handleReadiness = async (env: AgenticGraphStorageWorkerEnv): Promise<Respo
 }
 
 export const createAgenticGraphStorageWorker = () => ({
-  async fetch(request: Request, rawEnv: AgenticGraphStorageWorkerEnv): Promise<Response> {
-    const env = withZeroCostR2Bindings(rawEnv, {
-      AGENTIC_OS_STORAGE_BLOB_BUCKET: 'agentic-storage-blobs',
-    }) as AgenticGraphStorageWorkerEnv
+  async fetch(request: Request, env: AgenticGraphStorageWorkerEnv): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return noContent()
     }

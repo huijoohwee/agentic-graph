@@ -3,11 +3,10 @@ import {
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   type AgenticGraphStorageBlobUploadResponse,
   type AgenticGraphStorageErrorResponse,
-  type AgenticGraphStorageR2BucketLike,
-  type AgenticGraphStorageR2ObjectLike,
   type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeString } from './db'
+import { D1_BLOB_MAX_OBJECT_BYTES, readD1Blob, readD1BlobDatabase, readD1BlobRequest, writeD1Blob } from './d1BlobStore'
 
 const BLOB_CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -88,141 +87,69 @@ export const readAgenticGraphStorageBlobRoute = (
   }
 }
 
-const readBlobBucket = (env: AgenticGraphStorageWorkerEnv): AgenticGraphStorageR2BucketLike | null => {
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  if (!bucket || typeof bucket.put !== 'function' || typeof bucket.get !== 'function') return null
-  return bucket
-}
-
-const readBlobUploadLimitBytes = (env: AgenticGraphStorageWorkerEnv): number => {
-  const parsed = Number(String(env.AGENTIC_OS_STORAGE_BLOB_MAX_BYTES || '').trim())
-  if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed)
-  return 100 * 1024 * 1024
-}
-
-const readRequestContentLength = (request: Request): number | null => {
-  const header = request.headers.get('content-length')
-  if (header === null) return null
-  const normalized = header.trim()
-  if (!/^\d+$/.test(normalized)) return Number.NaN
-  const parsed = Number(normalized)
-  return Number.isSafeInteger(parsed) ? parsed : Number.NaN
-}
-
-const buildBoundedBlobBody = (
-  body: ReadableStream<Uint8Array> | null,
-  maxBytes: number,
-): { body: ReadableStream<Uint8Array> | null; exceeded: () => boolean } => {
-  if (!body) return { body: null, exceeded: () => false }
-  const reader = body.getReader()
-  let totalBytes = 0
-  let limitExceeded = false
-  return {
-    exceeded: () => limitExceeded,
-    body: new ReadableStream<Uint8Array>({
-      async pull(controller) {
-        try {
-          const next = await reader.read()
-          if (next.done) {
-            controller.close()
-            reader.releaseLock()
-            return
-          }
-          totalBytes += next.value.byteLength
-          if (totalBytes > maxBytes) {
-            limitExceeded = true
-            await reader.cancel('blob payload exceeds the configured byte limit')
-            controller.error(new Error('blob_payload_limit_exceeded'))
-            return
-          }
-          controller.enqueue(next.value)
-        } catch (error) {
-          controller.error(error)
-        }
-      },
-      async cancel(reason) {
-        try { await reader.cancel(reason) } catch { /* already closed */ }
-      },
-    }),
-  }
-}
-
-const readR2ObjectEtag = (object: AgenticGraphStorageR2ObjectLike | null | undefined): string | null =>
-  normalizeString(object?.httpEtag || object?.etag || '') || null
-
 export const isAgenticGraphStorageBlobRoute = (pathname: string): boolean =>
   String(pathname || '').startsWith(AGENTIC_OS_STORAGE_ROUTE_PATHS.blobPrefix)
+
+const readBlobUploadLimit = (env: AgenticGraphStorageWorkerEnv): number => {
+  const configured = Number(String(env.AGENTIC_OS_STORAGE_BLOB_MAX_BYTES || '').trim())
+  return Number.isFinite(configured) && configured > 0
+    ? Math.min(D1_BLOB_MAX_OBJECT_BYTES, Math.floor(configured))
+    : D1_BLOB_MAX_OBJECT_BYTES
+}
 
 export const handleBlobUpload = async (request: Request, env: AgenticGraphStorageWorkerEnv): Promise<Response> => {
   const route = readAgenticGraphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
-  const bucket = readBlobBucket(env)
-  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTIC_OS_STORAGE_BLOB_BUCKET')
-  const contentLength = readRequestContentLength(request)
-  const maxBytes = readBlobUploadLimitBytes(env)
-  if (contentLength != null && (!Number.isFinite(contentLength) || contentLength > maxBytes)) {
-    try { await request.body?.cancel('blob payload rejected before upload') } catch { /* already locked */ }
-    return errorResponse(
-      contentLength > maxBytes ? 413 : 400,
-      'bad_request',
-      contentLength > maxBytes
-        ? `blob payload exceeds ${maxBytes} byte limit`
-        : 'invalid blob content-length',
-    )
-  }
+  const db = readD1BlobDatabase(env)
+  if (!db) return errorResponse(503, 'server_error', 'D1 blob storage is unavailable')
+  const maxBytes = readBlobUploadLimit(env)
+  const upload = await readD1BlobRequest(request, maxBytes)
+  if (!upload.ok) return errorResponse(upload.reason === 'too-large' ? 413 : 400, 'bad_request',
+    upload.reason === 'too-large' ? `blob payload exceeds ${maxBytes} byte limit` : 'blob upload body length is invalid')
+  const bytes = upload.body
   const contentType = normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
   const contentHash = normalizeString(request.headers.get('x-agentic-graph-content-hash')) || null
   const uploadedAtMs = Date.now()
-  const boundedBody = buildBoundedBlobBody(request.body, maxBytes)
-  let object: AgenticGraphStorageR2ObjectLike | null | undefined
   try {
-    object = await bucket.put(route.objectKey, boundedBody.body, {
-      httpMetadata: {
-        contentType,
-      },
-      customMetadata: {
-        workspaceId: route.workspaceId,
-        canonicalPath: route.canonicalPath,
-        ...(contentHash ? { contentHash } : {}),
-        uploadedAtMs: String(uploadedAtMs),
-      },
+    const saved = await writeD1Blob({ db, objectKey: route.objectKey, body: bytes,
+      contentType, contentHash, nowMs: uploadedAtMs, customMetadata: {
+        workspaceId: route.workspaceId, canonicalPath: route.canonicalPath,
+        ...(contentHash ? { contentHash } : {}), uploadedAtMs: String(uploadedAtMs),
+      } })
+    return okBlobUploadResponse({
+      workspaceId: route.workspaceId,
+      canonicalPath: route.canonicalPath,
+      objectKey: route.objectKey,
+      contentType,
+      contentHash,
+      sizeBytes: saved.sizeBytes,
+      etag: `"${saved.etag}"`,
+      uploadedAtMs: saved.uploadedAtMs,
+      publicPath: `${AGENTIC_OS_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(route.workspaceId)}/${encodeURIComponent(route.canonicalPath)}`,
     })
   } catch (error) {
-    if (boundedBody.exceeded()) {
-      return errorResponse(413, 'bad_request', `blob payload exceeds ${maxBytes} byte limit`)
+    if (String(error).includes('graph_d1_blob_quota_exceeded')) {
+      return errorResponse(507, 'server_error', 'D1 blob storage quota is exhausted')
     }
     throw error
   }
-  return okBlobUploadResponse({
-    workspaceId: route.workspaceId,
-    canonicalPath: route.canonicalPath,
-    objectKey: route.objectKey,
-    contentType,
-    contentHash,
-    sizeBytes: contentLength,
-    etag: readR2ObjectEtag(object),
-    uploadedAtMs,
-    publicPath: `${AGENTIC_OS_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(route.workspaceId)}/${encodeURIComponent(route.canonicalPath)}`,
-  })
 }
 
 export const handleBlobRead = async (request: Request, env: AgenticGraphStorageWorkerEnv): Promise<Response> => {
   const route = readAgenticGraphStorageBlobRoute(new URL(request.url).pathname)
   if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')
-  const bucket = readBlobBucket(env)
-  if (!bucket) return errorResponse(500, 'server_error', 'missing Cloudflare R2 binding AGENTIC_OS_STORAGE_BLOB_BUCKET')
-  const object = request.method === 'HEAD' && typeof bucket.head === 'function'
-    ? await bucket.head(route.objectKey)
-    : await bucket.get(route.objectKey)
-  if (!object) return errorResponse(404, 'not_found', 'blob object not found')
+  const db = readD1BlobDatabase(env)
+  if (!db) return errorResponse(503, 'server_error', 'D1 blob storage is unavailable')
+  const stored = await readD1Blob(db, route.objectKey, request.method !== 'HEAD')
+  if (!stored) return errorResponse(404, 'not_found', 'blob object not found')
   const headers = new Headers(BLOB_CORS_HEADERS)
-  if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers)
-  if (!headers.get('content-type')) headers.set('content-type', 'application/octet-stream')
+  headers.set('content-type', stored.object.content_type || 'application/octet-stream')
   headers.set('cache-control', headers.get('cache-control') || 'no-store')
-  const etag = readR2ObjectEtag(object)
-  if (etag) headers.set('etag', etag)
+  headers.set('content-length', String(stored.object.size_bytes))
+  headers.set('etag', `"${stored.object.etag}"`)
+  headers.set('last-modified', new Date(stored.object.updated_at).toUTCString())
   headers.set('x-agentic-graph-storage-object-key', route.objectKey)
-  return new Response(request.method === 'HEAD' ? null : object.body || null, {
+  return new Response(request.method === 'HEAD' ? null : stored.body || null, {
     status: 200,
     headers,
   })
