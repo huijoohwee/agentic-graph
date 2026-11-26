@@ -95,32 +95,9 @@ jobs:
       - { name: Recheck current source ownership, working-directory: agentic-graph, run: 'npm run worktree:check && npm run collaboration:contract:check' }
       - { name: Reuse protected CI source evidence, id: ci_evidence, continue-on-error: true, uses: './agentic-graph/.github/actions/protected-ci-evidence', with: { token: '${{ github.token }}' } }
       - { name: Reverify exact candidate, if: "steps.ci_evidence.outcome != 'success' || steps.ci_evidence.outputs.reused != 'true'", working-directory: agentic-graph, run: 'npm run ci:integration' }
-      - name: Resolve pinned MiaoXYZ source
-        id: miaoxyz_source
-        working-directory: agentic-graph
-        run: |
-          node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
-          import { MIAOXYZ_SOURCE_PIN } from './scripts/pages-mirror-sync.mjs'
-          if (!/^[0-9a-f]{40}$/.test(MIAOXYZ_SOURCE_PIN.revision)) throw new Error('MiaoXYZ source pin is not an exact commit')
-          console.log(`repository=${MIAOXYZ_SOURCE_PIN.repository}`)
-          console.log(`revision=${MIAOXYZ_SOURCE_PIN.revision}`)
-          NODE
-      - name: Check out pinned MiaoXYZ source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: ${{ steps.miaoxyz_source.outputs.repository }}
-          ref: ${{ steps.miaoxyz_source.outputs.revision }}
-          path: MiaoXYZ-source
-          fetch-depth: 1
-          persist-credentials: false
-      - name: Verify exact MiaoXYZ source commit
-        run: test "$(git -C MiaoXYZ-source rev-parse HEAD)" = "${{ steps.miaoxyz_source.outputs.revision }}"
-      - name: Build and sync verified candidate
-        working-directory: agentic-graph
-        env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', MIAOXYZ_SOURCE_ROOT: '${{ github.workspace }}/MiaoXYZ-source', MIAOXYZ_SOURCE_REVISION: '${{ steps.miaoxyz_source.outputs.revision }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co', VITE_AGENTIC_OS_OBSERVATION_PATH: '/agentic-commerce-os/fulfillment/', VITE_AGENTIC_OS_SESSION_PATH: '/agentic-commerce-os/fulfillment/session', VITE_AGENTIC_OS_CSRF_HEADER: 'x-commerce-csrf' }
-        run: |
-          echo "MiaoXYZ source commit: $MIAOXYZ_SOURCE_REVISION" >> "$GITHUB_STEP_SUMMARY"
-          npm run pages:build-sync
+      - { name: Resolve pinned MiaoXYZ source, id: miaoxyz_source, working-directory: agentic-graph, run: 'node --input-type=module -e "import { MIAOXYZ_SOURCE_PIN as p } from \"./scripts/pages-mirror-sync.mjs\"; if (!/^[0-9a-f]{40}$/.test(p.revision)) throw Error(\"invalid MiaoXYZ source pin\"); console.log(\"repository=\"+p.repository); console.log(\"revision=\"+p.revision)" >> "$GITHUB_OUTPUT"' }
+      - { name: Check out pinned MiaoXYZ source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: '${{ steps.miaoxyz_source.outputs.repository }}', ref: '${{ steps.miaoxyz_source.outputs.revision }}', path: MiaoXYZ-source, fetch-depth: 1, persist-credentials: false } }
+      - { name: Build and sync verified candidate, working-directory: agentic-graph, env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', MIAOXYZ_SOURCE_ROOT: '${{ github.workspace }}/MiaoXYZ-source', MIAOXYZ_SOURCE_REVISION: '${{ steps.miaoxyz_source.outputs.revision }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co', VITE_AGENTIC_OS_OBSERVATION_PATH: '/agentic-commerce-os/fulfillment/', VITE_AGENTIC_OS_SESSION_PATH: '/agentic-commerce-os/fulfillment/session', VITE_AGENTIC_OS_CSRF_HEADER: 'x-commerce-csrf' }, run: 'test "$(git -C ../MiaoXYZ-source rev-parse HEAD)" = "$MIAOXYZ_SOURCE_REVISION" && echo "MiaoXYZ source commit: $MIAOXYZ_SOURCE_REVISION" >> "$GITHUB_STEP_SUMMARY" && npm run pages:build-sync' }
       - { name: Resolve reviewed GameXR source, id: gamexr_source, working-directory: agentic-graph, run: 'node scripts/production-gamexr.mjs resolve >> "$GITHUB_OUTPUT"' }
       - { name: Checkout reviewed GameXR source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/GameXR, ref: '${{ steps.gamexr_source.outputs.revision }}', path: GameXR } }
       - { name: Admit verified GameXR artifact, working-directory: agentic-graph, env: { GH_TOKEN: '${{ github.token }}' }, run: 'node scripts/production-gamexr.mjs prepare' }
