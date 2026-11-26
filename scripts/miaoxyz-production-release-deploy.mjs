@@ -5,7 +5,8 @@ import path from 'node:path'
 
 import { digest, readJson, requireText, writeAtomicJson, writeJson } from './miaoxyz-production-release-core.mjs'
 import {
-  captureProductionBaseline, collectVersions, runWrangler, validateBaseline, validateMiaoxyzCandidate,
+  assertMiaoxyzApiRouteSet, captureProductionBaseline, captureRouteInventory, collectVersions, runWrangler,
+  validateBaseline, validateMiaoxyzCandidate,
 } from './miaoxyz-production-release-candidate.mjs'
 import { assertProtectedDeployRuntime, validateMiaoxyzAuthorization } from './miaoxyz-production-release-authorization.mjs'
 
@@ -87,7 +88,7 @@ export const deploy = async ({ repoRoot, candidatePath, approvalsPath, repositor
   }
   const approvals = readJson(approvalsPath)
   validateMiaoxyzAuthorization({ approvals, repository, runId, candidate })
-  const before = await captureProductionBaseline(repoRoot)
+  const before = await captureProductionBaseline(repoRoot, process.env.MIAOXYZ_PRODUCT_SOURCE_ROOT)
   compareBaseline(candidate.baseline, before)
   const secretPath = path.join(os.tmpdir(), `miaoxyz-secrets-${randomUUID()}.json`)
   let migrationAttempted = false
@@ -100,10 +101,12 @@ export const deploy = async ({ repoRoot, candidatePath, approvalsPath, repositor
   let failureCode = ''
   const sealReceipt = () => {
     const receipt = {
-      schema: 'agentic-miaoxyz-production-deployment-receipt/v1',
+      schema: 'agentic-miaoxyz-production-deployment-receipt/v2',
       status,
       preserveRequired: status === 'preserve-required',
       sourceRevision: candidate.source.revision,
+      productSourceRevision: candidate.productSource.revision,
+      productSourceTreeDigest: candidate.productSource.treeDigest,
       candidateDigest: candidate.candidateDigest,
       targetDigest: candidate.targetDigest,
       baselineDigest: digest(candidate.baseline),
@@ -140,7 +143,7 @@ export const deploy = async ({ repoRoot, candidatePath, approvalsPath, repositor
       throw error
     }
     runWrangler(repoRoot, [
-      'deploy', '--env', 'production', '--var', `RELEASE_SOURCE_REVISION:${candidate.source.revision}`,
+      'deploy', '--env', 'production', '--var', `RELEASE_SOURCE_REVISION:${candidate.productSource.revision}`,
       '--var', `RELEASE_CANDIDATE_DIGEST:${candidate.candidateDigest}`, '--secrets-file', secretPath,
     ])
     const activeVersions = readActiveVersions(repoRoot, candidate.target.workerName)
@@ -150,8 +153,9 @@ export const deploy = async ({ repoRoot, candidatePath, approvalsPath, repositor
       throw new Error('MiaoXYZ active deployment did not resolve to exactly one new 100% Worker version')
     }
     deployedVersionId = newlyActiveVersions[0].versionId
+    assertMiaoxyzApiRouteSet(await captureRouteInventory(), candidate.target.workerName)
     probePassed = await probeProduction({
-      sourceRevision: candidate.source.revision,
+      sourceRevision: candidate.productSource.revision,
       candidateDigest: candidate.candidateDigest,
       expectedVersionIds: [deployedVersionId],
     })
