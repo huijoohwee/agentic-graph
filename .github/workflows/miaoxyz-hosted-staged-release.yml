@@ -43,12 +43,8 @@ jobs:
           printf '%s' "$LOCAL_REVIEW_INPUT" > "$RUNNER_TEMP/local-review-candidate.json"
           printf '%s' "$RELEASE_EVIDENCE_INPUT" > "$RUNNER_TEMP/release-evidence.json"
           printf '%s' "$GOVERNANCE_EVIDENCE_INPUT" > "$RUNNER_TEMP/miaoxyz-governance-evidence.json"
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      - name: Install pinned MiaoXYZ Wrangler
-        run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Prepare exact MiaoXYZ source and Wrangler
+        uses: ./.github/actions/prepare-miaoxyz-source
       - name: Install Agentic Graph release-script dependencies
         env:
           AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
@@ -57,7 +53,7 @@ jobs:
       - name: Build shared Graph runtime dependency
         run: npm run build --workspace=grph-shared
       - name: Check generated Worker bindings
-        run: npm run types:check --prefix cloudflare/workers/miaoxyz
+        run: npm run types:check --prefix MiaoXYZ-source
       - name: Compile exact Production Worker without mutation
         run: node ./scripts/miaoxyz-production-release.mjs dry-run --repo-root .
       - name: Prepare exact MiaoXYZ candidate and read-only rollback baseline
@@ -108,12 +104,8 @@ jobs:
           ref: ${{ inputs.source_sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      - name: Install pinned MiaoXYZ Wrangler
-        run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Prepare exact MiaoXYZ source and Wrangler
+        uses: ./.github/actions/prepare-miaoxyz-source
       - name: Install Agentic Graph release-script dependencies
         env:
           AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
@@ -173,12 +165,8 @@ jobs:
           ref: ${{ inputs.source_sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 22
-      - name: Install pinned MiaoXYZ Wrangler
-        run: npm ci --prefix cloudflare/workers/miaoxyz
+      - name: Prepare exact MiaoXYZ source and Wrangler
+        uses: ./.github/actions/prepare-miaoxyz-source
       - name: Install Agentic Graph release-script dependencies
         env:
           AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
