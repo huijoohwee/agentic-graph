@@ -262,7 +262,7 @@ Primary migration: `cloudflare/d1/migrations/0001_agenticGraph_storage.sql`
 
 ### Media Asset Persistence Extension
 
-AI/LLM-generated and user-uploaded media records use the Storage Worker media route as the runtime boundary. R2 owns the binary bytes, D1 owns searchable metadata and provenance, KV owns only short-lived access URL cache entries, and Durable Objects own room sync notifications for collaborators. Browser object URLs and provider URLs are not persistence records.
+AI/LLM-generated and user-uploaded media records use the Storage Worker media route as the runtime boundary. D1 owns the binary bytes, searchable metadata, and provenance; KV owns only short-lived access URL cache entries; Durable Objects own room sync notifications for collaborators. Browser object URLs and provider URLs are not persistence records. The Worker retains its R2 binding for rollback compatibility, but live media reads and writes use D1. Migration `cloudflare/d1/migrations/0023_graph_d1_blob_store.sql` defines `agentic_graph_d1_blob_objects`, ordered `agentic_graph_d1_blob_chunks`, and the race-safe `agentic_graph_d1_blob_quota` counter; each object is limited to 16 MiB, chunks to 1 MiB, and total Graph allocation to 64 MiB. Readiness requires quota and object-size totals to agree.
 
 ```sql
 CREATE TABLE IF NOT EXISTS media_artifacts (
@@ -296,7 +296,7 @@ CREATE INDEX IF NOT EXISTS idx_media_artifacts_room_updated
 | Field | Purpose |
 |---|---|
 | `media_kind` | Normalized `image`, `audio`, or `video` kind used by FloatingPanel Media and `@` insertion. |
-| `r2_object_key` | Canonical R2 object key for the binary blob; never a browser object URL. |
+| `r2_object_key` | Legacy-named canonical object key for the binary blob; never a browser object URL. The key is backend-neutral and continues to identify the D1 object. |
 | `provenance_json` | Provider/upload source, prompt/run/card context, operator action, and sync status evidence. |
 | `access_url_expires_at` | Optional KV-backed access URL expiry; null when no KV namespace is bound. |
 

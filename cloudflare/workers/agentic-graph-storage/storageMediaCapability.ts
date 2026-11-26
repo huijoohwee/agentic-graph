@@ -3,10 +3,10 @@ import {
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   buildAgenticGraphStorageMediaPath,
   assertAgenticGraphStorageMediaWriteKey,
-  type AgenticGraphStorageR2ObjectLike,
   type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeString } from './db'
+import { D1_BLOB_MAX_OBJECT_BYTES, readD1Blob, readD1BlobDatabase, readD1BlobRequest, writeD1Blob } from './d1BlobStore'
 import { readMediaObjectKey } from './media'
 
 export const AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA = 'agentic-graph-storage-media-capability/v1' as const
@@ -131,14 +131,7 @@ const verifyCapability = async (args: {
   return payload
 }
 
-const readBucket = (env: AgenticGraphStorageWorkerEnv) => {
-  const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  if (!bucket || typeof bucket.get !== 'function' || typeof bucket.put !== 'function') throw new Error('media bucket is unavailable')
-  return bucket
-}
-
-const assertOwnedObject = (object: AgenticGraphStorageR2ObjectLike, payload: CapabilityPayload): void => {
-  const metadata = object.customMetadata || {}
+const assertOwnedObject = (metadata: Record<string, string>, payload: CapabilityPayload): void => {
   if (
     metadata.agenticGraphWorkspaceId !== payload.workspaceId
     || metadata.agenticGraphCapabilitySchema !== AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA
@@ -159,43 +152,49 @@ export const handleAgenticGraphStorageCapabilityMediaRoute = async (
   try { capability = await verifyCapability({ request, env, objectKey, operation }) } catch (error) {
     return json(403, { ok: false, code: 'authorization_failed', error: error instanceof Error ? error.message : 'media authorization failed' })
   }
-  const bucket = readBucket(env)
+  const db = readD1BlobDatabase(env)
+  if (!db) return json(503, { ok: false, code: 'server_error', error: 'D1 blob storage is unavailable' })
   if (operation === 'write') {
     const storedAtMs = Date.now()
     const contentType = normalizeString(request.headers.get('content-type')) || 'application/octet-stream'
     const contentHash = normalizeString(request.headers.get('content-hash') || request.headers.get('x-agentic-graph-content-hash'))
-    const object = await bucket.put(objectKey, request.body || null, {
-      httpMetadata: { contentType },
-      customMetadata: {
+    const upload = await readD1BlobRequest(request)
+    if (!upload.ok) return json(upload.reason === 'too-large' ? 413 : 400, { ok: false, code: 'bad_request',
+      error: upload.reason === 'too-large' ? `media payload exceeds ${D1_BLOB_MAX_OBJECT_BYTES} byte limit` : 'media upload body length is invalid' })
+    let object: Awaited<ReturnType<typeof writeD1Blob>>
+    try {
+      object = await writeD1Blob({ db, objectKey, body: upload.body, contentType, contentHash: contentHash || null, nowMs: storedAtMs,
+        customMetadata: {
         agenticGraphWorkspaceId: capability.workspaceId,
         agenticGraphOwnerUserId: capability.subjectUserId,
         agenticGraphCapabilitySchema: AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA,
         storedAtMs: String(storedAtMs),
         ...(contentHash ? { contentHash } : {}),
-      },
-    })
+        } })
+    } catch (error) {
+      if (String(error).includes('graph_d1_blob_quota_exceeded')) return json(507, { ok: false, code: 'server_error', error: 'D1 blob storage quota is exhausted' })
+      throw error
+    }
     return json(200, {
       ok: true,
       apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
       workspaceId: capability.workspaceId,
       objectKey,
-      etag: normalizeString(object?.httpEtag || object?.etag) || null,
+      etag: `"${object.etag}"`,
       storedAtMs,
       publicPath: buildAgenticGraphStorageMediaPath(objectKey),
     })
   }
-  const object = request.method === 'HEAD' && typeof bucket.head === 'function'
-    ? await bucket.head(objectKey)
-    : await bucket.get(objectKey)
-  if (!object) return json(404, { ok: false, code: 'not_found', error: 'media object not found' })
-  try { assertOwnedObject(object, capability) } catch (error) {
+  const stored = await readD1Blob(db, objectKey, request.method !== 'HEAD')
+  if (!stored) return json(404, { ok: false, code: 'not_found', error: 'media object not found' })
+  try { assertOwnedObject(stored.object.custom_metadata, capability) } catch (error) {
     return json(403, { ok: false, code: 'authorization_failed', error: error instanceof Error ? error.message : 'media ownership mismatch' })
   }
-  const headers = new Headers({ 'cache-control': 'private, no-store', 'x-agentic-graph-storage-object-key': objectKey })
+  const headers = new Headers({ 'cache-control': 'private, no-store', 'x-agentic-graph-storage-object-key': objectKey,
+    'content-type': stored.object.content_type || 'application/octet-stream', 'content-length': String(stored.object.size_bytes),
+    etag: `"${stored.object.etag}"`, 'last-modified': new Date(stored.object.updated_at).toUTCString() })
   headers.set('access-control-allow-origin', '*')
-  object.writeHttpMetadata?.(headers)
-  if (!headers.has('content-type')) headers.set('content-type', 'application/octet-stream')
-  return new Response(request.method === 'HEAD' ? null : object.body || null, { status: 200, headers })
+  return new Response(request.method === 'HEAD' ? null : stored.body as BodyInit, { status: 200, headers })
 }
 
 export const isAgenticGraphStorageMediaCapabilityRoute = (pathname: string): boolean =>

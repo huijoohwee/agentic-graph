@@ -15,8 +15,14 @@ const normalizeSql = (sql: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 
+type FakeD1BlobObjectRow = { object_key: string; content_type: string; content_hash: string | null; custom_metadata_json: string; size_bytes: number; etag: string; updated_at: string }
+type FakeD1BlobReadRow = FakeD1BlobObjectRow & { chunk_index: number | null; body: Uint8Array | null }
+
 export class FakeAgenticGraphStorageD1Database {
   statementTime = () => new Date().toISOString()
+  d1BlobObjects = new Map<string, FakeD1BlobObjectRow>()
+  d1BlobChunks = new Map<string, Uint8Array[]>()
+  private d1BlobUsedBytes = 0
   workspaces = new Map<string, FakeRow>()
   documents = new Map<string, FakeRow>()
   mediaArtifacts = new Map<string, FakeRow>()
@@ -56,6 +62,9 @@ export class FakeAgenticGraphStorageD1Database {
         return { success: true }
       },
       all: async <T = FakeRow>() => {
+        if (normalizeSql(sql).includes('agentic_graph_d1_blob_objects')) {
+          return { results: this.readD1BlobRows(sql, boundValues) as T[] }
+        }
         return { results: this.readRows(sql, boundValues) as T[] }
       },
       raw: async <T = unknown[]>() => {
@@ -72,6 +81,38 @@ export class FakeAgenticGraphStorageD1Database {
       if (!input) throw new Error('Storage batch requires statements from this fixture database')
       return input()
     })
+    const blobInputs = inputs.filter(input => normalizeSql(input.sql).includes('agentic_graph_d1_blob_'))
+    if (blobInputs.length > 0) {
+      if (blobInputs.length !== inputs.length) throw new Error('D1 blob batches cannot mix table owners')
+      const nextObjects = new Map(this.d1BlobObjects), nextChunks = new Map(this.d1BlobChunks)
+      let nextUsedBytes = this.d1BlobUsedBytes
+      for (const { sql, values } of blobInputs) {
+        const normalized = normalizeSql(sql), key = String(values[0] || '')
+        if (normalized.startsWith('delete from agentic_graph_d1_blob_chunks')) nextChunks.delete(key)
+        else if (normalized.startsWith('delete from agentic_graph_d1_blob_objects')) {
+          const previous = nextObjects.get(key)
+          if (previous) nextUsedBytes -= previous.size_bytes
+          nextObjects.delete(key)
+        } else if (normalized.includes('insert into agentic_graph_d1_blob_objects')) {
+          const object: FakeD1BlobObjectRow = { object_key: key, content_type: String(values[1]),
+            content_hash: values[2] as string | null, custom_metadata_json: String(values[3]),
+            size_bytes: Number(values[4]), etag: String(values[5]), updated_at: String(values[6]) }
+          if (nextUsedBytes + object.size_bytes > 67_108_864) throw new Error('graph_d1_blob_quota_exceeded')
+          nextUsedBytes += object.size_bytes
+          nextObjects.set(key, object)
+        } else if (normalized.includes('insert into agentic_graph_d1_blob_chunks')) {
+          const chunks = nextChunks.get(key) || []
+          chunks[Number(values[1])] = values[2] as Uint8Array
+          nextChunks.set(key, chunks)
+        }
+      }
+      this.d1BlobObjects.clear()
+      for (const [key, value] of nextObjects) this.d1BlobObjects.set(key, value)
+      this.d1BlobChunks.clear()
+      for (const [key, value] of nextChunks) this.d1BlobChunks.set(key, value)
+      this.d1BlobUsedBytes = nextUsedBytes
+      return statements.map(() => ({ success: true }))
+    }
     return runNativeStorageStatements(this, inputs)
   }
 
@@ -506,6 +547,16 @@ export class FakeAgenticGraphStorageD1Database {
         this.syncDevices.set(String(id), { ...existing, last_pull_cursor: cursor, updated_at: updatedAt })
       }
     }
+  }
+
+  private readD1BlobRows(sql: string, values: unknown[]): FakeD1BlobReadRow[] {
+    const object = this.d1BlobObjects.get(String(values[0] || ''))
+    if (!object) return []
+    const chunks = this.d1BlobChunks.get(object.object_key) || []
+    return normalizeSql(sql).includes('left join agentic_graph_d1_blob_chunks')
+      ? (chunks.length ? chunks.map((body, chunk_index) => ({ ...object, chunk_index, body }))
+        : [{ ...object, chunk_index: null, body: null }])
+      : [{ ...object, chunk_index: null, body: null }]
   }
 
   private readRows(sql: string, values: unknown[]): FakeRow[] {

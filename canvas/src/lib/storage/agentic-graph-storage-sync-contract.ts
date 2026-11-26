@@ -292,7 +292,7 @@ export type AgenticGraphMediaAssetPersistResponse = {
   durableR2Url: string
   contentHash: string
   storage: {
-    r2: 'confirmed'
+    r2: 'confirmed' | 'skipped'
     d1: 'persisted' | 'reused'
     kv: 'cached' | 'binding_missing' | 'skipped'
     durableObject: 'broadcasted' | 'binding_missing' | 'skipped'
