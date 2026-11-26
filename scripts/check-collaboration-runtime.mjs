@@ -34,7 +34,14 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
   const deploymentPatterns = contract.deployment.command_patterns.map(pattern => new RegExp(pattern, 'i'))
   const seenAllowed = new Set()
   const reusableCallers = new Map([
-    ['.github/workflows/miaoxyz-production-release.yml', '.github/workflows/release.yml'],
+    ['.github/workflows/miaoxyz-production-release.yml', {
+      callerPath: '.github/workflows/release.yml',
+      targetCondition: "inputs.release_target == 'miaoxyz-catalog'",
+    }],
+    ['.github/workflows/miaoxyz-hosted-staged-release.yml', {
+      callerPath: '.github/workflows/release.yml',
+      targetCondition: "inputs.release_target == 'miaoxyz'",
+    }],
   ])
 
   for (const { workflowPath: rel, source } of workflowSources) {
@@ -45,12 +52,13 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
     seenAllowed.add(rel)
     const workflow = load(source)
     const triggers = workflowTriggers(workflow)
-    const callerPath = reusableCallers.get(rel)
-    if (callerPath) {
-      const callerSource = workflowSources.find(item => item.workflowPath === callerPath)
+    const callerPolicy = reusableCallers.get(rel)
+    if (callerPolicy) {
+      const callerSource = workflowSources.find(item => item.workflowPath === callerPolicy.callerPath)
       const caller = callerSource ? load(callerSource.source) : null
       const callerJobs = Object.values(caller?.jobs ?? {}).filter(job => job?.uses === `./${rel}`)
       const protectedRefCheck = `test "$GITHUB_REF" = "refs/heads/${requiredBranch}"`
+      const callerCondition = String(callerJobs[0]?.if ?? '').trim()
       if (triggers.length !== 1 || triggers[0] !== 'workflow_call' ||
           !source.includes(protectedRefCheck) ||
           !source.includes('test "$(git rev-parse HEAD)" = "$SOURCE_SHA"') ||
@@ -58,8 +66,8 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
           !caller || !workflowTriggers(caller).includes(requiredTrigger) ||
           workflowTriggers(caller).some(trigger => forbiddenTriggers.has(trigger)) ||
           !callerSource.source.includes(protectedRefCheck) || callerJobs.length !== 1 ||
-          !String(callerJobs[0]?.if ?? '').includes("inputs.release_target == 'miaoxyz'")) {
-        throw new Error(`${rel} must be called only by the protected ${requiredTrigger} release lane with exact main-source checks`)
+          callerCondition !== callerPolicy.targetCondition) {
+        throw new Error(`${rel} must be called only by the protected ${requiredTrigger} release lane for ${callerPolicy.targetCondition} with exact main-source checks`)
       }
       continue
     }

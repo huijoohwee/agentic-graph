@@ -103,4 +103,7 @@ test('the protected release workflow gates Production on the same successful Dev
   assert.match(production.steps.find(step => step.name === 'Download exact successful Dev readback receipt').with.name,
     /miaoxyz-dev-receipt-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
   assert.match(releaseWorkflow.jobs.miaoxyz_release.uses, /miaoxyz-hosted-staged-release\.yml/)
+  assert.equal(releaseWorkflow.jobs.miaoxyz_release.if, "inputs.release_target == 'miaoxyz'")
+  assert.match(releaseWorkflow.jobs.miaoxyz_catalog_release.uses, /miaoxyz-production-release\.yml/)
+  assert.equal(releaseWorkflow.jobs.miaoxyz_catalog_release.if, "inputs.release_target == 'miaoxyz-catalog'")
 })
