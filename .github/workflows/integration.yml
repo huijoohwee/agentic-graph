@@ -239,6 +239,10 @@ jobs:
         working-directory: agentic-graph
         run: npx playwright install --with-deps chromium
 
+      - name: Verify rendered annotation targets
+        working-directory: agentic-graph
+        run: node canvas/scripts/check-annotation-targets.mjs
+
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: agentic-graph
