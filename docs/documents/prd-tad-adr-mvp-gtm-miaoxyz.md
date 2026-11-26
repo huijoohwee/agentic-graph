@@ -14,7 +14,7 @@ adr_revision: "0.4.0"
 mvp_revision: "0.4.0"
 gtm_revision: "0.4.0"
 local_rung: "spec-complete"
-delivered_rung: "undocumented"
+delivered_rung: "worker-production-deployed-runtime-readback"
 lane: "implementation"
 universal_scope: false
 worktree_id: "device-cba000d3779d--miaoxyz-independent-source-mirror"
@@ -29,7 +29,7 @@ base_sha: "413150ce075e8fba007dde4bb529187633433ff8"
 # MiaoXYZ Bouquet Commerce
 
 **Join:** `miaoxyz-bouquet-commerce@0.4.0` · **As of:** 2026-11-26 · **Accountable document owner:** Product Owner
-**Grounding state:** The independent Dev source is `github.com/huijoohwee/MiaoXYZ` at exact `main` revision `e0080f11a6004e6cb07e6c0ee6c37d237edfae29`; developers can run it with `npm run dev` from that repository. The original Worker/D1 preview and florist-controlled product behavior remain in that source. This Graph lane proposes a protected Pages publisher that checks out that exact source, mirrors only its `public/` files, and records the source revision in the generated artifact. The publisher change is not yet merged. The Worker release controller still points at the former Graph copy, so the Worker side of the source migration remains open. This lane changes no live Worker, Pages project, route, or D1 data. Product research, privacy, region and market evidence remain as stated below.
+**Grounding state:** The independent Dev source is `github.com/huijoohwee/MiaoXYZ` at exact `main` revision `e0080f11a6004e6cb07e6c0ee6c37d237edfae29`; developers can run it with `npm run dev` from that repository. The protected Pages publisher/source migration remains a separate open change, and the Worker release controller still builds from the Graph copy. That Graph Worker candidate (`09d7a873cb934d83ca011a2876f3b1ecdcad9a29`, digest `33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a`) was deployed to the Production Worker through protected workflow run [45739179725](https://github.com/huijoohwee/agentic-graph/actions/runs/45739179725); reviewed migrations applied and the public route read back HTTP 200. A loopback-only Wrangler Dev smoke also returned HTTP 200, but it happened after the Production readback and does not prove Dev-to-Production promotion. No hosted Dev target or promotion job exists. These deployment receipts do not establish product readiness; VCC, customer, privacy, region and market evidence remain open. See [the delivery evidence report](../reports/miaoxyz-production-delivery-evidence-45739179725.json).
 
 **Governing baseline:** Gateway reference `guideline/prd-tad-adr-mvp-gtm` resolves to the PRD, TAD & ADR Guidelines at version 3.5.1, source revision `3c737e4500894c76b253f8b6d4d65a2a17cedbae`; see the pinned [Gateway reference index](https://github.com/huijoohwee/agentic-gateway/blob/cdb000925729a729732206a32de36e6bc7db011c/references/README.md). The PRD, TAD, ADR, MVP and GTM sections below share this exact continuity revision.
 
@@ -113,7 +113,7 @@ No product baseline has been measured. “Not measured” does not mean zero dem
 | Duplicate or lost requests | Not measured | 0 duplicates and 0 unexplained missing requests in first 20 submissions | Reconcile browser result, persisted request ID and operator queue |
 | Buyer confirmation | Not measured | ≥90% can correctly state that submission is not a confirmed order or payment | Ask immediately after submission in each usability session |
 | Monthly infrastructure TCO | No deployment selected | ≤S$100 proposed pilot cap; S$0 AI/token spend | Record actual invoices and usage; stop before paid service if cap or authorization is absent |
-| Readiness | Local: `spec-complete`; delivered: `undocumented` | Derive again from Evidence References; no manual promotion | Every accepted VCC and every release/deploy event |
+| Readiness | Local: `spec-complete`; Worker Production delivery: deployed and read back; staged delivery: incomplete; product readiness: unproven | Derive again from Evidence References; do not promote product readiness from infrastructure receipts | Every accepted VCC and every release/deploy event |
 
 **Time-to-value estimate:** curated-design discovery ≤2 minutes; custom arrangement request ≤5 minutes. These are design targets, not observations. Re-measure in a clean browser with a first-time user before baseline.
 
@@ -147,7 +147,7 @@ No product baseline has been measured. “Not measured” does not mean zero dem
 
 ### Reuse Outcome
 
-The canonical source is `agentic-graph` at baseline revision `d7b367354a4875726965bdf342aa1ab618d6075c`. The MiaoXYZ candidate is isolated under `cloudflare/workers/miaoxyz`; no pre-existing florist catalog, order store, customer identity, or florist workflow was found or reused. The implementation adds an original static buyer/operator surface, Worker API, and D1 schema. The exact candidate remains uncommitted and has no immutable release or deployment evidence.
+The canonical source is `agentic-graph` at baseline revision `d7b367354a4875726965bdf342aa1ab618d6075c`. The MiaoXYZ candidate is isolated under `cloudflare/workers/miaoxyz`; no pre-existing florist catalog, order store, customer identity, or florist workflow was found or reused. The implementation adds an original static buyer/operator surface, Worker API, and D1 schema. Candidate `09d7a873cb934d83ca011a2876f3b1ecdcad9a29` has a protected Production deployment and live route readback. This confirms Worker delivery only; VCCs, customer readiness and staged promotion remain unproven.
 
 ### Open Questions
 
@@ -324,7 +324,7 @@ The initial implementation baseline was Graph revision `d7b367354a4875726965bdf3
 
 ### ADR-001: Cloudflare Worker and D1 for the Single-Florist Dev Candidate
 
-**Status:** Accepted for the source implementation and local Dev preview; Cloudflare remote Dev and Production deployment remain blocked. Production region and operational controls are unresolved.
+**Status:** Accepted for the source implementation and local Dev preview. A protected Production Worker deployment and route readback exist, but no earlier Dev-to-Production promotion is recorded. Production region and operational controls remain unresolved.
 **Context:** The smallest product slice needs a buyer journey and operator-owned request queue. User requested Dev identity `miaoxyz` and Production path `airvio.co/MiaoXYZ`. The canonical repository has a protected release boundary; direct deployment from this lane is prohibited.
 
 **Constraints before comparison:**
@@ -342,7 +342,7 @@ The initial implementation baseline was Graph revision `d7b367354a4875726965bdf3
 | Static catalog with manual contact outside the product | Fail `persisted request and operator queue` for this MVP; usable only as a discovery experiment | Lowest runtime complexity; staff re-entry and lost-request risk unmeasured | Excluded from the product MVP; may be used only as a separately labeled experiment |
 | Hosted commerce platform | Pass buyer-flow feasibility only if export, data region, request-only semantics and staff controls are proven | License, transaction fee and migration cost unknown; not evaluated against cap | Incomparable until a candidate contract and price are grounded |
 
-**Decision:** Implement one Cloudflare Worker named `agentic-miaoxyz`, with bundled static assets and a D1 binding. Local Dev uses the `agentic-miaoxyz-dev` local D1 database and synthetic data. Production uses Worker `agentic-miaoxyz-production` and declares `airvio.co/MiaoXYZ` with a separate `agentic-miaoxyz-production` D1 binding whose placeholder ID must be replaced only through approved resource provisioning. No production route or database has been created by this lane. Intake remains gated by explicit store settings, privacy, region, backup/restore and rate-limit review approvals, operator and rate-limit secrets, a published catalog and approved retention/service details.
+**Decision:** Implement one Cloudflare Worker named `agentic-miaoxyz`, with bundled static assets and a D1 binding. Local Dev uses the `agentic-miaoxyz-dev` local D1 database and synthetic data. Production Worker `agentic-miaoxyz-production` serves `airvio.co/MiaoXYZ` with its separate D1 binding; protected run `45739179725` applied the reviewed migrations and deployed candidate `09d7a873cb934d83ca011a2876f3b1ecdcad9a29`. This records a Worker release, not a staged promotion: the retained loopback Dev readback occurred later and no hosted Dev target or Dev-to-Prod promotion is configured. Intake remains gated by explicit store settings, privacy, region, backup/restore and rate-limit review approvals, operator and rate-limit secrets, a published catalog and approved retention/service details.
 
 **Rationale:** One Worker owns price validation, request lifecycle, operator routes and same-origin assets. D1 migrations make the request store explicit, while local D1 keeps the current preview synthetic. No payment data, purchase charge, stock hold, email sender or external image service is introduced. The stack is reversible by exporting catalog/request records and recreating the documented schema in a successor architecture.
 
@@ -350,7 +350,7 @@ The initial implementation baseline was Graph revision `d7b367354a4875726965bdf3
 
 **Recovery / revisit trigger:** Reopen if region, cost or export review fails; if production recovery cannot be demonstrated; if the florist cannot maintain current availability; or if customer research shows request-only intake blocks conversion. Preserve request exports and catalog revisions when changing provider or schema. Production release requires a reviewed exact candidate and the repository’s protected authorization workflow.
 
-**Evidence:** Local D1 migrations applied; Worker TypeScript check passed; local Worker served the static preview and catalog empty state. No VCC has passed, no provider quote or data-region approval exists, no remote Worker deployment or live workload exists, and no customer payment has been observed.
+**Evidence:** Local D1 migrations and the pinned Worker TypeScript check passed; loopback Dev returned HTTP 200. Protected Production run `45739179725` applied reviewed migrations, deployed version `b8e52cab-35f6-40d5-a048-5704f6fdfa23`, and passed both its probe and a public-route HTTP 200 readback. The Dev smoke followed that Production readback, so promotion is unproven. No VCC has passed, no provider quote or data-region approval exists, and no customer payment or live product workload has been observed. See the bound deployment, runtime and historical-check-gap details in the delivery report.
 
 ### ADR-002: Independent MiaoXYZ Source and Generated Pages Mirror
 
@@ -493,14 +493,14 @@ Do not publish a financial forecast from these assumptions. Before capital or ex
 | C04 Product and experience | covered | PRD@0.3.0 | Mobile buyer journey, Must stories, accessibility constraints, TTV and VCCs stated | Product Owner | Prototype and clean-environment user sessions |
 | C05 Architecture and data | covered | TAD@0.3.0 | Worker/D1 components, interfaces, data contracts, lifecycle and boundaries implemented in a source candidate; production region and operations remain open | Engineering Lead | Review exact candidate, region, backup/restore and privacy controls before deployment |
 | C06 Quality, security and AI | covered | TAD@0.3.0 | Failure, privacy, recovery and accessibility targets stated; no AI; no implementation evidence | Engineering Lead | Threat/accessibility review and VCC evidence before pilot |
-| C07 Decisions and tradeoffs | covered | ADR@0.3.0 | Cloudflare Worker + D1 selected for source candidate; production route configured in source only; production region/cost unresolved | System Architect | Revisit on region, quote or TCO evidence |
+| C07 Decisions and tradeoffs | covered | ADR@0.3.0 | Cloudflare Worker + D1 selected; protected Production route is live for the recorded Worker candidate, while region/cost and staged promotion remain unresolved | System Architect | Revisit on region, quote or TCO evidence |
 | C08 Smallest validated slice | covered | MVP@0.3.0 | Request-only single-florist slice, five VCCs and demo defined; no VCC has evidence | Product Owner | Complete discovery, then demo and VCC checks |
 | C09 Acquisition through retention | covered | GTM@0.3.0 | Low-cost experiment, paid path, activation and retention metrics stated; cohorts absent | Growth Owner | Pilot result and 60-day repeat-use observation |
 | C10 Business operations | covered | TAD@0.3.0 | One staff queue, manual acceptance/fulfillment, recovery and capacity checks proposed; workflow unobserved | Florist Operator | Observe three workflows; agree service and incident runbook |
 | C11 Organization and obligations | covered | PRD@0.3.0 | Product, florist and engineering owners named by function; entity/IP/data/contract jurisdiction review open | Product Owner | Confirm legal entity, rights, jurisdiction and review owner before PII or paid orders |
 | C12 Financial viability | covered | GTM@0.3.0 | Cost ceiling and assumptions registered; unit margin, three statements and scenarios not built | Financial Owner | Capture quotes and pilot receipts; build model before expansion |
 | C13 Capital and milestones | covered | MVP@0.3.0 | Bootstrap is provisional; no ask or dilution; stage exits and stop thresholds defined | Product Owner | Revisit only if approved roadmap needs capital beyond bootstrap |
-| C14 ADLC execution | covered | TAD@0.3.0 | Registered source lane and release boundary followed; local Worker preview and typecheck recorded; no remote publish/deploy receipt | Engineering Lead | Complete required VCCs and protected release workflow before any remote deployment |
+| C14 ADLC execution | covered | TAD@0.3.0 | Source lane, local Worker smoke, typecheck and protected Production deployment/readback are recorded; historical source PR #1923 has no retained check runs; staged Dev-to-Prod promotion remains incomplete | Engineering Lead | Complete the protected lower-environment readback and same-candidate promotion if staged delivery is required; complete VCCs before claiming product readiness |
 | C15 Audience projections | deferred | GTM@0.3.0 | Deck, business plan and financial model not produced; market, price and cost evidence incomplete | Product Owner | Revisit after pilot evidence and linked model at successor revision |
 | C16 Learning and next increment | covered | MVP@0.3.0 | Experiment window, thresholds, stop/pivot triggers, owners and successor conditions stated | Product Owner | Review at 8 interviews, every 5 pilot requests, and 60 days |
 
@@ -532,9 +532,9 @@ Do not publish a financial forecast from these assumptions. Before capital or ex
 ## Readiness, Evidence and Handover
 
 - **Local artifact rung:** `spec-complete` as documentary status. An implementation candidate and local preview exist; this does not mean VCCs or production readiness are proven.
-- **Delivered artifact rung:** `undocumented`; no immutable delivery or deployment receipt exists.
+- **Delivered artifact rung:** Worker Production deployment and live route readback are evidenced for candidate `09d7a873cb934d83ca011a2876f3b1ecdcad9a29`; full staged delivery and product readiness remain incomplete.
 - **Product capability rungs:** No capability exceeds `spec-complete`; no VCC Evidence Reference has a recorded passing result.
 - **Alignment gate:** Not run. Do not interpret the absence of a finding report as zero findings. Before baseline, produce grounding records, exact VCC hosts, independent evaluator evidence, complete coverage and a finding set with zero open blockers.
-- **Current exact candidate:** This registered lane contains the Worker, D1 schema/migrations, bundled web surface, protected release path and this PRD, based on `agentic-graph` fetched `origin/main` revision `d7b367354a4875726965bdf342aa1ab618d6075c`. The lane is uncommitted; no immutable release or remote deployment receipt exists.
+- **Current exact candidate:** Worker candidate `09d7a873cb934d83ca011a2876f3b1ecdcad9a29` (digest `33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a`) is the source bound to the Production and runtime receipts in the delivery report. This documentation lane adds those records and corrects the handover; it does not change Worker code or authorize another deployment. The historical source PR has no retained check runs, and no Dev-before-Prod promotion receipt exists.
 - **Costs:** Authoring cost and token usage were not measured as product ADLC receipts. Product infrastructure cost is unknown; the S$100/month figure is a proposed cap, not permission to spend or an observed quote.
-- **Next bounded action:** Product Owner names the florist and service boundary, supplies source-of-truth catalog/fees/privacy details, approves data region and retention, and completes the discovery sample. Completion check: P-01–P-03 evidence is recorded, production data/backup controls are approved, all C01–C16 dispositions remain current, and each VCC has a named passing check before release.
+- **Next bounded action:** Product Owner and release owner decide whether staged END ADLC is required for this already-deployed candidate. If yes, configure an approved Dev target and exact same-candidate promotion path, then record fresh Dev, promotion, Production and rollback evidence before closing delivery. Separately, name the florist and service boundary, supply catalog/fees/privacy details, approve data region and retention, and complete discovery. Do not claim product readiness until P-01–P-03 evidence and the applicable VCC results are recorded.
