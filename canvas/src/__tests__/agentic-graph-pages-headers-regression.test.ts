@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { AGENTIC_GRAPH_CSP, buildAgentReadyHeaders } from '../../../scripts/pages-mirror-headers.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../../../scripts/production-runtime-readiness-build.mjs'
-import { assertContentSecurityPolicy, formatContentSecurityPolicyHeader } from 'agentic-os/content-security-policy'
-import { buildAgenticGraphDevCspHeaders } from '../../../cloudflare/pages/agentic-graph-security-headers.mjs'
+import { assertContentSecurityPolicy, formatContentSecurityPolicyHeader, setContentSecurityPolicy } from 'agentic-os/content-security-policy'
+import { onRequest } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 
 // Default to the source candidate; a release can explicitly validate its published file.
 const readHeadersForValidation = (): string => {
@@ -42,16 +42,30 @@ const assertEnforcedCsp = (headersText: string): void => {
   }
 }
 
-export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
+export async function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
   const enforced = `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`
   const report = "  Content-Security-Policy-Report-Only: default-src 'self'"
   assert.doesNotThrow(() => assertEnforcedCsp(['/agentic-graph/*', '  Permissions-Policy: camera=(self)', '/other/*', '  X-Example: retained', '/agentic-graph/*', enforced].join('\n')))
   assert.throws(() => assertEnforcedCsp('/content/agentic-graph/*\n' + enforced), /expected \/agentic-graph/)
   assert.throws(() => assertEnforcedCsp(['/agentic-graph/*', enforced, report].join('\n')), /no report-only CSP/)
   assertEnforcedCsp(readHeadersForValidation())
-  assertContentSecurityPolicy(new Headers(buildAgenticGraphDevCspHeaders()), {
-    mode: 'report-only', policy: AGENTIC_GRAPH_CSP,
+  const reportOnly = new Headers()
+  setContentSecurityPolicy(reportOnly, { mode: 'report-only', policy: AGENTIC_GRAPH_CSP })
+  assertContentSecurityPolicy(reportOnly, { mode: 'report-only', policy: AGENTIC_GRAPH_CSP })
+  const appShellHtml = '<!doctype html><html><head><title>agentic-graph</title></head><body><main id="root"></main></body></html>'
+  const response = await onRequest({
+    request: new Request('http://127.0.0.1:4173/agentic-graph/', { headers: { accept: 'text/html' } }),
+    env: {},
+    next: async () => new Response(appShellHtml, {
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    }),
   })
+  if (response.headers.get('content-security-policy-report-only') !== AGENTIC_GRAPH_CSP) {
+    throw new Error('expected local Graph Dev HTML to use the shared report-only CSP')
+  }
+  if (response.headers.has('content-security-policy')) {
+    throw new Error('local Graph Dev HTML must not enforce CSP before Production')
+  }
 }
 
 export function testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd() {

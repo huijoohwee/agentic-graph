@@ -1,5 +1,4 @@
 import { webGpuManualChunk } from './viteManualChunks'
-import { buildAgenticGraphDevCspHeaders } from '../cloudflare/pages/agentic-graph-security-headers.mjs'
 import { createPwaPrecacheAdmission } from './vitePwaPrecacheAdmission.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
@@ -6415,7 +6414,6 @@ export default defineConfig(({ command, mode }) => {
     watch: { ignored: [...DEFAULT_VITE_WATCH_IGNORED, createWorkspaceMirrorWatchPathIgnore(buildWorkspaceMirrorWatchIgnoredRoots({ repoRoot, canvasRoot: __dirname, workspaceRoot, docsRoot: process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT, chatLogRoot: process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT, mutableSourcePath: process.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH }))] },
     headers: {
       'Cache-Control': 'no-store',
-      ...buildAgenticGraphDevCspHeaders(),
     },
     proxy: {
       '/api/storage': {

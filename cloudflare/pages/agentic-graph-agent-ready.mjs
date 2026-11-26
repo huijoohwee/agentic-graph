@@ -315,6 +315,7 @@ const handleMcpTransport = async (request, env = {}) => {
 };
 
 const handlesAgenticGraphRoot = (pathname) => pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`;
+const LOCAL_DEVELOPMENT_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const handlesAgenticGraphHtmlSurface = (pathname) =>
   handlesAgenticGraphRoot(pathname) || Boolean(resolvePublishedDocPathIdentity(pathname));
 const resolveAgentReadyRouteTag = (request) => {
@@ -450,7 +451,7 @@ async function routeRequest(context) {
   if (handlesAgenticGraphRoot(url.pathname) || publishedDocIdentity) {
     nextResponse.headers.delete("x-frame-options");
     setContentSecurityPolicy(nextResponse.headers, {
-      mode: "enforce",
+      mode: LOCAL_DEVELOPMENT_HOSTNAMES.has(url.hostname) ? "report-only" : "enforce",
       policy: publishedDocIdentity ? AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP : AGENTIC_GRAPH_CSP,
     });
   }
