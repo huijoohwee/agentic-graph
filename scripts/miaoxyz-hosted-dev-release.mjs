@@ -110,8 +110,9 @@ export const validateDevDatabaseInfo = (info, database) => {
   return location
 }
 
-export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORKER_NAME }) => {
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, {
+export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORKER_NAME, subdomain }) => {
+  if (!SUBDOMAIN.test(String(subdomain || ''))) throw new Error('MiaoXYZ Dev workers.dev subdomain variable is invalid')
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}/subdomain`, {
     headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(15000),
   })
@@ -120,8 +121,9 @@ export const workersDevOrigin = async ({ accountId, token, workerName = DEV_WORK
     throw new Error(`MiaoXYZ Dev workers.dev subdomain read failed with HTTP ${response.status}`)
   }
   const payload = await response.json()
-  const subdomain = payload?.success === true && payload.errors?.length === 0 ? payload.result?.subdomain : null
-  if (!SUBDOMAIN.test(String(subdomain || ''))) throw new Error('MiaoXYZ Dev workers.dev subdomain response is invalid')
+  if (payload?.success !== true || payload.errors?.length !== 0 || payload.result?.enabled !== true || payload.result?.previews_enabled !== false) {
+    throw new Error('MiaoXYZ Dev Worker must be enabled on workers.dev with preview URLs disabled')
+  }
   return `https://${workerName}.${subdomain}.workers.dev`
 }
 
@@ -232,6 +234,8 @@ export const deployDev = async ({ repoRoot, candidatePath, expectedCandidateDige
   const sourceConfig = readWorkerConfig(repoRoot)
   const devConfig = createDevConfig(sourceConfig)
   const { dev, database } = validateDevConfig(devConfig, sourceConfig.env?.production?.d1_databases?.[0]?.database_id)
+  const workersDevSubdomain = requireText(process.env.CLOUDFLARE_WORKERS_DEV_SUBDOMAIN, 'Cloudflare Workers.dev subdomain')
+  if (!SUBDOMAIN.test(workersDevSubdomain)) throw new Error('Cloudflare Workers.dev subdomain is invalid')
   const configPath = path.join(appRootFrom(repoRoot), `.wrangler-dev-release-${randomUUID()}.jsonc`)
   writeJson(configPath, devConfig, 0o600)
   let before
@@ -306,7 +310,7 @@ export const deployDev = async ({ repoRoot, candidatePath, expectedCandidateDige
     }
     deployedVersionId = newlyActive[0].versionId
     const token = requireText(process.env.CLOUDFLARE_API_TOKEN, 'Cloudflare API token')
-    origin = await workersDevOrigin({ accountId: candidate.baseline.accountId, token, workerName: dev.name })
+    origin = await workersDevOrigin({ accountId: candidate.baseline.accountId, token, workerName: dev.name, subdomain: workersDevSubdomain })
     probePassed = await probeDev({ origin, sourceRevision: candidate.source.revision,
       candidateDigest: candidate.candidateDigest, expectedVersionId: deployedVersionId })
     if (!probePassed) throw new Error('MiaoXYZ Dev workers.dev health readback failed')

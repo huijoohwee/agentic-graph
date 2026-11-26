@@ -7,7 +7,7 @@ import YAML from 'yaml'
 import { digest } from '../miaoxyz-production-release-core.mjs'
 import {
   createDevConfig, DEV_DATABASE_ID, DEV_DATABASE_NAME, DEV_WORKER_NAME, validateDevConfig,
-  validateDevDatabaseInfo, validateDevPromotionReceipt,
+  validateDevDatabaseInfo, validateDevPromotionReceipt, workersDevOrigin,
 } from '../miaoxyz-hosted-dev-release.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '../..')
@@ -61,6 +61,32 @@ test('hosted Dev database readback is bound to the APAC isolated D1', () => {
   assert.throws(() => validateDevDatabaseInfo({ result: { ...info.result, uuid: 'wrong' } }, database), /does not match/)
 })
 
+test('hosted Dev reads the exact Worker subdomain exposure under the Worker-scoped token', { concurrency: false }, async t => {
+  const previousFetch = globalThis.fetch
+  t.after(() => { globalThis.fetch = previousFetch })
+  const requests = []
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url: String(url), options })
+    return new Response(JSON.stringify({ success: true, errors: [], result: { enabled: true, previews_enabled: false } }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  assert.equal(await workersDevOrigin({
+    accountId: 'a'.repeat(32), token: 'test-token', workerName: DEV_WORKER_NAME, subdomain: 'huijoohwee',
+  }), 'https://agentic-miaoxyz-dev.huijoohwee.workers.dev')
+  assert.equal(requests[0].url,
+    `https://api.cloudflare.com/client/v4/accounts/${'a'.repeat(32)}/workers/scripts/${DEV_WORKER_NAME}/subdomain`)
+  assert.equal(requests[0].options.headers.Authorization, 'Bearer test-token')
+
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    success: true, errors: [], result: { enabled: true, previews_enabled: true },
+  }), { status: 200, headers: { 'content-type': 'application/json' } })
+  await assert.rejects(workersDevOrigin({
+    accountId: 'a'.repeat(32), token: 'test-token', workerName: DEV_WORKER_NAME, subdomain: 'huijoohwee',
+  }), /preview URLs disabled/)
+})
+
 test('Production promotion requires a receipt for the exact Dev candidate and runtime version', () => {
   const candidate = {
     source: { revision: 'a'.repeat(40) },
@@ -98,6 +124,8 @@ test('the protected release workflow gates Production on the same successful Dev
   const production = stagedWorkflow.jobs.miaoxyz_deploy
   assert.equal(verify.environment.name, 'miaoxyz-candidate-read')
   assert.equal(dev.environment.name, 'development')
+  assert.equal(dev.steps.find(step => step.name === 'Deploy exact candidate to isolated Dev D1 and Worker').env.CLOUDFLARE_WORKERS_DEV_SUBDOMAIN,
+    '${{ vars.CLOUDFLARE_WORKERS_DEV_SUBDOMAIN }}')
   assert.deepEqual(production.needs, ['miaoxyz_verify', 'miaoxyz_dev_deploy'])
   assert.match(production.if, /needs\.miaoxyz_dev_deploy\.result == 'success'/)
   assert.match(production.steps.find(step => step.name === 'Verify the same candidate passed Dev').run, /miaoxyz-hosted-dev-release\.mjs verify/)
