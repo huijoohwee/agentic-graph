@@ -156,7 +156,11 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
         await act(async () => { await import('@/lib/ui/ColorPalette'); await new Promise(resolve => setTimeout(resolve, 35)) })
         const palette = document.querySelector<HTMLElement>('[role="dialog"][aria-label="Part color palette"]')!
         assert.ok(palette, 'Colour editing opens the shared semantic palette')
-        await act(async () => Simulate.change(palette.querySelector('[aria-label="Hex colour"]')!, { target: { value } } as never))
+        await act(async () => {
+          const hex = palette.querySelector<HTMLInputElement>('[aria-label="Hex colour"]')!
+          hex.value = value
+          hex.dispatchEvent(new env.dom.window.Event('input', { bubbles: true }))
+        })
         await act(async () => Simulate.keyDown(palette, { key: 'Escape' }))
         return
       }
