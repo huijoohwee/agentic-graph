@@ -7,6 +7,8 @@ const GENERATED_NAMESPACE_START = '# BEGIN agentic-graph generated namespace rou
 const GENERATED_NAMESPACE_END = '# END agentic-graph generated namespace routes'
 const GENERATED_REDIRECTS_START = '# BEGIN agentic-graph generated top-level file routes'
 const GENERATED_REDIRECTS_END = '# END agentic-graph generated top-level file routes'
+const MIAOXYZ_ROUTES_START = '# BEGIN MiaoXYZ generated storefront routes'
+const MIAOXYZ_ROUTES_END = '# END MiaoXYZ generated storefront routes'
 const obsoleteRedirectLines = new Set([
   '/ /content/agentic-graph/index.html 200', '/index.html /content/agentic-graph/index.html 200',
   '/hackamap /hackamap/ 301', '/hackamap/ /content/hackamap/index.html 200',
@@ -20,6 +22,7 @@ const isManagedRoute = line => {
   if (source === '/agentic-sheets' || source.startsWith('/agentic-sheets/')
     || source === '/content/agentic-sheets' || source.startsWith('/content/agentic-sheets/')) return true
   if (source === '/GameXR' || source === '/GameXR/*') return true
+  if (/^\/(?:content\/)?MiaoXYZ(?:\/|$)/u.test(source)) return true
   if (source === '/agentic-base' || source.startsWith('/agentic-base/')
     || source === '/content/agentic-base' || source.startsWith('/content/agentic-base/')) return true
   return [CANONICAL_MIRROR_NAMESPACE, ...LEGACY_PRODUCT_NAMESPACES].some(namespace =>
@@ -73,6 +76,13 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
     `${canonicalBase}/.well-known/* ${canonicalBase}/.well-known/:splat 200`,
     ...rootFiles.map(relativePath => `${canonicalBase}/${relativePath} /content/agentic-graph/${relativePath} 200`),
     `${canonicalBase}/ /content/agentic-graph/index.html 200`, `${canonicalBase}/* /content/agentic-graph/index.html 200`,
+    MIAOXYZ_ROUTES_START,
+    '/MiaoXYZ /content/MiaoXYZ/index.html 200',
+    '/MiaoXYZ/ /content/MiaoXYZ/index.html 200',
+    '/MiaoXYZ/* /content/MiaoXYZ/:splat 200',
+    '/content/MiaoXYZ /MiaoXYZ 301', '/content/MiaoXYZ/ /MiaoXYZ/ 301',
+    '/content/MiaoXYZ/* /MiaoXYZ/:splat 301',
+    MIAOXYZ_ROUTES_END,
     GENERATED_REDIRECTS_END,
   ]
   const prefix = stripManagedNamespaceRoutes(existing)

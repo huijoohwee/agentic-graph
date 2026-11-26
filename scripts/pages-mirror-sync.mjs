@@ -24,6 +24,10 @@ import {
 } from './xr-v2/production-publish-contract.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+export const MIAOXYZ_SOURCE_PIN = Object.freeze({
+  repository: 'huijoohwee/MiaoXYZ',
+  revision: 'e0080f11a6004e6cb07e6c0ee6c37d237edfae29',
+})
 const joinRelativePath = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
@@ -78,6 +82,15 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const distDir = path.resolve(agenticGraphRoot, 'canvas', 'dist')
   const targetDir = path.resolve(mirrorRoot, 'content', 'agentic-graph')
   const publicRouteDir = path.resolve(mirrorRoot, 'agentic-graph')
+  const miaoxyzSourceRoot = path.resolve(process.env.MIAOXYZ_SOURCE_ROOT || path.resolve(githubRoot, 'MiaoXYZ'))
+  const miaoxyzPublicDir = path.resolve(miaoxyzSourceRoot, 'public')
+  const miaoxyzTargetDir = path.resolve(mirrorRoot, 'content', 'MiaoXYZ')
+  const miaoxyzSourceRevision = String(process.env.MIAOXYZ_SOURCE_REVISION || execFileSync(
+    'git', ['rev-parse', 'HEAD'], { cwd: miaoxyzSourceRoot, encoding: 'utf8' },
+  )).trim()
+  if (!/^[0-9a-f]{40}$/.test(miaoxyzSourceRevision) || miaoxyzSourceRevision !== MIAOXYZ_SOURCE_PIN.revision) {
+    throw new Error(`MiaoXYZ source must match the pinned protected main commit ${MIAOXYZ_SOURCE_PIN.revision}`)
+  }
   const baseDemoSyncPlan = await planAgenticBaseDemoSync({ graphRoot: agenticGraphRoot, mirrorRoot })
   const sheetsSyncPlan = await planSheetsSync({ graphRoot: agenticGraphRoot, mirrorRoot })
   const offlineAssetManifestPath = path.resolve(
@@ -139,8 +152,26 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     joinRelativePath('scripts', joinKebab('check', 'skill', 'packs.mjs')),
   ])
   if (!await existsDir(distDir)) throw new Error(`Missing build output directory: ${distDir}`)
+  if (!await existsDir(miaoxyzPublicDir)) throw new Error(`Missing pinned MiaoXYZ public assets: ${miaoxyzPublicDir}`)
 
   const sourceFiles = await listFiles(distDir)
+  const miaoxyzSourceFiles = await listFiles(miaoxyzPublicDir)
+  const miaoxyzMarkerPath = path.resolve(miaoxyzTargetDir, '.well-known', 'source-revision.json')
+  const miaoxyzMarkerBody = `${JSON.stringify({
+    schema: 'miaoxyz-generated-pages-source/v1',
+    repository: MIAOXYZ_SOURCE_PIN.repository,
+    revision: miaoxyzSourceRevision,
+  }, null, 2)}\n`
+  const miaoxyzManagedFiles = new Set([...miaoxyzSourceFiles, '.well-known/source-revision.json'])
+  const existingMiaoxyzFiles = await existsDir(miaoxyzTargetDir) ? await listAllFiles(miaoxyzTargetDir) : []
+  const miaoxyzFilesToCopy = []
+  for (const relativePath of miaoxyzSourceFiles) {
+    if (await fileNeedsUpdate(path.resolve(miaoxyzPublicDir, relativePath), path.resolve(miaoxyzTargetDir, relativePath))) {
+      miaoxyzFilesToCopy.push(relativePath)
+    }
+  }
+  const miaoxyzFilesToRemove = existingMiaoxyzFiles.filter(relativePath => !miaoxyzManagedFiles.has(relativePath))
+  const miaoxyzMarkerNeedsUpdate = await textFileNeedsUpdate(miaoxyzMarkerBody, miaoxyzMarkerPath)
   const rootManagedSourceFiles = [{ rel: 'agentic-graph-live-canvas-hero.md', src: path.resolve(agenticGraphRoot, 'docs', 'documents', 'agentic-graph-live-canvas-hero.md') }]
   const publicRoutePlan = buildOfflinePublicRoutePlan({
     sourceFiles,
@@ -265,8 +296,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     filesToCopy, rootManagedFilesToCopy, filesToRemove, publicFilesToCopy, publicRootManagedFilesToCopy,
     publicFilesToRemove, publishRootManagedFilesToCopy, plainCopyUpdates, productionRuntimeFunctionUpdates,
     agentReadyRuntimeFilesToCopy, agentReadyRouteUpdates, agentReadyStaticFilesToWrite, legacyMirrorFilesToRemove,
-    legacyImageMigration.legacyImageFiles, runtimeReadinessPathsNeedingUpdate,
-  ].some(entries => entries.length > 0) || redirectsNeedUpdate || headersNeedUpdate || baseDemoSyncPlan.hasDrift || sheetsSyncPlan.hasDrift
+    legacyImageMigration.legacyImageFiles, runtimeReadinessPathsNeedingUpdate, miaoxyzFilesToCopy, miaoxyzFilesToRemove,
+  ].some(entries => entries.length > 0) || miaoxyzMarkerNeedsUpdate || redirectsNeedUpdate || headersNeedUpdate || baseDemoSyncPlan.hasDrift || sheetsSyncPlan.hasDrift
 
   if (checkMode) {
     if (!hasDrift) {
@@ -277,6 +308,9 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     summaryList('content files needing sync', filesToCopy)
     summaryList('root-managed source files needing sync', rootManagedFilesToCopy, entry => entry.rel)
     summaryList('stale content files needing removal', filesToRemove)
+    summaryList('MiaoXYZ public files needing sync', miaoxyzFilesToCopy)
+    summaryList('stale generated MiaoXYZ files needing removal', miaoxyzFilesToRemove)
+    if (miaoxyzMarkerNeedsUpdate) console.error(`  - pinned MiaoXYZ source marker needs update (${miaoxyzSourceRevision})`)
     summaryList('public route files needing sync', publicFilesToCopy)
     summaryList('public root-managed source files needing sync', publicRootManagedFilesToCopy, entry => entry.rel)
     summaryList('stale public route files needing removal', publicFilesToRemove)
@@ -304,6 +338,13 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   }
 
   for (const runtimeReadinessPath of runtimeReadinessPathsNeedingUpdate) await writeTextFile(runtimeReadinessPath, runtimeReadinessBody)
+  await fs.mkdir(miaoxyzTargetDir, { recursive: true })
+  for (const relativePath of miaoxyzFilesToCopy) {
+    await copyIfChanged(path.resolve(miaoxyzPublicDir, relativePath), path.resolve(miaoxyzTargetDir, relativePath))
+  }
+  for (const relativePath of miaoxyzFilesToRemove) await fs.rm(path.resolve(miaoxyzTargetDir, relativePath), { force: true })
+  await removeEmptyDirs(miaoxyzTargetDir)
+  if (miaoxyzMarkerNeedsUpdate) await writeTextFile(miaoxyzMarkerBody, miaoxyzMarkerPath)
   await fs.mkdir(targetDir, { recursive: true })
   let copiedCount = 0
   for (const relativePath of sourceFiles) {

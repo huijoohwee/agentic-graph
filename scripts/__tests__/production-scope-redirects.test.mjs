@@ -66,3 +66,21 @@ test('requested GameXR casing reaches its existing application without changing 
   assert.deepEqual(destination(routes, '/GameXR-tools'), { target: '/tools', status: '302' })
   assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: [] }), routes)
 })
+
+test('MiaoXYZ storefront serves its generated Pages mirror and preserves sibling routes', () => {
+  const existing = [
+    '/MiaoXYZ /old-worker 302',
+    '/MiaoXYZ/* /old-worker/:splat 302',
+    '/MiaoXYZ-tools /tools 302',
+    '/content/MiaoXYZ/private /authored 302',
+  ].join('\n') + '\n'
+  const routes = buildAgenticGraphRedirects({ existing, rootFiles: [] })
+
+  assert.deepEqual(destination(routes, '/MiaoXYZ'), { target: '/content/MiaoXYZ/index.html', status: '200' })
+  assert.deepEqual(destination(routes, '/MiaoXYZ/'), { target: '/content/MiaoXYZ/index.html', status: '200' })
+  assert.deepEqual(destination(routes, '/MiaoXYZ/app.js'), { target: '/content/MiaoXYZ/app.js', status: '200' })
+  assert.deepEqual(destination(routes, '/content/MiaoXYZ/app.js'), { target: '/MiaoXYZ/app.js', status: '301' })
+  assert.deepEqual(destination(routes, '/MiaoXYZ-tools'), { target: '/tools', status: '302' })
+  assert.deepEqual(destination(routes, '/content/MiaoXYZ/private'), { target: '/MiaoXYZ/private', status: '301' })
+  assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: [] }), routes)
+})
