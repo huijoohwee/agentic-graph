@@ -51,7 +51,7 @@ test('MiaoXYZ Pages output is generated from an exact, pinned source repository 
   for (const pattern of [
     /Resolve pinned MiaoXYZ source/,
     /Check out pinned MiaoXYZ source/,
-    /repository: \$\{\{ steps\.miaoxyz_source\.outputs\.repository \}\}/,
+    /repository: huijoohwee\/MiaoXYZ/,
     /ref: \$\{\{ steps\.miaoxyz_source\.outputs\.revision \}\}/,
     /MIAOXYZ_SOURCE_ROOT:/,
     /MIAOXYZ_SOURCE_REVISION:/,
