@@ -52,7 +52,7 @@ test('MiaoXYZ Pages output is generated from an exact, pinned source repository 
     /Resolve pinned MiaoXYZ source/,
     /Check out pinned MiaoXYZ source/,
     /repository: huijoohwee\/MiaoXYZ/,
-    /ref: \$\{\{ steps\.miaoxyz_source\.outputs\.revision \}\}/,
+    /ref: '?\$\{\{ steps\.miaoxyz_source\.outputs\.revision \}\}'?/,
     /MIAOXYZ_SOURCE_ROOT:/,
     /MIAOXYZ_SOURCE_REVISION:/,
     /MiaoXYZ source commit:/,
