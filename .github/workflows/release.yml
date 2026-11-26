@@ -103,7 +103,7 @@ jobs:
       - { name: Checkout reviewed GameXR source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/GameXR, ref: '${{ steps.gamexr_source.outputs.revision }}', path: GameXR } }
       - { name: Admit verified GameXR artifact, working-directory: agentic-graph, env: { GH_TOKEN: '${{ github.token }}' }, run: 'node scripts/production-gamexr.mjs prepare' }
       - { name: Reconcile captured schema map from exact source, working-directory: agentic-graph, run: 'test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && test -z "$(git status --porcelain -- docs/documents)" && python3 ../huijoohwee.github.io/schema/agentic-rag/sync_map.py --mode write --docs-dir "$GITHUB_WORKSPACE/agentic-graph/docs/documents" --map-file "$GITHUB_WORKSPACE/huijoohwee.github.io/schema/agentic-rag/agentic-graph-documents-map.graph.jsonld"' }
-      - { name: Verify source-to-mirror parity, working-directory: agentic-graph, run: 'npm run conflict:mirror:check' }
+      - { name: Verify source-to-mirror parity, working-directory: agentic-graph, env: { MIAOXYZ_SOURCE_ROOT: '${{ github.workspace }}/MiaoXYZ-source', MIAOXYZ_SOURCE_REVISION: '${{ steps.miaoxyz_source.outputs.revision }}' }, run: 'npm run conflict:mirror:check' }
       - { name: Build Pages functions, working-directory: agentic-graph, run: 'npm run pages:functions:build' }
       - { name: Verify complete mirror runtime seal before activation, working-directory: huijoohwee, run: 'npm run runtime:check' }
       - { name: Create verified mirror artifact manifest, working-directory: agentic-graph, run: 'npm run --silent production:mirror-artifact:create -- ../huijoohwee' }
