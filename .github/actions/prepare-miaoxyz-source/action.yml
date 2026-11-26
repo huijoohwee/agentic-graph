@@ -1,0 +1,40 @@
+name: Prepare exact MiaoXYZ source
+description: Check out the protected source pin, install its Wrangler, and expose its root.
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      with:
+        node-version: 22
+    - name: Resolve exact MiaoXYZ product source pin
+      id: miaoxyz_source
+      shell: bash
+      run: |
+        node --input-type=module - <<'NODE'
+        import { appendFileSync, readFileSync } from 'node:fs'
+        const pin = JSON.parse(readFileSync('scripts/miaoxyz-production-release-source.json', 'utf8'))
+        if (pin.schema !== 'agentic-graph/miaoxyz-source-pin/v1' || pin.repository !== 'huijoohwee/MiaoXYZ' || !/^[0-9a-f]{40}$/.test(pin.revision)) throw Error('MiaoXYZ source pin is invalid')
+        appendFileSync(process.env.GITHUB_OUTPUT, `revision=${pin.revision}\n`)
+        NODE
+    - name: Checkout exact pinned MiaoXYZ product source
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        repository: huijoohwee/MiaoXYZ
+        ref: ${{ steps.miaoxyz_source.outputs.revision }}
+        path: MiaoXYZ-source
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Verify pinned source is current protected MiaoXYZ main
+      shell: bash
+      env:
+        MIAOXYZ_SOURCE_REVISION: ${{ steps.miaoxyz_source.outputs.revision }}
+      run: |
+        test "$(git -C MiaoXYZ-source rev-parse HEAD)" = "$MIAOXYZ_SOURCE_REVISION"
+        test "$(git -C MiaoXYZ-source ls-remote origin refs/heads/main | cut -f1)" = "$MIAOXYZ_SOURCE_REVISION"
+    - name: Install pinned MiaoXYZ Wrangler
+      shell: bash
+      run: npm ci --prefix MiaoXYZ-source
+    - name: Set MiaoXYZ source root for following steps
+      shell: bash
+      run: printf 'MIAOXYZ_PRODUCT_SOURCE_ROOT=%s/MiaoXYZ-source\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"

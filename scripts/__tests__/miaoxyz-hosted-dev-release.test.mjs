@@ -16,6 +16,7 @@ const productionId = sourceConfig.env.production.d1_databases[0].database_id
 const config = createDevConfig(sourceConfig)
 const stagedWorkflow = YAML.parse(fs.readFileSync(path.join(repoRoot, '.github/workflows/miaoxyz-hosted-staged-release.yml'), 'utf8'))
 const releaseWorkflow = YAML.parse(fs.readFileSync(path.join(repoRoot, '.github/workflows/release.yml'), 'utf8'))
+const sourcePrepAction = YAML.parse(fs.readFileSync(path.join(repoRoot, '.github/actions/prepare-miaoxyz-source/action.yml'), 'utf8'))
 
 test('hosted Dev is isolated from Production and does not bind a custom route or cron', () => {
   const validated = validateDevConfig(config, productionId)
@@ -106,4 +107,30 @@ test('the protected release workflow gates Production on the same successful Dev
   assert.equal(releaseWorkflow.jobs.miaoxyz_release.if, "inputs.release_target == 'miaoxyz'")
   assert.match(releaseWorkflow.jobs.miaoxyz_catalog_release.uses, /miaoxyz-production-release\.yml/)
   assert.equal(releaseWorkflow.jobs.miaoxyz_catalog_release.if, "inputs.release_target == 'miaoxyz-catalog'")
+})
+
+test('every hosted release stage installs Wrangler at the exact pinned MiaoXYZ source', () => {
+  for (const jobName of ['miaoxyz_verify', 'miaoxyz_dev_deploy', 'miaoxyz_deploy']) {
+    const job = stagedWorkflow.jobs[jobName]
+    const prepare = job.steps.find(step => step.name === 'Prepare exact MiaoXYZ source and Wrangler')
+    assert.equal(prepare.uses, './.github/actions/prepare-miaoxyz-source')
+  }
+  const pin = sourcePrepAction.runs.steps.find(step => step.name === 'Resolve exact MiaoXYZ product source pin')
+  assert.equal(pin.id, 'miaoxyz_source')
+  assert.match(pin.run, /miaoxyz-production-release-source\.json/)
+  const source = sourcePrepAction.runs.steps.find(step => step.name === 'Checkout exact pinned MiaoXYZ product source')
+  assert.equal(source.with.repository, 'huijoohwee/MiaoXYZ')
+  assert.equal(source.with.ref, '${{ steps.miaoxyz_source.outputs.revision }}')
+  assert.equal(source.with.path, 'MiaoXYZ-source')
+  assert.equal(source.with['persist-credentials'], false)
+  const currentMain = sourcePrepAction.runs.steps.find(step => step.name === 'Verify pinned source is current protected MiaoXYZ main')
+  assert.match(currentMain.run, /git -C MiaoXYZ-source ls-remote origin refs\/heads\/main/)
+  const install = sourcePrepAction.runs.steps.find(step => step.name === 'Install pinned MiaoXYZ Wrangler')
+  assert.equal(install.run, 'npm ci --prefix MiaoXYZ-source')
+  const sourceRoot = sourcePrepAction.runs.steps.find(step => step.name === 'Set MiaoXYZ source root for following steps')
+  assert.match(sourceRoot.run, /MIAOXYZ_PRODUCT_SOURCE_ROOT=.*MiaoXYZ-source/)
+  assert.equal(
+    stagedWorkflow.jobs.miaoxyz_verify.steps.find(step => step.name === 'Check generated Worker bindings').run,
+    'npm run types:check --prefix MiaoXYZ-source',
+  )
 })
