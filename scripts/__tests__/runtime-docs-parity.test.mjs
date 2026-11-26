@@ -4,23 +4,24 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { readPinnedDocsIdentity, verifyDocsRevisionParity, verifyPackagePinParity } from '../check-runtime-docs-parity.mjs'
+import { readAgenticOsSourcePin } from '../../contracts/agentic-os-package-pin.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/release.yml'), 'utf8')
 const current = 'f'.repeat(40)
 const next = 'e'.repeat(40)
 const contract = revision => `---\ndocs_dependency:\n  repository: "https://github.com/huijoohwee/agentic-os.git"\n  ref: "${revision}"\n---\n`
-const packageSources = revision => {
+const packageSources = (revision, location = 'dependencies') => {
   const url = `https://codeload.github.com/huijoohwee/agentic-os/tar.gz/${revision}`
-  return [JSON.stringify({ dependencies: { 'agentic-os': url } }), JSON.stringify({
-    packages: { '': { dependencies: { 'agentic-os': url } }, 'node_modules/agentic-os': { resolved: url } },
+  return [JSON.stringify({ [location]: { 'agentic-os': url } }), JSON.stringify({
+    packages: { '': { [location]: { 'agentic-os': url } }, 'node_modules/agentic-os': { resolved: url } },
   })]
 }
 
 test('release docs identity is exact and binds to canonical Dev main', () => {
   const identity = readPinnedDocsIdentity(contract(current))
   assert.equal(identity.repository, 'huijoohwee/agentic-os')
-  verifyPackagePinParity(identity, ...packageSources(current))
+  verifyPackagePinParity(identity, ...packageSources(current, 'devDependencies'))
   assert.deepEqual(verifyDocsRevisionParity(identity, `${current}\trefs/heads/main\n`), {
     schema: 'agentic-graph/runtime-docs-parity/v1', status: 'passed',
     repository: 'huijoohwee/agentic-os', revision: current, pinnedRevision: current,
@@ -54,6 +55,10 @@ test('release docs parity accepts only a proven exact consumer-pin ancestor', ()
 })
 
 test('release docs parity fails closed on malformed ownership and malformed remote refs', () => {
+  assert.throws(() => readAgenticOsSourcePin({
+    dependencies: { 'agentic-os': `https://codeload.github.com/huijoohwee/agentic-os/tar.gz/${current}` },
+    devDependencies: { 'agentic-os': `https://codeload.github.com/huijoohwee/agentic-os/tar.gz/${current}` },
+  }), /exactly one package pin/)
   assert.throws(() => readPinnedDocsIdentity(contract('main')), /one exact GitHub repository/)
   assert.throws(() => readPinnedDocsIdentity(contract(current).replace('huijoohwee/agentic-os', 'other/os')),
     /canonical Agentic OS repository/)

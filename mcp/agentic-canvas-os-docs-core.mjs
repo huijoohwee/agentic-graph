@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import runtimePackage from "../package.json" with { type: "json" };
+import { readAgenticOsSourcePin } from "../contracts/agentic-os-package-pin.mjs";
 import { AGENT_DOCS_REPOSITORY, AGENT_HISTORY_MANIFEST, agentDocSourcePath } from "./agentic-os-doc-sources.mjs";
 
 import {
@@ -471,7 +472,7 @@ export const buildAgenticCanvasOsDocsDynamicResolutionPayload = async (
   if (typeof fetchImpl !== "function") {
     throw new Error("Agentic Canvas OS docs resolution requires a fetch implementation");
   }
-  const sourceRevision = runtimePackage.dependencies["agentic-os"].match(/\/([0-9a-f]{40})$/)?.[1];
+  const sourceRevision = readAgenticOsSourcePin(runtimePackage).revision;
   if (!SHA_PATTERN.test(sourceRevision || "")) throw new Error("Agentic OS source requires an exact package pin");
   const fetchSource = async (sourcePath) => {
     const url = `https://raw.githubusercontent.com/${AGENT_DOCS_REPOSITORY}/${sourceRevision}/${sourcePath}`;

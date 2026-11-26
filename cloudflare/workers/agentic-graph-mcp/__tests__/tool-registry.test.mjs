@@ -1,5 +1,6 @@
 import { pinnedAgentDocsFetch } from "../../../../mcp/__tests__/fixtures/native-agent-docs.mjs";
 import packageJson from "../../../../package.json" with { type: "json" };
+import { readAgenticOsSourcePin } from "../../../../contracts/agentic-os-package-pin.mjs";
 // Unit tests for the agentic-graph control-plane McpAgent tool registry
 // (agentic-graph-acos-mcp-connector spec, task 1.1).
 //
@@ -232,7 +233,7 @@ test("Agentic Canvas OS docs invocation is cataloged remotely as read-only", () 
 });
 
 test("Agentic Canvas OS docs invocation resolves prefixed tokens remotely", async () => {
-  const sourceRevision = packageJson.dependencies["agentic-os"].split("/").at(-1);
+  const sourceRevision = readAgenticOsSourcePin(packageJson).revision;
   const requestedUrls = [];
   const fetchImpl = pinnedAgentDocsFetch(requestedUrls);
   const result = await executeAgenticGraphMcpToolAsync(

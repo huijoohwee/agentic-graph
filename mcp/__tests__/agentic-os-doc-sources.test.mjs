@@ -9,11 +9,12 @@ import { agentDocSourcePath, GRAPH_DOC_PATHS } from '../agentic-os-doc-sources.m
 import { resolveAgenticCanvasOsDocsRoot } from '../agentic-canvas-os-docs-runtime.js';
 import { buildAgenticCanvasOsDocsDynamicResolutionPayload } from '../agentic-canvas-os-docs-core.mjs';
 import { readRuntimeDocsSources } from '../../scripts/runtime-docs-sources.mjs';
+import { readAgenticOsSourcePin } from '../../contracts/agentic-os-package-pin.mjs';
 
 const graphRoot = path.resolve(import.meta.dirname, '../..');
 const docsRoot = resolveAgenticCanvasOsDocsRoot({ rootDir: graphRoot });
 const osRoot = path.resolve(docsRoot, '../..');
-const revision = pkg.dependencies['agentic-os'].split('/').at(-1);
+const revision = readAgenticOsSourcePin(pkg).revision;
 const requests = [];
 async function sourceFetch(url) {
   const prefix = `https://raw.githubusercontent.com/huijoohwee/agentic-os/${revision}/`;

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseFrontmatter, repoRoot } from './collaboration-contract.mjs'
+import { readAgenticOsSourcePin } from '../contracts/agentic-os-package-pin.mjs'
 
 export const runtimeReadinessContractPath = path.resolve(
   repoRoot,
@@ -56,7 +57,9 @@ export const readRuntimeReadinessContract = async () => {
   const contract = validateRuntimeReadinessContract(parseFrontmatter(source, label))
   const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'))
   const expected = `https://codeload.github.com/${resolveRuntimeDocsDependency(contract).repository}/tar.gz/${contract.docs_dependency.ref}`
-  if (pkg.dependencies?.['agentic-os'] !== expected) throw new Error('docs and runtime package pins must identify the same OS source revision')
+  if (readAgenticOsSourcePin(pkg).value !== expected) {
+    throw new Error('docs and runtime package pins must identify the same OS source revision')
+  }
   return contract
 }
 
