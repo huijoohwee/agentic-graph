@@ -1,4 +1,5 @@
 import { AGENTIC_GRAPH_CSP } from '../cloudflare/pages/agentic-graph-security-headers.mjs'
+import { formatContentSecurityPolicyHeader } from 'agentic-os/content-security-policy'
 
 import { sheetsHeaders } from './production-sheets.mjs'
 
@@ -168,7 +169,7 @@ export const buildAgentReadyHeaders = ({
   const graphCspHeaderBlock = [
     GENERATED_GRAPH_CSP_HEADERS_START,
     '/agentic-graph/*',
-    `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`,
+    formatContentSecurityPolicyHeader('enforce', AGENTIC_GRAPH_CSP),
     GENERATED_GRAPH_CSP_HEADERS_END,
   ].join('\n')
   let next = stripCanonicalGraphCsp(stripLegacyProductNamespaceHeaderBlocks(existing)).replace(

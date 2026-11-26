@@ -23,6 +23,7 @@ import {
 } from "./agentic-graph-agent-ready-app-shell.mjs";
 import { injectWebMcpScript } from "./webmcp-html-injection.mjs";
 import { AGENTIC_GRAPH_CSP, AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP } from "./agentic-graph-security-headers.mjs";
+import { setContentSecurityPolicy } from "agentic-os/content-security-policy";
 import { resolvePublishedDocIdentity } from "../../canvas/src/features/canvas/canvasDocShareToken.mjs";
 import {
   agentReadyHomepageLinkHeaderValue,
@@ -314,6 +315,7 @@ const handleMcpTransport = async (request, env = {}) => {
 };
 
 const handlesAgenticGraphRoot = (pathname) => pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`;
+const LOCAL_DEVELOPMENT_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const handlesAgenticGraphHtmlSurface = (pathname) =>
   handlesAgenticGraphRoot(pathname) || Boolean(resolvePublishedDocPathIdentity(pathname));
 const resolveAgentReadyRouteTag = (request) => {
@@ -448,10 +450,10 @@ async function routeRequest(context) {
   nextResponse.headers.set("link", agentReadyHomepageLinkHeaderValue);
   if (handlesAgenticGraphRoot(url.pathname) || publishedDocIdentity) {
     nextResponse.headers.delete("x-frame-options");
-    nextResponse.headers.delete("content-security-policy-report-only");
-    nextResponse.headers.set("content-security-policy", publishedDocIdentity
-      ? AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP
-      : AGENTIC_GRAPH_CSP);
+    setContentSecurityPolicy(nextResponse.headers, {
+      mode: LOCAL_DEVELOPMENT_HOSTNAMES.has(url.hostname) ? "report-only" : "enforce",
+      policy: publishedDocIdentity ? AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP : AGENTIC_GRAPH_CSP,
+    });
   }
   return withAgenticGraphRouteHeaders(request, nextResponse);
 }
