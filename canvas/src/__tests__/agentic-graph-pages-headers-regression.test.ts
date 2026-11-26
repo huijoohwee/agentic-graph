@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { AGENTIC_GRAPH_CSP, buildAgentReadyHeaders } from '../../../scripts/pages-mirror-headers.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../../../scripts/production-runtime-readiness-build.mjs'
+import { assertContentSecurityPolicy, formatContentSecurityPolicyHeader } from 'agentic-os/content-security-policy'
+import { buildAgenticGraphDevCspHeaders } from '../../../cloudflare/pages/agentic-graph-security-headers.mjs'
 
 // Default to the source candidate; a release can explicitly validate its published file.
 const readHeadersForValidation = (): string => {
@@ -33,6 +35,11 @@ const assertEnforcedCsp = (headersText: string): void => {
     throw new Error('expected /agentic-graph/* to have exactly one canonical enforced CSP')
   }
   if (reports.length) throw new Error('expected /agentic-graph/* to have no report-only CSP after enforcement')
+  const responseHeaders = new Headers({ 'Content-Security-Policy': policies[0] })
+  assertContentSecurityPolicy(responseHeaders, { mode: 'enforce', policy: AGENTIC_GRAPH_CSP })
+  if (formatContentSecurityPolicyHeader('enforce', AGENTIC_GRAPH_CSP) !== `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`) {
+    throw new Error('production CSP header must be formatted by the shared policy owner')
+  }
 }
 
 export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
@@ -42,6 +49,9 @@ export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
   assert.throws(() => assertEnforcedCsp('/content/agentic-graph/*\n' + enforced), /expected \/agentic-graph/)
   assert.throws(() => assertEnforcedCsp(['/agentic-graph/*', enforced, report].join('\n')), /no report-only CSP/)
   assertEnforcedCsp(readHeadersForValidation())
+  assertContentSecurityPolicy(new Headers(buildAgenticGraphDevCspHeaders()), {
+    mode: 'report-only', policy: AGENTIC_GRAPH_CSP,
+  })
 }
 
 export function testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd() {
@@ -54,3 +64,4 @@ export function testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd() {
     }
   }
 }
+
