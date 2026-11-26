@@ -183,13 +183,13 @@ jobs:
             agentic-graph/package-lock.json
 
       - name: Enforce shared owner reuse
-        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@2a394c589064105387f1c58e6db54da135059c28
+        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@1d8e340eba37d1ae66d26328dc309f236b69e181
         with:
           baseline: 48deb82e7c4680becacb928c2b3ce4ed0d8724e6
           checkout: agentic-graph
 
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@3ed239e9f3591ade6bfb84b5262e2c0487bd7039
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@1d8e340eba37d1ae66d26328dc309f236b69e181
         with:
           checkout: agentic-graph
 
