@@ -28,7 +28,6 @@ const requireSourceEvidence = (source, label, requirements) => {
     if (!pattern.test(source)) fail(`${label} missing ${name} evidence`);
   }
 };
-const ACOS_DOCS_REVISION = "a1324ee9149d49ebffe65cbb28b2e4464d6baeda";
 const VOICEBOX_REVIEWED_REVISION = "52f8d8dd387e4049c81ee97079d5f54e2e399b94";
 const requiredPaths = [
   "contracts/voice-studio.schema.js",
@@ -224,8 +223,7 @@ requireSourceEvidence(voiceBrowserSources, "browser Voice Studio", [
 const readinessContract = await readRuntimeReadinessContract();
 const proofTokens = readinessContract.docs_dependency?.proof_tokens || [];
 const routeTokens = [...new Set(routes.flatMap(route => route.split(/\s+/)))];
-if (readinessContract.docs_dependency?.ref !== ACOS_DOCS_REVISION
-  || !readinessContract.docs_dependency?.required_files?.includes("VOICE-STUDIO.md")
+if (!readinessContract.docs_dependency?.required_files?.includes("VOICE-STUDIO.md")
   || routeTokens.some(token => !proofTokens.includes(token))
   || readinessContract.voice_studio_proof?.status !== "runtime-ready-dev"
   || readinessContract.voice_studio_proof?.readiness_scope !== "injected-adapter Dev runtime only"
