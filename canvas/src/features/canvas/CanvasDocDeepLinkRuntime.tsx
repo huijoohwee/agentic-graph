@@ -179,10 +179,14 @@ async function handleLocalDeepLink(
       { getWorkspaceFs },
       { normalizeWorkspacePath, workspaceBasename, workspaceDocumentKey },
       { applyActiveMarkdownDocumentPayload },
+      { isMaterializedWorkspaceSourceProofCurrent, materializeActiveWorkspaceEntryIntoSourceFiles },
+      { isFrontmatterOnlyDoc },
     ] = await Promise.all([
       import('@/features/workspace-fs/workspaceFs') as Promise<typeof import('@/features/workspace-fs/workspaceFs')>,
       import('@/features/workspace-fs/path') as Promise<typeof import('@/features/workspace-fs/path')>,
       import('@/features/markdown/activeMarkdownDocument') as Promise<typeof import('@/features/markdown/activeMarkdownDocument')>,
+      import('@/features/source-files/sourceFilesRuntimeMaterialization') as Promise<typeof import('@/features/source-files/sourceFilesRuntimeMaterialization')>,
+      import('@/lib/markdown/frontmatter') as Promise<typeof import('@/lib/markdown/frontmatter')>,
     ])
 
     const fs = await getWorkspaceFs()
@@ -218,10 +222,38 @@ async function handleLocalDeepLink(
       normalizeWebpageFrontmatterToMarkdown: false,
     })
     if (activated !== true) throw new Error(`Failed to activate ${workspaceBasename(targetPath) || relativePath}`)
-    const activeDocument = useGraphStore.getState()
+    const activatedDocument = useGraphStore.getState()
     if (useMarkdownExplorerStore.getState().activePath !== targetPath
-      || activeDocument.markdownDocumentName !== workspaceDocumentKey(targetPath)) {
+      || activatedDocument.markdownDocumentName !== workspaceDocumentKey(targetPath)) {
       throw new Error(`Source ownership changed while activating ${workspaceBasename(targetPath) || relativePath}`)
+    }
+
+    const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({
+      activePathOverride: targetPath,
+      fs,
+      applyToGraph: options.applyToGraph,
+      sourceFilesSnapshot: useGraphStore.getState().sourceFiles,
+      workspaceEntries: entries,
+    })
+    const activeDocument = useGraphStore.getState()
+    const activeSourceFile = findComposedSourceFileByPath({
+      sourceFiles: activeDocument.sourceFiles,
+      targetPath,
+      enabledOnly: true,
+    })
+    const documentOwned = activeDocument.markdownDocumentName === workspaceDocumentKey(targetPath)
+    const proofCurrent = !!sourceFilesProof && isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)
+    const sourceOwned = !!activeSourceFile
+      && activeSourceFile.text === activeDocument.markdownDocumentText
+      && (activeSourceFile.status === 'parsed' || isFrontmatterOnlyDoc(activeSourceFile.text))
+    if (useMarkdownExplorerStore.getState().activePath !== targetPath || !documentOwned || !proofCurrent || !sourceOwned) {
+      throw new Error(
+        `Local document source ownership did not survive activation `
+        + `(document=${documentOwned ? 'ok' : 'missing'}, `
+        + `proof=${proofCurrent ? 'ok' : 'stale'}, `
+        + `sourceFile=${sourceOwned ? 'ok' : 'missing'}, `
+        + `activePath=${targetPath})`,
+      )
     }
 
     pushUiToast({

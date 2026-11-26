@@ -67,7 +67,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Artifacts | Preserve sync fidelity | - [ ] Rebuild synced artifacts after upstream merges; preserve sync fidelity; forbid manual edits in generated publish surfaces |
 | Authority | Resolve from the root | - [ ] Merge conflicts in the highest upstream owner; resolve from the root; forbid downstream-first conflict fixes |
 | Contracts | Keep one canonical contract | - [ ] Update the canonical contract before mirrors; preserve one authority; forbid duplicate contract ownership across repos |
-| Docs | Update canonical files first | - [ ] Edit `agentic-graph/docs/**` before schema mirrors unless a directive states otherwise; keep docs canonical; forbid mirror-first changes |
+| Docs | Update canonical files first | - [ ] Edit Graph documentation in `agentic-graph/docs/**`. Resolve Agentic RAG schema changes at the website owner in the ownership matrix |
 | Generators | Fix emission logic once | - [ ] Patch generators or source inputs once and rerun them; remove duplicate edits; forbid repeated patching of emitted outputs |
 | Ownership | Assign one path per concern | - [ ] Declare one owner for runtime, docs, schema, and publish surfaces; maintain accountability; forbid overlapping edit authority |
 | Publish | Sync from source | - [ ] Treat publish mirrors as outputs from source workflows; preserve deploy integrity; forbid hand-maintained deploy mirrors |
@@ -84,7 +84,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Runtime source | Upstream application code | `agentic-graph/canvas/src/**` | Merge source logic first, then validate runtime behavior |
 | Canonical docs | Upstream documentation | `huijoohwee/.workspace/.todo/docs/TODO.md`, `huijoohwee/.workspace/.todo/todo/**`, `agentic-graph/docs/**`, `agentic-graph/README.md` | Merge canonical wording first, record an immutable Context at the private owner, then regenerate derived views |
 | Generators and sync logic | Upstream automation | `agentic-graph/scripts/**`, `agentic-graph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
-| Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/agentic-rag/**` | Update only after the canonical owner is aligned |
+| Agentic RAG schemas | `huijoohwee.github.io` | `huijoohwee.github.io/schema/agentic-rag/**` | Edit the authored schema at the website owner. Refresh Gateway references and Graph consumers from an accepted owner revision. |
 | Publish mirrors | Downstream deploy surface | `huijoohwee/content/agentic-graph/**`, managed route files in `huijoohwee/agentic-graph/**` | Never hand-merge; rebuild and resync from `agentic-graph` |
 
 ---
@@ -93,7 +93,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 1. Fetch `origin`, preserve one clean registered `main` runtime worktree, and create each `agent/<device>/<semantic-scope>` from `origin/main` in its own detached registered task worktree.
 2. Declare one action, semantic scope, actor, and exact `origin/main` base SHA in pull-request frontmatter.
-3. Classify each conflicting file as `runtime-source`, `canonical-doc`, `generator`, `schema-mirror`, or `publish-mirror`.
+3. Classify each conflicting file as `runtime-source`, `canonical-doc`, `generator`, `authored-schema`, `schema-mirror`, or `publish-mirror`.
 4. Stop parallel implementation when another active change owns the same semantic scope; serialize or explicitly hand over ownership.
 5. Merge the upstream owner first and decide the intended behavior there.
 6. Remove stale duplicate paths, legacy routes, or parallel copy instead of preserving both sides.
@@ -123,9 +123,9 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 - For published `agentic-graph` assets, use `scripts/sync-pages-agentic-graph.mjs` as the route and artifact authority.
 - Do not repair generated routes or copied assets directly if the sync workflow can reproduce them.
 
-### Schema Mirrors
+### Agentic RAG schemas and projections
 
-- Update `huijoohwee.github.io/schema/agentic-rag/**` only after the canonical source is merged.
+- `huijoohwee.github.io/schema/agentic-rag/**` owns the authored schema files. Graph owns its runtime and documentation. Resolve a discrepancy at the owner of the affected contract.
 - Keep mirror wording aligned with the canonical contract.
 - Remove duplicate schema wording if the same rule is defined upstream.
 
@@ -225,10 +225,10 @@ Use `npm run hygiene:audit` before broad refactors to list all current source-bu
 - Regenerate the output.
 - Remove hand edits from generated files.
 
-### Pattern: Canonical Doc vs Schema Mirror
+### Pattern: Canonical source and schema projection
 
-- Keep the canonical doc as the first merge point.
-- Update the schema mirror after the canonical language settles.
+- Resolve the affected schema or document at its declared owner.
+- Refresh the downstream projection from that revision.
 - Delete duplicate or contradictory wording in the mirror.
 
 ### Pattern: Parallel Runtime Refactors

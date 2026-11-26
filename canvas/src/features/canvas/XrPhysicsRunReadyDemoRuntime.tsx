@@ -20,12 +20,26 @@ import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
 import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
+import { onGeospatialModeChanged } from '@/features/geospatial/events'
+import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+
+const subscribeGeospatialMode = (listener: () => void): (() => void) => (
+  onGeospatialModeChanged(() => listener())
+)
 
 export function XrPhysicsRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const sourceFiles = useGraphStore(state => state.sourceFiles)
+  const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
+  const canvas3dMode = useGraphStore(state => state.canvas3dMode)
+  const schemaLayoutMode = useGraphStore(state => state.schema?.layout?.mode)
+  const geospatialModeEnabled = React.useSyncExternalStore(
+    subscribeGeospatialMode,
+    readGeospatialOverlayEnabledPreference,
+    readGeospatialOverlayEnabledPreference,
+  )
   const source = findComposedSourceFileByPath({ sourceFiles, targetPath: markdownDocumentName })
   const sourceReady = Boolean(source?.enabled && source.text === markdownDocumentText && source.status === 'parsed')
   const active = isXrPhysicsRuntimeRunReadyDemoActive(
@@ -134,9 +148,8 @@ export function XrPhysicsRunReadyDemoRuntime() {
       resumeXrNativeControllerDemo()
       return undefined
     }
-    const state = useGraphStore.getState()
     if (!surfaceInitializedRef.current) {
-      const activatesXrSurface = state.canvasRenderMode !== '3d' || state.canvas3dMode !== 'xr'
+      const activatesXrSurface = canvasRenderMode !== '3d' || canvas3dMode !== 'xr'
       if (
         activatesXrSurface
         && !activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })
@@ -161,8 +174,11 @@ export function XrPhysicsRunReadyDemoRuntime() {
     return undefined
   }, [
     active,
+    canvas3dMode,
+    canvasRenderMode,
     dedicatedDemo,
     gameplayOverlayActive,
+    geospatialModeEnabled,
     markdownDocumentName,
     markdownDocumentText,
     phase,
@@ -173,6 +189,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
     source?.status,
     source?.text,
     sourceFilesBootstrapReady,
+    schemaLayoutMode,
     sourceReady,
   ])
   return null

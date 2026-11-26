@@ -1,8 +1,7 @@
 import React from 'react'
-import { beginSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { completeSourceFilesBootstrap, failSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { __canvasStartupDebug } from '@/features/canvas/canvasStartupDebug'
-import { buildDocDeepLinkIntentKey } from '@/features/canvas/canvasDocDeepLink'
 import { loadPersistedSourceFiles, loadPersistedSourceFilesWorkspace, persistSourceFiles, persistSourceFilesWorkspace } from '@/features/source-files/sourceFilesDb'
 import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import { scheduleWorkspaceSyncTask, cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
@@ -482,9 +481,6 @@ export function SourceFilesPersistenceBootstrap() {
       })
       await applyBootstrapMountRequest(bootstrapMountRequest)
       if (cancelled) return
-      const currentSearch = typeof window === 'undefined' ? '' : String(window.location.search || '')
-      const documentIntentKey = buildDocDeepLinkIntentKey(currentSearch)
-      if (documentIntentKey) beginSourceFilesDocumentIntent(documentIntentKey)
       completeSourceFilesBootstrap()
     }).catch(error => {
       if (controller.signal.aborted) return

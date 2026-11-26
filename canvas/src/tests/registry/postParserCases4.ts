@@ -594,5 +594,6 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["graph.selectionHighlight.edgeEndpoints","@/__tests__/selectionHighlight.test","testSelectionHighlightEdgeSelectionEndpointsAndEdges"],
   ["graph.selectionHighlight.mediaOpacity.respectsToggleAndLayer","@/__tests__/selectionHighlight.test","testSelectionHighlightMediaOpacityRespectsRenderToggleAndLayerOpacity"], ["graph.selectionHighlight.labelOpacity.floor","@/__tests__/selectionHighlight.test","testSelectionHighlightLabelOpacityDoesNotDisappearAtZeroLayerOpacity"],
   ["graph.selectionHighlight.d3SemanticFallback","@/__tests__/selectionHighlight.test","testSelectionHighlightUsesSharedSemanticFallbackForD3Graph"],
+  ["workspaceFs.bootstrap.materialize.activeSourceWithUnrelatedWorkspaceSource","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapMaterializesActiveSourceWithUnrelatedWorkspaceSource"],
   ["graph.selectionZoom.nodeSelectionSubset","@/__tests__/selectionZoom.test","testSelectionZoomNodeSelectionUsesNodeAndNeighbors"], ["graph.selectionZoom.canonicalNodeIds.resolveAgainstLeafGraph","@/__tests__/selectionZoom.test","testSelectionZoomResolvesCanonicalComposedNodeIdsAgainstLeafGraphNodes"],
 ]

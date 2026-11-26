@@ -1,7 +1,7 @@
 import { createRequest } from './requests'
 import {
   MAX_CATALOG_BYTES, MAX_QUEUE_ROWS, REQUEST_ID, STATUSES, approvalEnabled, constantTimeEqual,
-  exactKeys, json, publicStore, readCatalog, readJson, readSettings, secretConfigured, text,
+  exactKeys, json, parseCatalog, publicStore, readCatalog, readJson, readSettings, secretConfigured, text,
 } from './validation'
 
 const operatorAuthorized = (request: Request, env: Env): boolean => {
