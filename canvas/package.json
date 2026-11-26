@@ -107,7 +107,7 @@
     "@turf/helpers": "^7.2.0",
     "@types/d3": "^7.4.3",
     "@vladmandic/human": "^3.3.6",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#8693ed5ac9a78086bd26cf412e2e734afebb24cb",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#d3e2b027a68adc21cda6aef6eb39cbe958f5aaa2",
     "agentic-gateway": "https://codeload.github.com/huijoohwee/agentic-gateway/tar.gz/da61ed8f0af9d78c33d306311ab8beaa6563cfc8",
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "agentic-trading-platform": "https://codeload.github.com/huijoohwee/agentic-trading-platform/tar.gz/79395084c7a9709c7ab33caa68612a417edcc082",
