@@ -362,6 +362,7 @@ if (!gameSourceTestCommand.includes('--import ./scripts/source-authority-test-bo
 }
 const sourceAuthorityLifecycle = await text('canvas/src/features/source-files/sourceFilesBootstrapReadiness.ts')
 const sourceAuthorityBootstrap = await text('canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx')
+const documentDeepLinkRuntime = await text('canvas/src/features/canvas/CanvasDocDeepLinkRuntime.tsx')
 const canvasStartupRuntimes = await text('canvas/src/features/canvas/CanvasStartupRuntimes.tsx')
 const canvasSourceAuthorityBoundary = await text('canvas/src/features/canvas/CanvasSourceAuthorityBoundary.tsx')
 const appSource = await text('canvas/src/App.tsx')
@@ -387,10 +388,11 @@ const missingSourceAuthorityLifecycleMarkers = sourceAuthorityLifecycleMarkers.f
   marker => !sourceAuthorityLifecycle.includes(marker),
 )
 if (missingSourceAuthorityLifecycleMarkers.length > 0
-  || !sourceAuthorityBootstrap.includes('beginSourceFilesDocumentIntent(documentIntentKey)')
+  || (!sourceAuthorityBootstrap.includes('beginSourceFilesDocumentIntent(documentIntentKey)')
+    && !documentDeepLinkRuntime.includes('beginSourceFilesDocumentIntent(intentKey)'))
   || !sourceAuthorityBootstrap.includes('completeSourceFilesBootstrap()')
   || !sourceAuthorityBootstrap.includes('failSourceFilesBootstrap(error)')) {
-  throw new Error(`XR source authority must retain one fail-closed base plus keyed document transaction; missing ${missingSourceAuthorityLifecycleMarkers.join(', ') || 'bootstrap terminal ownership'}`)
+  throw new Error(`XR source authority must retain one fail-closed base plus keyed document transaction; missing ${missingSourceAuthorityLifecycleMarkers.join(', ') || 'document-intent start or bootstrap terminal ownership'}`)
 }
 if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'")
   || !canvasViewport.includes('data-kg-source-authority-phase={sourceFilesBootstrap.phase}')
