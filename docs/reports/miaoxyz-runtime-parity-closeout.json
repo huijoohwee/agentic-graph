@@ -1,0 +1,212 @@
+{
+  "schema": "agentic-graph-miaoxyz-runtime-parity-closeout/v1",
+  "observedAt": "2026-11-26T14:03:52Z",
+  "decision": "no-deploy-for-release-controller-lane",
+  "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2120",
+  "sourceLane": {
+    "ref": "agent/device-cba000d3779d/miaoxyz-source-bound-worker-build-contract-fix",
+    "head": "30cd8bdeba0ac4098c837764c02bc67c83a47360",
+    "paths": [
+      ".github/workflows/miaoxyz-production-release.yml",
+      "scripts/__tests__/production-pages-boundary-contract.test.mjs",
+      "scripts/miaoxyz-production-release-candidate.mjs",
+      "scripts/miaoxyz-production-release-core.mjs",
+      "scripts/miaoxyz-production-release-deploy.mjs",
+      "scripts/miaoxyz-production-release-source.json",
+      "scripts/miaoxyz-worker-source-sync.mjs",
+      "scripts/pages-mirror-sync.mjs"
+    ]
+  },
+  "pathAssessment": {
+    ".github/workflows/miaoxyz-production-release.yml": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/__tests__/production-pages-boundary-contract.test.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/miaoxyz-production-release-candidate.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/miaoxyz-production-release-core.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/miaoxyz-production-release-deploy.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/miaoxyz-production-release-source.json": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/miaoxyz-worker-source-sync.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test.",
+    "scripts/pages-mirror-sync.mjs": "The path is excluded from the MiaoXYZ production Worker and Pages product artifact; it only changes release control, source sync, or its contract test."
+  },
+  "productionArtifactDecision": {
+    "disposition": "no-deploy",
+    "reason": "All exact source-lane paths listed above are excluded from the product artifact. The production Worker subtree is identical to the deployed source candidate; the Worker route, runtime asset hashes, and catalog content have no product-artifact change to release."
+  },
+  "candidateIdentity": {
+    "manifest": {
+      "schema": "miaoxyz/no-deploy-runtime-candidate/v1",
+      "graphSourceRevision": "7d4dac81a227b0ddad3ce694877d0f5b886090c7",
+      "graphSourceTree": "d9d6034f1e711a3d3c4be6e27c96f6322057c08f",
+      "miaoxyzSourceRevision": "58ce56416688594b252b43b376c49b5aa33dc3a3",
+      "workerSubtreeTree": "a11bdb55000473ef9567a9740952dcc8a4e32a9e",
+      "activeProductionWorkerVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23",
+      "deployedWorkerArtifactDigest": "6cb028a9dd73f893121db8c364b463d89ad6f06dae76b31d7daf123aa3aeb018",
+      "catalogSha256": "fccb2e479b04c99ef3cb83b865210695109896f6e0e38af655f300dc0a2539f6",
+      "assets": [
+        {
+          "path": "styles-base.css",
+          "devSha256": "13ddfe0b2da6e1f57ed5bcb11b5f4539f7884eb2cd3d8022049482bf46fd5b38"
+        },
+        {
+          "path": "styles-layout.css",
+          "devSha256": "f65129e693c3a48f112796d8a621eacf56866bc13ac7a9b6fd78252ecdc3d77d"
+        },
+        {
+          "path": "typography.css",
+          "devSha256": "22db5d9e9e138a076f6ad5901dcd53742a68d7f146968a7349c56a90fc608cf6"
+        },
+        {
+          "path": "app-core.js",
+          "devSha256": "9c4efeb647eafe699d2d86ca7a3f204587bf103c1b2858881c6e53ea97f226ea"
+        },
+        {
+          "path": "app.js",
+          "devSha256": "67198006488ba7c5d1d234c752cfca4d9b52588ac35736c0cfd313a17e21767c"
+        },
+        {
+          "path": "app-catalog.js",
+          "devSha256": "49d331dcf592b1f1e675c43dbf2c05bc445c2299b386b16670ab40f600bd7ef7"
+        },
+        {
+          "path": "flower-mark.svg",
+          "devSha256": "a219727dd3e4095199565eec72a59628d529c42266c22a90fbdcf9fdc0f173cb"
+        }
+      ]
+    },
+    "digestAlgorithm": "sha256(canonical JSON; keys sorted; compact UTF-8)",
+    "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823"
+  },
+  "production": {
+    "url": "https://airvio.co/MiaoXYZ/",
+    "health": {
+      "ok": true,
+      "service": "miaoxyz",
+      "environment": "production",
+      "sourceRevision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+      "candidateDigest": "33b78fe9ea57797444b547a5eba43f31003fcdd4d52892ad251f31849dd5260a",
+      "versionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23"
+    },
+    "catalog": {
+      "httpStatus": 200,
+      "byteLength": 19419,
+      "sha256": "fccb2e479b04c99ef3cb83b865210695109896f6e0e38af655f300dc0a2539f6"
+    },
+    "assets": [
+      {
+        "path": "styles-base.css",
+        "httpStatus": 200,
+        "byteLength": 13163,
+        "sha256": "13ddfe0b2da6e1f57ed5bcb11b5f4539f7884eb2cd3d8022049482bf46fd5b38"
+      },
+      {
+        "path": "styles-layout.css",
+        "httpStatus": 200,
+        "byteLength": 38117,
+        "sha256": "f65129e693c3a48f112796d8a621eacf56866bc13ac7a9b6fd78252ecdc3d77d"
+      },
+      {
+        "path": "typography.css",
+        "httpStatus": 200,
+        "byteLength": 1089,
+        "sha256": "22db5d9e9e138a076f6ad5901dcd53742a68d7f146968a7349c56a90fc608cf6"
+      },
+      {
+        "path": "app-core.js",
+        "httpStatus": 200,
+        "byteLength": 32673,
+        "sha256": "9c4efeb647eafe699d2d86ca7a3f204587bf103c1b2858881c6e53ea97f226ea"
+      },
+      {
+        "path": "app.js",
+        "httpStatus": 200,
+        "byteLength": 3388,
+        "sha256": "67198006488ba7c5d1d234c752cfca4d9b52588ac35736c0cfd313a17e21767c"
+      },
+      {
+        "path": "app-catalog.js",
+        "httpStatus": 200,
+        "byteLength": 11335,
+        "sha256": "49d331dcf592b1f1e675c43dbf2c05bc445c2299b386b16670ab40f600bd7ef7"
+      },
+      {
+        "path": "flower-mark.svg",
+        "httpStatus": 200,
+        "byteLength": 692,
+        "sha256": "a219727dd3e4095199565eec72a59628d529c42266c22a90fbdcf9fdc0f173cb"
+      }
+    ]
+  },
+  "development": {
+    "url": "http://127.0.0.1:8787/",
+    "health": {
+      "ok": true,
+      "service": "miaoxyz",
+      "environment": "dev",
+      "sourceRevision": "local-dev",
+      "candidateDigest": "local-dev",
+      "versionId": "86894c6f-3d66-460c-8d26-95ef3502323b"
+    },
+    "catalog": {
+      "httpStatus": 200,
+      "byteLength": 19419,
+      "sha256": "fccb2e479b04c99ef3cb83b865210695109896f6e0e38af655f300dc0a2539f6"
+    },
+    "assets": [
+      {
+        "path": "styles-base.css",
+        "httpStatus": 200,
+        "byteLength": 13163,
+        "sha256": "13ddfe0b2da6e1f57ed5bcb11b5f4539f7884eb2cd3d8022049482bf46fd5b38"
+      },
+      {
+        "path": "styles-layout.css",
+        "httpStatus": 200,
+        "byteLength": 38117,
+        "sha256": "f65129e693c3a48f112796d8a621eacf56866bc13ac7a9b6fd78252ecdc3d77d"
+      },
+      {
+        "path": "typography.css",
+        "httpStatus": 200,
+        "byteLength": 1089,
+        "sha256": "22db5d9e9e138a076f6ad5901dcd53742a68d7f146968a7349c56a90fc608cf6"
+      },
+      {
+        "path": "app-core.js",
+        "httpStatus": 200,
+        "byteLength": 32673,
+        "sha256": "9c4efeb647eafe699d2d86ca7a3f204587bf103c1b2858881c6e53ea97f226ea"
+      },
+      {
+        "path": "app.js",
+        "httpStatus": 200,
+        "byteLength": 3388,
+        "sha256": "67198006488ba7c5d1d234c752cfca4d9b52588ac35736c0cfd313a17e21767c"
+      },
+      {
+        "path": "app-catalog.js",
+        "httpStatus": 200,
+        "byteLength": 11335,
+        "sha256": "49d331dcf592b1f1e675c43dbf2c05bc445c2299b386b16670ab40f600bd7ef7"
+      },
+      {
+        "path": "flower-mark.svg",
+        "httpStatus": 200,
+        "byteLength": 692,
+        "sha256": "a219727dd3e4095199565eec72a59628d529c42266c22a90fbdcf9fdc0f173cb"
+      }
+    ]
+  },
+  "parity": {
+    "catalogByteIdentical": true,
+    "assetsByteIdentical": true,
+    "workerSubtreeUnchangedSinceProductionCandidate": true,
+    "productionWorkerVersionId": "b8e52cab-35f6-40d5-a048-5704f6fdfa23",
+    "productionSourceRevision": "09d7a873cb934d83ca011a2876f3b1ecdcad9a29",
+    "developmentSourceRevision": "local-dev",
+    "productionHtmlEdgeInjection": "Production HTML includes Cloudflare-injected bridge/challenge scripts, so raw HTML byte length differs from the local Dev response; the seven app-owned shared asset files and catalog API are byte-identical."
+  },
+  "limitations": [
+    "This closes the release-controller lane only; it is not a new hosted Dev deployment or a new Production promotion.",
+    "Production and local Dev health metadata identify different releases; exact app-asset and catalog parity is established, while candidate promotion metadata parity is not claimed.",
+    "This evidence is a read-only no-deploy assessment and authorizes no Cloudflare or D1 mutation."
+  ]
+}
