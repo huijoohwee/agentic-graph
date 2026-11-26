@@ -26,6 +26,18 @@ export type XrSubjectMotionResolution = Readonly<{
   status: 'moved' | 'partial' | 'unchanged' | 'physics-owned' | 'obstructed'
 }>
 
+export function createXrControllerPositionPlanGuard(
+  actorId: string,
+  markId: string,
+  resolution: XrSubjectMotionResolution,
+): (plan: XrMotionReferencePlan) => boolean {
+  return plan => {
+    const mark = plan.cast.find(track => track.actorId === actorId)?.marks.find(candidate => candidate.id === markId)
+    return Boolean(mark && resolution.status !== 'physics-owned' && resolution.status !== 'obstructed'
+      && mark.position.every((value, axis) => value === resolution.position[axis]))
+  }
+}
+
 type SubjectCollisionTrajectory = Readonly<{
   endPosition: XrMotionReferenceVector
   halfX: number

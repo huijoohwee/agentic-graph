@@ -25,11 +25,13 @@ import {
   applyXrTimelineCastAnimationPreset,
   inspectXrSharedAssetControls,
   controlXrSharedAssetControls,
+  readXrSharedAssetGameplayNpcControl,
+} from '@/features/three/xrSharedAssetControlRuntime'
+import {
   readXrSharedObjectControllerPrecisionMode,
   resolveXrSharedObjectControllerMotionTarget,
   setXrSharedObjectControllerPrecisionMode,
-  readXrSharedAssetGameplayNpcControl,
-} from '@/features/three/xrSharedAssetControlRuntime'
+} from '@/features/three/xrObjectControllerPrecisionModeRuntime'
 import { createXrNativeControllerInput } from '@/features/three/xrNativeControllerInput'
 import {
   resolveXrObjectKeyboardMotionTarget,
@@ -222,16 +224,18 @@ export async function testSharedXrAssetControlsDriveMediaMotionTimelineAndGround
     }
 
     const componentSource = source('features', 'three', 'XrSharedAssetControls.tsx')
+    const precisionRuntimeSource = source('features', 'three', 'xrObjectControllerPrecisionModeRuntime.ts')
     const sharedRuntimeSource = source('features', 'three', 'xrSharedAssetControlRuntime.ts')
     const mediaSource = source('features', 'command-menu', 'XrMediaLibraryPanel.tsx')
     const animationSource = source('features', 'three', 'XrAnimationFloatingPanelView.tsx')
     const motionSource = source('features', 'three', 'MotionControlTargetCards.tsx')
-    if (![
-      "let sharedObjectControllerPrecisionMode: XrSharedObjectControllerPrecisionMode = 'gesture'",
+    if (!["let precisionMode: XrObjectControllerPrecisionMode = 'gesture'", 'applyXrObjectControllerPrecisionMode(input.controllerInput)']
+      .every(marker => precisionRuntimeSource.includes(marker))
+      || ![
       'const motion = resolveXrSubjectMotion({',
       "motion.status === 'physics-owned' || motion.status === 'obstructed'",
       'applyXrConstrainedCastMarkChoreography({',
-    ].every(marker => sharedRuntimeSource.includes(marker))) throw new Error('expected page-memory speed choices to retain existing constraint and mark owners')
+      ].every(marker => sharedRuntimeSource.includes(marker))) throw new Error('expected page-memory speed choices to retain existing constraint and mark owners')
     const motionRuntimeSource = source('features', 'three', 'xrMotionReferenceRuntime.ts')
     const timelineSource = source('features', 'three', 'XrCameraMotionSection.tsx')
     const insertedLanesSource = source('features', 'three', 'XrTimelineInsertedLanes.tsx')

@@ -12,9 +12,9 @@ import {
 import { readXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
 import {
   applyXrSharedObjectControllerMotionTarget,
-  resolveXrSharedObjectControllerMotionTarget,
   selectedXrSharedObjectMotionControlActive,
 } from './xrSharedAssetControlRuntime'
+import { resolveXrSharedObjectControllerMotionTarget } from './xrObjectControllerPrecisionModeRuntime'
 import {
   claimThreeObjectInputOwnership,
   releaseThreeObjectInputOwnership,

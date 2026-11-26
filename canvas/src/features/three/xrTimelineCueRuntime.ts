@@ -1,4 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { controlLocalAnimation } from './xrAnimationMcpRuntime'
 import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, readXrMotionReferenceRuntime, setXrMotionReferenceCastMark } from './xrMotionReferenceRuntime'
 import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 import { sampleXrMotionReferenceMarks, type XrMotionReferencePlan } from './xrMotionReferenceModel'

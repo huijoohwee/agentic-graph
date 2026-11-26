@@ -43,6 +43,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["canvas.xrMode.timeline.rehearsalControls", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineRehearsalControlsPreserveSharedTransport"],
   ["canvas.xrMode.timeline.sceneCues", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineSceneCuesShareSelectionAndTransport"],
   ["canvas.xrMode.timeline.cameraPlaybackControls", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrShootCameraPlaybackSourceAndCueRouting"],
+  ["canvas.xrMode.physics.subjectOverlapEgress", "@/__tests__/xrSubjectMotionOverlapEgress.test.ts", "testXrSubjectMotionAllowsIncrementalOverlapEgress"],
   ["canvas.xrMode.timeline.sourceReparse", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineAuthoredCuesSurviveSourceReparse"],
   ["canvas.xrMode.physics.nativeController.hud", "@/__tests__/xrNativeControllerDemoHud.test.tsx", "testXrNativeControllerDemoHudPreservesPausedReset"],
   ["ui.graphCanvas.frozenLabels.presentationRefresh", "@/__tests__/graphCanvasFrozenLabelsPresentation.test", "testFrozenNodeLabelsKeepPositionsOnPresentationRefresh"],

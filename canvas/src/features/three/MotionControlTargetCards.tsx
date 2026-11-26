@@ -22,13 +22,15 @@ import {
   subscribeXrPhysicsRuntime,
 } from './xrPhysicsRuntime'
 import {
-  applyXrSharedObjectControllerMotion,
   controlXrSharedAssetControls,
   inspectXrSharedAssetControls,
+} from './xrSharedAssetControlRuntime'
+import {
+  applyXrSharedObjectControllerMotion,
   readXrSharedObjectControllerPrecisionMode,
   setXrSharedObjectControllerPrecisionMode,
   subscribeXrSharedObjectControllerPrecisionMode,
-} from './xrSharedAssetControlRuntime'
+} from './xrObjectControllerPrecisionModeRuntime'
 import { createXrNativeControllerInput } from './xrNativeControllerInput'
 import {
   THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND,
@@ -144,7 +146,6 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
         source: 'keyboard',
       }),
       deltaSeconds: 0.04 / speed,
-      targetId: selectedObject.id,
     })
     setMovementFeedback(result.applied
       ? `${selectedObject.label} moved 0.04 m ${direction.label}.`
