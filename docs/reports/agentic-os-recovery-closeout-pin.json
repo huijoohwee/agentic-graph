@@ -1,0 +1,40 @@
+{
+  "schema": "agentic-graph-agentic-os-recovery-closeout-pin-evidence/v1",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "upstreamChange": {
+    "repository": "github.com/huijoohwee/agentic-os",
+    "pullRequest": "https://github.com/huijoohwee/agentic-os/pull/743",
+    "revision": "8a2ea9f40d9606e4b072c1e629af20010de3094a",
+    "paths": [
+      "src/completion.mjs",
+      "__tests__/completion.test.mjs"
+    ],
+    "summary": "Raise the delivery-disposition limit from 32 to 64 and test the 64/65 boundary."
+  },
+  "consumerPin": {
+    "previousRevision": "bf0db174f4c2f18757f844ef19864b12675905e0",
+    "revision": "8a2ea9f40d9606e4b072c1e629af20010de3094a",
+    "resolved": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/8a2ea9f40d9606e4b072c1e629af20010de3094a",
+    "integrity": "sha512-tQQ783V35W7l/zE4p5Xr7f756ZkWTZfNl8jM3xB+ntGGx3aYkLLyME1cdEWtK0aHjCld1Gh0eP5WxULfjgIHPQ=="
+  },
+  "deliveryScopeDisposition": {
+    "laneRef": "agent/device-cba000d3779d/miaoxyz-os-closeout-pin",
+    "disposition": "no-deploy",
+    "paths": [
+      "package.json",
+      "package-lock.json",
+      "docs/runtime-readiness-contract.md",
+      "docs/reports/agentic-os-recovery-closeout-pin.json"
+    ],
+    "artifactManifest": "scripts/production-mirror-artifact-entries.mjs",
+    "pathClassification": {
+      "package.json": "dependency pin input; not a Production artifact entry",
+      "package-lock.json": "dependency lock input; not a Production artifact entry",
+      "docs/runtime-readiness-contract.md": "repository contract document; not a Production artifact entry",
+      "docs/reports/agentic-os-recovery-closeout-pin.json": "delivery evidence record; not a Production artifact entry"
+    },
+    "reason": "The production artifact manifest contains none of the four exact changed paths. The pinned Agentic OS revision changes only src/completion.mjs and its test; Graph production artifact entry modules do not import the changed completion module. This lane records a dependency pin for completion governance and the matching runtime-readiness docs reference; it does not change the shipped application artifact.",
+    "decisionRef": "https://github.com/huijoohwee/agentic-os/pull/743",
+    "authorizesDeployment": false
+  }
+}
