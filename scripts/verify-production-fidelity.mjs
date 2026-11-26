@@ -79,9 +79,11 @@ const waitForCanvas = async resolveBody => {
   const deadline = Date.now() + 45_000
   let lastError = null
   let lastText = ''
+  let lastBody = null
   while (Date.now() < deadline) {
     try {
       const body = await resolveBody()
+      lastBody = body
       const text = await body.innerText({ timeout: 2_000 })
       lastText = text
       if (isCanvasReady(text)) return text
@@ -91,9 +93,46 @@ const waitForCanvas = async resolveBody => {
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  const observed = lastText.replace(/\s+/g, ' ').trim().slice(0, 240)
-  const detail = observed ? ` Last observed text: ${observed}` : ''
-  throw new Error(`Canvas did not reach a stable ready state within 45 seconds.${detail}`, { cause: lastError })
+  const observedText = lastText.replace(/\s+/g, ' ').trim()
+  const detail = observedText ? ` Last observed body text length: ${observedText.length}.` : ''
+  let diagnostics = null
+  if (lastBody) {
+    try {
+      diagnostics = await lastBody.page().evaluate(() => {
+        const attributes = selector => Array.from(document.querySelectorAll(selector)).slice(0, 12).map(element => {
+          const phase = element.getAttribute('data-kg-source-authority-phase')
+          return {
+            names: Array.from(element.attributes)
+              .filter(attribute => attribute.name.startsWith('data-kg-'))
+              .map(attribute => attribute.name)
+              .sort(),
+            phase: ['idle', 'resolving', 'ready', 'error', 'blocked', 'loading', 'loaded'].includes(phase) ? phase : null,
+          }
+        })
+        const matchingStorageKeys = Object.keys(window.localStorage)
+          .filter(key => /kg|canvas|graph|source|workspace/i.test(key))
+        const bodyText = String(document.body?.innerText || '').replace(/\s+/g, ' ').trim()
+        return {
+          route: window.location.pathname === '/' ? 'home'
+            : /\/agentic-graph\/?$/.test(window.location.pathname) ? 'canvas'
+              : window.location.pathname.startsWith('/agentic-graph/share/') ? 'shared-canvas' : 'other',
+          queryParameterCount: new URLSearchParams(window.location.search).size,
+          sourceAuthority: attributes('[data-kg-source-authority-phase]'),
+          playground: attributes('[data-kg-xr-playground-hud="1"]'),
+          sceneRoots: attributes('[data-kg-xr-scene-media-drop="1"]'),
+          heavyRuntimeIntentCount: document.querySelectorAll('[data-kg-canvas-heavy-runtime-intent]').length,
+          canvasCount: document.querySelectorAll('canvas').length,
+          matchingStorageKeyCount: matchingStorageKeys.length,
+          matchingStorageValueLengths: matchingStorageKeys.map(key => String(window.localStorage.getItem(key) || '').length),
+          bodyTextLength: bodyText.length,
+          physicsRuntimeReady: /Physics runtime running with (?:ball|rocket) selected\./.test(bodyText),
+        }
+      })
+    } catch {
+      diagnostics = { unavailable: true }
+    }
+  }
+  throw new Error(`Canvas did not reach a stable ready state within 45 seconds.${detail} Diagnostics: ${JSON.stringify(diagnostics)}`, { cause: lastError })
 }
 
 const resolveHomeCanvasFrames = page => page.frames().filter(candidate => {
