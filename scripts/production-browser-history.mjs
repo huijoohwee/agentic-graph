@@ -26,8 +26,8 @@ const exactPriorJob = (run, jobs, name) => {
   assert.equal(job.status, 'completed')
   return job
 }
-// A passed browser ledger remains evidence when authorization or a read-only
-// preflight stops deployment. It never substitutes for fresh authorization.
+// A passed browser ledger remains evidence when only neutral post-browser
+// verification or pre-deployment checks stop a release. It never authorizes effects.
 export function assertPreDeploymentStop(run, jobs) {
   const verify = exactPriorJob(run, jobs, 'Verify Release Candidate')
   assert.equal(verify.conclusion, 'success', 'prior candidate verification did not pass')
@@ -71,6 +71,44 @@ export function assertCancellationBeforeDeployment(run, jobs) {
   assert.ok(Array.isArray(deploy.steps), 'cancelled deployment step history is unavailable')
   assert.equal(deploy.steps.length, 0, 'cancelled deployment started before reconciliation')
 }
+export function assertPostBrowserVerificationStop(run, jobs) {
+  const verify = exactPriorJob(run, jobs, 'Verify Release Candidate')
+  assert.equal(verify.conclusion, 'failure', 'prior verification did not stop after browser proof')
+  const deploy = exactPriorJob(run, jobs, 'Human-Authorized Deploy, Verify, And Publish Mirror')
+  assert.equal(deploy.conclusion, 'skipped', 'post-browser verification failure reached deployment')
+  assert.ok(Array.isArray(deploy.steps) && deploy.steps.length === 0, 'post-browser deployment step history is not empty')
+  assert.ok(Array.isArray(verify.steps), 'prior verification step history is unavailable')
+  const exactStep = name => {
+    const matches = verify.steps.filter(step => step.name === name)
+    assert.equal(matches.length, 1, `prior ${name} step is missing or ambiguous`)
+    assert.equal(matches[0].status, 'completed')
+    return matches[0]
+  }
+  for (const name of ['Prepare isolated browser candidate', 'Retain browser attempt before execution',
+    'Run isolated browser gate before production authorization', 'Retain browser ledger and bounded diagnostics']) {
+    assert.equal(exactStep(name).conclusion, 'success', `prior ${name} did not pass`)
+  }
+  const failures = verify.steps.filter(step => step.conclusion === 'failure')
+  assert.equal(failures.length, 1, 'post-browser verification has unresolved failures')
+  const failure = failures[0]
+  const neutralFailures = new Set(['Bind immutable production candidate', 'Create neutral release lifecycle receipts',
+    'Upload production authorization evidence', 'Persist pre-authorization lifecycle receipts',
+    'Stage complete verified release artifact', 'Upload verified release artifact'])
+  assert.ok(neutralFailures.has(failure.name), 'post-browser verification failure is not neutral')
+  const failureIndex = verify.steps.indexOf(failure)
+  assert.ok(failureIndex > verify.steps.indexOf(exactStep('Retain browser ledger and bounded diagnostics')),
+    'verification failed before the browser ledger was retained')
+  for (const [index, step] of verify.steps.entries()) {
+    assert.equal(step.status, 'completed', `prior ${step.name} step is incomplete`)
+    if (index < failureIndex) assert.equal(step.conclusion, 'success', `prior ${step.name} did not pass`)
+    else if (index > failureIndex) {
+      const cleanup = step.name.startsWith('Post ') || step.name === 'Complete job'
+      assert.ok(cleanup ? ['success', 'skipped'].includes(step.conclusion) : step.conclusion === 'skipped',
+        `prior ${step.name} continued after the neutral verification failure`)
+    }
+  }
+}
+
 export function assertRollbackCarrierBinding(run, carrier) {
   assert.equal(carrier?.schema, 'agentic-collaborative-release-lifecycle/v2', 'prior rollback carrier schema differs')
   assert.equal(carrier.completion, 'rolled-back', 'prior lifecycle is not terminally rolled back')
@@ -192,8 +230,10 @@ export function assertPriorBrowserRun(run, currentRun, jobs, rollbackCarrier = n
   assert.equal(run.status, 'completed', 'prior release is still active; preserve its history')
   if (run.conclusion === 'failure' && jobs) {
     const deploy = exactPriorJob(run, jobs, 'Human-Authorized Deploy, Verify, And Publish Mirror')
+    const verify = exactPriorJob(run, jobs, 'Verify Release Candidate')
     const attempt = deploy.steps?.filter(step => step.name === 'Require an exact successful deployment attempt') ?? []
-    if (attempt.length === 1 && attempt[0].conclusion === 'success') assertCompletedRollback(run, jobs, rollbackCarrier)
+    if (deploy.conclusion === 'skipped' && verify.conclusion === 'failure') assertPostBrowserVerificationStop(run, jobs)
+    else if (attempt.length === 1 && attempt[0].conclusion === 'success') assertCompletedRollback(run, jobs, rollbackCarrier)
     else assertPreDeploymentStop(run, jobs)
   }
   else if (run.conclusion === 'cancelled' && jobs) assertCancellationBeforeDeployment(run, jobs)

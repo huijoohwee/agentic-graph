@@ -16,6 +16,7 @@ import { resolveMarkdownWorkspaceCanonicalSelection } from '@/lib/markdown-works
 import { buildWorkspaceEntriesIndex, hasWorkspaceFileEntry } from '@/lib/markdown-workspace-runtime/workspaceEntriesIndex'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
+import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
 import { isRouterRootAliasRuntime } from '@/lib/routing/basePath'
 import { parseDocDeepLink, readLocalDocDeepLinkPathFromCurrentLocation } from '@/features/canvas/canvasDocDeepLink'
 
@@ -44,9 +45,10 @@ export function buildInitialWorkspaceStartupSnapshot(args: {
   }
 }
 
-function hasMaterializedWorkspaceSourceFiles(): boolean {
-  const list = useGraphStore.getState().sourceFiles
-  return Array.isArray(list) && list.some(file => String(file?.source?.path || '').startsWith('workspace:'))
+function hasMaterializedWorkspaceSourceFile(activePath: WorkspacePath | null): boolean {
+  if (!activePath) return false
+  const sourcePath = resolveWorkspaceSourcePathKey(activePath)
+  return useGraphStore.getState().sourceFiles.some(file => file?.source?.path === sourcePath)
 }
 
 export function resolveWorkspaceStartupCanonicalPath(args: {
@@ -178,7 +180,7 @@ async function readLateWorkspaceStartupSelection(fs: WorkspaceFs): Promise<{
         ? { ...entry, text }
         : entry),
       lastSetActivePath: selection.lastSetActivePath,
-      sourceFilesMaterialized: hasMaterializedWorkspaceSourceFiles(),
+      sourceFilesMaterialized: hasMaterializedWorkspaceSourceFile(activePath),
     })
   }
   throw new Error('Workspace selection changed repeatedly during startup.')
@@ -252,7 +254,7 @@ export async function resolveInitialWorkspaceStartupState(args?: { fs?: Workspac
       workspaceEntries: latestWorkspaceEntries,
       lastSetActivePath: latestExplorer.lastSetActivePath,
       preferCustomValidationSeed,
-      sourceFilesMaterialized: hasMaterializedWorkspaceSourceFiles(),
+      sourceFilesMaterialized: hasMaterializedWorkspaceSourceFile(latestActivePath),
     })
   }
   const snapshot = buildInitialWorkspaceStartupSnapshot({
@@ -261,7 +263,7 @@ export async function resolveInitialWorkspaceStartupState(args?: { fs?: Workspac
     workspaceEntries,
     lastSetActivePath: explorer.lastSetActivePath,
     preferCustomValidationSeed,
-    sourceFilesMaterialized: hasMaterializedWorkspaceSourceFiles(),
+    sourceFilesMaterialized: hasMaterializedWorkspaceSourceFile(currentActivePath),
   })
   const activePathToApply = resolveWorkspaceStartupActivePathToApply({
     currentActivePath,

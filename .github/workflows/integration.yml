@@ -182,8 +182,14 @@ jobs:
           cache-dependency-path: |
             agentic-graph/package-lock.json
 
+      - name: Enforce shared owner reuse
+        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@2a394c589064105387f1c58e6db54da135059c28
+        with:
+          baseline: 48deb82e7c4680becacb928c2b3ce4ed0d8724e6
+          checkout: agentic-graph
+
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@1b7f3726fd250127d93d8a0ccaa08ae356974385
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@3ed239e9f3591ade6bfb84b5262e2c0487bd7039
         with:
           checkout: agentic-graph
 
@@ -219,6 +225,15 @@ jobs:
           GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/agentic-base-read-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/agentic-base-known-hosts" npm ci --ignore-scripts
           rm -f "$RUNNER_TEMP/agentic-base-read-key" "$RUNNER_TEMP/agentic-base-known-hosts"
           npm rebuild --no-audit --no-fund
+
+      - name: Exercise the Gateway preset picker and chat handoff
+        working-directory: agentic-graph/canvas
+        run: |
+          npm run prepare:linked-packages
+          node --import tsx --import ./src/tests/lib/registerCssLoader.ts --input-type=module <<'NODE'
+          import { testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff } from './src/__tests__/floatingPanelChatVideoPreset.test.ts'
+          await testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff()
+          NODE
 
       - name: Install Playwright Chromium
         working-directory: agentic-graph

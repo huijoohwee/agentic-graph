@@ -89,7 +89,7 @@ test('history keys bind source, docs and execution configuration with canonical 
   assert.notEqual(name, historyArtifactName({ ...binding, runtime: { ...binding.runtime, node: '24' } }))
 })
 
-test('passed browser history survives exact authorization, Dev, or preflight stops, never mutation or failed verification', () => {
+test('passed browser history survives exact authorization, Dev, or preflight stops, never mutation or failed browser verification', () => {
   const run = { id: 41, run_attempt: 1, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
     event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'failure' }
   const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
@@ -164,6 +164,62 @@ test('browser history accepts only cancellation before a protected deploy begins
   assert.throws(() => assertPriorBrowserRun(run, '42', [
     jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure'),
   ]))
+})
+
+test('passed browser history survives only a bounded neutral post-browser verification failure', () => {
+  const run = { id: 41, run_attempt: 1, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
+    event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'failure' }
+  const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
+    run_attempt: run.run_attempt, head_sha: run.head_sha, status: 'completed' })
+  const step = (name, conclusion) => ({ name, status: 'completed', conclusion })
+  const gate = 'Run isolated browser gate before production authorization'
+  const ledger = 'Retain browser ledger and bounded diagnostics'
+  const neutralFailures = ['Bind immutable production candidate', 'Create neutral release lifecycle receipts',
+    'Upload production authorization evidence', 'Persist pre-authorization lifecycle receipts',
+    'Stage complete verified release artifact', 'Upload verified release artifact']
+  const makeJobs = failure => {
+    let failed = false
+    const verifySteps = [
+      step('Restore protected browser attempt history', 'success'),
+      step('Prepare isolated browser candidate', 'success'),
+      step('Retain browser attempt before execution', 'success'),
+      step(gate, 'success'),
+      step(ledger, 'success'),
+      ...neutralFailures.map(name => {
+        if (name === failure) { failed = true; return step(name, 'failure') }
+        return step(name, failed ? 'skipped' : 'success')
+      }),
+      step('Post Checkout exact protected main commit', 'success'),
+      step('Complete job', 'success'),
+    ]
+    return [job('Verify Release Candidate', 'failure', verifySteps),
+      job('Human-Authorized Deploy, Verify, And Publish Mirror', 'skipped')]
+  }
+  for (const failure of neutralFailures) {
+    assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', makeJobs(failure)), failure)
+  }
+  const jobs = makeJobs('Create neutral release lifecycle receipts')
+  const verifyStep = (value, name) => value[0].steps.find(item => item.name === name)
+  const invalid = [
+    value => { value[0].conclusion = 'success' },
+    value => { value[1].conclusion = 'failure' },
+    value => { value[1].conclusion = 'cancelled' },
+    value => { value[1].steps.push(step('Set up job', 'success')) },
+    value => { value[0].steps = value[0].steps.filter(item => item.name !== gate) },
+    value => { value[0].steps.push(structuredClone(verifyStep(value, gate))) },
+    value => { verifyStep(value, gate).conclusion = 'failure' },
+    value => { verifyStep(value, ledger).conclusion = 'skipped' },
+    value => { verifyStep(value, 'Restore protected browser attempt history').conclusion = 'failure' },
+    value => { verifyStep(value, 'Create neutral release lifecycle receipts').name = 'Unknown neutral failure' },
+    value => { value[0].steps.push(step('Upload verified release artifact', 'failure')) },
+    value => { verifyStep(value, 'Upload production authorization evidence').conclusion = 'success' },
+    value => { verifyStep(value, 'Post Checkout exact protected main commit').conclusion = 'failure' },
+  ]
+  for (const mutate of invalid) {
+    const changed = structuredClone(jobs)
+    mutate(changed)
+    assert.throws(() => assertPriorBrowserRun(run, '42', changed))
+  }
 })
 
 test('restore fetches exact job history for failed or cancelled prior runs', () => {
