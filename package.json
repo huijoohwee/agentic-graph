@@ -366,7 +366,6 @@
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
     "agentic-design-system": "github:huijoohwee/agentic-design-system#d3e2b027a68adc21cda6aef6eb39cbe958f5aaa2",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
@@ -387,6 +386,7 @@
     "wrangler": "4.151.1",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497"
   }
 }
