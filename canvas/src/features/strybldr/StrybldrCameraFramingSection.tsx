@@ -15,7 +15,7 @@ import { StrybldrCameraPanel } from './StrybldrCameraPanel'
 import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
 import { listStrybldrImageFiles } from './strybldrImageFileRegistry'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
-import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+import { CinematicControlModeSelect, CinematicHumanControlHint } from '@/features/cinema/CinematicControlModeSelect'
 import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 import {
   readXrMotionReferenceRuntime,
@@ -243,6 +243,7 @@ export function StrybldrCameraFramingSection() {
       data-kg-camera-framing-timeline-playhead={xrTimelineCameraActive ? motion.playheadSeconds : undefined}
     >
       <CinematicControlModeSelect />
+      <CinematicHumanControlHint />
       {editableCards.length ? (
         <PanelSelect
           value={selectedCard?.id || ''}

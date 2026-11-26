@@ -262,6 +262,7 @@ export function applyXrConstrainedCastMarkChoreography(
     easing: update.easing,
     gait: update.gait,
     position,
+    ...(motion ? { positionResolution: motion } : {}),
   })
   return next.revision === runtime.revision
     ? Object.freeze({ applied: false, motion, reason: 'obstructed' })

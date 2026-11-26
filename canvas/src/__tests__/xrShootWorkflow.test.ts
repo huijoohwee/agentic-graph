@@ -56,8 +56,7 @@ function buildShootGraph(): GraphData {
 }
 function resetToNativeCameraGrammar() { resetAgenticOsRemoteGrammarCatalogForTests() }
 export function testXrShootWorkflowMarksRigsRetimeAndExports() {
-  const priorGraphState = useGraphStore.getState()
-  const priorCamera = readCameraFramingRuntime()
+  const priorGraphState = useGraphStore.getState(), priorCamera = readCameraFramingRuntime()
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
     runXrShootWorkflow()
@@ -96,8 +95,7 @@ function runXrShootWorkflow() {
     || !shouldApplySharedCameraFramingRevision({ appliedRevision: 4, appliedContextKey: 'xr:graph', revision: 4, contextKey: 'xr:graph', forcedReapply: true })) {
     throw new Error('expected pausing at the same playhead to preserve its track pose until a new frame or forced reapply arrives')
   }
-  const shootCameraSource = readSource('features', 'strybldr', 'XrShootCameraSection.tsx')
-  const cameraPanelSource = readSource('features', 'strybldr', 'StrybldrCameraFloatingPanelView.tsx')
+  const shootCameraSource = readSource('features', 'strybldr', 'XrShootCameraSection.tsx'), cameraPanelSource = readSource('features', 'strybldr', 'StrybldrCameraFloatingPanelView.tsx')
   const sharedCameraSource = readSource('features', 'strybldr', 'StrybldrCameraFramingSection.tsx')
   const cameraControlSource = readSource('features', 'strybldr', 'StrybldrCameraPanel.tsx')
   const cameraOpticsSource = readSource('features', 'strybldr', 'StrybldrCameraOpticsSection.tsx')
@@ -145,6 +143,7 @@ function runXrShootWorkflow() {
     'data-kg-xr-shoot-target="scene-or-object"',
     'data-kg-xr-camera-source="1"',
     'aria-label="XR camera source"',
+    ...["data-kg-xr-camera-playback={cameraPlaybackActive ? 'playing' : 'paused'}", "cameraPlaybackActive ? 'pause-timeline' : 'play-timeline'", "setCinematicControlMode('human')"],
     'controlXrSharedAssetControls',
     'selectedShotTarget.id',
     'data-kg-camera-optics-projection="xr-shoot"',
@@ -249,7 +248,11 @@ function runXrShootWorkflow() {
     || !samplingSource.includes('focusDistanceMeters: left.settings.focusDistanceMeters')
     || !playbackSource.includes('requestXrMotionReferenceCameraPlaybackReapply')
     || !['resolveXrSceneCameraWorldScale', 'resolveXrSceneCameraMinimumY', 'xrCameraMarkPlaybackOwnsFraming', 'cameraMarkPlaybackOwnsFraming'].every(marker => playbackSource.includes(marker) || controlsSource.includes(marker))
-    || !['prePlaybackPoseRef', "mode !== 'free-orbit'", 'camera.position.copy(snapshot.position)', 'controls.target.copy(snapshot.target)'].every(marker => playbackSource.includes(marker))
+    || !playbackSource.includes('if (playbackStarted) applyTrackedPose()')
+    || !playbackSource.includes('readThreeViewportInputOwnership().blocksProgrammaticCamera')
+    || playbackSource.includes('viewportInputOwnership.blocksProgrammaticCamera')
+    || playbackSource.includes('prePlaybackPoseRef')
+    || playbackSource.includes('camera.position.copy(snapshot.position)')
     || !controlsSource.includes('pendingCameraSceneResetRef')
     || !controlsSource.includes("if (mode === 'xr')")) {
     throw new Error('expected scrub/play camera choreography to use the XR camera playback owner')

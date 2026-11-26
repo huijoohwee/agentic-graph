@@ -57,6 +57,7 @@ import {
   buildXrMotionReferenceCastAnimationClearEdit,
   buildXrMotionReferenceCastAnimationEdit,
 } from './xrMotionReferenceAnimationEdits'
+import { createXrControllerPositionPlanGuard, type XrSubjectMotionResolution } from './xrSubjectMotionConstraints'
 export type { XrMotionReferenceMarkSelection } from './xrMotionReferenceSelection'
 type RuntimeListener = () => void
 const listeners = new Set<RuntimeListener>()
@@ -565,11 +566,11 @@ export function setXrMotionReferenceCastMarkChoreography(args: {
   easing?: XrChoreographyEasing
   gait?: XrChoreographyGait
   position?: XrMotionReferenceVector
+  positionResolution?: XrSubjectMotionResolution
 }): XrMotionReferenceRuntimeSnapshot {
   const edit = buildCastMarkChoreographyEdit(snapshot.plan, args)
-  return edit
-    ? updatePlan(edit, undefined, args.position || args.easing ? spatialPlanGuard([args.actorId]) : undefined)
-    : snapshot
+  const positionGuard = args.positionResolution ? createXrControllerPositionPlanGuard(args.actorId, args.markId, args.positionResolution) : undefined
+  return edit ? updatePlan(edit, undefined, positionGuard || (args.position || args.easing ? spatialPlanGuard([args.actorId]) : undefined)) : snapshot
 }
 
 export function setXrMotionReferenceCameraMarkChoreography(args: Readonly<{ markId: string; easing?: XrChoreographyEasing; settings?: StrybldrCameraSettings }>): XrMotionReferenceRuntimeSnapshot {
