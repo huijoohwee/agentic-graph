@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clapperboard, MapPin, Video } from 'lucide-react'
+import { Clapperboard, MapPin, Pause, Play, Video } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
@@ -41,7 +41,9 @@ import {
   selectXrNativeControllerCameraMode,
   subscribeXrNativeControllerCamera,
 } from '@/features/three/xrNativeControllerCameraRuntime'
-import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
+import { readCinematicControlMode, setCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
+import { CinematicHumanControlHint } from '@/features/cinema/CinematicControlModeSelect'
+import { xrMotionReferenceTimelineDocumentKey } from '@/features/three/xrMotionReferenceTimeline'
 
 const RIG_LABELS: Readonly<Record<XrMotionReferenceCameraRig, string>> = {
   dolly: 'Dolly',
@@ -61,7 +63,8 @@ export function XrShootCameraSection() {
   const { xrActive, pushUiToast, timelinePlaying } = useGraphStore(useShallow(state => ({
     xrActive: state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr',
     pushUiToast: state.pushUiToast,
-    timelinePlaying: state.timelineTransportPlaying,
+    timelinePlaying: state.timelineTransportDocumentKey === xrMotionReferenceTimelineDocumentKey(state.markdownDocumentName)
+      && state.timelineTransportPlaying,
   })))
   const runtime = React.useSyncExternalStore(
     subscribeXrMotionReferenceRuntime,
@@ -158,7 +161,9 @@ export function XrShootCameraSection() {
   }, [effectiveCameraSettings, pushUiToast, runtime.playheadSeconds, runtime.selectedCameraRig, selectedShotTarget])
 
   const selectCameraSource = React.useCallback((mode: XrNativeControllerCameraMode) => {
-    if (readCinematicControlMode() !== 'human') return
+    // Choosing a camera source is an explicit user action, so hand off camera
+    // ownership before applying it instead of leaving the selector inert.
+    setCinematicControlMode('human')
     selectXrNativeControllerCameraMode(mode)
     pushUiToast({
       id: 'xr:shoot:camera-source',
@@ -166,6 +171,18 @@ export function XrShootCameraSection() {
       message: `XR camera source: ${resolveXrNativeControllerCameraOption(mode).label}.`,
     })
   }, [pushUiToast])
+
+  const toggleCameraPlayback = React.useCallback(() => {
+    const operation = cameraPlaybackActive ? 'pause-timeline' : 'play-timeline'
+    const result = controlXrSharedAssetControls({ operation })
+    pushUiToast({
+      id: 'xr:shoot:camera-playback',
+      kind: result.ok ? 'success' : 'error',
+      message: result.ok
+        ? `Camera motion ${cameraPlaybackActive ? 'paused' : 'playing'} on the shared XR timeline.`
+        : result.message,
+    })
+  }, [cameraPlaybackActive, pushUiToast])
 
   if (!xrActive) return null
 
@@ -189,13 +206,33 @@ export function XrShootCameraSection() {
         </output>
       </header>
       <XrRehearsalStatus />
+      <CinematicHumanControlHint />
+
+      <section className="grid gap-1" aria-label="Camera motion playback">
+        <button
+          type="button"
+          className={cn('App-toolbar__btn flex w-full items-center justify-center gap-2 font-semibold', uiSelectedRowStateClassName(cameraPlaybackActive))}
+          aria-label={cameraPlaybackActive ? 'Pause camera motion' : 'Play camera motion'}
+          aria-pressed={cameraPlaybackActive}
+          disabled={!hasTimelineCamera}
+          title="Plays or pauses camera choreography on the shared XR timeline."
+          onClick={toggleCameraPlayback}
+          data-kg-xr-camera-playback={cameraPlaybackActive ? 'playing' : 'paused'}
+        >
+          {cameraPlaybackActive ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
+          {cameraPlaybackActive ? 'Pause camera' : 'Play camera'}
+        </button>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+          {hasTimelineCamera ? 'Uses the shared XR timeline for linked object and camera motion.' : 'Add a camera mark to enable camera playback.'}
+        </span>
+      </section>
 
       <label className="grid gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Camera source</span>
         <PanelSelect
           aria-label="XR camera source"
           value={nativeController.mode}
-          disabled={!humanControlsEnabled}
+          title={!humanControlsEnabled ? 'Selecting a source switches camera control to Human.' : undefined}
           onValueChange={selectedValueInput => selectCameraSource(selectedValueInput as XrNativeControllerCameraMode)}
           data-kg-xr-camera-source="1"
         >

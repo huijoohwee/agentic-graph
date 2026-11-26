@@ -24,6 +24,9 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 import { sampleXrTimelineSceneObjects } from '@/features/three/xrTimelineSceneProjection'
+import { readCinematicControlMode, setCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
+import { readXrNativeControllerCamera, selectXrNativeControllerCameraMode } from '@/features/three/xrNativeControllerCameraRuntime'
+import { jumpToXrTimelineCue } from '@/features/three/xrTimelineCueRuntime'
 
 export async function testXrTimelineRehearsalControlsPreserveSharedTransport() {
   const prior = useGraphStore.getState()
@@ -64,6 +67,8 @@ export async function testXrTimelineRehearsalControlsPreserveSharedTransport() {
 
 export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
   const prior = useGraphStore.getState()
+  const priorCinematicControlMode = readCinematicControlMode()
+  const priorCameraSource = readXrNativeControllerCamera().mode
   const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
   const container = env.dom.window.document.getElementById('root')!
   const root = createRoot(container)
@@ -122,12 +127,18 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     const selectedBars = () => container.querySelectorAll('.timeline-transport-track-clip--selected')
     assert.equal(selectedBars().length, 1, 'one selection outline across native and XR bars')
     assert.equal(selectedBars()[0]!.getAttribute('data-kg-xr-shot-target-bar'), 'actor')
-    await act(async () => { cameraMark().dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })) })
+    await act(async () => {
+      useGraphStore.getState().setFloatingPanelView('motionControl')
+      useGraphStore.getState().setFloatingPanelOpen(false)
+      cameraMark().click()
+    })
     assert.equal(inspectLocalAnimation().runtime.transport.frame, 30)
     assert.match(container.querySelector('[aria-label="Shared Timeline rehearsal"]')!.textContent!, /Frame 30 · 30 fps · 0.25× · Paused/)
     assert.equal(readXrMotionReferenceRuntime().selectedMark?.kind, 'camera')
+    assert.equal(useGraphStore.getState().floatingPanelView, 'camera', 'activating a camera cue opens the Camera panel')
+    assert.equal(useGraphStore.getState().floatingPanelOpen, true)
     assert.equal(selectedBars().length, 1)
-    assert.ok(selectedBars()[0]!.classList.contains('xr-shot-target-timeline-bar--camera'))
+    assert.equal(selectedBars()[0]!.getAttribute('data-kg-xr-camera-lane-bar'), '1')
     assert.match(container.querySelector('[data-kg-xr-shot-target-bar="actor"]')!.textContent!, /walk · linear · \(0.9, 0.0, 0.0\)/)
     await act(async () => { container.querySelector<HTMLButtonElement>('[aria-label="Link SHOOT to 3D Object Parcel"]')!.click() })
     assert.equal(readXrMotionReferenceRuntime().selectedShotTargetId, 'prop')
@@ -135,22 +146,37 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.equal(inspectLocalAnimation().runtime.transport.frame, 30)
     assert.equal(JSON.stringify(readXrMotionReferenceRuntime().plan), authored)
     assert.equal(selectedBars().length, 1)
-    assert.ok(selectedBars()[0]!.classList.contains('xr-shot-target-timeline-bar--camera'), 'camera lane selection must remain sticky when SHOOT changes only the shared target')
+    assert.equal(selectedBars()[0]!.getAttribute('data-kg-xr-camera-lane-bar'), '1', 'camera lane selection must remain sticky when SHOOT changes only the shared target')
     await act(async () => { useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr' }) })
     const cameraHost = env.dom.window.document.createElement('div')
     container.appendChild(cameraHost)
     const cameraRoot = createRoot(cameraHost)
     try {
       await mountReactRoot(cameraRoot, <XrShootCameraSection />)
+      await act(async () => { setCinematicControlMode('agent') })
+      selectXrNativeControllerCameraMode('fixed-follow')
       await act(async () => { controlXrSharedAssetControls({ operation: 'select-target', targetId: 'npc-scout' }) })
       const cameraTarget = cameraHost.querySelector<HTMLButtonElement>('[aria-label="SHOOT scene or 3D object target"]')!
       assert.equal(cameraTarget.value, '', 'Camera must not present the prior authored object as a selected NPC')
       assert.equal(cameraTarget.disabled, false)
+      const cameraSource = cameraHost.querySelector<HTMLButtonElement>('[aria-label="XR camera source"]')!
+      assert.equal(cameraSource.disabled, false, 'camera source remains usable while AI owns controls')
+      await act(async () => { selectMenuValue(cameraSource, 'free-orbit') })
+      assert.equal(readCinematicControlMode(), 'human', 'choosing a camera source hands control to the user')
+      assert.equal(readXrNativeControllerCamera().mode, 'free-orbit')
       await mountReactRoot(cameraRoot, <XrAnimationFloatingPanelView />)
       assert.match(cameraHost.textContent!, /No cast target selected/)
       const presetButtons = [...cameraHost.querySelectorAll<HTMLButtonElement>('[data-kg-animation-card-apply]')]
       assert.ok(presetButtons.length > 0 && presetButtons.every(button => button.disabled))
       await mountReactRoot(cameraRoot, <XrShootCameraSection />)
+      const cameraPlayback = () => cameraHost.querySelector<HTMLButtonElement>('[data-kg-xr-camera-playback]')!
+      assert.equal(cameraPlayback().disabled, false)
+      await act(async () => { cameraPlayback().click() })
+      assert.equal(useGraphStore.getState().timelineTransportPlaying, true)
+      assert.equal(cameraPlayback().getAttribute('data-kg-xr-camera-playback'), 'playing')
+      await act(async () => { cameraPlayback().click() })
+      assert.equal(useGraphStore.getState().timelineTransportPlaying, false)
+      assert.equal(cameraPlayback().getAttribute('data-kg-xr-camera-playback'), 'paused')
       const restoredCameraTarget = cameraHost.querySelector<HTMLButtonElement>('[aria-label="SHOOT scene or 3D object target"]')!
       await act(async () => {
         selectMenuValue(restoredCameraTarget, 'actor')
@@ -161,7 +187,7 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
       assert.equal(inspectLocalAnimation().runtime.transport.frame, 30)
       assert.match(cameraHost.querySelector('[aria-label="Shared Timeline rehearsal"]')!.textContent!, /Frame 30 · 30 fps · 0.25× · Paused/)
       await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-xr-camera-lane-bar="1"]')!.click() })
-      assert.ok(container.querySelectorAll('.timeline-transport-track-clip--selected')[0]!.classList.contains('xr-shot-target-timeline-bar--camera'))
+      assert.equal(container.querySelectorAll('.timeline-transport-track-clip--selected')[0]!.getAttribute('data-kg-xr-camera-lane-bar'), '1')
       await act(async () => { cameraHost.querySelector<HTMLButtonElement>('[data-kg-xr-shoot-cast-mark="1"]')!.click() })
       assert.equal(useGraphStore.getState().mermaidDiagramSelectedRowKeyByKind.gantt, 'xr-lane:object:actor')
       assert.equal(readXrMotionReferenceRuntime().castMarkArmed, true)
@@ -274,6 +300,66 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.equal(container.querySelector('[aria-label="Jump to authored beat"]'), null)
   } finally {
     await unmountReactRoot(root)
+    setCinematicControlMode(priorCinematicControlMode)
+    selectXrNativeControllerCameraMode(priorCameraSource)
+    useGraphStore.setState(prior)
+    env.restore()
+  }
+}
+
+export async function testXrShootCameraPlaybackSourceAndCueRouting() {
+  const prior = useGraphStore.getState()
+  const priorCinematicControlMode = readCinematicControlMode()
+  const priorCameraSource = readXrNativeControllerCamera().mode
+  const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const container = env.dom.window.document.getElementById('root')!
+  const root = createRoot(container)
+  try {
+    completeSourceFilesBootstrap()
+    const nodes = [{ id: 'actor', label: 'Courier', type: 'Entity', properties: {} }]
+    useGraphStore.setState({ markdownDocumentName: 'Camera controls.md', markdownDocumentText: '# Camera controls',
+      graphData: { type: 'Graph', nodes, edges: [], metadata: {} }, canvasRenderMode: '3d', canvas3dMode: 'xr',
+      floatingPanelView: 'motionControl', floatingPanelOpen: false })
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'camera-controls', nodes, persistedValue: {
+      fps: 30, durationSeconds: 2,
+      cast: [{ actorId: 'actor', marks: [{ timeSeconds: 0, position: [0, 0, 0], transition: 'hold', gait: 'walk' }] }],
+      camera: [{ timeSeconds: 1, anchorId: 'actor', rig: 'dolly' }],
+    } })
+    useGraphStore.setState({ graphData: { type: 'Graph', nodes, edges: [], metadata: {
+      kgXrMotionReference: serializeXrMotionReferencePlan(readXrMotionReferenceRuntime().plan),
+    } } })
+    hydrateCanonicalXrMotionReferenceRuntime()
+    setCinematicControlMode('agent')
+    selectXrNativeControllerCameraMode('fixed-follow')
+    await mountReactRoot(root, <XrShootCameraSection />)
+
+    const cameraSource = container.querySelector<HTMLButtonElement>('[aria-label="XR camera source"]')!
+    assert.equal(cameraSource.disabled, false, 'source selection remains enabled while AI owns camera controls')
+    await act(async () => { selectMenuValue(cameraSource, 'free-orbit') })
+    assert.equal(readCinematicControlMode(), 'human', 'source selection explicitly hands camera control to the user')
+    assert.equal(readXrNativeControllerCamera().mode, 'free-orbit')
+
+    const cameraPlayback = () => container.querySelector<HTMLButtonElement>('[data-kg-xr-camera-playback]')!
+    assert.equal(cameraPlayback().disabled, false)
+    await act(async () => { cameraPlayback().click() })
+    assert.equal(useGraphStore.getState().timelineTransportPlaying, true)
+    assert.equal(cameraPlayback().getAttribute('data-kg-xr-camera-playback'), 'playing')
+    await act(async () => { cameraPlayback().click() })
+    assert.equal(useGraphStore.getState().timelineTransportPlaying, false)
+    assert.equal(cameraPlayback().getAttribute('data-kg-xr-camera-playback'), 'paused')
+
+    const cameraMarkId = readXrMotionReferenceRuntime().plan.camera[0]!.id
+    await act(async () => {
+      jumpToXrTimelineCue({ kind: 'camera', targetId: 'actor', markId: cameraMarkId, timeSeconds: 1 })
+    })
+    assert.equal(useGraphStore.getState().floatingPanelView, 'camera')
+    assert.equal(useGraphStore.getState().floatingPanelOpen, true)
+    assert.equal(readXrMotionReferenceRuntime().selectedMark?.kind, 'camera')
+    assert.equal(readXrMotionReferenceRuntime().playheadSeconds, 1)
+  } finally {
+    await unmountReactRoot(root)
+    setCinematicControlMode(priorCinematicControlMode)
+    selectXrNativeControllerCameraMode(priorCameraSource)
     useGraphStore.setState(prior)
     env.restore()
   }

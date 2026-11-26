@@ -142,9 +142,13 @@ type XrSharedGameplayNpcControlState = Readonly<{
 }>
 
 const listeners = new Set<RuntimeListener>()
+const precisionModeListeners = new Set<RuntimeListener>()
 const XR_SHARED_OBJECT_CONTROLLER_DEAD_ZONE = 0.04
+export const XR_SHARED_OBJECT_CONTROLLER_PRECISION_MODES = Object.freeze(['gesture', 'fine', 'standard'] as const)
+export type XrSharedObjectControllerPrecisionMode = typeof XR_SHARED_OBJECT_CONTROLLER_PRECISION_MODES[number]
 let sharedMotionSceneKey = ''
 let sharedMotionTargetId = ''
+let sharedObjectControllerPrecisionMode: XrSharedObjectControllerPrecisionMode = 'gesture'
 let gameplayNpcState: XrSharedGameplayNpcControlState = Object.freeze({
   selectedNpcId: '',
   gestureNpcId: '',
@@ -170,6 +174,25 @@ export function subscribeXrSharedAssetControlRuntime(listener: RuntimeListener):
 
 export function readXrSharedAssetControlRevision(): number {
   return gameplayNpcState.revision
+}
+
+export function readXrSharedObjectControllerPrecisionMode(): XrSharedObjectControllerPrecisionMode {
+  return sharedObjectControllerPrecisionMode
+}
+
+export function subscribeXrSharedObjectControllerPrecisionMode(listener: RuntimeListener): () => void {
+  precisionModeListeners.add(listener)
+  return () => precisionModeListeners.delete(listener)
+}
+
+export function setXrSharedObjectControllerPrecisionMode(value: unknown): boolean {
+  if (typeof value !== 'string'
+    || !XR_SHARED_OBJECT_CONTROLLER_PRECISION_MODES.some(mode => mode === value)) return false
+  const mode = value as XrSharedObjectControllerPrecisionMode
+  if (mode === sharedObjectControllerPrecisionMode) return true
+  sharedObjectControllerPrecisionMode = mode
+  for (const listener of [...precisionModeListeners]) listener()
+  return true
 }
 
 export function readXrSharedAssetGameplayNpcControl(npcIdValue: string): XrSharedGameplayNpcControlSnapshot {
@@ -548,24 +571,35 @@ export function selectedXrSharedObjectMotionControlActive(
     && runtime.selectedShotTargetId === sharedMotionTargetId)
 }
 
-export function resolveXrSharedObjectControllerMotionTarget(input: Readonly<{
+function resolveXrSharedObjectControllerMotion(input: Readonly<{
   controllerInput: XrNativeControllerInput
   deltaSeconds: number
   runtime: XrMotionReferenceRuntimeSnapshot
-}>): XrSharedObjectControllerMotionTarget | null {
-  if (!selectedXrSharedObjectMotionControlActive(input.runtime)) return null
-  const actorId = selectedActorId(input.runtime)
+  targetId?: string
+}>): Readonly<{
+  reason: XrSharedObjectControllerMotionResult['reason']
+  target: XrSharedObjectControllerMotionTarget | null
+}> {
+  const explicitTargetId = String(input.targetId || '').trim()
+  if (!explicitTargetId && !selectedXrSharedObjectMotionControlActive(input.runtime)) {
+    return Object.freeze({ reason: 'inactive', target: null })
+  }
+  const actorId = selectedActorId(input.runtime, explicitTargetId)
   const mark = selectedOrNearestCastMark(input.runtime, actorId)
   const vector = controllerMotionVector(input.controllerInput)
-  if (!actorId || !mark || !vector) return null
+  if (!actorId || !mark || !vector) return Object.freeze({ reason: 'inactive', target: null })
   const boundedDeltaSeconds = Math.max(
     0,
     Math.min(THREE_KEYBOARD_MAX_FRAME_DELTA_MS / 1000, Number(input.deltaSeconds) || 0),
   )
-  if (boundedDeltaSeconds <= 0) return null
-  const speed = input.controllerInput.modifier
+  if (boundedDeltaSeconds <= 0) return Object.freeze({ reason: 'inactive', target: null })
+  const speed = sharedObjectControllerPrecisionMode === 'fine'
     ? THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND
-    : THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND
+    : sharedObjectControllerPrecisionMode === 'standard'
+      ? THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND
+      : input.controllerInput.modifier
+        ? THREE_OBJECT_KEYBOARD_FINE_SPEED_METERS_PER_SECOND
+        : THREE_OBJECT_KEYBOARD_SPEED_METERS_PER_SECOND
   const distanceMeters = speed * boundedDeltaSeconds * vector.magnitude
   if (distanceMeters <= 0) return null
   const desiredPosition: XrMotionReferenceVector = Object.freeze([
@@ -584,9 +618,11 @@ export function resolveXrSharedObjectControllerMotionTarget(input: Readonly<{
     position: mark.position,
     timeSeconds: mark.timeSeconds,
   })
-  if (motion.status === 'physics-owned' || motion.status === 'obstructed') return null
+  if (motion.status === 'physics-owned' || motion.status === 'obstructed') {
+    return Object.freeze({ reason: motion.status, target: null })
+  }
   const nextPosition = motion.position
-  return Object.freeze({
+  const target = Object.freeze({
     actorId,
     changed: nextPosition.some((value, index) => value !== mark.position[index]),
     markId: mark.id,
@@ -594,6 +630,16 @@ export function resolveXrSharedObjectControllerMotionTarget(input: Readonly<{
     ownerId: `xr:shared-object-motion:${actorId}:${mark.id}`,
     source: input.controllerInput.source,
   })
+  return Object.freeze({ reason: target.changed ? 'applied' : 'unchanged', target })
+}
+
+export function resolveXrSharedObjectControllerMotionTarget(input: Readonly<{
+  controllerInput: XrNativeControllerInput
+  deltaSeconds: number
+  runtime: XrMotionReferenceRuntimeSnapshot
+  targetId?: string
+}>): XrSharedObjectControllerMotionTarget | null {
+  return resolveXrSharedObjectControllerMotion(input).target
 }
 
 export function applyXrSharedObjectControllerMotionTarget(
@@ -616,15 +662,16 @@ export function applyXrSharedObjectControllerMotion(input: Readonly<{
   controllerInput: XrNativeControllerInput
   deltaSeconds: number
   runtime?: XrMotionReferenceRuntimeSnapshot
+  targetId?: string
 }>): XrSharedObjectControllerMotionResult {
-  const target = resolveXrSharedObjectControllerMotionTarget({
+  const resolution = resolveXrSharedObjectControllerMotion({
     controllerInput: input.controllerInput,
     deltaSeconds: input.deltaSeconds,
     runtime: input.runtime || readXrMotionReferenceRuntime(),
+    targetId: input.targetId,
   })
-  return target
-    ? applyXrSharedObjectControllerMotionTarget(target)
-    : Object.freeze({ applied: false, reason: 'inactive', target: null })
+  if (!resolution.target) return Object.freeze({ applied: false, reason: resolution.reason, target: null })
+  return applyXrSharedObjectControllerMotionTarget(resolution.target)
 }
 
 export function inspectXrSharedAssetControls(): XrSharedAssetControlSnapshot {

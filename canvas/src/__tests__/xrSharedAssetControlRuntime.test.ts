@@ -6,6 +6,7 @@ import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-
 import { applyGameFpsNpcSelectionHighlight } from '@/features/game-fps/GameFpsSharedNpcHighlights'
 import { GameModeFloatingPanelView } from '@/features/game-fps/GameModeFloatingPanelView'
 import { readGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
+import { MotionControlTargetCards } from '@/features/three/MotionControlTargetCards'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { GraphData } from '@/lib/graph/types'
@@ -24,8 +25,12 @@ import {
   applyXrTimelineCastAnimationPreset,
   inspectXrSharedAssetControls,
   controlXrSharedAssetControls,
+  readXrSharedObjectControllerPrecisionMode,
+  resolveXrSharedObjectControllerMotionTarget,
+  setXrSharedObjectControllerPrecisionMode,
   readXrSharedAssetGameplayNpcControl,
 } from '@/features/three/xrSharedAssetControlRuntime'
+import { createXrNativeControllerInput } from '@/features/three/xrNativeControllerInput'
 import {
   resolveXrObjectKeyboardMotionTarget,
 } from '@/features/three/XrKeyboardChoreographyRuntime'
@@ -97,6 +102,43 @@ export async function testSharedXrAssetControlsDriveMediaMotionTimelineAndGround
     hydrateCanonicalXrPhysicsRuntime()
 
     const selected = controlXrSharedAssetControls({ operation: 'select-target', targetId: 'shared-performer' })
+    assert.ok(selected.ok)
+    assert.equal(readXrSharedObjectControllerPrecisionMode(), 'gesture', 'a fresh page starts in Gesture mode')
+    const precisionMotionTarget = controlXrSharedAssetControls({ operation: 'select-target', targetId: 'shared-sedan' })
+    assert.ok(precisionMotionTarget.ok)
+    const metadataBeforePrecisionChoice = useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]
+    const resolvedDistance = (mode: 'gesture' | 'fine' | 'standard', modifier: boolean, moveX = 1, moveZ = 0): number => {
+      assert.equal(setXrSharedObjectControllerPrecisionMode(mode), true)
+      const runtime = readXrMotionReferenceRuntime()
+      const target = resolveXrSharedObjectControllerMotionTarget({
+        controllerInput: createXrNativeControllerInput({ moveX, moveZ, modifier, source: 'keyboard' }),
+        deltaSeconds: 0.01,
+        runtime,
+      })
+      assert.ok(target, `expected ${mode} to resolve motion for the selected authored object`)
+      const mark = runtime.plan.cast.find(track => track.actorId === target.actorId)?.marks.find(candidate => candidate.id === target.markId)
+      assert.ok(mark, 'precision choice must keep the existing selected motion mark')
+      return Math.hypot(target.nextPosition[0] - mark.position[0], target.nextPosition[2] - mark.position[2])
+    }
+    const gestureStandardDistance = resolvedDistance('gesture', false)
+    const gestureFineDistance = resolvedDistance('gesture', true)
+    const fixedFineDistance = resolvedDistance('fine', true)
+    const fixedStandardDistance = resolvedDistance('standard', true)
+    const diagonalStandardDistance = resolvedDistance('standard', false, 1, 1)
+    assert.ok(Math.abs(gestureStandardDistance - 0.02) < 0.000001, `Gesture without its modifier preserves the 2.0 m/s standard pace; got ${gestureStandardDistance}`)
+    assert.ok(Math.abs(gestureFineDistance - 0.004) < 0.000001, `Gesture with its modifier preserves the 0.4 m/s fine pace; got ${gestureFineDistance}`)
+    assert.ok(Math.abs(fixedFineDistance - 0.004) < 0.000001, `Fine remains 0.4 m/s when the input modifier is held; got ${fixedFineDistance}`)
+    assert.ok(Math.abs(fixedStandardDistance - 0.02) < 0.000001, `Standard remains 2.0 m/s when the input modifier is held; got ${fixedStandardDistance}`)
+    assert.ok(Math.abs(diagonalStandardDistance - 0.02) < 0.000001, `diagonal input remains normalized to a bounded 2.0 m/s move; got ${diagonalStandardDistance}`)
+    assert.equal(setXrSharedObjectControllerPrecisionMode('not-a-mode'), false, 'invalid modes fail closed')
+    assert.equal(readXrSharedObjectControllerPrecisionMode(), 'standard', 'an invalid mode preserves the current selection')
+    assert.equal(useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY], metadataBeforePrecisionChoice, 'speed choices do not write document metadata')
+    assert.equal(setXrSharedObjectControllerPrecisionMode('fine'), true)
+    const reselectedForPrecision = controlXrSharedAssetControls({ operation: 'select-target', targetId: 'shared-performer' })
+    assert.ok(reselectedForPrecision.ok)
+    assert.equal(setXrSharedObjectControllerPrecisionMode('gesture'), true)
+    await assertMotionControlPrecisionSelector()
+
     const applied = controlXrSharedAssetControls({ operation: 'apply-animation', presetId: 'dance' })
     const timelineLaneApplied = applyXrTimelineCastAnimationPreset({ targetId: 'shared-performer', presetId: 'fight' })
     const runtimeAfterDance = readXrMotionReferenceRuntime()
@@ -184,6 +226,12 @@ export async function testSharedXrAssetControlsDriveMediaMotionTimelineAndGround
     const mediaSource = source('features', 'command-menu', 'XrMediaLibraryPanel.tsx')
     const animationSource = source('features', 'three', 'XrAnimationFloatingPanelView.tsx')
     const motionSource = source('features', 'three', 'MotionControlTargetCards.tsx')
+    if (![
+      "let sharedObjectControllerPrecisionMode: XrSharedObjectControllerPrecisionMode = 'gesture'",
+      'const motion = resolveXrSubjectMotion({',
+      "motion.status === 'physics-owned' || motion.status === 'obstructed'",
+      'applyXrConstrainedCastMarkChoreography({',
+    ].every(marker => sharedRuntimeSource.includes(marker))) throw new Error('expected page-memory speed choices to retain existing constraint and mark owners')
     const motionRuntimeSource = source('features', 'three', 'xrMotionReferenceRuntime.ts')
     const timelineSource = source('features', 'three', 'XrCameraMotionSection.tsx')
     const insertedLanesSource = source('features', 'three', 'XrTimelineInsertedLanes.tsx')
@@ -337,6 +385,58 @@ export async function testSharedXrAssetControlsDriveMediaMotionTimelineAndGround
     useGraphStore.setState(previousSurface as never)
     hydrateCanonicalXrMotionReferenceRuntime()
     hydrateCanonicalXrPhysicsRuntime()
+  }
+}
+
+async function assertMotionControlPrecisionSelector(): Promise<void> {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.body.appendChild(dom.window.document.createElement('div'))
+  let root = createRoot(container)
+  const metadataBefore = useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]
+  try {
+    dom.window.history.replaceState(null, '', `/?studio-offline=${'1'.repeat(40)}`)
+    const mount = () => React.createElement(
+      AgenticOsRemoteGrammarAutoHydrationBoundary,
+      { children: React.createElement(MotionControlTargetCards, { livePoseActive: false, onOpenTarget: () => {} }) },
+    )
+    await mountReactRoot(root, mount())
+    const selector = container.querySelector<HTMLButtonElement>('[data-kg-motion-control-precision-selector="page-session"]')
+    assert.ok(selector, 'expected the selected-object card to render its speed selector')
+    assert.equal(selector.getAttribute('aria-label'), 'Object movement speed')
+    assert.equal(selector.getAttribute('data-value'), 'gesture', 'Gesture is the first-use default')
+    assert.match(container.querySelector('[data-kg-motion-control-precision-active-mode]')?.textContent || '', /Gesture .*0\.4 m\/s .*2\.0 m\/s/)
+
+    const chooseMode = async (mode: 'fine' | 'standard') => {
+      await act(async () => selector.click())
+      const menu = dom.window.document.querySelector<HTMLMenuElement>('menu[role="menu"][aria-label="Object movement speed"]')
+      assert.ok(menu, 'expected an accessible menu for the speed choices')
+      const options = Array.from(menu.querySelectorAll('button[role="menuitemradio"]')) as HTMLButtonElement[]
+      assert.deepEqual(options.map(option => option.textContent?.trim()), ['Gesture', 'Fine', 'Standard'], 'the selector exposes exactly the three named modes')
+      const option = options.find(candidate => candidate.getAttribute('value') === mode)
+      if (!option) throw new Error(`expected a ${mode} choice`)
+      await act(async () => option.click())
+      assert.equal(selector.getAttribute('data-value'), mode)
+      assert.equal(readXrSharedObjectControllerPrecisionMode(), mode)
+    }
+
+    await chooseMode('fine')
+    assert.match(container.querySelector('[data-kg-motion-control-precision-active-mode]')?.textContent || '', /Fine .*0\.4 m\/s/)
+    await chooseMode('standard')
+    assert.match(container.querySelector('[data-kg-motion-control-precision-active-mode]')?.textContent || '', /Standard .*2\.0 m\/s/)
+    assert.equal(useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY], metadataBefore, 'changing the mode does not persist into document metadata')
+
+    await unmountReactRoot(root)
+    root = createRoot(container)
+    await mountReactRoot(root, mount())
+    const remountedSelector = container.querySelector<HTMLButtonElement>('[data-kg-motion-control-precision-selector="page-session"]')
+    assert.equal(remountedSelector?.getAttribute('data-value'), 'standard', 'the choice survives a panel remount in this page session')
+  } finally {
+    try {
+      await unmountReactRoot(root)
+    } finally {
+      setXrSharedObjectControllerPrecisionMode('gesture')
+      restore()
+    }
   }
 }
 

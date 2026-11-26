@@ -124,14 +124,23 @@ function segmentEntryTime(
     [start[2] - peer.startPosition[2], end[2] - peer.endPosition[2], peer.halfZ + movingHalfZ + XR_SUBJECT_MOTION_COLLISION_GAP_METERS],
   ] as const
   const startInside = axes.every(([startValue, _endValue, extent]) => Math.abs(startValue) < extent)
-  const endInside = axes.every(([_startValue, endValue, extent]) => Math.abs(endValue) < extent)
   if (startInside) {
-    const exitsOutward = axes.some(([startValue, endValue, extent]) => {
-      return Math.abs(endValue) >= extent
-        && Math.abs(endValue) > Math.abs(startValue)
-        && (Math.abs(startValue) < 1e-12 || Math.sign(endValue) === Math.sign(startValue))
+    // Authored scenes can begin with overlapping footprints. Let a controller
+    // step make progress out of that overlap while rejecting any component that
+    // moves deeper into it; requiring one frame to clear the whole footprint
+    // deadlocks small live-control steps.
+    const movesDeeper = axes.some(([startValue, endValue]) => {
+      if (Math.abs(endValue) < Math.abs(startValue) - 1e-12) return true
+      return Math.abs(startValue) > 1e-12
+        && Math.abs(endValue) > 1e-12
+        && Math.sign(endValue) !== Math.sign(startValue)
     })
-    if (!endInside && exitsOutward) return null
+    const hasExistingSeparation = axes.some(([startValue]) => Math.abs(startValue) > 1e-12)
+    const movesOutward = axes.some(([startValue, endValue]) => {
+      return Math.abs(endValue) > Math.abs(startValue) + 1e-12
+        && (Math.abs(startValue) <= 1e-12 || Math.sign(endValue) === Math.sign(startValue))
+    })
+    if (hasExistingSeparation && movesOutward && !movesDeeper) return null
     return 0
   }
   let entry = 0

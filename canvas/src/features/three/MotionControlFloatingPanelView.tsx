@@ -420,7 +420,7 @@ export function MotionControlFloatingPanelView({ children }: React.PropsWithChil
             />
             Bounding box · {state.boundingBoxEnabled ? 'Enabled' : 'Disabled (default)'}
           </label>
-          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Shows the live pose ROI and catalog-authored XR object bounds.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Bounding box only changes this overlay. Press Start for pose input and keep one full body in frame; use the selected-object direction buttons below when you want to move it without camera input.</p>
           <div role="status" aria-live="polite" aria-atomic="true" data-kg-motion-control-live-status="1">
             <p className={cn('text-xs', state.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary)}>{state.message}</p>
             {state.fallbackReason ? <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)}>{state.fallbackReason}</p> : null}

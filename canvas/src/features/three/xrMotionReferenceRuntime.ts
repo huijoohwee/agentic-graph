@@ -565,10 +565,31 @@ export function setXrMotionReferenceCastMarkChoreography(args: {
   easing?: XrChoreographyEasing
   gait?: XrChoreographyGait
   position?: XrMotionReferenceVector
+  positionResolution?: Readonly<{
+    position: XrMotionReferenceVector
+    status: 'moved' | 'partial' | 'unchanged' | 'physics-owned' | 'obstructed'
+  }>
 }): XrMotionReferenceRuntimeSnapshot {
-  const edit = buildCastMarkChoreographyEdit(snapshot.plan, args)
+  const edit = buildCastMarkChoreographyEdit(snapshot.plan, {
+    actorId: args.actorId,
+    markId: args.markId,
+    easing: args.easing,
+    gait: args.gait,
+    position: args.position,
+  })
+  const validatedControllerPosition = args.positionResolution
+    ? (plan: XrMotionReferencePlan) => {
+      const mark = plan.cast.find(track => track.actorId === args.actorId)?.marks
+        .find(candidate => candidate.id === args.markId)
+      return Boolean(mark
+        && args.positionResolution?.status !== 'physics-owned'
+        && args.positionResolution?.status !== 'obstructed'
+        && mark.position.every((value, axis) => value === args.positionResolution?.position[axis]))
+    }
+    : null
   return edit
-    ? updatePlan(edit, undefined, args.position || args.easing ? spatialPlanGuard([args.actorId]) : undefined)
+    ? updatePlan(edit, undefined, validatedControllerPosition
+      || (args.position || args.easing ? spatialPlanGuard([args.actorId]) : undefined))
     : snapshot
 }
 

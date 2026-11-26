@@ -182,6 +182,14 @@ export function testXrSubjectMotionIsFootprintCollisionAndPhysicsAware(): void {
     actorId: 'overlapping-crate', desiredPosition: [0, 0, 2.8], physics: stoppedPhysics,
     plan: overlapPlan, position: [1.4, 0, 0], timeSeconds: 0,
   })
+  const incrementalEgress = resolveXrSubjectMotion({
+    actorId: 'overlapping-crate', desiredPosition: [1.5, 0, 0], physics: stoppedPhysics,
+    plan: overlapPlan, position: [1.4, 0, 0], timeSeconds: 0,
+  })
+  const deeperOverlapMove = resolveXrSubjectMotion({
+    actorId: 'overlapping-crate', desiredPosition: [1.3, 0, 0], physics: stoppedPhysics,
+    plan: overlapPlan, position: [1.4, 0, 0], timeSeconds: 0,
+  })
   const overlapTunnelLimited = resolveXrSubjectMotion({
     actorId: 'overlapping-crate', desiredPosition: [-3, 0, 0], physics: stoppedPhysics,
     plan: overlapPlan, position: [1.4, 0, 0], timeSeconds: 0,
@@ -306,6 +314,10 @@ export function testXrSubjectMotionIsFootprintCollisionAndPhysicsAware(): void {
     || overlapLimited.status !== 'obstructed'
     || overlapLimited.position[0] !== 1.4
     || overlapLimited.position[2] !== 0
+    || incrementalEgress.status !== 'moved'
+    || incrementalEgress.position[0] !== 1.5
+    || deeperOverlapMove.status !== 'obstructed'
+    || deeperOverlapMove.position[0] !== 1.4
     || overlapTunnelLimited.status !== 'obstructed'
     || overlapTunnelLimited.position[0] !== 1.4
     || elevatedCrossing.position[0] !== 2
@@ -331,7 +343,7 @@ export function testXrSubjectMotionIsFootprintCollisionAndPhysicsAware(): void {
     || livePeerLimited.position[0] >= 4.13
     || physicsOwned.status !== 'physics-owned'
     || physicsOwned.position[0] !== -3) {
-    throw new Error(`expected one footprint-, candidate-facing-, relative-trajectory-, path-facing-, slide-safe-, live-physics-peer-, overlap-, three-dimensional-, coordinate-bounded-, separating-clearance-, collision-, and physics-aware authored motion resolver, got ${JSON.stringify({ challengingFacingLimited, collisionLimited, coordinateCeilingLimited, correctedMark, edgeLimited, elevatedCrossing, enteringFromClearance, enteringVerticallyFromClearance, livePeerLimited, overlapLimited, overlapTunnelLimited, pathFacingLimited, physicsOwned, proposedFacingLimited, relativeSweepLimited, separatingFromClearance, separatingVerticallyFromClearance, slideFacingInsideStage, slideFacingLimited, slideFacingOverlap, slideSweepLimited, stageFloorLimited, unobstructedVerticalMove, verticalTunnelLimited })}`)
+    throw new Error(`expected one footprint-, candidate-facing-, relative-trajectory-, path-facing-, slide-safe-, live-physics-peer-, overlap-, three-dimensional-, coordinate-bounded-, separating-clearance-, collision-, and physics-aware authored motion resolver, got ${JSON.stringify({ challengingFacingLimited, collisionLimited, coordinateCeilingLimited, correctedMark, deeperOverlapMove, edgeLimited, elevatedCrossing, enteringFromClearance, enteringVerticallyFromClearance, incrementalEgress, livePeerLimited, overlapLimited, overlapTunnelLimited, pathFacingLimited, physicsOwned, proposedFacingLimited, relativeSweepLimited, separatingFromClearance, separatingVerticallyFromClearance, slideFacingInsideStage, slideFacingLimited, slideFacingOverlap, slideSweepLimited, stageFloorLimited, unobstructedVerticalMove, verticalTunnelLimited })}`)
   }
 }
 export function testXrPhysicsHydrationUsesFullSourceIdentity(): void {
@@ -433,6 +445,27 @@ export function testXrAnimationMcpReportsConstrainedMoveObjectResolution(): void
       || Math.abs(moved.motion.position[0] - 1) > 1e-12
       || moved.motion.position.join(',') !== movedPosition.join(',')) {
       throw new Error(`expected move-object to report and persist its actual unconstrained displacement, got ${JSON.stringify({ moved, movedPosition })}`)
+    }
+    const preexistingCollisionPlan = readXrMotionReferencePlan({
+      stageId: 'neutral-volume',
+      subjects: [
+        { id: 'preexisting-collision-mover', assetId: 'prop-crate', position: [-3, 0, 0] },
+        { id: 'preexisting-collision-peer', assetId: 'prop-crate', position: [0, 0, 0] },
+      ],
+      cast: [{ actorId: 'preexisting-collision-mover', label: 'Preexisting Collision Mover', marks: [
+        { timeSeconds: 0, position: [-3, 0, 0], transition: 'linear' },
+        { timeSeconds: 2, position: [3, 0, 0], transition: 'hold' },
+      ] }],
+    })
+    const preexistingCollisionMarkId = installAnimationControlFixture('MCP constrained preexisting collision.md', preexistingCollisionPlan)
+    const preexistingCollisionMove = controlLocalAnimation({
+      operation: 'move-object', targetId: 'preexisting-collision-mover', markId: preexistingCollisionMarkId, keys: ['d'], distanceMeters: 0.1,
+    })
+    const preexistingCollisionPosition = controlledMarkPosition('preexisting-collision-mover', preexistingCollisionMarkId)
+    if (!preexistingCollisionMove.ok
+      || preexistingCollisionMove.motion?.status !== 'moved'
+      || Math.abs(preexistingCollisionPosition[0] - -2.9) > 1e-9) {
+      throw new Error(`expected a locally safe controller edit to remain movable when a different segment in the authored track already collides, got ${JSON.stringify({ preexistingCollisionMove, preexistingCollisionPosition })}`)
     }
     const boundarySubject = readXrMotionReferencePlan({
       stageId: 'neutral-volume',

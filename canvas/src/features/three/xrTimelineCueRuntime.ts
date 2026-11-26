@@ -1,5 +1,4 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { controlLocalAnimation } from './xrAnimationMcpRuntime'
 import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, readXrMotionReferenceRuntime, setXrMotionReferenceCastMark } from './xrMotionReferenceRuntime'
 import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 import { sampleXrMotionReferenceMarks, type XrMotionReferencePlan } from './xrMotionReferenceModel'
@@ -9,8 +8,10 @@ type XrTimelineCue = Readonly<{ kind: 'cast' | 'camera' | 'animation'; targetId:
 
 /** Cue navigation delegates to the existing transport and selection owners. */
 export function jumpToXrTimelineCue(beat: XrTimelineCue): void {
-  const paused = controlLocalAnimation({ operation: 'pause' }, 'human')
-  const seek = paused.ok ? controlLocalAnimation({ operation: 'scrub', timeSeconds: beat.timeSeconds }, 'human') : paused
+  const paused = controlXrSharedAssetControls({ operation: 'pause-timeline' })
+  const seek = paused.ok
+    ? controlXrSharedAssetControls({ operation: 'scrub-timeline', timeSeconds: beat.timeSeconds })
+    : paused
   const result = seek.ok ? controlXrSharedAssetControls({ operation: 'select-target', targetId: beat.targetId }) : seek
   if (!result.ok) {
     useGraphStore.getState().pushUiToast({ id: 'xr:beat-seek:error', kind: 'error', message: result.message })
@@ -18,7 +19,12 @@ export function jumpToXrTimelineCue(beat: XrTimelineCue): void {
   }
   if (beat.kind !== 'animation') useGraphStore.getState().setMermaidDiagramSelectedRowKey('gantt', beat.kind === 'camera' ? 'xr-lane:camera' : `xr-lane:object:${beat.targetId}`)
   if (beat.kind === 'cast' && beat.markId) selectXrMotionReferenceCastMark(beat.targetId, beat.markId)
-  if (beat.kind === 'camera' && beat.markId) selectXrMotionReferenceCameraMark(beat.markId)
+  if (beat.kind === 'camera') {
+    const state = useGraphStore.getState()
+    state.setFloatingPanelView('camera')
+    state.setFloatingPanelOpen(true)
+    if (beat.markId) selectXrMotionReferenceCameraMark(beat.markId)
+  }
 }
 
 /** Existing Gantt clip selection supplies animation cues; no second marker list. */
