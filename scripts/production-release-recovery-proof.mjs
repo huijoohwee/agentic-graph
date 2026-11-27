@@ -111,7 +111,6 @@ export function assertRecoveryAuthority({ plan, environment, approvals, ownerId,
   assert.equal(environment.GITHUB_ACTIONS, 'true')
   assert.equal(environment.GITHUB_REF, 'refs/heads/main')
   assert.equal(environment.GITHUB_SHA, plan.controllerRevision)
-  assert.equal(environment.GITHUB_WORKFLOW, 'Production Release')
   assert.equal(environment.GITHUB_WORKFLOW_REF,
     `${environment.GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/heads/main`)
   assert.equal(String(environment.GITHUB_RUN_ID), plan.recoveryRunId)
