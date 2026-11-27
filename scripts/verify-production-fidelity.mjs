@@ -75,8 +75,8 @@ const isCanvasReady = text => text.length > 200
   && !text.includes('Switching document...')
   && PHYSICS_PLAYGROUND_PATTERN.test(text)
 
-const waitForCanvas = async resolveBody => {
-  const deadline = Date.now() + 45_000
+const waitForCanvas = async (resolveBody, { timeoutMs = 45_000 } = {}) => {
+  const deadline = Date.now() + timeoutMs
   let lastError = null
   let lastText = ''
   let lastBody = null
@@ -87,6 +87,7 @@ const waitForCanvas = async resolveBody => {
       const text = await body.innerText({ timeout: 2_000 })
       lastText = text
       if (isCanvasReady(text)) return text
+      if (text.includes('Canvas source unavailable')) break
     } catch (error) {
       // Document selection replaces the frame; re-resolve it until the selected canvas owns the page.
       lastError = error
@@ -120,6 +121,9 @@ const waitForCanvas = async resolveBody => {
           sourceAuthority: attributes('[data-kg-source-authority-phase]'),
           playground: attributes('[data-kg-xr-playground-hud="1"]'),
           sceneRoots: attributes('[data-kg-xr-scene-media-drop="1"]'),
+          sourceAuthorityErrors: Array.from(document.querySelectorAll('[data-kg-source-authority-error]'))
+            .slice(0, 4)
+            .map(element => String(element.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 1_000)),
           heavyRuntimeIntentCount: document.querySelectorAll('[data-kg-canvas-heavy-runtime-intent]').length,
           canvasCount: document.querySelectorAll('canvas').length,
           matchingStorageKeyCount: matchingStorageKeys.length,
@@ -132,7 +136,7 @@ const waitForCanvas = async resolveBody => {
       diagnostics = { unavailable: true }
     }
   }
-  throw new Error(`Canvas did not reach a stable ready state within 45 seconds.${detail} Diagnostics: ${JSON.stringify(diagnostics)}`, { cause: lastError })
+  throw new Error(`Canvas did not reach a stable ready state within ${timeoutMs}ms.${detail} Diagnostics: ${JSON.stringify(diagnostics)}`, { cause: lastError })
 }
 
 const resolveHomeCanvasFrames = page => page.frames().filter(candidate => {
@@ -411,20 +415,24 @@ await installHomeSourceAuthorityEvidence(context)
 const pageErrors = []
 const poisonedModules = []
 const browserAssetScripts = []
-context.on('page', page => page.on('pageerror', error => pageErrors.push(error.message)))
-context.on('response', response => {
-  const request = response.request()
-  const contentType = String(response.headers()['content-type'] || '').toLowerCase()
-  const url = new URL(response.url())
-  if (request.resourceType() === 'script' && url.pathname.startsWith('/agentic-graph/assets/')) {
-    browserAssetScripts.push(url.pathname)
-  }
-  if (request.resourceType() === 'script' && contentType.includes('text/html')) {
-    poisonedModules.push(response.url())
-  }
-})
+const trackBrowserContext = targetContext => {
+  targetContext.on('page', page => page.on('pageerror', error => pageErrors.push(error.message)))
+  targetContext.on('response', response => {
+    const request = response.request()
+    const contentType = String(response.headers()['content-type'] || '').toLowerCase()
+    const url = new URL(response.url())
+    if (request.resourceType() === 'script' && url.pathname.startsWith('/agentic-graph/assets/')) {
+      browserAssetScripts.push(url.pathname)
+    }
+    if (request.resourceType() === 'script' && contentType.includes('text/html')) {
+      poisonedModules.push(response.url())
+    }
+  })
+}
+trackBrowserContext(context)
 
 let staleSelectionContext = null
+let workspaceContext = null
 try {
   const home = await context.newPage()
   await home.goto(`${browserOrigin}/?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
@@ -480,7 +488,7 @@ try {
     },
   })
   await installHomeSourceAuthorityEvidence(staleSelectionContext)
-  staleSelectionContext.on('page', page => page.on('pageerror', error => pageErrors.push(error.message)))
+  trackBrowserContext(staleSelectionContext)
   const staleHome = await staleSelectionContext.newPage()
   await staleHome.goto(`${browserOrigin}/?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await staleHome.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
@@ -517,12 +525,17 @@ try {
   await staleSelectionContext.close()
   staleSelectionContext = null
 
-  const app = await context.newPage()
+  // Home preset selection writes browser state. Keep the workspace route proof
+  // in a fresh context so its bootstrap cannot inherit Home's IndexedDB work.
+  workspaceContext = await browser.newContext({ serviceWorkers: 'block' })
+  await attachBrowserPreflightIsolation(workspaceContext)
+  trackBrowserContext(workspaceContext)
+  const app = await workspaceContext.newPage()
   // The root-alias graph route is the documented way to suppress Home's live
   // canvas hero before opening the Editor Workspace.  `kgReleaseProof` alone
   // is Home-owned, so it retains the hero and leaves the workspace unavailable.
   await app.goto(`${browserOrigin}/?kgPath=%2Fagentic-graph%2F&openEditorWorkspace=1&kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  const appText = await waitForCanvas(() => app.locator('body'))
+  const appText = await waitForCanvas(() => app.locator('body'), { timeoutMs: 90_000 })
   assert.match(appText, PHYSICS_PLAYGROUND_PATTERN)
   assert.match(appText, /Beach Ball/)
   const workspaceSeedInventory = await waitForWorkspaceSeedInventory(app)
@@ -549,6 +562,7 @@ try {
   }))
   throw error
 } finally {
+  await workspaceContext?.close()
   await staleSelectionContext?.close()
   await browser.close()
 }
