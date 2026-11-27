@@ -105,8 +105,12 @@ export function assertPostBrowserVerificationStop(run, jobs) {
     'verification failed before the browser ledger was retained')
   for (const [index, step] of verify.steps.entries()) {
     assert.equal(step.status, 'completed', `prior ${step.name} step is incomplete`)
-    if (index < failureIndex) assert.equal(step.conclusion, 'success', `prior ${step.name} did not pass`)
-    else if (index > failureIndex) {
+    if (index < failureIndex) {
+      const reusedProtectedEvidence = step.name === 'Reverify exact candidate' && step.conclusion === 'skipped'
+        && exactStep('Reuse protected CI source evidence').conclusion === 'success'
+      assert.ok(step.conclusion === 'success' || reusedProtectedEvidence,
+        `prior ${step.name} did not pass or reuse successful protected CI evidence`)
+    } else if (index > failureIndex) {
       const cleanup = step.name.startsWith('Post ') || step.name === 'Complete job'
       assert.ok(cleanup ? ['success', 'skipped'].includes(step.conclusion) : step.conclusion === 'skipped',
         `prior ${step.name} continued after the neutral verification failure`)
