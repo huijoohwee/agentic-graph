@@ -17,12 +17,13 @@ const server = spawn(process.execPath, [
   '--host', '127.0.0.1', '--port', String(port), '--strictPort',
 ], { cwd: resolve('canvas'), stdio: ['ignore', 'pipe', 'inherit'] });
 let output = '';
+const stripAnsi = value => value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/gu, '');
 await new Promise((resolveStart, reject) => {
   const timeout = setTimeout(() => reject(new Error(`Graph Vite server did not start: ${output}`)), 30_000);
   server.once('error', reject);
   server.stdout.on('data', chunk => {
     output += chunk.toString();
-    if (output.includes(origin)) { clearTimeout(timeout); resolveStart(); }
+    if (stripAnsi(output).includes(origin)) { clearTimeout(timeout); resolveStart(); }
   });
   server.once('exit', code => reject(new Error(`Graph Vite server exited (${code}): ${output}`)));
 }).catch(error => { server.kill('SIGTERM'); throw error; });
