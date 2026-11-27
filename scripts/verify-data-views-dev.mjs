@@ -192,7 +192,10 @@ export async function selectMarkdownBodyTable(workspace) {
   const selector = workspace.locator('section[aria-label="Table selector"]')
   const body = selector.getByRole('tab', { name: 'Markdown Body', exact: true })
   await body.waitFor({ state: 'visible', timeout: 20_000 })
-  if (await body.getAttribute('aria-selected') !== 'true') await body.click()
+  if (await body.getAttribute('aria-selected') !== 'true') {
+    await body.focus()
+    await body.press('Enter')
+  }
   await selector.locator('button[role="tab"][aria-selected="true"]').filter({ hasText: 'Markdown Body' })
     .waitFor({ state: 'visible', timeout: 20_000 })
 }
