@@ -31,7 +31,6 @@ function context() {
   assert.equal(process.env.GITHUB_ACTIONS, 'true')
   assert.equal(process.env.GITHUB_REPOSITORY, repository)
   assert.equal(process.env.GITHUB_REF, 'refs/heads/main')
-  assert.equal(process.env.GITHUB_WORKFLOW, 'Production Release')
   assert.equal(process.env.GITHUB_WORKFLOW_REF, `${repository}/.github/workflows/release.yml@refs/heads/main`)
   assert.equal(process.env.GITHUB_SHA, git('rev-parse', 'HEAD'))
   assert.equal(git('ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0], process.env.GITHUB_SHA)

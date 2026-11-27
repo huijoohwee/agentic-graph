@@ -92,7 +92,7 @@ export const activationArguments = (entry, versionId, message) => workerCommand(
 export const assertReleaseAuthority = ({ sourceSha, candidateDigest, authorization, environment = process.env }) => {
   if (!SHA.test(sourceSha) || !DIGEST.test(candidateDigest)) throw new Error('release source or candidate digest is malformed')
   if (environment.GITHUB_ACTIONS !== 'true' || environment.GITHUB_REF !== 'refs/heads/main'
-    || environment.GITHUB_SHA !== sourceSha || environment.GITHUB_WORKFLOW !== 'Production Release'
+    || environment.GITHUB_SHA !== sourceSha
     || !String(environment.GITHUB_WORKFLOW_REF ?? '').includes('/.github/workflows/release.yml@refs/heads/main')) {
     throw new Error('travel mesh mutation is restricted to the protected Production Release workflow on exact main')
   }
