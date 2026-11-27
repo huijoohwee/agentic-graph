@@ -43,13 +43,18 @@ export function assertPreDeploymentStop(run, jobs) {
     assert.equal(exactStep(name).conclusion, conclusion, `prior ${name} was not ${conclusion}`)
   const authorization = 'Record exact human authorization and claim release controller'
   const devPromotion = 'Promote isolated Pages Dev and verify shared data views'
+  const rollbackIdentity = 'Revalidate last-known-good rollback identity'
   const preflight = 'Preflight protected travel mesh without mutation'
   const stoppedAtAuthorization = exactStep(authorization).conclusion === 'failure'
-  const stoppedAtDev = !stoppedAtAuthorization && exactStep(devPromotion).conclusion === 'failure'
+  const stoppedAtRollbackIdentity = !stoppedAtAuthorization && exactStep(rollbackIdentity).conclusion === 'failure'
+  const stoppedAtDev = !stoppedAtAuthorization && !stoppedAtRollbackIdentity
+    && exactStep(devPromotion).conclusion === 'failure'
   stepResult(authorization, stoppedAtAuthorization ? 'failure' : 'success')
-  stepResult(devPromotion, stoppedAtAuthorization ? 'skipped' : stoppedAtDev ? 'failure' : 'success')
-  stepResult(preflight, stoppedAtAuthorization || stoppedAtDev ? 'skipped' : 'failure')
-  const stopStep = stoppedAtAuthorization ? authorization : stoppedAtDev ? devPromotion : preflight
+  stepResult(rollbackIdentity, stoppedAtAuthorization ? 'skipped' : stoppedAtRollbackIdentity ? 'failure' : 'success')
+  stepResult(devPromotion, stoppedAtAuthorization || stoppedAtRollbackIdentity ? 'skipped' : stoppedAtDev ? 'failure' : 'success')
+  stepResult(preflight, stoppedAtAuthorization || stoppedAtRollbackIdentity || stoppedAtDev ? 'skipped' : 'failure')
+  const stopStep = stoppedAtAuthorization ? authorization
+    : stoppedAtRollbackIdentity ? rollbackIdentity : stoppedAtDev ? devPromotion : preflight
   for (const name of ['Deploy verified artifact', 'Capture authoritative candidate deployment',
     'Record exact Pages deployment receipt', 'Upload and activate exact-candidate travel mesh versions',
     'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
