@@ -229,7 +229,7 @@ export async function verifyDevUiWithConvergenceRetry(input, {
 
 function isTransientDevUiConvergenceFailure(error) {
   const message = String(error?.message || error)
-  return /Canvas View Mode|locator\.waitFor timeout|waiting for locator\(/i.test(message)
+  return /Canvas View Mode|locator\.waitFor timeout|waiting for locator\(|waiting for getByRole\('button', \{ name: '(?:Surface Mode|2D Mode)'/i.test(message)
 }
 
 export async function writeDevPromotionOutputs(env, receipt) {
