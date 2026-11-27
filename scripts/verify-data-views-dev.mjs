@@ -72,6 +72,12 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await ensureTwoDimensionalSurface(page)
     await selectRenderer(page, 'Multi-dimensional Table')
     await importViewFixture(page, fixturePath)
+    const fixtureName = path.basename(fixturePath)
+    await page.waitForFunction(
+      expectedName => new URL(window.location.href).searchParams.get('kgDoc')?.endsWith(expectedName),
+      fixtureName,
+      { timeout: 20_000 },
+    )
     const workspace = page.locator('section[aria-label="Workspace data view"]')
     await workspace.waitFor({ state: 'visible', timeout: 20_000 })
     await selectMarkdownBodyTable(workspace)
