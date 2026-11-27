@@ -74,6 +74,8 @@ jobs:
     timeout-minutes: 45
     env:
       NODE_OPTIONS: --max-old-space-size=4096
+      # The hosted runner currently reports Ubuntu 26; Playwright 1.60 ships the Ubuntu 24 Chromium build.
+      PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: ubuntu24.04-x64
       AGENTIC_OS_PR_BODY: ${{ github.event.pull_request.body || '' }}
       AGENTIC_OS_PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
       AGENTIC_OS_PR_DRAFT: ${{ github.event.pull_request.draft || false }}
