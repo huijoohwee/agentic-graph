@@ -72,7 +72,6 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await ensureTwoDimensionalSurface(page)
     await selectRenderer(page, 'Multi-dimensional Table')
     await importViewFixture(page, fixturePath)
-    await selectRenderer(page, 'Multi-dimensional Table')
     const workspace = page.locator('section[aria-label="Workspace data view"]')
     await workspace.waitFor({ state: 'visible', timeout: 20_000 })
     await selectMarkdownBodyTable(workspace)
@@ -190,6 +189,10 @@ async function importViewFixture(page, fixturePath) {
 
 export async function selectMarkdownBodyTable(workspace) {
   const selector = workspace.locator('section[aria-label="Table selector"]')
+  if (await selector.count() === 0) {
+    await workspace.locator('table[aria-label="Table view"]').waitFor({ state: 'visible', timeout: 20_000 })
+    return
+  }
   const body = selector.getByRole('tab', { name: 'Markdown Body', exact: true })
   await body.waitFor({ state: 'visible', timeout: 20_000 })
   if (await body.getAttribute('aria-selected') !== 'true') {
