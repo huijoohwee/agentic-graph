@@ -55,7 +55,7 @@
     {
       "ref": "agent/device-0232231d4a19/graph-runtime-readiness-pin",
       "pullRequest": 2133,
-      "laneHead": "f1377f24f69667ca8bb7e228bcd168984969a45",
+      "laneHead": "f1377f24f69667ca8bb7e228bcd168984969a45f",
       "mergeRevision": "ddf490bd58d87d766a7a1747f6edaed6391451aa",
       "paths": [
         "canvas/package.json",
@@ -225,7 +225,7 @@
       "kind": "merged-pull-request-changed-files",
       "pullRequest": 2133,
       "url": "https://github.com/huijoohwee/agentic-graph/pull/2133",
-      "headRevision": "f1377f24f69667ca8bb7e228bcd168984969a45",
+      "headRevision": "f1377f24f69667ca8bb7e228bcd168984969a45f",
       "mergeRevision": "ddf490bd58d87d766a7a1747f6edaed6391451aa",
       "changedPaths": [
         "canvas/package.json",
