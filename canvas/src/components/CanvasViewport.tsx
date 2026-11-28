@@ -526,7 +526,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
         {variant === 'workspace' ? (
           <>
             {!homePreviewVisible && sourceFilesBootstrapReady && !documentSwitchOwnsViewport && !gameplayOverlayActive && !safeGraphData.nodes.length &&
-              <section className="absolute bottom-3 left-3 z-[260] max-w-full pointer-events-auto"><CanvasAuthoringStarters /></section>}
+              <section className="absolute inset-x-3 top-1/3 z-[260] flex justify-center pointer-events-none"><CanvasAuthoringStarters /></section>}
             {layout === 'full' && !documentSwitchOwnsViewport && !homePreviewVisible ? (
               <React.Suspense fallback={null}>
                 <LaunchSpotlightLazy />
