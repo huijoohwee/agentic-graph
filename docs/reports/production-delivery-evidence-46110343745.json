@@ -23,7 +23,7 @@
     "mirrorSelectorPath": "scripts/production-mirror-artifact-entries.mjs",
     "mirrorSelectorRevision": "43cefaf99b66725baa41810229498751a8041dc2",
     "mirrorSelectorSha256": "1d9f1fcc74acd60df40e9ac0a32dc4bbfad12bb57ecc102b21ca540b1ede2699",
-    "selectorPolicy": "The release builds the Pages output, then stages the mirror from the fixed allowlist in scripts/production-mirror-artifact-entries.mjs. Workflow, documentation, test, and local promotion-tool paths listed in the no-deploy assessments are excluded from the product artifact. The readiness lane package and CSS changes are included in the Pages build and are recorded as deployed.",
+    "selectorPolicy": "Pages output is built from the pinned workspace inputs; the published mirror is staged from the fixed allowlist in scripts/production-mirror-artifact-entries.mjs. PR #2142 shared UI CSS and projection changes feed the Pages build. PR #2133 runtime-readiness documentation and PR #2156 selector/document changes affect mirror publication. Paths in no-deploy assessments are outside both product outputs and do not change Worker code, Pages bytes, D1 data, travel mesh, or mirror contents.",
     "changedPathsExcludedFromProductArtifact": [
       ".github/workflows/integration.yml",
       ".github/workflows/release.yml",
@@ -36,40 +36,49 @@
       "scripts/lib/production-rollback-baseline.mjs",
       "scripts/local-runtime-session-lib.mjs",
       "scripts/production-rollback-baseline.mjs",
+      "scripts/production-runtime-readiness.mjs",
       "scripts/run-pages-dev-promotion.mjs"
     ]
   },
   "assessments": [
-    {
-      "ref": "agent/device-cba000d3779d/local-session-delivery-evidence-ci",
-      "pullRequest": 2160,
-      "laneHead": "057fa8bb39186ced79995c6c6f37282e9425ac70",
-      "mergeRevision": "43cefaf99b66725baa41810229498751a8041dc2",
-      "paths": [
-        "docs/collaboration-runtime-contract.md",
-        "scripts/__tests__/delivery-disposition-evidence.test.mjs",
-        "scripts/__tests__/local-runtime.test.mjs",
-        "scripts/check-delivery-disposition-evidence.mjs",
-        "scripts/local-runtime-session-lib.mjs"
-      ],
-      "disposition": "no-deploy",
-      "reason": "The exact changed paths docs/collaboration-runtime-contract.md, scripts/__tests__/delivery-disposition-evidence.test.mjs, scripts/__tests__/local-runtime.test.mjs, scripts/check-delivery-disposition-evidence.mjs, scripts/local-runtime-session-lib.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2160; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
-    },
     {
       "ref": "agent/device-cba000d3779d/miaoxyz-readiness-ajv-lazyload",
       "pullRequest": 1938,
       "laneHead": "c6c3c169e028eff2db9943a170d70f01d3dd5b42",
       "mergeRevision": "3f4e2194c33284e1365094ba5b1d962d0de1dd8b",
       "paths": [
-        "canvas/package.json",
-        "canvas/src/styles/shared-ui-profile.css",
-        "canvas/src/styles/shared-ui-profile.pin.json",
-        "package-lock.json",
-        "package.json",
         "scripts/production-runtime-readiness.mjs"
       ],
+      "disposition": "no-deploy",
+      "reason": "PR #1938 changes only scripts/production-runtime-readiness.mjs. That local readiness command is not included by the Pages build or fixed mirror allowlist; it changes no deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. Production run 46110343745 delivered the candidate, but this path caused no product artifact change."
+    },
+    {
+      "ref": "agent/device-0232231d4a19/graph-runtime-readiness-pin",
+      "pullRequest": 2133,
+      "laneHead": "f1377f24f69667ca8bb7e228bcd168984969a45",
+      "mergeRevision": "ddf490bd58d87d766a7a1747f6edaed6391451aa",
+      "paths": [
+        "canvas/package.json",
+        "cloudflare/workers/agentic-graph-mcp/__tests__/tool-registry.test.mjs",
+        "contracts/agentic-os-package-pin.mjs",
+        "docs/runtime-readiness-contract.md",
+        "mcp/__tests__/agentic-os-doc-sources.test.mjs",
+        "mcp/__tests__/fixtures/native-agent-docs.mjs",
+        "mcp/agentic-canvas-os-docs-core.mjs",
+        "package-lock.json",
+        "package.json",
+        "scripts/__tests__/runtime-docs-parity.test.mjs",
+        "scripts/__tests__/worktree-policy.test.mjs",
+        "scripts/check-runtime-docs-parity.mjs",
+        "scripts/runtime-readiness-contract.mjs"
+      ],
       "disposition": "deployed",
-      "reason": null
+      "reason": null,
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": "d5ddb51020059d903f72e1d3a699e8bd4e088f40aadd2b1240ada9ee194916e1",
+      "deploymentReceiptDigest": "6674e7b4d3f1da54beb4c24d94d7cbef5e9a3c5aa06e6a31c1909218ef3780f2",
+      "runtimeVerificationReceiptDigest": "d1c96fd57e44c8fe1ab05ddcff26711124f2b687ab76d7a2fff94430a5192c6b"
     },
     {
       "ref": "agent/device-cba000d3779d/platform-playwright-host-compat",
@@ -82,6 +91,57 @@
       ],
       "disposition": "no-deploy",
       "reason": "The exact changed paths .github/workflows/integration.yml, .github/workflows/release.yml are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2139; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
+      "ref": "agent/device-0232231d4a19/shared-ui-profile-current-owner",
+      "pullRequest": 2142,
+      "laneHead": "a3101100d7fbce19912fb40b132f265b387419e1",
+      "mergeRevision": "11a5d0900abc6dff872b3747f6edaed6391451aa",
+      "paths": [
+        "canvas/package.json",
+        "canvas/src/styles/shared-ui-profile.css",
+        "canvas/src/styles/shared-ui-profile.pin.json",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "deployed",
+      "reason": null,
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": "d5ddb51020059d903f72e1d3a699e8bd4e088f40aadd2b1240ada9ee194916e1",
+      "deploymentReceiptDigest": "6674e7b4d3f1da54beb4c24d94d7cbef5e9a3c5aa06e6a31c1909218ef3780f2",
+      "runtimeVerificationReceiptDigest": "d1c96fd57e44c8fe1ab05ddcff26711124f2b687ab76d7a2fff94430a5192c6b"
+    },
+    {
+      "ref": "agent/device-cba000d3779d/production-dev-ui-retry",
+      "pullRequest": 2143,
+      "laneHead": "69c042235555c1c036de3dea4e1daa26995e9f2e",
+      "mergeRevision": "d203469172525be5ce815e9c1a6eb1e2786caaa4",
+      "paths": [
+        "scripts/run-pages-dev-promotion.mjs"
+      ],
+      "disposition": "no-deploy",
+      "reason": "The exact changed paths scripts/run-pages-dev-promotion.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2143; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
+      "ref": "agent/device-cba000d3779d/mirror-artifact-owner-projection-fixtures",
+      "pullRequest": 2156,
+      "laneHead": "65702c3ffa230b5d216cbad10d6a1ff205f260f0",
+      "mergeRevision": "c676e2dbeaa6d3d8b7576b43f3c1ad71a16fb40c",
+      "paths": [
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json",
+        "scripts/__tests__/production-mirror-artifact.test.mjs",
+        "scripts/production-mirror-artifact-entries.mjs"
+      ],
+      "disposition": "deployed",
+      "reason": null,
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": "d5ddb51020059d903f72e1d3a699e8bd4e088f40aadd2b1240ada9ee194916e1",
+      "deploymentReceiptDigest": "6674e7b4d3f1da54beb4c24d94d7cbef5e9a3c5aa06e6a31c1909218ef3780f2",
+      "runtimeVerificationReceiptDigest": "d1c96fd57e44c8fe1ab05ddcff26711124f2b687ab76d7a2fff94430a5192c6b"
     },
     {
       "ref": "agent/device-cba000d3779d/prod-rollback-parity-baseline",
@@ -98,15 +158,19 @@
       "reason": "The exact changed paths docs/production-rollback-baseline.md, scripts/__tests__/production-rollback-baseline.test.mjs, scripts/lib/production-rollback-baseline.mjs, scripts/production-rollback-baseline.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2157; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
     },
     {
-      "ref": "agent/device-cba000d3779d/production-dev-ui-retry",
-      "pullRequest": 2143,
-      "laneHead": "69c042235555c1c036de3dea4e1daa26995e9f2e",
-      "mergeRevision": "d203469172525be5ce815e9c1a6eb1e2786caaa4",
+      "ref": "agent/device-cba000d3779d/local-session-delivery-evidence-ci",
+      "pullRequest": 2160,
+      "laneHead": "057fa8bb39186ced79995c6c6f37282e9425ac70",
+      "mergeRevision": "43cefaf99b66725baa41810229498751a8041dc2",
       "paths": [
-        "scripts/run-pages-dev-promotion.mjs"
+        "docs/collaboration-runtime-contract.md",
+        "scripts/__tests__/delivery-disposition-evidence.test.mjs",
+        "scripts/__tests__/local-runtime.test.mjs",
+        "scripts/check-delivery-disposition-evidence.mjs",
+        "scripts/local-runtime-session-lib.mjs"
       ],
       "disposition": "no-deploy",
-      "reason": "The exact changed paths scripts/run-pages-dev-promotion.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2143; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+      "reason": "The exact changed paths docs/collaboration-runtime-contract.md, scripts/__tests__/delivery-disposition-evidence.test.mjs, scripts/__tests__/local-runtime.test.mjs, scripts/check-delivery-disposition-evidence.mjs, scripts/local-runtime-session-lib.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2160; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
     }
   ],
   "evidenceSources": [
@@ -146,6 +210,66 @@
     {
       "kind": "rollback-target",
       "digest": "be4525c6316407599e2c38450a4bc02f900b9a6076acf2bd516f84902b3fff84"
+    },
+    {
+      "kind": "merged-pull-request-changed-files",
+      "pullRequest": 1938,
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/1938",
+      "headRevision": "c6c3c169e028eff2db9943a170d70f01d3dd5b42",
+      "mergeRevision": "3f4e2194c33284e1365094ba5b1d962d0de1dd8b",
+      "changedPaths": [
+        "scripts/production-runtime-readiness.mjs"
+      ]
+    },
+    {
+      "kind": "merged-pull-request-changed-files",
+      "pullRequest": 2133,
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2133",
+      "headRevision": "f1377f24f69667ca8bb7e228bcd168984969a45",
+      "mergeRevision": "ddf490bd58d87d766a7a1747f6edaed6391451aa",
+      "changedPaths": [
+        "canvas/package.json",
+        "cloudflare/workers/agentic-graph-mcp/__tests__/tool-registry.test.mjs",
+        "contracts/agentic-os-package-pin.mjs",
+        "docs/runtime-readiness-contract.md",
+        "mcp/__tests__/agentic-os-doc-sources.test.mjs",
+        "mcp/__tests__/fixtures/native-agent-docs.mjs",
+        "mcp/agentic-canvas-os-docs-core.mjs",
+        "package-lock.json",
+        "package.json",
+        "scripts/__tests__/runtime-docs-parity.test.mjs",
+        "scripts/__tests__/worktree-policy.test.mjs",
+        "scripts/check-runtime-docs-parity.mjs",
+        "scripts/runtime-readiness-contract.mjs"
+      ]
+    },
+    {
+      "kind": "merged-pull-request-changed-files",
+      "pullRequest": 2142,
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2142",
+      "headRevision": "a3101100d7fbce19912fb40b132f265b387419e1",
+      "mergeRevision": "11a5d0900abc6dff872b3747f6edaed6391451aa",
+      "changedPaths": [
+        "canvas/package.json",
+        "canvas/src/styles/shared-ui-profile.css",
+        "canvas/src/styles/shared-ui-profile.pin.json",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    {
+      "kind": "merged-pull-request-changed-files",
+      "pullRequest": 2156,
+      "url": "https://github.com/huijoohwee/agentic-graph/pull/2156",
+      "headRevision": "65702c3ffa230b5d216cbad10d6a1ff205f260f0",
+      "mergeRevision": "c676e2dbeaa6d3d8b7576b43f3c1ad71a16fb40c",
+      "changedPaths": [
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json",
+        "scripts/__tests__/production-mirror-artifact.test.mjs",
+        "scripts/production-mirror-artifact-entries.mjs"
+      ]
     }
   ]
 }
