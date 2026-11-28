@@ -6,6 +6,9 @@ import { dirname, join } from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { commitCanvasAuthoring } from '@/hooks/store/commitCanvasAuthoring'
 import { canUndoCanvasTurn, runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
+import { stageSketchPrompt } from '@/features/graph-editor/canvasSketchPrompt'
+import { createStroke, readNodeSketch } from '@/lib/graph/canvasSketch'
+import { isCanvasDrawingRequest, readCanvasDrawingRequest } from '@/features/chat/promptPresetInvocation'
 import { stageCanvasReply, stageFlow } from '@/features/graph-editor/canvasAuthoringFlow'
 import { submitCanvasProjection } from '@/features/chat/floatingPanelChat/canvasProjectionSubmit'
 import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
@@ -32,6 +35,36 @@ export async function testGraphAuthoringMvp() {
     reset()
     const catalog = await listGatewayPresets()
     assert.ok(catalog.ok)
+    const initialSketch = { ...store.getState(), documentStructureBaselineLock: false }
+    const prompt = 'Sketch a robot pair-programming with a human'
+    assert.ok(isCanvasDrawingRequest(prompt))
+    assert.equal(readCanvasDrawingRequest('/canvas.project #canvas @canvas ' + prompt), prompt)
+    assert.equal(readCanvasDrawingRequest('/canvas.project @other #canvas ' + prompt), null)
+    assert.equal(readCanvasDrawingRequest('/canvas.project @source.frontmatter @source.body @canvas #canvas\n---\nflow: {}'), null)
+    assert.equal(isCanvasDrawingRequest('Draw a conclusion about this graph'), false)
+    const scene = stageSketchPrompt(initialSketch, prompt)
+    assert.equal(scene.graph.nodes.length, 3)
+    assert.equal(scene.graph.edges.length, 2)
+    assert.ok(scene.graph.edges.every(e => e.label === '' && e.properties?.relation === 'codes at'))
+    assert.ok(scene.graph.nodes.every(n => readNodeSketch(n)!.marks.length >= 6))
+    assert.equal(scene.historyLabel, 'Added 3 nodes, 2 edges, 1 group · Pair programming')
+    const shapes = stageSketchPrompt(initialSketch, 'Draw a red circle above a blue square')
+    assert.deepEqual(shapes.graph.nodes.map(n => readNodeSketch(n)!.marks[0].fill), ['#e88378', '#74a7d3'])
+    assert.ok(shapes.graph.nodes[0].y! < shapes.graph.nodes[1].y!)
+    const path = stageSketchPrompt(initialSketch, 'Draw path "Wave": M4 40 Q30 8 60 40 T116 40')
+    assert.equal(path.graph.nodes[0].label, 'Wave')
+    assert.equal(readNodeSketch(path.graph.nodes[0])!.marks[0].d, 'M4 40 Q30 8 60 40 T116 40')
+    assert.ok(!Object.hasOwn(path.graph.nodes[0].properties ?? {}, 'properties'))
+    assert.throws(() => stageSketchPrompt(initialSketch, 'Draw path: M1 2 Q3 4'), /vector path/)
+    const branch = stageSketchPrompt(initialSketch, 'Diagram Draft → Review → Ship; Review → Revise')
+    assert.equal(branch.graph.nodes.length, 4)
+    assert.equal(branch.graph.edges.length, 3)
+    assert.throws(() => stageSketchPrompt(initialSketch, 'Draw a robot with a giraffe'), /Try/)
+    assert.throws(() => createStroke(Array(129).fill([1, 2])), /128/)
+    const stroke = stageSketchPrompt(initialSketch, 'Draw a line from (10,20) to (50,30)')
+    assert.equal(readNodeSketch(stroke.graph.nodes[0])!.caption, false)
+    const bad = { marks: [{ d: 'M1 2L3 4', fill: 'url(other)', stroke: 'none', width: 2 }], caption: false }
+    assert.equal(readNodeSketch({ ...stroke.graph.nodes[0], properties: { 'visual:sketch': bad } }), null)
     const starters = catalog.presets.filter(preset => preset.authoringStarter)
     assert.equal(starters.length, 4)
     const bodies = join(dirname(createRequire(import.meta.url).resolve('agentic-gateway/catalog/index.json')), 'bodies')

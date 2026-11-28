@@ -16,6 +16,7 @@ import { hideTempLink, cancelPendingEdge } from '@/features/edge-creation'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { applySelectionHighlight } from '@/components/GraphCanvas/highlight'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
+import { captureSketchPositions, fitSketchAroundPanel } from './layers/nodeSketch'
 import { createDefs, createGroupsLayer, createLinksHitLayer, createLinksLayer, createEdgeLabelsLayer, createNodesLayer, createTempLink, createLabelsLayer, createResizeHandlesLayer } from '@/components/GraphCanvas/sceneLayers'
 import { attachGlobalHandlers, attachSimulationTick } from '@/components/GraphCanvas/sceneHandlers'
 import { applyGraphCanvasZOrder } from '@/components/GraphCanvas/zOrder'
@@ -228,6 +229,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
   }).forceDocumentStructureGroups
   sceneGraphDataRef.current = graphDataForDisplay
   const displayNodes = Array.isArray(graphDataForDisplay.nodes) ? (graphDataForDisplay.nodes as GraphNode[]) : []
+  const restoreSketchPositions = captureSketchPositions(displayNodes)
   const displayNodesForViewportFit = filterGraphCanvasViewportFitNodes({
     nodes: displayNodes,
     panelOnlyNodeIdSet,
@@ -300,12 +302,13 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
   }
   const readVisibleViewportFitFrame = () => {
     const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen(useGraphStore.getState())
-    return resolveWorkspaceVisibleViewport({
+    const frame = resolveWorkspaceVisibleViewport({
       viewportW: Math.max(1, width),
       viewportH: Math.max(1, Math.floor(height)),
       workspaceEditorOverlayOpen,
       surfaceElement: svgEl,
     })
+    return restoreSketchPositions ? fitSketchAroundPanel(svgEl, frame) : frame
   }
   const buildViewportFitNodesPositionSignature = (nodes: GraphNode[]): string => {
     if (!Array.isArray(nodes) || nodes.length === 0) return '0'
@@ -663,6 +666,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     }
   }
 
+  restoreSketchPositions?.()
   if (initialZoomTransform) {
     applyInitialTransform(initialZoomTransform)
   } else {

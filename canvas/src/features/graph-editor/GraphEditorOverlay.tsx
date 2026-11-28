@@ -16,6 +16,8 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
   React.useLayoutEffect(() => {
     setWorkspace(active && !!svgRef.current?.closest('[data-kg-graph-authoring-surface="workspace"]'))
   }, [active, svgRef])
+  const [freehand, setFreehand] = React.useState(false)
+  const strokeActive = toolId === 'node' && freehand
   const [inspecting, setInspecting] = React.useState(false)
   const documentKey = useGraphStore(state => state.markdownDocumentName)
   const [status, setStatus] = React.useState('')
@@ -39,7 +41,7 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
     }
     surface.addEventListener('keydown', keydown)
     const onClick = (event: MouseEvent) => {
-      if (!authorTools.has(toolId) || event.defaultPrevented || event.button !== 0 || isSpacePanHeld()) return
+      if (strokeActive || !authorTools.has(toolId) || event.defaultPrevented || event.button !== 0 || isSpacePanHeld()) return
       event.preventDefault()
       event.stopImmediatePropagation()
       const state = useGraphStore.getState()
@@ -59,13 +61,20 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
     }
     const previous = svg.style.pointerEvents
     if (authorTools.has(toolId)) svg.style.pointerEvents = 'all'
+    let disposed = false
+    let unbindStroke: (() => void) | undefined
+    if (strokeActive) void import('./canvasFreehandGesture').then(({ bindCanvasFreehand }) => {
+      if (!disposed) unbindStroke = bindCanvasFreehand(svg, setStatus)
+    }).catch(() => setStatus('The freehand tool could not be loaded.'))
     svg.addEventListener('click', onClick, true)
     return () => {
+      disposed = true
+      unbindStroke?.()
       surface.removeEventListener('keydown', keydown)
       svg.removeEventListener('click', onClick, true)
       svg.style.pointerEvents = previous
     }
-  }, [active, documentKey, setToolId, svgRef, toolId, workspace])
+  }, [active, documentKey, setToolId, svgRef, strokeActive, toolId, workspace])
   if (!active || !workspace) return null
   return (
     <section className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} aria-label="Graph editor overlay">
@@ -73,6 +82,9 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
         <details>
           <summary className="agentic-toolbar-item">Graph tools · {canvasTools[toolId]?.label}</summary>
           <GraphEditorToolRail activeToolId={toolId} onSelectTool={setToolId} />
+          {toolId === 'node' && <label className="agentic-toolbar-item">
+            <input type="checkbox" checked={freehand} onChange={event => setFreehand(event.target.checked)} /> Freehand stroke
+          </label>}
           <button type="button" className="agentic-toolbar-item" aria-expanded={inspecting} onClick={() => setInspecting(!inspecting)}>Inspector</button>
         </details>
         {status && <p role="status">{status}</p>}

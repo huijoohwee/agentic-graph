@@ -115,9 +115,13 @@ export async function applyChatAgenticOsWorkspaceDocumentToCanvas(path: string):
 }
 
 export async function applyCanvasAuthoringReply(
-  initial: ReturnType<typeof useGraphStore.getState>, controller: AbortController, reply: string,
+  initial: ReturnType<typeof useGraphStore.getState>, controller: AbortController, reply: string, drawing = false,
 ) {
   return runCanvasAuthoringTurn(initial, controller, 'Apply canvas diagram', async state => {
+    if (drawing) {
+      const { stageSketchPrompt } = await import('@/features/graph-editor/canvasSketchPrompt')
+      return stageSketchPrompt(state, reply)
+    }
     const { stageCanvasReply } = await import('@/features/graph-editor/canvasAuthoringFlow')
     return stageCanvasReply(state, reply)
   })

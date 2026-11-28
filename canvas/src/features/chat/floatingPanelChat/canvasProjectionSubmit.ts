@@ -3,6 +3,7 @@ import type { ChatMessage } from '../FloatingPanelChatSections'
 import { getCachedChatHistory, putChatHistoryCache } from './floatingPanelChatRuntime'
 import type { GraphState } from '@/hooks/store/types'
 import { createId } from '@/lib/id'
+import { readCanvasDrawingRequest } from '../promptPresetInvocation'
 import { applyCanvasAuthoringReply } from '../chatAgenticOsCanvasApply'
 
 const pendingCancels = new Map<string, AbortController>()
@@ -16,7 +17,9 @@ export function cancelCanvasProjection(actionId: string): boolean {
 
 export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitArgs, 'input' | 'setInput' | 'setMessages' | 'abortRef' | 'historyKey'>, initial: GraphState, controller: AbortController) {
   const request = args.input
-  const reply = request.trimStart().split(/\r?\n/).slice(1).join('\n').trimStart()
+  const drawingPrompt = readCanvasDrawingRequest(request)
+  const drawing = drawingPrompt !== null
+  const reply = drawingPrompt ?? request.trimStart().split(/\r?\n/).slice(1).join('\n').trimStart()
   const id = createId('canvas-turn')
   const cancelId = 'canvas-authoring.cancel:' + id
   args.setMessages(messages => [...messages, { id: id + '-request', role: 'user', content: request },
@@ -38,7 +41,11 @@ export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitA
       actions: [{ id: cancelId, label: 'Cancel' }] })
   }, 250)
   try {
-    const result = await applyCanvasAuthoringReply(initial, controller, reply)
+    const result = await applyCanvasAuthoringReply(initial, controller, reply, drawing)
+    if (drawing) {
+      initial.setCanvasRenderMode('2d')
+      initial.setCanvas2dRenderer('d3')
+    }
     finish(result.historyLabel, result.historyEntryId)
     if (args.abortRef.current === controller) args.setInput(current => current === request ? '' : current)
   } catch (error) {

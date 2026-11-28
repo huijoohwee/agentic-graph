@@ -1,5 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
+import { createStroke, type SketchPoint } from '@/lib/graph/canvasSketch'
 import { createUniqueId } from '@/lib/ids'
 import { createSubgraph } from '@/lib/graph/subgraphs'
 import { finalizeEdgeAuthoring } from '@/features/edge-creation/authoring'
@@ -9,6 +10,7 @@ import { runCanvasAuthoringTurn } from './canvasAuthoringTurn'
 import { editableFlow, writeFlow, type AuthoringFlow } from './canvasAuthoringFlow'
 
 type ToolIntent = { tool: 'node'; x: number; y: number }
+  | { tool: 'stroke'; points: SketchPoint[] }
   | { tool: 'edge'; source: string; target: string }
   | { tool: 'subgraph'; members: string[] }
 
@@ -19,6 +21,11 @@ export async function authorCanvasTool(intent: ToolIntent) {
   const sourceOwned = state.workspaceViewMode === 'editor' || isFrontmatterFlowGraph(data) || !data.nodes.length
   const edit = (change: (flow: AuthoringFlow) => AuthoringFlow) => runCanvasAuthoringTurn(state, new AbortController(), 'Add canvas ' + intent.tool,
     async initial => writeFlow(initial, change(editableFlow(initial))))
+  if (intent.tool === 'stroke') {
+    const stroke = createStroke(intent.points)
+    const id = createUniqueId('sketch-stroke-', new Set(data.nodes.map(n => n.id)))
+    return edit(flow => ({ ...flow, nodes: [...flow.nodes, { ...stroke, id }] }))
+  }
   if (intent.tool === 'node') {
     const id = createUniqueId('node', new Set(data.nodes.map(node => node.id)))
     const node = { id, type: 'Concept', label: 'Node ' + (data.nodes.length + 1), x: intent.x, y: intent.y,

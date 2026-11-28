@@ -1,6 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { isCanvasSourceProjection } from '../promptPresetInvocation'
+import { isCanvasDrawingRequest, isCanvasSourceProjection } from '../promptPresetInvocation'
 import {
   initializeChatSubmitOptimisticState,
   resolveChatSubmitRequestUrlOrSetError,
@@ -15,7 +15,7 @@ import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceS
 import { tryActivateGeospatialInvocation } from './geospatialInvocationSubmit'
 
 export function canSubmitChatWithoutModel(input: string) {
-  return isCanvasSourceProjection(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
+  return isCanvasSourceProjection(input) || isCanvasDrawingRequest(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
 }
 
 export type FloatingPanelChatSubmitHookDeps = {
@@ -40,7 +40,7 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
-    if (isCanvasSourceProjection(args.input)) {
+    if (isCanvasSourceProjection(args.input) || isCanvasDrawingRequest(args.input)) {
       if (args.abortRef.current) return
       const initial = useGraphStore.getState()
       const controller = new AbortController()

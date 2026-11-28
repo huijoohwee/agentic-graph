@@ -312,6 +312,7 @@ function collectDeclaredFlowNodePropertyValues(args: {
       fieldName === 'pos' ||
       fieldName === 'position' ||
       fieldName === 'handles' ||
+      fieldName === 'properties' ||
       fieldName === 'data' ||
       fieldName === 'compute'
     ) {

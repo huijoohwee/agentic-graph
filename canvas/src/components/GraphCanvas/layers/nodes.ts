@@ -1,5 +1,7 @@
 import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
 import * as d3 from 'd3';
+import { readNodeSketch, type Sketch } from '@/lib/graph/canvasSketch'
+import { drawNodeSketch } from './nodeSketch'
 import type { MutableRefObject } from 'react';
 import type { GraphNode, GraphEdge, GraphData } from '@/lib/graph/types';
 import type { GraphSchema } from '@/lib/graph/schema';
@@ -145,7 +147,12 @@ export const createNodesLayer = (args: {
 
   const nodeLayer = g.append('g').attr('data-kg-layer', 'nodes').style('pointer-events', 'all');
 
-  const eligibleNodes = renderNodes
+  const sketches = new Map<GraphNode, Sketch>()
+  const eligibleNodes = renderNodes.filter(node => {
+    const sketch = readNodeSketch(node)
+    if (sketch) sketches.set(node, sketch)
+    return !sketch
+  })
   const circleNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'circle');
   const rectNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'rect');
   const diamondNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'diamond');
@@ -219,7 +226,14 @@ export const createNodesLayer = (args: {
       return buildNodeShapePathD({ shape: 'hex', width, height });
     })
 
-  const node = nodeLayer.selectAll<SVGElement, GraphNode>('circle,rect,path[data-kg-node-shape]')
+  nodeLayer.selectAll<SVGSVGElement, GraphNode>('svg').data([...sketches.keys()]).enter().append('svg')
+    .each(function (d) {
+      const { width, height } = getNodeRectDimensions2d(d, schema)
+      const svg = d3.select<SVGSVGElement, GraphNode>(this)
+      svg.attr('x', (d.x ?? 0) - width / 2).attr('y', (d.y ?? 0) - height / 2).attr('width', width).attr('height', height)
+      drawNodeSketch(svg, d, sketches.get(d)!)
+    })
+  const node = nodeLayer.selectAll<SVGElement, GraphNode>(':scope > circle,:scope > rect,:scope > path[data-kg-node-shape],:scope > svg[data-kg-node-shape]')
   node
     .attr('data-node-id', (d: GraphNode) => String(d.id))
     .attr('data-kg-covered-by-media', (d: GraphNode) => shouldHideNodeBody(d) ? '1' : null)

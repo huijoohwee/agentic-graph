@@ -52,6 +52,7 @@ type MainPanelSharedActions = {
 type SharedMainPanelTabKey = 'collaboration' | 'integrations' | 'mcp' | 'maps' | 'commerce' | 'settings'
 
 type SharedMainPanelViewProps = {
+  onOpenWorkspace?: () => void
   searchQuery: string
   requestedAnchorId?: string
   requestedAnchorSeq?: number
@@ -390,6 +391,7 @@ export default function MainPanel({
                   >
                     <React.Suspense fallback={null}>
                       <SharedView
+                        onOpenWorkspace={onClose}
                         searchQuery={search}
                         requestedAnchorId={requestedAnchorId}
                         requestedAnchorSeq={requestedAnchorSeq}
