@@ -189,11 +189,21 @@ export function clearRetainedLocalDocDeepLinkPath(): void {
   }
 }
 
+// A local selection mirrors its path into the URL. A fresh page has no pending selection.
+let pendingSelectionPath: string | null = null
+
+export function consumeLocalDocSelectionSync(path: string): boolean {
+  if (pendingSelectionPath !== normalizeWorkspacePath(path)) return false
+  pendingSelectionPath = null
+  return true
+}
+
 export function setLocalDocDeepLinkPath(relativePath: string | null): void {
   if (typeof window === 'undefined') return
   try {
     const params = new URLSearchParams(window.location.search)
     const trimmed = String(relativePath || '').trim().replace(/^\/+/, '')
+    const previousPath = (params.get(LOCAL_DOC_PARAM) || '').replace(/^\/+/, '')
     if (trimmed) {
       params.set(LOCAL_DOC_PARAM, trimmed)
     } else {
@@ -203,6 +213,7 @@ export function setLocalDocDeepLinkPath(relativePath: string | null): void {
     const nextUrl = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash || ''}`
     const nextState = buildLocalDocHistoryState(trimmed || null)
     window.history.replaceState(nextState, '', nextUrl)
+    if (previousPath !== trimmed) pendingSelectionPath = trimmed ? normalizeWorkspacePath(trimmed) : null
     try {
       window.dispatchEvent(new PopStateEvent('popstate', { state: nextState }))
     } catch {

@@ -18,6 +18,7 @@ import {
   buildDocViewUrl,
   clearRetainedLocalDocDeepLinkPath,
   consumeDeepLinkParams,
+  consumeLocalDocSelectionSync,
   isCanvasDocPreviewRequested,
   parseDocDeepLink,
 } from './canvasDocDeepLink'
@@ -201,10 +202,14 @@ async function handleLocalDeepLink(
     }
 
     const graphStore = useGraphStore.getState()
-    graphStore.setWorkspaceViewState({ mode: 'editor', paneOpen: true })
-    graphStore.setSelectionSource('editor')
-    graphStore.selectNode(null)
-    graphStore.selectEdge(null)
+    const selectionAlreadyActive = consumeLocalDocSelectionSync(targetPath) && !options.applyToGraph
+      && useMarkdownExplorerStore.getState().activePath === targetPath
+    if (!selectionAlreadyActive) {
+      graphStore.setWorkspaceViewState({ mode: 'editor', paneOpen: true })
+      graphStore.setSelectionSource('editor')
+      graphStore.selectNode(null)
+      graphStore.selectEdge(null)
+    }
     useMarkdownExplorerStore.getState().setActivePath(targetPath)
 
     const entryText = await fs.readFileText(targetPath)
