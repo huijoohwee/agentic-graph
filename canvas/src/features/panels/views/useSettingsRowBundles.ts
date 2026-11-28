@@ -5,12 +5,9 @@ type UseSettingsRowBundlesArgs = {
   applyActiveWorkspaceFileAsChatHistory: () => void
   applyActiveWorkspaceFileAsAgenticGraph: () => void
   buildChatAssistNodes: (rowKey: string) => React.ReactNode[]
-  bytePlusHealthDetails: string | null
-  bytePlusHealthOk: boolean | null
   chatHealthDetails: string | null
   chatHealthOk: boolean | null
   chatHistoryPathStatus: string | null
-  checkBytePlusHealth: () => void
   checkBytePlusVideoModelPreview: () => void
   checkChatHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>
@@ -21,7 +18,6 @@ type UseSettingsRowBundlesArgs = {
   grabMapsHealthOk: boolean | null
   importCloudUrlForChatHistory: () => void
   importCloudUrlForAgenticGraph: () => void
-  isCheckingBytePlusHealth: boolean
   isCheckingBytePlusVideoModelPreview: boolean
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
@@ -49,12 +45,9 @@ export function useSettingsRowBundles({
   applyActiveWorkspaceFileAsChatHistory,
   applyActiveWorkspaceFileAsAgenticGraph,
   buildChatAssistNodes,
-  bytePlusHealthDetails,
-  bytePlusHealthOk,
   chatHealthDetails,
   chatHealthOk,
   chatHistoryPathStatus,
-  checkBytePlusHealth,
   checkBytePlusVideoModelPreview,
   checkChatHealth,
   checkGrabMapsHealth,
@@ -65,7 +58,6 @@ export function useSettingsRowBundles({
   grabMapsHealthOk,
   importCloudUrlForChatHistory,
   importCloudUrlForAgenticGraph,
-  isCheckingBytePlusHealth,
   isCheckingBytePlusVideoModelPreview,
   isCheckingGrabMapsHealth,
   isCheckingHealth,
@@ -97,14 +89,11 @@ export function useSettingsRowBundles({
   }), [dirtyRef, agenticOsLocalFolderImportInputRef, agenticOsLocalImportInputRef, localFolderImportInputRef, localImportInputRef])
 
   const status = React.useMemo<SettingsRowStatusState>(() => ({
-    bytePlusHealthDetails,
-    bytePlusHealthOk,
     chatHealthDetails,
     chatHealthOk,
     chatHistoryPathStatus,
     grabMapsHealthDetails,
     grabMapsHealthOk,
-    isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
@@ -113,14 +102,11 @@ export function useSettingsRowBundles({
     agenticGraphPathStatus,
     normalizedChatProvider,
   }), [
-    bytePlusHealthDetails,
-    bytePlusHealthOk,
     chatHealthDetails,
     chatHealthOk,
     chatHistoryPathStatus,
     grabMapsHealthDetails,
     grabMapsHealthOk,
-    isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
@@ -140,7 +126,6 @@ export function useSettingsRowBundles({
     applyActiveWorkspaceFileAsChatHistory,
     applyActiveWorkspaceFileAsAgenticGraph,
     buildChatAssistNodes,
-    checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
     checkChatHealth,
     checkGrabMapsHealth,
@@ -159,7 +144,6 @@ export function useSettingsRowBundles({
     applyActiveWorkspaceFileAsChatHistory,
     applyActiveWorkspaceFileAsAgenticGraph,
     buildChatAssistNodes,
-    checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
     checkChatHealth,
     checkGrabMapsHealth,

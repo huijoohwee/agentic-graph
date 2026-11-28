@@ -9,14 +9,11 @@ export type SettingsToastPayload = {
 }
 
 export type SettingsRowStatusState = {
-  bytePlusHealthDetails: string | null
-  bytePlusHealthOk: boolean | null
   chatHealthDetails: string | null
   chatHealthOk: boolean | null
   chatHistoryPathStatus: string | null
   grabMapsHealthDetails: string | null
   grabMapsHealthOk: boolean | null
-  isCheckingBytePlusHealth: boolean
   isCheckingBytePlusVideoModelPreview: boolean
   isCheckingGrabMapsHealth: boolean
   isCheckingHealth: boolean
@@ -38,7 +35,6 @@ export type SettingsRowActions = {
   applyActiveWorkspaceFileAsChatHistory: () => void
   applyActiveWorkspaceFileAsAgenticGraph: () => void
   buildChatAssistNodes: (rowKey: string) => React.ReactNode[]
-  checkBytePlusHealth: () => void
   checkBytePlusVideoModelPreview: () => void
   checkChatHealth: () => void
   checkGrabMapsHealth: () => Promise<unknown>

@@ -15,7 +15,10 @@ export function cancelCanvasProjection(actionId: string): boolean {
   return true
 }
 
-export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitArgs, 'input' | 'setInput' | 'setMessages' | 'abortRef' | 'historyKey'>, initial: GraphState, controller: AbortController) {
+export async function submitCanvasProjection(
+  args: Pick<FloatingPanelChatSubmitArgs, 'input' | 'historyKey' | 'abortRef' | 'setMessages' | 'setInput'>,
+  initial: GraphState, controller: AbortController, generate?: (prompt: string) => Promise<string[][]>,
+) {
   const request = args.input
   const drawingPrompt = readCanvasDrawingRequest(request)
   const drawing = drawingPrompt !== null
@@ -41,7 +44,8 @@ export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitA
       actions: [{ id: cancelId, label: 'Cancel' }] })
   }, 250)
   try {
-    const result = await applyCanvasAuthoringReply(initial, controller, reply, drawing)
+    const generatePaths = drawing && /^\s*\/canvas\.project\b/i.test(request) ? generate : undefined
+    const result = await applyCanvasAuthoringReply(initial, controller, reply, drawing, generatePaths)
     if (drawing) {
       initial.setCanvasRenderMode('2d')
       initial.setCanvas2dRenderer('d3')

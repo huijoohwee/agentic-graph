@@ -24,9 +24,24 @@ export function readCanvasDrawingRequest(input: string): string | null {
   const tokens = command[1].trim().toLowerCase().split(/\s+/)
   if (!tokens.includes('@canvas') || !tokens.includes('#canvas') || tokens.some(t => !canvasTokens.has(t))) return null
   const body = (command[2] || '').trim()
-  return !body || drawingIntent.test(body) ? body : null
+  if (isCanvasSourceProjection(input) && (body.startsWith('---') || !body)) return null
+  return body
 }
 
 export function isCanvasDrawingRequest(input: string): boolean {
   return readCanvasDrawingRequest(input) !== null
+}
+
+export async function resolveEditedCanvasPresetBody(prompt: string): Promise<string> {
+  // Typing into the command line can leave its original catalog example below the edit.
+  // Strip only a complete, unmodified example that follows the user's own paragraph.
+  if (/\n\s*\n/.test(prompt)) {
+    const preset = await loadPromptPresetInvocation('canvas-sketch')
+    const example = preset.ok ? readCanvasDrawingRequest(preset.prompt) : null
+    if (example && prompt.endsWith(example)) {
+      const prefix = prompt.slice(0, -example.length)
+      if (/\n\s*\n\s*$/.test(prefix) && prefix.trim()) return prefix.trimEnd()
+    }
+  }
+  return prompt
 }

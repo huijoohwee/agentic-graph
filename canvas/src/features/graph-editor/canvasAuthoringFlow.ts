@@ -1,4 +1,5 @@
 import yaml from 'js-yaml'
+import { withMarkdownDocumentSourceMetadata } from '@/hooks/store/graph-data-slice/markdownDocumentSourceGraph'
 import { readSubgraphs } from '@/lib/graph/subgraphs'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
@@ -56,18 +57,23 @@ export function editableFlow(state: GraphState) {
   return flow
 }
 
-export function stageFlow(name: string | null, text: string) {
+export function stageFlow(name: string | null, text: string, unchangedNodes?: ReadonlySet<string>) {
   const flow = readAuthoringFlow(text, true)
   const parsed = tryParseMarkdownFrontmatterFlowGraph(name || 'Canvas.md', text)
-  const invalid = parsed?.warnings.find(warning => !warning.startsWith('Untyped connection: '))
+  const invalid = parsed?.warnings.find(warning => {
+    if (warning.startsWith('Untyped connection: ')) return false
+    // Adding positioned nodes can make implicit layout on an untouched note node report a warning.
+    const fallback = /^(?:Node missing pos|Flow node type defaulted to default): (.+)$/.exec(warning)
+    return !fallback || !unchangedNodes?.has(fallback[1])
+  })
   if (!flow.nodes.length || !parsed || invalid || parsed.graphData.nodes.length !== flow.nodes.length
       || parsed.graphData.edges.length !== flow.edges.length) throw new Error(invalid || 'The diagram could not be projected completely.')
-  return { text, graph: parsed.graphData }
+  return { text, graph: name ? withMarkdownDocumentSourceMetadata(parsed.graphData, name, null) : parsed.graphData }
 }
 
-export function writeFlow(state: GraphState, flow: AuthoringFlow) {
+export function writeFlow(state: GraphState, flow: AuthoringFlow, unchangedNodes?: ReadonlySet<string>) {
   const text = upsertTopLevelFrontmatterSectionMarkdownText({ rawText: state.markdownDocumentText ?? '', sectionKey: 'flow', sectionValue: flow })
-  return stageFlow(state.markdownDocumentName, text)
+  return stageFlow(state.markdownDocumentName, text, unchangedNodes)
 }
 
 export function stageCanvasReply(state: GraphState, reply: string) {
@@ -77,7 +83,7 @@ export function stageCanvasReply(state: GraphState, reply: string) {
     const addition = readAuthoringFlow(reply, true)
     if (!addition.nodes.length && !addition.edges.length && !addition.subgraphs?.length) throw new Error('The diagram contains no changes.')
     staged = writeFlow(state, { ...existing, nodes: [...existing.nodes, ...addition.nodes], edges: [...existing.edges, ...addition.edges],
-      ...(addition.subgraphs?.length ? { subgraphs: [...existing.subgraphs ?? [], ...addition.subgraphs] } : {}) })
+      ...(addition.subgraphs?.length ? { subgraphs: [...existing.subgraphs ?? [], ...addition.subgraphs] } : {}) }, ids(existing.nodes, 'node'))
   } else {
     staged = stageFlow(state.markdownDocumentName, reply)
   }
