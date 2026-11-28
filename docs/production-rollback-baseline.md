@@ -15,10 +15,14 @@ Use the existing successful-release recapture when its terminal carrier remains 
 Run **Production Rollback Baseline Capture** from protected `main` with mode
 `current-observed`. This mode needs no historical release run ID. It takes two ordered
 read-only Pages, authoritative D1, and exact mirror observations under the protected
-`production` environment. It rejects provider drift, mismatch between Pages and mirror
-readiness markers, a deployed source outside the captured `main` history, or nonzero graph
-snapshots. The artifact records the capture run, source revision, provider observations,
-rollback identity, and provenance. It explicitly says `productionAuthorized: false` and
+`production` environment. It rejects provider drift, readiness markers that do not describe
+their respective Pages or mirror sources, a deployed source outside the captured `main` history,
+or nonzero graph snapshots. Pages and mirror may have different source revisions; the artifact
+records both and labels readiness parity `aligned` or `diverged`. A diverged baseline is only an
+exact rollback target for the composite current state and does not establish runtime readiness.
+The release must independently converge and verify its candidate's Pages and mirror state. The
+artifact records the capture run, source revision, provider observations, rollback identity, and
+provenance. It explicitly says `productionAuthorized: false` and
 `historicalLifecycleReconstructed: false`.
 
 The protected source checkout keeps full `main` history (without fetching tags) so the
@@ -29,8 +33,8 @@ commit; the runtime readiness marker's `sourceRevision` identifies the Graph sou
 both values in the rollback identity. Current-state capture accepts the Pages commit when it
 is either the exact Graph source revision or a commit associated with exactly one merged PR
 to the captured publication-mirror `main`, with that PR's merge commit reachable from the
-captured mirror revision. The Graph marker must still be in current Graph `main`, and its
-full readiness record must match the mirror. Missing, ambiguous, unmerged, or unjoined
+captured mirror revision. The Pages marker must still be in current Graph `main`; the mirror
+marker must describe its own captured source revision. Missing, ambiguous, unmerged, or unjoined
 deployment commits fail closed. A full 100-entry API page also fails closed because it may be
 truncated and cannot establish unique association. This records present rollback identity only;
 it does not reconstruct or authorize the earlier deployment. Successful-release recapture and

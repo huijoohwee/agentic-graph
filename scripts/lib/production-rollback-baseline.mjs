@@ -94,7 +94,24 @@ const assertPagesDeploymentCommitProvenance = ({ pagesIdentity, sourceRevision, 
   instant(provenance.pullRequest.mergedAt)
 }
 
-const assertCurrentReadinessParity = round => {
+const assertCurrentReadinessMarker = (marker, sourceRevision, label) => {
+  assert.equal(marker?.schema, 'agentic-os-production-runtime-readiness/v2', `${label} readiness schema is invalid`)
+  assert.equal(marker?.status, 'verified-build', `${label} readiness status is invalid`)
+  assert.equal(marker?.source?.repository, 'huijoohwee/agentic-graph', `${label} readiness source is invalid`)
+  assert.equal(marker?.source?.revision, sourceRevision, `${label} readiness marker does not describe its current source`)
+  assert.equal(marker?.mirror?.repository, 'huijoohwee/huijoohwee', `${label} readiness mirror is invalid`)
+  assert.ok(['huijoohwee/agentic-os', 'huijoohwee/agentic-canvas-os'].includes(marker?.agenticCanvasOs?.repository),
+    `${label} readiness marker names an unsupported documentation owner`)
+  assert.match(marker.agenticCanvasOs?.revision || '', /^[0-9a-f]{40}$/)
+  assert.equal(marker.agenticCanvasOs.revision, marker.catalogRevision,
+    `${label} readiness marker has an unjoined documentation revision`)
+  assert.equal(marker.artifact?.algorithm, 'sha256')
+  assert.match(marker.artifact?.digest || '', /^[0-9a-f]{64}$/)
+  assert.equal(marker.immutableManifest?.algorithm, 'sha256')
+  assert.match(marker.immutableManifest?.digest || '', /^[0-9a-f]{64}$/)
+}
+
+const assertCurrentReadiness = round => {
   const { pages, state, mirror, deployment, pagesReadiness, mirrorReadiness } = round
   assert.equal(pages.schema, 'agentic-graph-production-pages-current-observation/v1')
   assert.equal(pages.adapterId, 'cloudflare-pages/api-canonical-observation-v1')
@@ -104,22 +121,21 @@ const assertCurrentReadinessParity = round => {
   assert.equal(state.readbackKind, 'direct-authoritative')
   assert.equal(mirror.schema, 'agentic-graph-production-observed-mirror-identity/v1')
   assert.equal(mirror.repository, 'huijoohwee/huijoohwee')
-  assert.equal(pagesReadiness?.schema, 'agentic-os-production-runtime-readiness/v2')
-  assert.equal(pagesReadiness?.status, 'verified-build')
-  assert.equal(pagesReadiness?.source?.repository, 'huijoohwee/agentic-graph')
-  assert.equal(pagesReadiness?.source?.revision, pages.identity.sourceRevision,
-    'Pages readiness marker does not describe the current deployment')
-  assert.equal(mirror.sourceRevision, pages.identity.sourceRevision,
-    'published mirror source differs from current Pages runtime')
-  assert.deepEqual(mirrorReadiness, pagesReadiness,
-    'published mirror readiness marker differs from current Pages runtime')
+  assert.match(pages.identity.sourceRevision || '', /^[0-9a-f]{40}$/, 'Pages source revision is invalid')
+  assert.match(mirror.sourceRevision || '', /^[0-9a-f]{40}$/, 'mirror source revision is invalid')
+  assertCurrentReadinessMarker(pagesReadiness, pages.identity.sourceRevision, 'Pages')
+  assertCurrentReadinessMarker(mirrorReadiness, mirror.sourceRevision, 'mirror')
   assert.equal(deployment.id, pages.identity.deploymentId, 'deployment API identity differs')
   assert.equal(deployment.url, pages.identity.deploymentOrigin, 'deployment API origin differs')
   assert.equal(deployment.environment, 'production')
   assert.equal(deployment.latest_stage?.name, 'deploy')
   assert.equal(deployment.latest_stage?.status, 'success')
   assert.equal(instant(deployment.latest_stage.ended_on), instant(pages.identity.deployedAt))
-  return pagesReadiness
+  return {
+    pagesSourceRevision: pages.identity.sourceRevision,
+    mirrorSourceRevision: mirror.sourceRevision,
+    markersEqual: canonicalJson(pagesReadiness) === canonicalJson(mirrorReadiness),
+  }
 }
 
 // A fresh provider observation can name today's rollback target without
@@ -134,27 +150,18 @@ export function createObservedCurrentRollbackBaseline({ first, second, repositor
     'current baseline must come from the protected capture workflow')
   assert.equal(canonicalJson(currentSubstantive(first)), canonicalJson(currentSubstantive(second)),
     'current provider state changed between observations')
-  const readiness = assertCurrentReadinessParity(second)
-  assertCurrentReadinessParity(first)
+  const readiness = assertCurrentReadiness(second)
+  const firstReadiness = assertCurrentReadiness(first)
+  assert.deepEqual(readiness, firstReadiness, 'readiness observations changed between rounds')
   const sourceRevision = second.pages.identity.sourceRevision
   assert.match(sourceRevision, /^[0-9a-f]{40}$/, 'observed Pages source revision is invalid')
   assertPagesDeploymentCommitProvenance({ pagesIdentity: second.pages.identity, sourceRevision,
     mirror: second.mirror, provenance: deploymentCommitProvenance })
-  assert.equal(second.mirror.sourceRevision, sourceRevision)
-  assert.equal(readiness.mirror?.repository, 'huijoohwee/huijoohwee')
-  assert.ok(['huijoohwee/agentic-os', 'huijoohwee/agentic-canvas-os'].includes(readiness.agenticCanvasOs?.repository),
-    'current runtime marker names an unsupported documentation owner')
-  assert.match(readiness.agenticCanvasOs?.revision || '', /^[0-9a-f]{40}$/)
-  assert.equal(readiness.agenticCanvasOs?.revision, readiness.catalogRevision,
-    'current runtime marker has an unjoined documentation revision')
-  assert.equal(readiness.artifact?.algorithm, 'sha256')
-  assert.match(readiness.artifact?.digest || '', /^[0-9a-f]{64}$/)
-  assert.equal(readiness.immutableManifest?.algorithm, 'sha256')
-  assert.match(readiness.immutableManifest?.digest || '', /^[0-9a-f]{64}$/)
+  const readinessParity = readiness.pagesSourceRevision === readiness.mirrorSourceRevision && readiness.markersEqual
   const assembled = instant(assembledAt)
   const chronology = []
   for (const round of [first, second]) {
-    assertCurrentReadinessParity(round)
+    assertCurrentReadiness(round)
     assert.ok(Date.parse(round.pages.identity.deployedAt) <= instant(round.pages.capturedAt),
       'current deployment observation predates the deployment')
     chronology.push(instant(round.pages.capturedAt), instant(round.state.capturedAt), instant(round.mirror.observedAt))
@@ -190,6 +197,12 @@ export function createObservedCurrentRollbackBaseline({ first, second, repositor
     captureWorkflowRef,
     captureSourceRevision: candidateSourceRevision,
     observedProductionSourceRevision: sourceRevision,
+    readinessParity: {
+      status: readinessParity ? 'aligned' : 'diverged',
+      pagesSourceRevision: readiness.pagesSourceRevision,
+      mirrorSourceRevision: readiness.mirrorSourceRevision,
+      markersEqual: readiness.markersEqual,
+    },
     deploymentCommitProvenance,
     observedAt: assembledAt,
     observationDigest: digest({ first, second, repositoryId, candidateSourceRevision }),
