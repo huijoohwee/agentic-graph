@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { commitCanvasAuthoring } from '@/hooks/store/commitCanvasAuthoring'
 import { runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
 import { stageCanvasReply, stageFlow } from '@/features/graph-editor/canvasAuthoringFlow'
 import { authorCanvasTool } from '@/features/graph-editor/authorCanvasTool'
@@ -86,7 +87,7 @@ export async function testGraphAuthoringMvp() {
       finish()
       await assert.rejects(pending)
       assert.equal(store.getState().canvasAuthoringTurn, null)
-      assert.equal(store.getState().commitCanvasAuthoring(token, reply, result.graph, 'Late delivery'), false)
+      assert.equal(commitCanvasAuthoring(token, reply, result.graph, 'Late delivery'), false)
       assert.equal(store.getState().historyIndex, -1)
       assert.equal(sourceHash(store.getState().markdownDocumentText), expected)
       settled = true

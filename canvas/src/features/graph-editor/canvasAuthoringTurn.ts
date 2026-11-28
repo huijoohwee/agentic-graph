@@ -2,6 +2,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphState } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
 import { normalizeComposedSourcePath, readComposedSourceFilePath } from '@/features/source-files/composedSourceSelection'
+import { commitCanvasAuthoring } from '@/hooks/store/commitCanvasAuthoring'
 import { hashText } from '@/features/parsers/hash'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { readLocalEditorWorkspaceSurfaceSnapshot } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
@@ -56,7 +57,7 @@ export async function runCanvasAuthoringTurn(
     const staged = await Promise.race([stage(initial, controller.signal), aborted])
     if (!current() || controller.signal.aborted) throw new Error(conflict)
     assertWritable(useGraphStore.getState())
-    if (!useGraphStore.getState().commitCanvasAuthoring(turn, staged.text, staged.graph, label)) throw new Error(conflict)
+    if (!commitCanvasAuthoring(turn, staged.text, staged.graph, label)) throw new Error(conflict)
     return staged
   } finally {
     clearTimeout(timeout)

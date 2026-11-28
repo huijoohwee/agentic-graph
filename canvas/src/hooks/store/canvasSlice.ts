@@ -79,23 +79,17 @@ export const createCanvasSlice = (set: SetGraph, get: () => GraphState) => {
   return {
   ...createCanvasViewportSlice(set, get, migrationPlan),
   graphEditorToolId: 'select' as const,
-  setGraphEditorToolId: (tool: GraphState['graphEditorToolId']) => {
-    const mode = tool === 'pan' ? 'pan' : 'select'
-    set(state => ({ graphEditorToolId: tool, canvasPointerMode2d: mode,
-      canvasPointerMode2dByRenderer: { ...state.canvasPointerMode2dByRenderer, [state.canvas2dRenderer]: mode } }))
-  },
   canvasPointerMode2d: 'select' as 'select' | 'pan',
   canvasPointerMode2dByRenderer: { [initialCanvas2dRenderer]: 'select' } as Partial<Record<Canvas2dRendererId, 'select' | 'pan'>>,
   setCanvasPointerMode2d: (mode: 'select' | 'pan') => {
-    const next = mode === 'pan' ? 'pan' : 'select'
-    const cur = get().canvasPointerMode2d
-    if (cur === next && get().graphEditorToolId === next) return
-    set(state => {
-      const renderer = state.canvas2dRenderer
-      const by = state.canvasPointerMode2dByRenderer || {}
-      const nextBy = renderer ? { ...by, [renderer]: next } : by
-      return { graphEditorToolId: next, canvasPointerMode2d: next, canvasPointerMode2dByRenderer: nextBy }
-    })
+    get().setGraphEditorToolId(mode === 'pan' ? 'pan' : 'select')
+  },
+  setGraphEditorToolId: (tool: GraphState['graphEditorToolId']) => {
+    const state = get()
+    const mode = tool === 'pan' ? 'pan' : 'select'
+    if (state.graphEditorToolId === tool && state.canvasPointerMode2d === mode) return
+    set({ graphEditorToolId: tool, canvasPointerMode2d: mode,
+      canvasPointerMode2dByRenderer: { ...state.canvasPointerMode2dByRenderer, [state.canvas2dRenderer]: mode } })
   },
 
   graphCanvasArrangeRequest: null as null | (

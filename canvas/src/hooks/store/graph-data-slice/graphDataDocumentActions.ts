@@ -18,7 +18,6 @@ import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatt
 import {
   waitForCanvasFrontmatterSurfaceTransition,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
-import { isStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
 import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import {
   createGraphActivationFitRequest,
@@ -52,21 +51,6 @@ let lastCompletedMarkdownApplyGraph: GraphData | null = null
 let lastCompletedMarkdownApplyGraphRevision = -1
 let lastCompletedMarkdownApplyGraphContentRevision = -1
 
-function buildCanvasWorkspacePresetApplyKey(preset: CanvasWorkspaceFrontmatterPreset | null | undefined): string {
-  if (!preset) return ''
-  return [
-    preset.canvasSurfaceMode || '',
-    preset.canvasRenderMode || '',
-    preset.canvas2dRenderer || '',
-    preset.videoSequenceTimelineEnabled === true ? 'video-sequence:1' : preset.videoSequenceTimelineEnabled === false ? 'video-sequence:0' : 'video-sequence:',
-    preset.canvas3dMode || '',
-    preset.documentSemanticMode || '',
-    preset.frontmatterModeEnabled === true ? 'fm:1' : preset.frontmatterModeEnabled === false ? 'fm:0' : 'fm:',
-    preset.multiDimTableModeEnabled === true ? 'mdtbl:1' : preset.multiDimTableModeEnabled === false ? 'mdtbl:0' : 'mdtbl:',
-    preset.documentStructureBaselineLock === true ? 'lock:1' : preset.documentStructureBaselineLock === false ? 'lock:0' : 'lock:',
-  ].join('|')
-}
-
 function buildMarkdownApplyRequestSemanticKey(request: PendingMarkdownApplyRequest): string {
   const name = String(request.name || '').trim()
   const text = String(request.text || '')
@@ -76,7 +60,7 @@ function buildMarkdownApplyRequestSemanticKey(request: PendingMarkdownApplyReque
       name,
       text.length,
       textHash,
-      buildCanvasWorkspacePresetApplyKey(request.preset),
+      JSON.stringify(buildCanvasWorkspacePresetMetadata(request.preset)),
     ].join('|'),
   })
 }
@@ -118,29 +102,6 @@ function buildCanvasWorkspacePresetMetadata(
     frontmatterModeEnabled: preset.frontmatterModeEnabled ?? null,
     multiDimTableModeEnabled: preset.multiDimTableModeEnabled ?? null,
     documentStructureBaselineLock: preset.documentStructureBaselineLock ?? null,
-  }
-}
-
-function withMarkdownDocumentSourceMetadata(
-  graphData: GraphData,
-  name: string,
-  preset?: CanvasWorkspaceFrontmatterPreset | null,
-): GraphData {
-  const source = `markdown:${String(name || '').trim()}`
-  if (!source || source === 'markdown:') return graphData
-  const metadata = graphData.metadata && typeof graphData.metadata === 'object' && !Array.isArray(graphData.metadata)
-    ? (graphData.metadata as Record<string, JSONValue>)
-    : {}
-  const canvasWorkspacePreset = buildCanvasWorkspacePresetMetadata(preset)
-  if (metadata.source === source && !canvasWorkspacePreset) return graphData
-  return {
-    ...graphData,
-    metadata: {
-      ...metadata,
-      source,
-      markdownDocumentName: String(name || '').trim(),
-      ...(canvasWorkspacePreset ? { canvasWorkspacePreset } : {}),
-    } as unknown as GraphData['metadata'],
   }
 }
 
@@ -210,22 +171,6 @@ function resetFrontmatterFlowWidgetRuntimeState(get: GetGraph, graphData: GraphD
     Object.entries(currentPinnedByNodeId).filter(([id]) => isEligibleFlowWidgetNodeId(id)),
   ) as Record<string, boolean>
   state.setFlowWidgetPinnedByNodeId(nextPinnedByNodeId)
-}
-
-function canReuseParsedMarkdownSourceGraph(args: {
-  text: string
-  graphData: GraphData | null | undefined
-}): boolean {
-  const graphData = args.graphData || null
-  if (!graphData) return false
-  if (!isStrybldrStoryboardMarkdown(args.text)) return true
-  const metadata = graphData.metadata && typeof graphData.metadata === 'object' && !Array.isArray(graphData.metadata)
-    ? (graphData.metadata as Record<string, unknown>)
-    : null
-  const parserId = String(metadata?.parserId || '').trim()
-  const kind = String(metadata?.kind || graphData.context || '').trim()
-  if (parserId !== 'strybldr-storyboard' && kind !== 'strybldr-storyboard') return false
-  return Array.isArray(graphData.nodes) && graphData.nodes.length > 0
 }
 
 export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
@@ -448,6 +393,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       const isMarkdown = isMarkdownLikeFileName(lower)
       if (!isMarkdown) return false
 
+      const { canReuseParsedMarkdownSourceGraph, withMarkdownDocumentSourceMetadata } = await import('./markdownDocumentSourceGraph')
       const state = get()
       const shouldApply = (() => {
         if (request.force) return true
@@ -494,6 +440,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       const parsedTextPreset = request.preset === undefined
         ? parseCanvasWorkspaceFrontmatterPreset(nextText)
         : request.preset
+      const sourcePreset = buildCanvasWorkspacePresetMetadata(parsedTextPreset)
       const applyMarkdownDocumentCanvasPreset = async (graphData: GraphData | null): Promise<void> => {
         if (request.applyViewPreset === false) return
         applyCanvasFrontmatterPreset({
@@ -504,45 +451,41 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
         })
         await waitForCanvasFrontmatterSurfaceTransition()
       }
-      if (canReuseParsedSourceGraph) {
-        const reusedGraph = withMarkdownDocumentSourceMetadata(exactSourceFile.parsedGraphData as GraphData, nextName, parsedTextPreset)
+      const finishGraphApply = async (graphData: GraphData): Promise<boolean> => {
+        const { applyFrontmatterFlowImportModes } = await import('../../../features/parsers/frontmatterFlowImportMode')
         if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
-        await applyMarkdownDocumentCanvasPreset(reusedGraph)
-        if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
-        get().setGraphData(reusedGraph)
-        const { applyFrontmatterFlowImportModes } = (await import('../../../features/parsers/frontmatterFlowImportMode')) as typeof import('../../../features/parsers/frontmatterFlowImportMode')
-        applyFrontmatterFlowImportModes(reusedGraph, {
+        applyFrontmatterFlowImportModes(graphData, {
           applyViewPreset: request.applyViewPreset,
           resetWidgetLayout: request.applyViewPreset,
           preset: parsedTextPreset,
           rawText: nextText,
           ...(request.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
         })
+        await applyMarkdownDocumentCanvasPreset(graphData)
+        if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
+        resetFrontmatterFlowWidgetRuntimeState(get, graphData)
+        return !!(graphData.nodes?.length || graphData.edges?.length)
+      }
+      if (canReuseParsedSourceGraph) {
+        const reusedGraph = withMarkdownDocumentSourceMetadata(exactSourceFile.parsedGraphData as GraphData, nextName, sourcePreset)
+        if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
         await applyMarkdownDocumentCanvasPreset(reusedGraph)
-        resetFrontmatterFlowWidgetRuntimeState(get, reusedGraph)
-        return !!(((reusedGraph.nodes || []).length > 0) || ((reusedGraph.edges || []).length > 0))
+        if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
+        get().setGraphData(reusedGraph)
+        return finishGraphApply(reusedGraph)
       }
 
       const { loadGraphDataFromTextViaParser } = (await import('../../../features/parsers/loader')) as typeof import('../../../features/parsers/loader')
       const res = await loadGraphDataFromTextViaParser(nextName, nextText, { applyToStore: false, syncMarkdownDocument: false })
-      const parsedGraph = res?.graphData ? withMarkdownDocumentSourceMetadata(res.graphData, nextName, parsedTextPreset) : null
+      const parsedGraph = res?.graphData ? withMarkdownDocumentSourceMetadata(res.graphData, nextName, sourcePreset) : null
       if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
       await applyMarkdownDocumentCanvasPreset(parsedGraph)
       if (parsedGraph) {
         if (!isMarkdownApplyRequestActiveDocumentCurrent(get, request)) return false
         get().setGraphData(parsedGraph)
-        const { applyFrontmatterFlowImportModes } = (await import('../../../features/parsers/frontmatterFlowImportMode')) as typeof import('../../../features/parsers/frontmatterFlowImportMode')
-        applyFrontmatterFlowImportModes(parsedGraph, {
-          applyViewPreset: request.applyViewPreset,
-          resetWidgetLayout: request.applyViewPreset,
-          preset: parsedTextPreset,
-          rawText: nextText,
-          ...(request.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
-        })
-        await applyMarkdownDocumentCanvasPreset(parsedGraph)
-        resetFrontmatterFlowWidgetRuntimeState(get, parsedGraph)
+        return finishGraphApply(parsedGraph)
       }
-      return !!(parsedGraph && ((parsedGraph.nodes || []).length > 0 || (parsedGraph.edges || []).length > 0))
+      return false
     }
 
     const request: PendingMarkdownApplyRequest = {

@@ -116,7 +116,6 @@ export interface GraphStateStructure {
   setDocumentStructureBaselineLock: (enabled: boolean) => void;
   history: VersionHistoryEntry[];
   canvasAuthoringTurn: { documentKey: string | null; sourceDigest: string } | null;
-  commitCanvasAuthoring: (turn: { documentKey: string | null; sourceDigest: string }, text: string, graph: GraphData, label: string) => boolean;
   historyIndex: number;
   historyRestoreRevision: number;
   recentFiles: RecentFileEntry[];
