@@ -378,7 +378,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20261016.1",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/f9e093dfa7783e508fcf440d21f36b1240a52ae7",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/a8edbb2bfa2faab963fd04ecfb5f02b07ab46d7b",
     "ajv": "8.20.0",
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
