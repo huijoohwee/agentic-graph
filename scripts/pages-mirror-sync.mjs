@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -90,6 +91,44 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   if (!/^[0-9a-f]{40}$/.test(miaoxyzSourceRevision) || miaoxyzSourceRevision !== MIAOXYZ_SOURCE_PIN.revision) {
     throw new Error(`MiaoXYZ source must match the pinned protected main commit ${MIAOXYZ_SOURCE_PIN.revision}`)
   }
+  const ownerReusePolicyPath = path.resolve(agenticGraphRoot, 'node_modules', 'agentic-os', 'catalog', 'owner-reuse.json')
+  const ownerReusePolicy = JSON.parse(await fs.readFile(ownerReusePolicyPath, 'utf8'))
+  const typographyOwner = 'agentic-design-system'
+  const typographySource = 'site/vendor/typography.css'
+  const typographyAsset = ownerReusePolicy.assets.find(([owner, source]) => owner === typographyOwner && source === typographySource)
+  const typographyPin = ownerReusePolicy.pins?.[typographyOwner]
+  if (!typographyAsset || !/^[0-9a-f]{40}$/.test(typographyPin ?? '')) {
+    throw new Error('Pinned owner reuse catalog does not include the Design System typography source')
+  }
+  const typographyBytes = await fs.readFile(path.resolve(miaoxyzPublicDir, 'typography.css'))
+  const typographyBlob = createHash('sha1')
+    .update(`blob ${typographyBytes.length}\0`)
+    .update(typographyBytes)
+    .digest('hex')
+  if (typographyBlob !== typographyAsset[2]) {
+    throw new Error('MiaoXYZ typography.css differs from the pinned Design System owner source')
+  }
+  const ownerProjectionsPath = path.resolve(mirrorRoot, '.agentic-os', 'owner-projections.json')
+  let existingOwnerProjections = {}
+  try {
+    existingOwnerProjections = JSON.parse(await fs.readFile(ownerProjectionsPath, 'utf8'))
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+  if (!existingOwnerProjections || typeof existingOwnerProjections !== 'object' || Array.isArray(existingOwnerProjections)) {
+    throw new Error('Production mirror owner-projections manifest must be an object')
+  }
+  const projectionPath = 'content/MiaoXYZ/typography.css'
+  const projection = { owner: typographyOwner, source: typographySource, pin: typographyPin }
+  const previousProjection = existingOwnerProjections[projectionPath]
+  if (previousProjection && (previousProjection.owner !== projection.owner || previousProjection.source !== projection.source)) {
+    throw new Error(`Production mirror projection has a conflicting owner: ${projectionPath}`)
+  }
+  const nextOwnerProjections = Object.fromEntries(Object.entries({
+    ...existingOwnerProjections,
+    [projectionPath]: projection,
+  }).sort(([left], [right]) => left.localeCompare(right)))
+  const ownerProjectionsBody = `${JSON.stringify(nextOwnerProjections, null, 2)}\n`
   const miaoxyzProductSource = inspectMiaoxyzProductSource({
     repoRoot: agenticGraphRoot,
     productRoot: miaoxyzSourceRoot,
@@ -124,6 +163,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     copyIfChanged, copyPlainFile, existsDir, fileNeedsUpdate, listAllFiles, listFiles, plainFileNeedsUpdate,
     productionRuntimeFunctionTargetBody, textFileNeedsUpdate, toPosixRel, writeTextFile,
   } = createPagesMirrorFileOperations({ isAllowedRelativePath })
+  const ownerProjectionsNeedUpdate = await textFileNeedsUpdate(ownerProjectionsBody, ownerProjectionsPath)
   const {
     assertLegacyMirrorInventoryIsBounded, createLegacyMigrationPlan, copyLegacyImageFile,
     copyLegacyDocumentFile,
@@ -309,7 +349,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     publicFilesToRemove, publishRootManagedFilesToCopy, plainCopyUpdates, productionRuntimeFunctionUpdates,
     agentReadyRuntimeFilesToCopy, agentReadyRouteUpdates, agentReadyStaticFilesToWrite, legacyMirrorFilesToRemove,
     legacyImageMigration.legacyImageFiles, runtimeReadinessPathsNeedingUpdate, miaoxyzFilesToCopy, miaoxyzFilesToRemove,
-  ].some(entries => entries.length > 0) || miaoxyzMarkerNeedsUpdate || redirectsNeedUpdate || headersNeedUpdate || baseDemoSyncPlan.hasDrift || sheetsSyncPlan.hasDrift
+  ].some(entries => entries.length > 0) || miaoxyzMarkerNeedsUpdate || ownerProjectionsNeedUpdate || redirectsNeedUpdate || headersNeedUpdate || baseDemoSyncPlan.hasDrift || sheetsSyncPlan.hasDrift
 
   if (checkMode) {
     if (!hasDrift) {
@@ -323,6 +363,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     summaryList('MiaoXYZ public files needing sync', miaoxyzFilesToCopy)
     summaryList('stale generated MiaoXYZ files needing removal', miaoxyzFilesToRemove)
     if (miaoxyzMarkerNeedsUpdate) console.error(`  - pinned MiaoXYZ source marker needs update (${miaoxyzSourceRevision})`)
+    if (ownerProjectionsNeedUpdate) console.error('  - `.agentic-os/owner-projections.json` must enroll pinned MiaoXYZ typography projection')
     summaryList('public route files needing sync', publicFilesToCopy)
     summaryList('public root-managed source files needing sync', publicRootManagedFilesToCopy, entry => entry.rel)
     summaryList('stale public route files needing removal', publicFilesToRemove)
@@ -357,6 +398,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   for (const relativePath of miaoxyzFilesToRemove) await fs.rm(path.resolve(miaoxyzTargetDir, relativePath), { force: true })
   await removeEmptyDirs(miaoxyzTargetDir)
   if (miaoxyzMarkerNeedsUpdate) await writeTextFile(miaoxyzMarkerPath, miaoxyzMarkerBody)
+  if (ownerProjectionsNeedUpdate) await writeTextFile(ownerProjectionsPath, ownerProjectionsBody)
   await fs.mkdir(targetDir, { recursive: true })
   let copiedCount = 0
   for (const relativePath of sourceFiles) {
