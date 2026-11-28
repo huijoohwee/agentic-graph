@@ -51,7 +51,7 @@ import { computeOverlayHalfExtentsByNodeId2d } from '@/lib/render/overlayHalfExt
 import { resolveContextualZoomDetail } from '@/lib/zoom/viewport'
 import { readGraphElementCenterPoint } from '@/lib/canvas/graph-elements/centroid'
 import { resolveWorkspaceVisibleViewport } from '@/lib/zoom/workspaceVisibleViewport'
-import { filterGraphCanvasViewportFitNodes } from '@/components/GraphCanvas/viewportFitNodes'
+import { filterGraphCanvasViewportFitNodes, readViewportFitNodesFromLayer } from '@/components/GraphCanvas/viewportFitNodes'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>
 type SetupGraphSceneArgs = {
@@ -291,15 +291,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
       next,
     )
   }
-  const readViewportFitNodes = (): GraphNode[] => {
-    try {
-      const mountedNodes = nodesSelRef.current?.data()
-      if (Array.isArray(mountedNodes) && mountedNodes.length > 0) return mountedNodes as GraphNode[]
-    } catch {
-      void 0
-    }
-    return displayNodesForViewportFit
-  }
+  const readViewportFitNodes = () => readViewportFitNodesFromLayer(nodesSelRef.current, displayNodesForViewportFit)
   const readVisibleViewportFitFrame = () => {
     const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen(useGraphStore.getState())
     const frame = resolveWorkspaceVisibleViewport({
