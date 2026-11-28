@@ -2,11 +2,13 @@
   "schema": "agentic-os/delivery-disposition-set/v1",
   "repository": "github.com/huijoohwee/agentic-graph",
   "dispositions": [
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/browser-gate-software-forensics",
       "laneHead": "7ceb353afdec0120207523e167e92382f2050bd8",
-      "paths": ["docs/workspace-seeds/demo.md"],
+      "paths": [
+        "docs/workspace-seeds/demo.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
       "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
@@ -18,11 +20,14 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1674",
       "reason": "The only changed path in PR #1674 is a workspace-seed Markdown file. At the authorized source revision the build resolver returns an empty seed read root for command=build, and the captured production Pages inventory contains no workspace-seeds paths."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/browser-history-job-history-fetch-rollforward",
       "laneHead": "1dc59795b1cbcf26e123f242f30eceb7dc407a49",
-      "paths": ["scripts/__tests__/production-browser-preflight.test.mjs","scripts/production-browser-history.mjs"],
+      "paths": [
+        "scripts/__tests__/production-browser-preflight.test.mjs",
+        "scripts/production-browser-history.mjs"
+      ],
       "disposition": "deployed",
       "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
@@ -34,11 +39,14 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39177364647#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/delivery-receipts-closeout",
       "laneHead": "5c1308fb8ef87320fbecfe8a165eb173359f1bba",
-      "paths": [".agentic-os-delivery-dispositions.json","docs/reports/production-delivery-evidence-39163971889.json"],
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/production-delivery-evidence-39163971889.json"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "a3a017ab2de24e913259ac30166433aac9a862bc",
       "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
@@ -50,7 +58,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1789",
       "reason": "This lane contains only the delivery-disposition ledger and its compact report. Both paths are excluded from the product artifact by the production mirror artifact-entry allowlist; the exact Dev-to-Production candidate is bound by its separately retained lifecycle receipts."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/dev-promotion-edge-convergence",
       "laneHead": "f4f496efd21d9b94754b55878998cbd30f67b94e",
@@ -69,7 +77,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/dev-promotion-ui-convergence",
       "laneHead": "616782e7a24eff81aacc0168aa957e3dedfa763d",
@@ -88,7 +96,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateRevision": "f84d939c0bc67fb6682abdd8e7ebe759a7698146",
@@ -107,7 +115,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1954",
       "reason": "The owner selected no-deploy for PR #1954, covering exactly canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs and docs/TESTING.md. Both paths are excluded from the product artifact: one is a CI browser-smoke verifier and the other is repository documentation outside Pages and mirror artifact inputs. This records no deployment, mirror publication, or runtime verification."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateRevision": "f84d939c0bc67fb6682abdd8e7ebe759a7698146",
@@ -127,29 +135,82 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1955",
       "reason": "The owner selected no-deploy for evidence lane PR #1955. Its complete inherited path set is canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs, docs/TESTING.md, and docs/reports/agentic-graph-storage-no-deploy-pr1954.md. Every listed path is excluded from the product artifact per the report. This records no deployment, mirror publication, or runtime verification."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-poi-directory-mvp-ci-repair",
       "laneHead": "77fc84f0721d3594ef6a7d2fc4e88c0e48adecad",
       "paths": [
-        "canvas/src/__tests__/canvasTouchErgonomicsRegression/assertions5.ts", "canvas/src/__tests__/canvasViewportGeospatialPoiPanelMutationGuard.test.ts", "canvas/src/__tests__/flightSimHudFloatingPanelClearance.test.ts", "canvas/src/__tests__/floatingPanelsUseSharedPointerDragRegression.test.ts",
-        "canvas/src/__tests__/geospatialHostIntegration.test.ts", "canvas/src/__tests__/geospatialHostIntegrationTestUtils.ts", "canvas/src/__tests__/geospatialHostMapLibreInteractionIntegration.test.ts", "canvas/src/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test.ts",
-        "canvas/src/__tests__/grabMapsPoiRichMediaPreviewContract.test.ts", "canvas/src/__tests__/lazyLoadingGatesRegression.test.ts", "canvas/src/__tests__/panelFormControlReuse.test.ts", "canvas/src/__tests__/panelFormControlReuseTestUtils.ts",
-        "canvas/src/__tests__/uiAppearanceAuthority.test.ts", "canvas/src/components/CanvasViewport.tsx", "canvas/src/components/CanvasViewportGeospatialOverlay.tsx", "canvas/src/components/DesignCanvas/useDesignCanvasOverlayRuntime.ts",
-        "canvas/src/components/FlowCanvas/FlowCanvasMediaOverlays.tsx", "canvas/src/components/GeospatialStoryboardWidgetPanels.tsx", "canvas/src/components/GraphCanvasRoot/hooks/useRichMediaOverlays2d.ts", "canvas/src/components/StoryboardWidget/StoryboardWidgetPanelChrome.tsx",
-        "canvas/src/components/StoryboardWidget/WidgetEditorInner.tsx", "canvas/src/components/StoryboardWidget/WidgetEditorPanel.tsx", "canvas/src/components/StoryboardWidget/WidgetEditorView.tsx", "canvas/src/components/StoryboardWidget/flowWidgetOverlayShared.ts",
-        "canvas/src/components/StoryboardWidget/richMediaOverlayFrameSize.ts", "canvas/src/components/StoryboardWidget/useWidgetEditorOverlayUiState.ts", "canvas/src/components/StoryboardWidget/useWidgetPlacementRuntime.ts", "canvas/src/components/StoryboardWidgetCanvas.runtime.tsx",
-        "canvas/src/components/StoryboardWidgetCanvas.tsx", "canvas/src/components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx", "canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlaySurfaceElements.tsx", "canvas/src/components/StoryboardWidgetCanvas/runtime/useGeospatialPoiPreviewRuntime.ts",
-        "canvas/src/components/StoryboardWidgetCanvas/runtime/usePendingOverlayNodeRegistry.ts", "canvas/src/components/StoryboardWidgetCanvas/storyboardCardPlacements2d.ts", "canvas/src/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared.tsx", "canvas/src/components/timeline/TimelineTransportControls.css",
-        "canvas/src/components/ui/FloatingPanel.tsx", "canvas/src/features/geospatial/InlineMarkdownGeoJsonLayerMap.tsx", "canvas/src/features/geospatial/geospatialOverlayGraphData.ts", "canvas/src/features/geospatial/grabMapsPoiRichMedia.ts",
-        "canvas/src/features/geospatial/gympgrphBridge.ts", "canvas/src/features/geospatial/localPoiDirectoryModel.ts", "canvas/src/features/geospatial/useGeospatialPoiPreviewNode.ts", "canvas/src/features/gitgraph/TimelineBottomPanelView.tsx",
-        "canvas/src/features/maps/LocalPoiDirectory.tsx", "canvas/src/features/maps/SiteSelectionWidget.tsx", "canvas/src/features/panels/ui/HeaderActions.tsx", "canvas/src/features/panels/views/MapsHubView.tsx",
-        "canvas/src/features/strybldr/StrybldrTimelineBottomPanel.tsx", "canvas/src/features/supply-chain/SupplyChainOverview.tsx", "canvas/src/features/supply-chain/SupplyChainTimelinePanel.tsx", "canvas/src/features/supply-chain/supplyChainViewStore.ts",
-        "canvas/src/lib/render/overlayHalfExtentsByNodeId2d.ts", "canvas/src/lib/render/richMediaPanelDefaults.ts", "canvas/src/lib/three/useThreeRichMediaOverlayController.tsx", "canvas/src/lib/ui/floatingPanelGeometry.ts",
-        "canvas/src/styles/responsive-canvas-toolbar.css", "canvas/src/tests/registry/postParserCases3Tail.ts", "docs/agentic-graph-technical-architecture.md", "docs/agentic-graph-technical-architecture.settings.md",
-        "docs/workspace-seeds/agentic-graph-maps-places-reference.md", "docs/workspace-seeds/agentic-graph-maps-places.md", "gympgrph/src/GeospatialHost.tsx", "gympgrph/src/features/geospatial/graphFeatureAffordances.ts",
-        "gympgrph/src/features/geospatial/graphFeatureInteraction.ts", "gympgrph/src/features/geospatial/graphFeatureSelectionEvent.ts", "gympgrph/src/features/geospatial/mapPoiHitTesting.ts", "gympgrph/src/features/geospatial/selectedGraphFeatureIds.ts",
-        "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "gympgrph/src/index.ts", "gympgrph/src/useEnhancedGeospatialHostLayers.ts"
+        "canvas/src/__tests__/canvasTouchErgonomicsRegression/assertions5.ts",
+        "canvas/src/__tests__/canvasViewportGeospatialPoiPanelMutationGuard.test.ts",
+        "canvas/src/__tests__/flightSimHudFloatingPanelClearance.test.ts",
+        "canvas/src/__tests__/floatingPanelsUseSharedPointerDragRegression.test.ts",
+        "canvas/src/__tests__/geospatialHostIntegration.test.ts",
+        "canvas/src/__tests__/geospatialHostIntegrationTestUtils.ts",
+        "canvas/src/__tests__/geospatialHostMapLibreInteractionIntegration.test.ts",
+        "canvas/src/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test.ts",
+        "canvas/src/__tests__/grabMapsPoiRichMediaPreviewContract.test.ts",
+        "canvas/src/__tests__/lazyLoadingGatesRegression.test.ts",
+        "canvas/src/__tests__/panelFormControlReuse.test.ts",
+        "canvas/src/__tests__/panelFormControlReuseTestUtils.ts",
+        "canvas/src/__tests__/uiAppearanceAuthority.test.ts",
+        "canvas/src/components/CanvasViewport.tsx",
+        "canvas/src/components/CanvasViewportGeospatialOverlay.tsx",
+        "canvas/src/components/DesignCanvas/useDesignCanvasOverlayRuntime.ts",
+        "canvas/src/components/FlowCanvas/FlowCanvasMediaOverlays.tsx",
+        "canvas/src/components/GeospatialStoryboardWidgetPanels.tsx",
+        "canvas/src/components/GraphCanvasRoot/hooks/useRichMediaOverlays2d.ts",
+        "canvas/src/components/StoryboardWidget/StoryboardWidgetPanelChrome.tsx",
+        "canvas/src/components/StoryboardWidget/WidgetEditorInner.tsx",
+        "canvas/src/components/StoryboardWidget/WidgetEditorPanel.tsx",
+        "canvas/src/components/StoryboardWidget/WidgetEditorView.tsx",
+        "canvas/src/components/StoryboardWidget/flowWidgetOverlayShared.ts",
+        "canvas/src/components/StoryboardWidget/richMediaOverlayFrameSize.ts",
+        "canvas/src/components/StoryboardWidget/useWidgetEditorOverlayUiState.ts",
+        "canvas/src/components/StoryboardWidget/useWidgetPlacementRuntime.ts",
+        "canvas/src/components/StoryboardWidgetCanvas.runtime.tsx",
+        "canvas/src/components/StoryboardWidgetCanvas.tsx",
+        "canvas/src/components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx",
+        "canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlaySurfaceElements.tsx",
+        "canvas/src/components/StoryboardWidgetCanvas/runtime/useGeospatialPoiPreviewRuntime.ts",
+        "canvas/src/components/StoryboardWidgetCanvas/runtime/usePendingOverlayNodeRegistry.ts",
+        "canvas/src/components/StoryboardWidgetCanvas/storyboardCardPlacements2d.ts",
+        "canvas/src/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared.tsx",
+        "canvas/src/components/timeline/TimelineTransportControls.css",
+        "canvas/src/components/ui/FloatingPanel.tsx",
+        "canvas/src/features/geospatial/InlineMarkdownGeoJsonLayerMap.tsx",
+        "canvas/src/features/geospatial/geospatialOverlayGraphData.ts",
+        "canvas/src/features/geospatial/grabMapsPoiRichMedia.ts",
+        "canvas/src/features/geospatial/gympgrphBridge.ts",
+        "canvas/src/features/geospatial/localPoiDirectoryModel.ts",
+        "canvas/src/features/geospatial/useGeospatialPoiPreviewNode.ts",
+        "canvas/src/features/gitgraph/TimelineBottomPanelView.tsx",
+        "canvas/src/features/maps/LocalPoiDirectory.tsx",
+        "canvas/src/features/maps/SiteSelectionWidget.tsx",
+        "canvas/src/features/panels/ui/HeaderActions.tsx",
+        "canvas/src/features/panels/views/MapsHubView.tsx",
+        "canvas/src/features/strybldr/StrybldrTimelineBottomPanel.tsx",
+        "canvas/src/features/supply-chain/SupplyChainOverview.tsx",
+        "canvas/src/features/supply-chain/SupplyChainTimelinePanel.tsx",
+        "canvas/src/features/supply-chain/supplyChainViewStore.ts",
+        "canvas/src/lib/render/overlayHalfExtentsByNodeId2d.ts",
+        "canvas/src/lib/render/richMediaPanelDefaults.ts",
+        "canvas/src/lib/three/useThreeRichMediaOverlayController.tsx",
+        "canvas/src/lib/ui/floatingPanelGeometry.ts",
+        "canvas/src/styles/responsive-canvas-toolbar.css",
+        "canvas/src/tests/registry/postParserCases3Tail.ts",
+        "docs/agentic-graph-technical-architecture.md",
+        "docs/agentic-graph-technical-architecture.settings.md",
+        "docs/workspace-seeds/agentic-graph-maps-places-reference.md",
+        "docs/workspace-seeds/agentic-graph-maps-places.md",
+        "gympgrph/src/GeospatialHost.tsx",
+        "gympgrph/src/features/geospatial/graphFeatureAffordances.ts",
+        "gympgrph/src/features/geospatial/graphFeatureInteraction.ts",
+        "gympgrph/src/features/geospatial/graphFeatureSelectionEvent.ts",
+        "gympgrph/src/features/geospatial/mapPoiHitTesting.ts",
+        "gympgrph/src/features/geospatial/selectedGraphFeatureIds.ts",
+        "gympgrph/src/features/geospatial/useMapLibreBasemap.ts",
+        "gympgrph/src/index.ts",
+        "gympgrph/src/useEnhancedGeospatialHostLayers.ts"
       ],
       "disposition": "deployed",
       "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
@@ -162,7 +223,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
       "laneHead": "20245223a00f8770bc7f7b4e48b56069645ddc5d",
@@ -184,11 +245,13 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1875",
       "reason": "PR #1875 changes only the exact paths .agentic-os-delivery-dispositions.json, canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Every listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary. The previously approved production candidate remains deployed; this disposition grants no deployment or mirror authority."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-scratch-disposition-refresh",
       "laneHead": "4a1960675a57d4ada7fc718e38b0f9802198104f",
-      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "8423d340f0e2f99882b90d8d3f71f584a20aae34",
       "candidateDigest": "a82c90dadbb65ad00a8da6152862962175e905091b5f8798f1c4b575d3694631",
@@ -200,11 +263,13 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1871",
       "reason": "PR #1871 changes only the local POI PRD. The production Pages build is generated from Canvas output, and the explicit production mirror artifact allowlist does not include this planning document. The PRD retains the existing feature delivery evidence from run #41021713269; this change modifies no runtime or build artifact. This records no new deployment or mirror publication and grants no production effect."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights",
       "laneHead": "84e656bbccb5ab5c5bf4a2150696a939ae9d4af3",
-      "paths": ["grph-shared/src/ui/TOKEN-LICENSES.md"],
+      "paths": [
+        "grph-shared/src/ui/TOKEN-LICENSES.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
@@ -216,11 +281,13 @@
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights-current-main",
       "laneHead": "e54a71fae162604260efbcb2c36406fc47a190e0",
-      "paths": ["grph-shared/src/ui/TOKEN-LICENSES.md"],
+      "paths": [
+        "grph-shared/src/ui/TOKEN-LICENSES.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
@@ -232,11 +299,13 @@
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights-delivery-evidence",
       "laneHead": "926e668f8c8ad6c6580eabee5d027b374055296f",
-      "paths": ["docs/reports/graph-token-rights-no-deploy-20261030.md"],
+      "paths": [
+        "docs/reports/graph-token-rights-no-deploy-20261030.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
       "candidateDigest": "8268199a8d5312555b4478a88665cdc8cf113246a590a7a3fe3d7fa8795c4621",
@@ -248,26 +317,68 @@
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null
     },
-    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-0232231d4a19/hackamap-delivery-disposition","laneHead":"3aa1402bd7c4474bb48bad71bb1062fbaae767ae","paths":[".agentic-os-delivery-dispositions.json"],"disposition":"no-deploy","candidateRevision":"13553d6ea549562b2baa6ddfba1454aa5b3c232f","candidateDigest":"45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"scripts/production-mirror-artifact-entries.mjs","evidenceDigest":"2d0da392afff981c30982f0d49ee16c5f327cbb74597cf64e23929f2c9eeb583","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/1682","reason":"The only changed path in PR #1682 for this lane is the delivery-disposition ledger. The production mirror is staged from the explicit productionMirrorArtifactEntries list in scripts/production-mirror-artifact-entries.mjs; this ledger path is excluded from the product artifact. This records no deployment and grants no production effect."},
-        {
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
+      "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "13553d6ea549562b2baa6ddfba1454aa5b3c232f",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "2d0da392afff981c30982f0d49ee16c5f327cbb74597cf64e23929f2c9eeb583",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1682",
+      "reason": "The only changed path in PR #1682 for this lane is the delivery-disposition ledger. The production mirror is staged from the explicit productionMirrorArtifactEntries list in scripts/production-mirror-artifact-entries.mjs; this ledger path is excluded from the product artifact. This records no deployment and grants no production effect."
+    },
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-folder-contents",
       "laneHead": "5827ea350449684dc135b2b75a5a6bc9b7762556",
       "paths": [
-        ".github/workflows/production-rollback-baseline-capture.yml", "canvas/package.json", "canvas/src/__fixtures__/devpost-hackathons.sample.md",
-        "canvas/src/__tests__/websiteCollectionImportProgress.test.ts", "canvas/src/__tests__/websiteCollectionRecords.test.ts", "canvas/src/__tests__/websiteImportSelection.test.ts",
-        "canvas/src/components/GraphCanvas/layout/graphGroups.ts", "canvas/src/features/agent-graph/agentGraphWorkspaceArtifact.ts", "canvas/src/features/hackamap/hackamapDomainWorkspaceDocument.ts",
-        "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts",
-        "canvas/src/features/observability-workspace/host.mjs", "canvas/src/features/source-files/sourceFilesRuntimeMaterialization.ts",
-        "canvas/src/features/workspace-fs/workspaceFsPersisted.ts", "canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts", "canvas/src/features/workspace-fs/workspaceSeedProvider.ts",
-        "canvas/src/hooks/store/graph-data-slice/graphDataDocumentActions.ts", "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply.ts",
-        "canvas/src/lib/websites/server/websiteImportCore.ts", "canvas/src/lib/websites/server/websiteImportDiscovery.ts", "canvas/src/lib/websites/server/websiteImportJob.ts",
-        "canvas/src/lib/websites/websiteCollectionRecords.ts", "canvas/src/lib/websites/websiteCollectionTableMarkdown.ts", "canvas/src/lib/websites/websitePathUtils.ts",
-        "docs/documents/agentic-graph-hackamap-inventory-prd-tad-adr-mvp-gtm.md", "docs/runtime-readiness-contract.md", "docs/workspace-seeds/demo.md",
-        "mcp/agent-graph/workspace-codebase-indexing.mjs", "package-lock.json", "package.json", "scripts/__tests__/production-prompt-catalog.test.mjs",
-        "scripts/__tests__/production-terminal-persistence.test.mjs", "scripts/__tests__/run-hackamap-multi-dim-table.test.mjs", "scripts/build-hackamap-codebase-projection.ts",
-        "scripts/lib/production-terminal-persistence.mjs", "scripts/production-prompt-catalog.mjs", "scripts/production-rollback-baseline.mjs",
-        "scripts/run-hackamap-multi-dim-table.mjs", "scripts/verify-production-fidelity.mjs"
+        ".github/workflows/production-rollback-baseline-capture.yml",
+        "canvas/package.json",
+        "canvas/src/__fixtures__/devpost-hackathons.sample.md",
+        "canvas/src/__tests__/websiteCollectionImportProgress.test.ts",
+        "canvas/src/__tests__/websiteCollectionRecords.test.ts",
+        "canvas/src/__tests__/websiteImportSelection.test.ts",
+        "canvas/src/components/GraphCanvas/layout/graphGroups.ts",
+        "canvas/src/features/agent-graph/agentGraphWorkspaceArtifact.ts",
+        "canvas/src/features/hackamap/hackamapDomainWorkspaceDocument.ts",
+        "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts",
+        "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts",
+        "canvas/src/features/observability-workspace/host.mjs",
+        "canvas/src/features/source-files/sourceFilesRuntimeMaterialization.ts",
+        "canvas/src/features/workspace-fs/workspaceFsPersisted.ts",
+        "canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts",
+        "canvas/src/features/workspace-fs/workspaceSeedProvider.ts",
+        "canvas/src/hooks/store/graph-data-slice/graphDataDocumentActions.ts",
+        "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply.ts",
+        "canvas/src/lib/websites/server/websiteImportCore.ts",
+        "canvas/src/lib/websites/server/websiteImportDiscovery.ts",
+        "canvas/src/lib/websites/server/websiteImportJob.ts",
+        "canvas/src/lib/websites/websiteCollectionRecords.ts",
+        "canvas/src/lib/websites/websiteCollectionTableMarkdown.ts",
+        "canvas/src/lib/websites/websitePathUtils.ts",
+        "docs/documents/agentic-graph-hackamap-inventory-prd-tad-adr-mvp-gtm.md",
+        "docs/runtime-readiness-contract.md",
+        "docs/workspace-seeds/demo.md",
+        "mcp/agent-graph/workspace-codebase-indexing.mjs",
+        "package-lock.json",
+        "package.json",
+        "scripts/__tests__/production-prompt-catalog.test.mjs",
+        "scripts/__tests__/production-terminal-persistence.test.mjs",
+        "scripts/__tests__/run-hackamap-multi-dim-table.test.mjs",
+        "scripts/build-hackamap-codebase-projection.ts",
+        "scripts/lib/production-terminal-persistence.mjs",
+        "scripts/production-prompt-catalog.mjs",
+        "scripts/production-rollback-baseline.mjs",
+        "scripts/run-hackamap-multi-dim-table.mjs",
+        "scripts/verify-production-fidelity.mjs"
       ],
       "disposition": "deployed",
       "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
@@ -280,7 +391,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-source-files-folder",
       "laneHead": "644f885d638986f99aaf0d37278c1cb4792cd230",
@@ -299,7 +410,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-adlc-closeout-budget-fix",
       "laneHead": "0c77f1beb0dfa8a2c6c98328934e607674ee8485",
@@ -322,7 +433,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1877",
       "reason": "PR #1877 changes only these exact paths: .agentic-os-delivery-dispositions.json, docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md, docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Each listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary in the committed evidence report. The existing POI production candidate remains unchanged; this no-deploy disposition does not authorize deployment or mirror publication."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "deployed",
       "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
@@ -341,11 +452,13 @@
         "scripts/verify-agentic-base-route.mjs"
       ]
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-delivery-closeout",
       "laneHead": "c3503bb2e367610e8a9b81855518b337093839b9",
-      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "fac919f3cc872fce1d5f8427f0d016a824d47207",
       "candidateDigest": "548982a869e4c497dfae81a61e4e5ae892c0c81efcaafa964fddcb9614ad372e",
@@ -357,7 +470,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1859",
       "reason": "PR #1859 changes only the PRD Markdown path. The production Pages build and mirror consume Canvas output; the explicit production mirror artifact allowlist excludes this path. The release workflow uses Graph docs/documents only for a separate schema-map reconciliation, while the runtime document seed uses the pinned Agentic OS docs source. The product owner approved source integration only for PR #1859 and excluded Production Release, deployment, and mirror publication. This records no deployment and grants no production effect."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-delivery-disposition",
       "laneHead": "14cddaf2e8b2c667285218008feea6a6c5423aed",
@@ -376,11 +489,13 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1861",
       "reason": "PR #1861 changes only the delivery-disposition ledger and docs/reports/production-delivery-evidence-41021713269.json. Both paths are excluded from the product artifact by the production mirror artifact allowlist; the Pages application artifact is generated from Canvas output. This metadata records already verified production candidate 2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317 and performs no deployment or mirror publication."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-directory-plan",
       "laneHead": "0435a95c5533d3ac4b82bb3825b3d84b1c170c5c",
-      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
       "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
@@ -392,11 +507,13 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1841",
       "reason": "PR #1841 changes only the Local POI PRD Markdown path. Production candidate 2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317 was deployed from source f3c7816b2788d006dbf076009560eba18c2aa609; the production mirror artifact allowlist excludes this PRD path, and the Pages application artifact is generated from Canvas output. This records no deployment for the PRD path and grants no production effect."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-poi-user-device-acceptance",
       "laneHead": "f77dd5ec3738598dafeb3b1a270d7223dbd4a186",
-      "paths": ["docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"],
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "83b6541a9da9e1fb71dae67c79f5a92cc7bf8440",
       "candidateDigest": "957a32f5207b3a4b4465a7be29366f21386fed1a0611f9c5743e632f5a1edd4a",
@@ -408,7 +525,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1863",
       "reason": "PR #1863 changes only the Local POI PRD Markdown path. The production Pages application artifact is built from Canvas output, and the explicit production mirror artifact allowlist excludes this PRD path. Runtime document seeding reads Graph Markdown only from the explicit GRAPH_DOC_PATHS map, which does not include this PRD. The product owner authorized source integration only and excluded deployment and mirror publication. This records no deployment and grants no production effect."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
@@ -427,7 +544,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1795",
       "reason": "PR #1795 records release receipts and delivery metadata only. The ledger and report are excluded from the product artifact; the separately authorized Production release is recorded in its own run."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "deployed",
       "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
@@ -446,7 +563,7 @@
         "scripts/pages-mirror-agent-ready.mjs"
       ]
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/release-install-dependency-gate",
       "laneHead": "2c6ed1967188187fd21556d1ab0a406bb3f13b63",
@@ -466,7 +583,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
@@ -475,19 +592,44 @@
       "runtimeVerificationReceiptDigest": null,
       "ref": "agent/device-0232231d4a19/release-install-dependency-gate-delivery-closeout",
       "laneHead": "08927d4da631e6ab8793ae0ebd4e79f55c300e8a",
-      "paths": [".agentic-os-delivery-dispositions.json"],
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
       "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
       "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
       "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1791",
       "reason": "The only changed path in PR #1791 is the delivery-disposition ledger. This ledger is excluded from the product artifact by the production mirror artifact allowlist; this lane performs no deployment."
     },
-        {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-0232231d4a19/shared-toolbar-ownership","laneHead":"5b53f836c93c351fc5f6c2c5c3c73f3ddba8656c","paths":["canvas/src/__tests__/canvasToolbarDockResponsiveContract.test.ts","canvas/src/__tests__/sharedUiIconSizeProfile.test.mjs","canvas/src/index.css","canvas/src/main.tsx","canvas/src/observability.tsx"],"disposition":"deployed","candidateRevision":"284dc39bf5aa2571c6f30c33d6a321c59fb91ee7","candidateDigest":"b01c9e6ef3f3b1ffbacc232228c31f78069b2f9e61fdaa4520f51ce2948c5ac7","sourceReleaseReceiptDigest":"3144af776ef7e72642d4a9012802ec0191fdcd00f61b6e6093b490af4e07eb81","deploymentReceiptDigest":"5c8c2d59d495ebd031cf12394b0dafbe452d5463b03218c0d775e23464100b75","runtimeVerificationReceiptDigest":"9434076486cc58862c52edddb942c01db38cc5a98c9d61543e853b9f0a8a4d5e","evidencePath":"docs/reports/production-delivery-evidence-45032847957.json","evidenceDigest":"5498b6cb01ccf3388f1623dbba96b8bed05087977f848191af434caadd68a130","decisionRef":"https://github.com/huijoohwee/agentic-graph/actions/runs/45032847957#environment-production","reason":null},
-        {
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/shared-toolbar-ownership",
+      "laneHead": "5b53f836c93c351fc5f6c2c5c3c73f3ddba8656c",
+      "paths": [
+        "canvas/src/__tests__/canvasToolbarDockResponsiveContract.test.ts",
+        "canvas/src/__tests__/sharedUiIconSizeProfile.test.mjs",
+        "canvas/src/index.css",
+        "canvas/src/main.tsx",
+        "canvas/src/observability.tsx"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "284dc39bf5aa2571c6f30c33d6a321c59fb91ee7",
+      "candidateDigest": "b01c9e6ef3f3b1ffbacc232228c31f78069b2f9e61fdaa4520f51ce2948c5ac7",
+      "sourceReleaseReceiptDigest": "3144af776ef7e72642d4a9012802ec0191fdcd00f61b6e6093b490af4e07eb81",
+      "deploymentReceiptDigest": "5c8c2d59d495ebd031cf12394b0dafbe452d5463b03218c0d775e23464100b75",
+      "runtimeVerificationReceiptDigest": "9434076486cc58862c52edddb942c01db38cc5a98c9d61543e853b9f0a8a4d5e",
+      "evidencePath": "docs/reports/production-delivery-evidence-45032847957.json",
+      "evidenceDigest": "5498b6cb01ccf3388f1623dbba96b8bed05087977f848191af434caadd68a130",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/45032847957#environment-production",
+      "reason": null
+    },
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/software-forensics-browser-local-rebuild",
       "laneHead": "c757992a5c4db735e99490de6d999c5a2d08ac1d",
-      "paths": ["canvas/package.json"],
+      "paths": [
+        "canvas/package.json"
+      ],
       "disposition": "no-deploy",
       "candidateRevision": "1253e0036c23ff4adaba670da2228c33435030cd",
       "candidateDigest": "4a796911e4ade7533afe8803e557fa84c0bc273e882176b35bb8330599267da0",
@@ -499,11 +641,13 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1960",
       "reason": "PR #1960 changes only the exact path canvas/package.json, and canvas/package.json is excluded from the product artifact for this delivery decision because pages:build-sync publishes generated canvas/dist outputs rather than the source workspace manifest. The change repairs local source-runner entrypoints only and grants no deployment, mirror publication, promotion, rollback, or runtime verification authority."
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/source-evidence-lookup-budget",
       "laneHead": "d9ef3ca8f2c4dc99ddc50738d58f25a4d7f0d554",
-      "paths": [".github/actions/protected-ci-evidence/action.yml"],
+      "paths": [
+        ".github/actions/protected-ci-evidence/action.yml"
+      ],
       "disposition": "deployed",
       "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
       "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
@@ -515,11 +659,177 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
     },
-        {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-runtime-parity-evidence","laneHead":"7949288fea556b2172d12d96b5fd00713e7a3ed7","paths":["docs/reports/miaoxyz-runtime-parity-closeout.json"],"disposition":"no-deploy","candidateRevision":"d2724583bd1789b43195f1ae6ac51de5136809e0","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-runtime-parity-closeout.json","evidenceDigest":"3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2122","reason":"The only changed path docs/reports/miaoxyz-runtime-parity-closeout.json is a read-only parity evidence report and is excluded from the product artifact; no Worker, Pages, route, migration, or D1 mutation is included."},
-    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-runtime-parity-ledger","laneHead":"09343e909e7c0a3ee8c14bf6fd7076ed27df30b7","paths":[".agentic-os-delivery-dispositions.json"],"disposition":"no-deploy","candidateRevision":"7bdb1bd896e14d26ef8aaf68947e66f8d21643c6","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-runtime-parity-closeout.json","evidenceDigest":"3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2123","reason":"The only changed path .agentic-os-delivery-dispositions.json is delivery metadata and is excluded from the product artifact; no MiaoXYZ Worker or Pages product artifact changed."},
-    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-source-bound-worker-build-contract-fix","laneHead":"30cd8bdeba0ac4098c837764c02bc67c83a47360","paths":[".github/workflows/miaoxyz-hosted-staged-release.yml",".github/workflows/miaoxyz-production-release.yml",".github/workflows/release.yml","docs/collaboration-runtime-contract.md","scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs","scripts/__tests__/production-pages-boundary-contract.test.mjs","scripts/check-collaboration-runtime.mjs","scripts/miaoxyz-hosted-dev-release.mjs","scripts/miaoxyz-production-release-candidate.mjs","scripts/miaoxyz-production-release-core.mjs","scripts/miaoxyz-production-release-deploy.mjs","scripts/miaoxyz-production-release-source.json","scripts/miaoxyz-worker-source-sync.mjs","scripts/pages-mirror-sync.mjs"],"disposition":"no-deploy","candidateRevision":"99cdfbdb3124982bda139ef93249da19dc29ec79","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-source-controller-path-boundary-evidence.json","evidenceDigest":"27ed9da55318338b1504241dc0ca38a5aaeac01721ed8e2a2259d4627a6ec25b","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2120","reason":"The exact source-lane paths .github/workflows/miaoxyz-hosted-staged-release.yml, .github/workflows/miaoxyz-production-release.yml, .github/workflows/release.yml, docs/collaboration-runtime-contract.md, scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs, scripts/__tests__/production-pages-boundary-contract.test.mjs, scripts/check-collaboration-runtime.mjs, scripts/miaoxyz-hosted-dev-release.mjs, scripts/miaoxyz-production-release-candidate.mjs, scripts/miaoxyz-production-release-core.mjs, scripts/miaoxyz-production-release-deploy.mjs, scripts/miaoxyz-production-release-source.json, scripts/miaoxyz-worker-source-sync.mjs, scripts/pages-mirror-sync.mjs are excluded from the product artifact. They are release governance, source synchronization, tests, or collaboration documentation; the MiaoXYZ Worker, catalog, route, migrations, and D1 data are unchanged."},
-    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-cba000d3779d/miaoxyz-source-controller-path-boundary-evidence","laneHead":"12f43ec00d15c43e5448cd21b2f1fea94fe611ab","paths":["docs/reports/miaoxyz-source-controller-path-boundary-evidence.json"],"disposition":"no-deploy","candidateRevision":"99cdfbdb3124982bda139ef93249da19dc29ec79","candidateDigest":"1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/miaoxyz-source-controller-path-boundary-evidence.json","evidenceDigest":"27ed9da55318338b1504241dc0ca38a5aaeac01721ed8e2a2259d4627a6ec25b","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/2125","reason":"The only changed path docs/reports/miaoxyz-source-controller-path-boundary-evidence.json is a read-only evidence report and is excluded from the product artifact; it changes no Worker, catalog, route, migration, or D1 state."},
-        {
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/local-session-delivery-evidence-ci",
+      "laneHead": "057fa8bb39186ced79995c6c6f37282e9425ac70",
+      "paths": [
+        "docs/collaboration-runtime-contract.md",
+        "scripts/__tests__/delivery-disposition-evidence.test.mjs",
+        "scripts/__tests__/local-runtime.test.mjs",
+        "scripts/check-delivery-disposition-evidence.mjs",
+        "scripts/local-runtime-session-lib.mjs"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/production-delivery-evidence-46110343745.json",
+      "evidenceDigest": "3f2f55a7be7c69c9a123e2e27b7437c11b45c74499cac43a242cf18cb5e7cf95",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2160",
+      "reason": "The exact changed paths docs/collaboration-runtime-contract.md, scripts/__tests__/delivery-disposition-evidence.test.mjs, scripts/__tests__/local-runtime.test.mjs, scripts/check-delivery-disposition-evidence.mjs, scripts/local-runtime-session-lib.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2160; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/miaoxyz-readiness-ajv-lazyload",
+      "laneHead": "c6c3c169e028eff2db9943a170d70f01d3dd5b42",
+      "paths": [
+        "canvas/package.json",
+        "canvas/src/styles/shared-ui-profile.css",
+        "canvas/src/styles/shared-ui-profile.pin.json",
+        "package-lock.json",
+        "package.json",
+        "scripts/production-runtime-readiness.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": "d5ddb51020059d903f72e1d3a699e8bd4e088f40aadd2b1240ada9ee194916e1",
+      "deploymentReceiptDigest": "6674e7b4d3f1da54beb4c24d94d7cbef5e9a3c5aa06e6a31c1909218ef3780f2",
+      "runtimeVerificationReceiptDigest": "d1c96fd57e44c8fe1ab05ddcff26711124f2b687ab76d7a2fff94430a5192c6b",
+      "evidencePath": "docs/reports/production-delivery-evidence-46110343745.json",
+      "evidenceDigest": "3f2f55a7be7c69c9a123e2e27b7437c11b45c74499cac43a242cf18cb5e7cf95",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/46110343745#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/miaoxyz-runtime-parity-evidence",
+      "laneHead": "7949288fea556b2172d12d96b5fd00713e7a3ed7",
+      "paths": [
+        "docs/reports/miaoxyz-runtime-parity-closeout.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "d2724583bd1789b43195f1ae6ac51de5136809e0",
+      "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/miaoxyz-runtime-parity-closeout.json",
+      "evidenceDigest": "3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2122",
+      "reason": "The only changed path docs/reports/miaoxyz-runtime-parity-closeout.json is a read-only parity evidence report and is excluded from the product artifact; no Worker, Pages, route, migration, or D1 mutation is included."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/miaoxyz-runtime-parity-ledger",
+      "laneHead": "09343e909e7c0a3ee8c14bf6fd7076ed27df30b7",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "7bdb1bd896e14d26ef8aaf68947e66f8d21643c6",
+      "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/miaoxyz-runtime-parity-closeout.json",
+      "evidenceDigest": "3bc996f8e8b9af4036218053d7451b783aa29b6933e2adfd6ea412f85f99bfdf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2123",
+      "reason": "The only changed path .agentic-os-delivery-dispositions.json is delivery metadata and is excluded from the product artifact; no MiaoXYZ Worker or Pages product artifact changed."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/miaoxyz-source-bound-worker-build-contract-fix",
+      "laneHead": "30cd8bdeba0ac4098c837764c02bc67c83a47360",
+      "paths": [
+        ".github/workflows/miaoxyz-hosted-staged-release.yml",
+        ".github/workflows/miaoxyz-production-release.yml",
+        ".github/workflows/release.yml",
+        "docs/collaboration-runtime-contract.md",
+        "scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs",
+        "scripts/__tests__/production-pages-boundary-contract.test.mjs",
+        "scripts/check-collaboration-runtime.mjs",
+        "scripts/miaoxyz-hosted-dev-release.mjs",
+        "scripts/miaoxyz-production-release-candidate.mjs",
+        "scripts/miaoxyz-production-release-core.mjs",
+        "scripts/miaoxyz-production-release-deploy.mjs",
+        "scripts/miaoxyz-production-release-source.json",
+        "scripts/miaoxyz-worker-source-sync.mjs",
+        "scripts/pages-mirror-sync.mjs"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "99cdfbdb3124982bda139ef93249da19dc29ec79",
+      "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/miaoxyz-source-controller-path-boundary-evidence.json",
+      "evidenceDigest": "27ed9da55318338b1504241dc0ca38a5aaeac01721ed8e2a2259d4627a6ec25b",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2120",
+      "reason": "The exact source-lane paths .github/workflows/miaoxyz-hosted-staged-release.yml, .github/workflows/miaoxyz-production-release.yml, .github/workflows/release.yml, docs/collaboration-runtime-contract.md, scripts/__tests__/miaoxyz-hosted-dev-release.test.mjs, scripts/__tests__/production-pages-boundary-contract.test.mjs, scripts/check-collaboration-runtime.mjs, scripts/miaoxyz-hosted-dev-release.mjs, scripts/miaoxyz-production-release-candidate.mjs, scripts/miaoxyz-production-release-core.mjs, scripts/miaoxyz-production-release-deploy.mjs, scripts/miaoxyz-production-release-source.json, scripts/miaoxyz-worker-source-sync.mjs, scripts/pages-mirror-sync.mjs are excluded from the product artifact. They are release governance, source synchronization, tests, or collaboration documentation; the MiaoXYZ Worker, catalog, route, migrations, and D1 data are unchanged."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/miaoxyz-source-controller-path-boundary-evidence",
+      "laneHead": "12f43ec00d15c43e5448cd21b2f1fea94fe611ab",
+      "paths": [
+        "docs/reports/miaoxyz-source-controller-path-boundary-evidence.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "99cdfbdb3124982bda139ef93249da19dc29ec79",
+      "candidateDigest": "1ce8e938e5b35bd9bd4a6a741d4b30574659eeb37cf0513a603a549c42336823",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/miaoxyz-source-controller-path-boundary-evidence.json",
+      "evidenceDigest": "27ed9da55318338b1504241dc0ca38a5aaeac01721ed8e2a2259d4627a6ec25b",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2125",
+      "reason": "The only changed path docs/reports/miaoxyz-source-controller-path-boundary-evidence.json is a read-only evidence report and is excluded from the product artifact; it changes no Worker, catalog, route, migration, or D1 state."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/platform-playwright-host-compat",
+      "laneHead": "9494134193abe5fe3dafc960e4ea9c8f8c8d98b5",
+      "paths": [
+        ".github/workflows/integration.yml",
+        ".github/workflows/release.yml"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/production-delivery-evidence-46110343745.json",
+      "evidenceDigest": "3f2f55a7be7c69c9a123e2e27b7437c11b45c74499cac43a242cf18cb5e7cf95",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2139",
+      "reason": "The exact changed paths .github/workflows/integration.yml, .github/workflows/release.yml are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2139; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/prod-rollback-parity-baseline",
+      "laneHead": "f3abd569260df887b11f9c57dda48e193d981101",
+      "paths": [
+        "docs/production-rollback-baseline.md",
+        "scripts/__tests__/production-rollback-baseline.test.mjs",
+        "scripts/lib/production-rollback-baseline.mjs",
+        "scripts/production-rollback-baseline.mjs"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/production-delivery-evidence-46110343745.json",
+      "evidenceDigest": "3f2f55a7be7c69c9a123e2e27b7437c11b45c74499cac43a242cf18cb5e7cf95",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2157",
+      "reason": "The exact changed paths docs/production-rollback-baseline.md, scripts/__tests__/production-rollback-baseline.test.mjs, scripts/lib/production-rollback-baseline.mjs, scripts/production-rollback-baseline.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2157; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/production-baseline-capture-fix",
       "laneHead": "e666e8f4514478d70c9dd09ea47331a1e0f8a972",
@@ -538,7 +848,25 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38288365082#environment-production",
       "reason": null
     },
-        {
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/production-dev-ui-retry",
+      "laneHead": "69c042235555c1c036de3dea4e1daa26995e9f2e",
+      "paths": [
+        "scripts/run-pages-dev-promotion.mjs"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "43cefaf99b66725baa41810229498751a8041dc2",
+      "candidateDigest": "4abaf29080b9269f6ecae4514afdc49a711045189004a98ff96107daf38a4f2e",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/production-delivery-evidence-46110343745.json",
+      "evidenceDigest": "3f2f55a7be7c69c9a123e2e27b7437c11b45c74499cac43a242cf18cb5e7cf95",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/2143",
+      "reason": "The exact changed paths scripts/run-pages-dev-promotion.mjs are excluded from the product artifact by the fixed Pages and mirror artifact boundary; they do not change the deployed Worker, Pages bundle, D1 data, travel mesh, or published mirror. This is a no-deploy assessment for PR #2143; production run 46110343745 delivered the candidate but these paths caused no product artifact change."
+    },
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/runtime-readiness-docs-pin",
       "laneHead": "0ad7fa3013f0465f754c6ad09d60afc33b86e593",
@@ -558,7 +886,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38288365082#environment-production",
       "reason": null
     },
-        {
+    {
       "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/supply-chain-production-delivery",
       "laneHead": "bead828bec84645b6b91764dab91bcf35143ce43",
@@ -578,5 +906,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "4d0e1e9a26be3ae276fc64f5183f67f83879a85580477998116234af44b1d7a0"
+  "receiptDigest": "5bb820c924c2116ed1a4ae73461ea8c51522eafe3eaeaa57aa3ee3acac69d12e"
 }
