@@ -88,6 +88,28 @@ test('fresh current provider observations name a rollback target without rebuild
   assert.equal(provenance.historicalLifecycleReconstructed, false)
   assert.equal(provenance.captureRunId, 7001)
   assert.equal(provenance.deploymentCommitProvenance.kind, 'graph-source')
+  assert.deepEqual(provenance.readinessParity, {
+    status: 'aligned', pagesSourceRevision: sha, mirrorSourceRevision: sha, markersEqual: true,
+  })
+})
+
+test('current baseline records a stable Pages and mirror split without claiming readiness parity', () => {
+  const first = currentRound(10), second = currentRound(20), mirrorSourceRevision = '8'.repeat(40)
+  for (const observation of [first, second]) {
+    observation.mirror.sourceRevision = mirrorSourceRevision
+    observation.mirrorReadiness.source.revision = mirrorSourceRevision
+  }
+  const { recapture, provenance } = createObservedCurrentRollbackBaseline({
+    first, second, repositoryId: 99, candidateSourceRevision: '9'.repeat(40), captureRunId: '7001',
+    captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    deploymentCommitProvenance: currentCommitProvenance(second), assembledAt: at(30),
+  })
+  assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sha)
+  assert.equal(recapture.rollbackIdentity.mirror.revision, second.mirror.revision)
+  assert.deepEqual(provenance.readinessParity, {
+    status: 'diverged', pagesSourceRevision: sha, mirrorSourceRevision, markersEqual: false,
+  })
+  assert.equal(provenance.productionAuthorized, false)
 })
 
 test('current baseline links a mirror deployment commit without confusing it with the Graph source', () => {
@@ -134,9 +156,10 @@ test('current baseline links a mirror deployment commit without confusing it wit
 test('current baseline capture summary binds its rollback identity digest', () => {
   const rollbackIdentity = { pages: { sourceRevision: sha }, mirror: { revision: 'd'.repeat(40) } }
   const summary = currentBaselineCaptureSummary({ status: 'current-rollback-baseline-observed',
-    deploymentCommitProvenance: { kind: 'graph-source' } }, { rollbackIdentity })
+    deploymentCommitProvenance: { kind: 'graph-source' }, readinessParity: { status: 'diverged' } }, { rollbackIdentity })
   assert.deepEqual(summary, { status: 'current-rollback-baseline-observed', productionAuthorized: false,
     pagesDeploymentCommitKind: 'graph-source',
+    readinessParity: 'diverged',
     rollbackTargetDigest: digest(rollbackIdentity) })
 })
 
@@ -147,7 +170,7 @@ for (const [label, mutate] of [
   ['Pages marker mismatch', v => { v.second.pagesReadiness.source.revision = 'e'.repeat(40) }],
   ['mirror marker mismatch', v => { v.second.mirrorReadiness.artifact.digest = '2'.repeat(64) }],
   ['Pages commit mismatch', v => { v.second.pages.identity.deploymentCommitRevision = 'e'.repeat(40) }],
-  ['mirror source mismatch', v => { v.second.mirror.sourceRevision = 'e'.repeat(40) }],
+  ['mirror marker does not describe its own source', v => { for (const round of [v.first, v.second]) round.mirror.sourceRevision = 'e'.repeat(40) }],
   ['nonzero graph snapshot count', v => { v.second.state.observedCounts.graphCount = 1 }],
   ['stale observations', v => { v.assembledAt = '2026-09-09T00:11:00.000Z' }],
   ['wrong capture workflow', v => { v.captureWorkflowRef = 'feature/production-rollback-baseline-capture.yml' }],

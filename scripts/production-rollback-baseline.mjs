@@ -23,6 +23,7 @@ const run = (script, args) => execFileSync(process.execPath, [path.join(root, 's
 })
 export const currentBaselineCaptureSummary = (provenance, recapture) => ({ status: provenance.status,
   productionAuthorized: false, pagesDeploymentCommitKind: provenance.deploymentCommitProvenance.kind,
+  readinessParity: provenance.readinessParity.status,
   rollbackTargetDigest: digest(recapture.rollbackIdentity) })
 const round = async (directory, mirrorRoot) => {
   await fs.mkdir(directory)
@@ -81,6 +82,8 @@ export async function main(args = process.argv.slice(2)) {
     assert.equal(git(root, 'ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0], sourceRevision,
       'protected main changed during capture')
     execFileSync('git', ['merge-base', '--is-ancestor', second.pages.identity.sourceRevision, sourceRevision],
+      { cwd: root, stdio: 'ignore', timeout: 30_000 })
+    execFileSync('git', ['merge-base', '--is-ancestor', second.mirror.sourceRevision, sourceRevision],
       { cwd: root, stdio: 'ignore', timeout: 30_000 })
     const deploymentCommitProvenance = createPagesDeploymentCommitProvenance({
       pagesIdentity: second.pages.identity, sourceRevision: second.pages.identity.sourceRevision,
