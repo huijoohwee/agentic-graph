@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { indexedDB } from 'fake-indexeddb'
+import { indexedDB, IDBTransaction as TestTransaction } from 'fake-indexeddb'
 
 import { createXrV2CaptureFallbackPersister } from '../spatialCapturePostProcess'
 import {
@@ -28,7 +28,8 @@ function deleteDatabase(databaseName: string): Promise<void> {
   })
 }
 
-test('cancelling before the job cursor opens rolls back once and reports cancellation', async () => {
+test('cancelling before the job cursor opens rolls back once and reports cancellation', async t => {
+  const rollback = t.mock.method(TestTransaction.prototype, 'abort')
   const name = uniqueDatabaseName('pending-cursor')
   const opening = indexedDB.open(name)
   opening.onupgradeneeded = () => {
@@ -47,6 +48,7 @@ test('cancelling before the job cursor opens rolls back once and reports cancell
     })
     controller.abort()
     await assert.rejects(claim, { name: 'AbortError' })
+    assert.equal(rollback.mock.callCount(), 1, 'a pending cursor error must not abort the transaction twice')
   } finally {
     database.close()
     await deleteDatabase(name)
