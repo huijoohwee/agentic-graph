@@ -138,9 +138,9 @@ async function launchSessionRuntime(candidate, options, locations, deps) {
     AGENTIC_SESSION_ID: options.sessionId,
     AGENTIC_SESSION_RUNTIME_TOKEN: token,
     AGENTIC_OS_SOURCE_REVISION: candidate.agenticGraph.headSha,
-    AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: path.join(candidate.agenticCanvasOsRoot, "catalog", "dictionaries"),
+    AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: candidate.agenticCanvasOs.docsRoot ?? path.join(candidate.agenticCanvasOsRoot, "catalog", "dictionaries"),
     AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION: candidate.agenticCanvasOs.headSha,
-    VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT: path.join(candidate.agenticCanvasOsRoot, "catalog", "dictionaries"),
+    VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT: candidate.agenticCanvasOs.docsRoot ?? path.join(candidate.agenticCanvasOsRoot, "catalog", "dictionaries"),
   };
   try {
     const service = await launchService({
