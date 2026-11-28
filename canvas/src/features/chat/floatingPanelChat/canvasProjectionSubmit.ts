@@ -24,8 +24,8 @@ export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitA
   const cancelId = 'canvas-authoring.cancel:' + id
   args.setMessages(messages => [...messages, { id: id + '-request', role: 'user', content: request },
     { id, role: 'assistant', content: 'Applying diagram…', canvasPending: true }])
-  const finish = (content: string, canvasHistoryEntryId?: string) => {
-    const terminal: ChatMessage = { id, role: 'assistant', content, ...(canvasHistoryEntryId && { canvasHistoryEntryId }) }
+  const finish = (content: string, canvasHistoryEntryId?: string, canvasOutcome?: ChatMessage['canvasOutcome']) => {
+    const terminal: ChatMessage = { id, role: 'assistant', content, ...(canvasOutcome && { canvasOutcome }), ...(canvasHistoryEntryId && { canvasHistoryEntryId }) }
     const replacePending = (messages: ChatMessage[]) => messages.map(message => message.id === id ? terminal : message)
     // A closed panel still has a cached turn. Update only the request that owns this result.
     const cached = getCachedChatHistory(args.historyKey)
@@ -50,7 +50,7 @@ export async function submitCanvasProjection(args: Pick<FloatingPanelChatSubmitA
     if (args.abortRef.current === controller) args.setInput(current => current === request ? '' : current)
   } catch (error) {
     const cancelled = controller.signal.aborted && controller.signal.reason?.name === 'AbortError'
-    finish(cancelled ? 'Diagram cancelled.' : error instanceof Error ? error.message : 'Unable to apply diagram.')
+    finish(cancelled ? 'Diagram cancelled.' : error instanceof Error ? error.message : 'Unable to apply diagram.', undefined, cancelled ? 'cancelled' : 'failed')
   } finally {
     clearTimeout(timer)
     pendingCancels.delete(cancelId)

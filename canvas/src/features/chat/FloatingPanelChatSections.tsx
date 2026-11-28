@@ -16,10 +16,11 @@ import { FloatingPanelChatQuickActionGrid } from '@/features/chat/floatingPanelC
 import type { HeadlessResponseRunReceipt } from '@/features/chat/headlessResponseCoordinator'
 
 import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
-import { isCanvasSourceProjection } from './promptPresetInvocation'
+import { isCanvasSourceProjection, readCanvasDrawingRequest } from './promptPresetInvocation'
+const ThreadPromptPresets = React.lazy(() => import('@/features/toolbar/FloatingPanelPromptPresetsView').then(m => ({ default: m.FloatingPanelPromptPresetsView })))
 const CanvasTurnReceiptActions = React.lazy(() => import('./floatingPanelChat/CanvasTurnReceiptActions'))
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; canvasPending?: boolean; canvasHistoryEntryId?: string; headlessResponseRun?: HeadlessResponseRunReceipt }
+export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; canvasPending?: boolean; canvasOutcome?: 'failed' | 'cancelled'; canvasHistoryEntryId?: string; headlessResponseRun?: HeadlessResponseRunReceipt }
 export type StreamingAssistantState = {
   id: string
   text: string
@@ -146,6 +147,9 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
 }) {
   const content = typeof overrideText === 'string' ? overrideText : message.content
   const isUser = message.role === 'user'
+  const drawingCaption = isUser && content.trimStart().startsWith('/canvas.project')
+    ? readCanvasDrawingRequest(content) || (isCanvasSourceProjection(content) && diagramRequestCaption(content))
+    : null
   const streamingState = isStreaming
     ? (String(content || '').trim() ? 'receiving' : 'pending')
     : null
@@ -167,10 +171,12 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
             : `mr-auto ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.panel.border}`,
         ].join(' ')}
       >
-        {isUser && isCanvasSourceProjection(content) ? (
-          <details><summary className="cursor-pointer">{diagramRequestCaption(content)}</summary>
+        {drawingCaption ? (
+          <details><summary className="cursor-pointer">{drawingCaption}</summary>
             <pre className="whitespace-pre-wrap break-words">{content}</pre>
           </details>
+        ) : message.canvasOutcome ? (
+          <p role={message.canvasOutcome === 'failed' ? 'alert' : 'status'} className={message.canvasOutcome === 'failed' ? UI_THEME_TOKENS.status.error : undefined}>{content}</p>
         ) : message.canvasHistoryEntryId ? <p>{content}</p> : renderFloatingPanelChatMessageContent(
           streamingState === 'pending' ? UI_COPY.chatAssistantPendingStatus : content, onOpenWorkspacePath,
         )}
@@ -183,6 +189,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
 })
 
 type MessagesSectionProps = {
+  presetDraft?: string
   messages: ChatMessage[]
   isLoading: boolean
   historyKey: string
@@ -207,6 +214,7 @@ export function FloatingPanelChatMessagesSection({
   messages,
   isLoading,
   historyKey,
+  presetDraft = '',
   contextItems = [],
   pipelineStages = [],
   onPipelineStageAction,
@@ -223,6 +231,8 @@ export function FloatingPanelChatMessagesSection({
   onQuickAction,
   setMessages,
 }: MessagesSectionProps) {
+  const [presetThread, setPresetThread] = React.useState<string | null>(null)
+  const presets = !isLoading && <React.Suspense fallback={null}><ThreadPromptPresets key={historyKey} chatDraft={presetDraft} /></React.Suspense>
   const liveStreamingReasoningPreview = isLoading ? streamingReasoningPreview : null
   const liveStreamingUsageSummary = isLoading ? streamingUsageSummary : null
   const liveStreamingFinishReason = isLoading ? streamingFinishReason : null
@@ -321,7 +331,7 @@ export function FloatingPanelChatMessagesSection({
           data-kg-chat-empty-state="true"
           className={['flex min-h-[12rem] flex-1 flex-col justify-between gap-2 rounded border border-dashed px-2 py-2', uiPanelTextFontClass, uiPanelMicroLabelTextSizeClass, UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary].join(' ')}
         >
-          <section>{UI_COPY.chatEmptyStateHelp}</section>
+          {presets}
           <FloatingPanelChatQuickActionGrid
             quickActions={quickActions}
             isLoading={isLoading}
@@ -359,6 +369,10 @@ export function FloatingPanelChatMessagesSection({
         />
       ) : null}
 
+      {messages.length > 0 && !isLoading && <section className="grid gap-1">
+        <button type="button" aria-expanded={presetThread === historyKey} className="justify-self-start text-xs underline" onClick={() => setPresetThread(presetThread === historyKey ? null : historyKey)}>{presetThread === historyKey ? 'Hide prompt presets' : 'Prompt presets'}</button>
+        {presetThread === historyKey && presets}
+      </section>}
       <FloatingPanelChatStreamingStatus
         reasoningPreview={liveStreamingReasoningPreview}
         usageSummary={liveStreamingUsageSummary}

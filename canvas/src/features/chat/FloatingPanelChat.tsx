@@ -792,7 +792,7 @@ export default function FloatingPanelChat() {
         className={`${UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME} p-2 space-y-2`}
       >
         <FloatingPanelChatMessagesSection
-          messages={messages}
+          messages={messages} presetDraft={input}
           isLoading={isLoading}
           historyKey={historyKey}
           contextItems={chatContextItems}

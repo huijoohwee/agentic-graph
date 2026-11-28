@@ -15,6 +15,14 @@ const composer = page => page.locator('[data-kg-chat-contenteditable-surface] [c
 const receipt = page => page.getByRole('navigation', { name: 'Diagram receipt' }).last();
 const scene = 'Sketch a robot pair-programming with a human';
 
+async function waitForDraft(page, expected) {
+  await page.waitForFunction(text => {
+    const editor = document.activeElement;
+    const value = editor?.closest('[data-kg-chat-contenteditable-surface]')?.querySelector('textarea')?.value;
+    return editor?.matches('[contenteditable=true]') && value?.trim() === text.trim();
+  }, expected);
+}
+
 export async function checkPendingCancel(page, send) {
   // Hold the real staging module on its first load. Release it after cancelling to
   // exercise late delivery without adding a delay to production authoring.
@@ -24,6 +32,13 @@ export async function checkPendingCancel(page, send) {
   const intercept = async route => { await staging; await route.continue(); };
   const toast = page.getByRole('region', { name: 'Notifications' });
   const initial = await composer(page).innerText();
+  const seeded = await composer(page).evaluate(editor => editor.closest('[data-kg-chat-contenteditable-surface]').querySelector('textarea').value);
+  const starterList = page.locator('[data-kg-chat-empty-state]').getByRole('region', { name: 'Prompt Presets', exact: true });
+  await starterList.getByRole('button', { name: 'Use Sketch on Canvas in Chat' }).click();
+  await waitForDraft(page, '/canvas.project @canvas #canvas\n\n' + scene);
+  assert.equal(await page.locator('[data-kg-chat-empty-state]').filter({ visible: true }).count(), 1);
+  await starterList.getByRole('button', { name: 'Use Process map in Chat' }).click();
+  await waitForDraft(page, seeded);
   await page.route(moduleUrl, intercept, { times: 1 });
   try {
     await send.press('Enter');
@@ -67,6 +82,20 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
     return saved;
   });
   const before = await savedSource();
+  const thread = page.locator('[data-kg-chat-thread-viewport]').filter({ visible: true }).last();
+  await thread.getByRole('button', { name: 'Prompt presets', exact: true }).click();
+  const presets = thread.getByRole('region', { name: 'Prompt Presets', exact: true });
+  await presets.getByRole('button', { name: 'Browse all presets' }).click();
+  await presets.getByRole('button', { name: 'Search prompt presets' }).click();
+  await presets.getByPlaceholder('Search presets').fill('observability');
+  await presets.getByRole('button', { name: 'Use Agent observability in Chat' }).click();
+  await page.waitForFunction(() => document.activeElement?.closest('[data-kg-chat-contenteditable-surface]')
+    ?.querySelector('textarea')?.value.startsWith('/canvas.view.set'));
+  assert.equal(await savedSource(), before);
+  await composer(page).fill('Draw a platypus');
+  await send.click();
+  await thread.getByRole('alert').filter({ hasText: 'Try' }).waitFor();
+  assert.equal(await savedSource(), before);
   const apply = async (viaPreset = false) => {
     const thread = page.locator('[data-kg-chat-thread-viewport]').filter({ visible: true }).last();
     const summaries = thread.getByText('Added 3 nodes, 2 edges, 1 group · Pair programming', { exact: true });
@@ -87,15 +116,12 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
       await page.getByRole('button', { name: 'Open slash commands' }).click();
       await page.getByPlaceholder('Find command').fill('canvas-sketch');
       await page.getByRole('listbox').getByText('/canvas-sketch-prompt-preset', { exact: true }).click();
-      await page.waitForFunction(expected => {
-        const editor = document.activeElement;
-        const surface = editor?.closest('[data-kg-chat-contenteditable-surface]');
-        const draft = surface?.querySelector('textarea')?.value ?? '';
-        return editor?.matches('[contenteditable=true]') && draft.trim() === expected;
-      }, '/canvas.project @canvas #canvas\n\n' + scene);
+      await waitForDraft(page, '/canvas.project @canvas #canvas\n\n' + scene);
       assert.equal(await savedSource(), before);
     } else {
-      await composer(page).fill(scene);
+      await presets.getByRole('button', { name: 'Use Sketch on Canvas in Chat' }).click();
+      await waitForDraft(page, '/canvas.project @canvas #canvas\n\n' + scene);
+      await composer(page).fill('Please ' + scene.toLowerCase());
     }
     const readySend = send.and(page.locator(':enabled'));
     if (viaPreset) await readySend.click();
@@ -111,6 +137,12 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
     assert.equal(await drawings.filter({ visible: true }).count(), 3);
     assert.equal(await page.locator('[data-kg-edge-label][data-edge-id^="sketch-link-"]').count(), 0);
     for (const drawing of await drawings.filter({ visible: true }).all()) assert.ok(await drawing.locator('path').count() >= 6);
+    const actions = added.locator('..').getByRole('navigation', { name: 'Diagram receipt' });
+    const group = actions.getByRole('button', { name: 'Select created group Pair programming' });
+    await group.click();
+    await waitForWorkspace(page, async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().selectedGroupId === 'subgraph:sketch-group-1');
+    const strokeCount = await drawings.filter({ visible: true }).locator('path').count();
+    await actions.getByText(`3 editable figures · ${strokeCount} strokes`, { exact: true }).waitFor();
     await savedSource();
   };
   await apply();
