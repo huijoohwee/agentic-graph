@@ -11,7 +11,7 @@ export const productionMirrorArtifactManifestName = '.agentic-graph-production-a
 export const productionMirrorArtifactEntries = Object.freeze([
   '404.html', 'README.md', 'content/agentic-graph', 'content/agentic-base', 'content/agentic-sheets', 'content/gamexr', 'content/MiaoXYZ', 'agentic-graph', '81rv10/index.html', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
   'pitch/agentic-drone-as-a-service', 'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
-  '.well-known/runtime-readiness.json', ...Object.keys(await buildAgentReadyStaticFiles()),
+  '.well-known/runtime-readiness.json', '.agentic-os/owner-projections.json', ...Object.keys(await buildAgentReadyStaticFiles()),
 ])
 
 export const stageProductionMirrorArtifact = async ({ mirrorRoot, artifactRoot }) => {
