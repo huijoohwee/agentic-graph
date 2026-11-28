@@ -84,6 +84,11 @@
 }
 
 @media (pointer: coarse), (max-width: 768px) {
+  /* FloatingPanel mounts in a body portal. Reserve the bottom toolbar in its shared size calculation. */
+  body:has(.kg-canvas-toolbar-dock, .kg-workspace-overlay-canvas-toolbar) {
+    --agentic-floating-panel-bottom-offset: calc(var(--agentic-toolbar-height) + var(--kg-canvas-viewport-edge-gap));
+  }
+
   /* Mobile floating panels use safe-area edge insets instead of centering. */
   .kg-canvas-bottom-panel--pinned {
     inset-inline-start: auto;

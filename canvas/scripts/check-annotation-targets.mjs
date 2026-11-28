@@ -86,6 +86,7 @@ try {
     await activate(starter);
     const send = page.getByRole('button', { name: 'Send', exact: true }).filter({ visible: true }).last();
     await send.waitFor();
+    if (profile.hasTouch) await page.getByRole('button', { name: 'Launch', exact: true }).tap({ trial: true });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, device + ' horizontal overflow');
     await activate(send);
     await page.waitForFunction(async () => {
