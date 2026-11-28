@@ -70,16 +70,34 @@ export async function checkPendingCancel(page, send) {
 
 export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
   await page.getByText('Added 3 nodes, 2 edges', { exact: true }).waitFor();
-  const before = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownDocumentText);
+  const savedSource = () => page.evaluate(async () => {
+    const { settleWorkspaceSourceTextWrites } = await import('/src/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue.ts');
+    const { getWorkspaceFs } = await import('/src/features/workspace-fs/workspaceFs.ts');
+    const { useGraphStore } = await import('/src/hooks/useGraphStore.ts');
+    await settleWorkspaceSourceTextWrites();
+    const state = useGraphStore.getState();
+    const saved = await (await getWorkspaceFs()).readFileText(state.markdownDocumentName);
+    if (saved !== state.markdownDocumentText) throw new Error('The active document differs from the saved source');
+    return saved;
+  });
+  const before = await savedSource();
   const apply = async () => {
+    const thread = page.locator('[data-kg-chat-thread-viewport]').filter({ visible: true }).last();
+    const summaries = thread.getByText('Added 3 nodes, 2 edges, 1 group · Pair programming', { exact: true });
+    const added = summaries.nth(await summaries.count());
     await composer(page).fill(scene);
-    await send.press('Enter');
-    await page.getByText('Added 3 nodes, 2 edges, 1 group · Pair programming', { exact: true }).last().waitFor();
-    await receipt(page).getByRole('button', { name: 'Undo', exact: true }).waitFor();
+    await send.and(page.locator(':enabled')).press('Enter');
+    try {
+      await added.waitFor();
+      await added.locator('..').getByRole('button', { name: 'Undo', exact: true }).waitFor();
+    } catch (cause) {
+      throw new Error('New diagram receipt missing. Visible Chat status: ' + (await thread.innerText()).slice(-1200), { cause });
+    }
+    await savedSource();
   };
   await apply();
   await receipt(page).getByRole('button', { name: 'Undo', exact: true }).press('Enter');
-  assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownDocumentText), before);
+  assert.equal(await savedSource(), before);
   await apply();
   const entryId = await page.evaluate(async () => {
     const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState();
