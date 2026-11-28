@@ -51,6 +51,20 @@ async function assertActiveSourceLifecyclePublicationRetriesOnce() {
     if (!proof || !isMaterializedWorkspaceSourceProofCurrent(proof) || applications !== 2 || active?.status !== 'parsed') {
       throw new Error('active source lifecycle publication must receive one bounded materialization retry')
     }
+    const background = { ...prepared, id: 'discovered', name: 'other.md', source: { kind: 'local' as const, path: 'workspace:/docs/other.md' } }
+    useGraphStore.setState({ markdownDocumentName: 'docs/previous.md', markdownDocumentText: '# Previous', setActiveMarkdownDocument: async payload => {
+      const state = useGraphStore.getState()
+      useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text,
+        markdownDocumentApplyViewPreset: true, sourceFiles: [...state.sourceFiles, background] })
+      return true
+    } })
+    const passive = await materializeActiveWorkspaceEntryIntoSourceFiles({
+      activePathOverride: path, fs, applyToGraph: false, sourceFilesSnapshot: useGraphStore.getState().sourceFiles,
+      activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {},
+    })
+    if (!passive || !isMaterializedWorkspaceSourceProofCurrent(passive) || !passive.sourceFiles.includes(background)) {
+      throw new Error('opening a demo must retain the independently discovered file and the exact active source')
+    }
   } finally {
     useGraphStore.setState(previous, true)
     useMarkdownExplorerStore.setState(explorer, true)

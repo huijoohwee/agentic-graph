@@ -102,19 +102,11 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
     '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/crawler-agent"', '    prompt: |-',
     '      /crawler-agent @url:https://example.invalid @reference-policy #canvas', '',
     '      Crawl the referenced website with the reference policy.',
-    '', '  - id: "software-forensics"', '    label: "Software Forensics"',
-    '    slash_command: "/software-forensics-prompt-preset"', '    runtime_command: "/software.forensics"',
-    '    description: "Inspect selected source through a bounded evidence workflow."',
-    '    activation: "source-backed-canvas"',
-    '    invocation_modes: ["native-chat-response", "mcp-invocation"]',
-    '    chat_route: "active native shared runtime"',
-    '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/software.forensics"',
-    '    prompt: |-','      /software.forensics @application @working-directory @agent @runtime-proof #reverse-engineering #vcc operation=inspect',
     '---', '', '# Prompt presets',
   ].join('\n'))
   await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, extendedCatalogMarkdown)
   const extendedCatalog = await loadPromptPresetCatalog(workspace)
-  if (isPromptPresetCatalogError(extendedCatalog) || extendedCatalog.presets.length !== catalog.presets.length + 2) throw new Error(`expected the source-backed catalog to accept future presets, got ${JSON.stringify(extendedCatalog)}`)
+  if (isPromptPresetCatalogError(extendedCatalog) || extendedCatalog.presets.length !== catalog.presets.length + 1) throw new Error(`expected the source-backed catalog to accept future presets, got ${JSON.stringify(extendedCatalog)}`)
   const forensics = extendedCatalog.presets.find(preset => preset.id === 'software-forensics')
   if (!forensics || forensics.activation !== 'source-backed-canvas' || forensics.runtimeCommand !== '/software.forensics') {
     throw new Error(`expected the source-backed software forensics preset to remain available, got ${JSON.stringify(forensics)}`)
@@ -373,8 +365,8 @@ async function verifyCatalogRecovery(catalog: Exclude<Awaited<ReturnType<typeof 
   const { dom, restore } = initJsdomHarness(), container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container), selected: unknown[] = []
-  let calls = 0
-  const runtime = { loadCatalog: async () => ++calls === 1 ? { ok: false as const, error: 'Temporarily unavailable' } : catalog,
+  let available = false
+  const runtime = { loadCatalog: async () => available ? catalog : { ok: false as const, error: 'Temporarily unavailable' },
     loadPrompt: async () => ({ ok: true as const, prompt: 'authored prompt' }) }
   try {
     await mountReactRoot(root, React.createElement(LiveCanvasHeroPromptPresetPicker,
@@ -382,8 +374,11 @@ async function verifyCatalogRecovery(catalog: Exclude<Awaited<ReturnType<typeof 
       { window: dom.window as unknown as Window, frames: 3 })
     if (!container.querySelector('[role="alert"]') || container.querySelector('button[data-kg-select]')) throw Error('A missing catalog must remain unavailable')
     const retry = [...container.querySelectorAll('button')].find(button => button.textContent === 'Retry catalog')!
+    available = true
     await act(async () => { retry.click(); await waitForFrames(dom.window as unknown as Window, 3) })
-    if (calls !== 2 || !container.querySelector('button[data-kg-select]') || container.querySelector('[role="alert"]') || selected.length)
-      throw Error('Explicit retry must recover the catalog without selecting or executing a preset')
+    const picker = container.querySelector<HTMLButtonElement>('button[aria-label="Prompt preset"]')
+    const pickerError = container.querySelector('[data-kg-live-canvas-hero-prompt-presets] > [role="alert"]')
+    if (!picker || picker.disabled || pickerError || retry.isConnected || selected.length)
+      throw Error('Explicit retry must restore the preset picker without selecting or executing a preset')
   } finally { await unmountReactRoot(root, { window: dom.window as unknown as Window }); restore() }
 }

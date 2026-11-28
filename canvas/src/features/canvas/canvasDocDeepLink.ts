@@ -69,7 +69,13 @@ export function parseDocDeepLink(search: string): DocDeepLink | null {
 }
 
 function buildDocDeepLinkIntentKeyFromLink(link: DocDeepLink, preview: number): string {
-  if (link.kind === 'local') return JSON.stringify([link.kind, normalizeWorkspacePath(link.relativePath), preview])
+  if (link.kind === 'local') {
+    const path = normalizeWorkspacePath(link.relativePath)
+    // The Explorer owns its current selection. A pasted link or reload owns a new document intent.
+    if (!preview && mirroredSelection && typeof window !== 'undefined'
+      && mirroredSelection.entry === window.history?.state && mirroredSelection.path === path) return ''
+    return JSON.stringify([link.kind, path, preview])
+  }
   if (link.kind === 'remote') return JSON.stringify([link.kind, link.workspaceId, link.canonicalPath, preview])
   return JSON.stringify([link.kind, link.canonicalPath, preview])
 }
@@ -189,11 +195,14 @@ export function clearRetainedLocalDocDeepLinkPath(): void {
   }
 }
 
+let mirroredSelection: { entry: object; path: string } | null = null
+
 export function setLocalDocDeepLinkPath(relativePath: string | null): void {
   if (typeof window === 'undefined') return
   try {
     const params = new URLSearchParams(window.location.search)
     const trimmed = String(relativePath || '').trim().replace(/^\/+/, '')
+    const previousPath = (params.get(LOCAL_DOC_PARAM) || '').replace(/^\/+/, '')
     if (trimmed) {
       params.set(LOCAL_DOC_PARAM, trimmed)
     } else {
@@ -203,6 +212,10 @@ export function setLocalDocDeepLinkPath(relativePath: string | null): void {
     const nextUrl = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash || ''}`
     const nextState = buildLocalDocHistoryState(trimmed || null)
     window.history.replaceState(nextState, '', nextUrl)
+    if (previousPath !== trimmed) {
+      mirroredSelection = trimmed && window.history.state
+        ? { entry: window.history.state, path: normalizeWorkspacePath(trimmed) } : null
+    }
     try {
       window.dispatchEvent(new PopStateEvent('popstate', { state: nextState }))
     } catch {

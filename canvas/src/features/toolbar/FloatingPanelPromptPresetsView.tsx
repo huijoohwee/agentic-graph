@@ -1,5 +1,9 @@
 import React from 'react'
+import { emitChatInputAppend } from '@/features/canvas/utils'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getUiSectionActionClassName } from '@/lib/ui/sectionChipChrome'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
+import { usePromptPresetCatalogState } from '@/features/chat/usePromptPresetCatalog'
 import type { PresetSummary } from '@/features/chat/gatewayPresetCatalog'
 import {
   defaultPromptPresetSelectionRuntime,
@@ -63,51 +67,36 @@ function renderPromptPresetTokenChip(preset: PresetSummary): React.ReactNode {
 
 export function FloatingPanelPromptPresetsView({
   runtime = defaultFloatingPanelPromptPresetsRuntime,
+  chatDraft,
 }: {
   runtime?: FloatingPanelPromptPresetsRuntime
+  chatDraft?: string
 }) {
+  const inChat = chatDraft !== undefined
+  const [browseAll, setBrowseAll] = React.useState(false)
+  const selection = React.useRef<object | null>(null)
   const search = useFloatingPanelCatalogSearch()
-  const [presets, setPresets] = React.useState<PresetSummary[]>([])
-  const [catalogError, setCatalogError] = React.useState('')
+  const { presets, loading, error: catalogError, retry } = usePromptPresetCatalogState(runtime.loadCatalog)
   const [invocationError, setInvocationError] = React.useState('')
-  const [loading, setLoading] = React.useState(true)
   const [invokingId, setInvokingId] = React.useState('')
+  React.useLayoutEffect(() => {
+    setInvokingId('')
+    return () => { selection.current = null }
+  }, [chatDraft, runtime])
 
-  React.useEffect(() => {
-    let active = true
-    setLoading(true)
-    void runtime.loadCatalog().then(result => {
-      if (!active) return
-      if ('error' in result) {
-        setCatalogError(result.error)
-        setPresets([])
-      } else {
-        setCatalogError('')
-        setPresets(result.presets)
-      }
-    }).finally(() => {
-      if (active) setLoading(false)
-    })
-    return () => { active = false }
-  }, [runtime])
-
-  const visiblePresets = React.useMemo(() => presets.filter(preset => matchesFloatingPanelCatalogSearch(
-    search.normalizedSearchQuery,
-    [
-      preset.id,
-      preset.label,
-      preset.slashCommand,
-      preset.description,
-      preset.activation,
-      ...preset.invocationModes,
-      preset.chatRoute,
-      preset.mcpTool,
-      preset.mcpToken,
-    ],
-  )), [presets, search.normalizedSearchQuery])
+  const showAll = !inChat || browseAll || !!search.normalizedSearchQuery
+  const compact = inChat && !showAll
+  const visiblePresets = React.useMemo(() => presets.filter(preset => {
+    if (inChat && preset.executionSurface === 'card-run') return false
+    if (compact && preset.runtimeCommand !== '/canvas.project') return false
+    return matchesFloatingPanelCatalogSearch(search.normalizedSearchQuery, [
+      preset.id, preset.label, preset.slashCommand, preset.description,
+      preset.activation, ...preset.invocationModes, preset.chatRoute, preset.mcpTool, preset.mcpToken,
+    ])
+  }), [compact, inChat, presets, search.normalizedSearchQuery])
 
   const invokePreset = React.useCallback(async (preset: PresetSummary) => {
-    if (invokingId) return
+    if (selection.current) return
     setInvocationError('')
     if (preset.executionSurface === 'card-run') {
       if (!insertTextIntoActiveCardInlineTextEditor(PROCEDURAL_ASSET_PROMPT_TOKENS)) {
@@ -115,38 +104,56 @@ export function FloatingPanelPromptPresetsView({
       }
       return
     }
+    const ticket = {}
+    selection.current = ticket
+    const documentName = useGraphStore.getState().markdownDocumentName
     setInvokingId(preset.id)
     try {
       const result = await runtime.loadPrompt(preset.id)
+      if (selection.current !== ticket || useGraphStore.getState().markdownDocumentName !== documentName) return
       if ('error' in result) {
         setInvocationError(result.error)
         return
       }
-      if (!runtime.invokePrompt(result.prompt)) {
+      if (inChat) {
+        search.clearSearchQuery()
+        setBrowseAll(false)
+        emitChatInputAppend({ text: result.prompt, mode: 'replace', submit: false })
+      } else if (!runtime.invokePrompt(result.prompt)) {
         setInvocationError(`Unable to open ${preset.label} in Chat.`)
       }
+    } catch (error) {
+      if (selection.current === ticket) setInvocationError(error instanceof Error ? error.message : String(error))
     } finally {
-      setInvokingId('')
+      if (selection.current === ticket) {
+        selection.current = null
+        setInvokingId('')
+      }
     }
-  }, [invokingId, runtime])
+  }, [inChat, runtime, search.clearSearchQuery])
 
   const statusMessage = catalogError || invocationError
   return (
     <section
-      className={floatingPanelCatalogSurfaceClassName()}
+      className={inChat ? 'grid min-w-0 gap-1' : floatingPanelCatalogSurfaceClassName()}
       data-kg-floating-panel-prompt-presets-view="true"
       data-kg-floating-panel-catalog-layout="media-reuse"
       aria-label="Prompt Presets"
     >
-      <FloatingPanelCatalogHeader
+      {compact ? (
+        <header className="flex items-center justify-between gap-2">
+          <h3 className="text-xs font-semibold">Prompt presets</h3>
+          <button type="button" className={getUiSectionActionClassName('secondary', 'px-2')} onClick={() => setBrowseAll(true)}>Browse all presets</button>
+        </header>
+      ) : <FloatingPanelCatalogHeader
         title="Prompt Presets"
-        subtitle="Source-backed prompts and invocation discovery"
+        subtitle={inChat ? 'Choose a prompt to edit and send.' : 'Select a preset to prepare an editable draft.'}
         actionsLabel="Prompt Presets actions"
         dataAttributes={{ 'data-kg-floating-panel-prompt-presets-header': '1' }}
         searchControl={(
           <FloatingPanelCatalogSearchControl
             state={search}
-            id="kg-prompt-presets-catalog-search"
+            id={inChat ? 'kg-chat-prompt-presets-search' : 'kg-prompt-presets-catalog-search'}
             buttonLabel="Search prompt presets"
             panelLabel="Search Prompt Presets catalog"
             placeholder="Search presets"
@@ -158,26 +165,29 @@ export function FloatingPanelPromptPresetsView({
             toggleDataAttributes={{ 'data-kg-floating-panel-prompt-presets-search-toggle': '1' }}
           />
         )}
-      />
+      />}
+      {inChat && showAll && <button type="button" className="justify-self-start text-xs underline" onClick={() => { search.clearSearchQuery(); setBrowseAll(false) }}>Back to Canvas presets</button>}
       <section
-        className={floatingPanelCatalogBodyClassName()}
+        className={inChat ? 'min-w-0' : floatingPanelCatalogBodyClassName()}
         tabIndex={-1}
         data-kg-floating-panel-catalog-body="prompt-presets"
         aria-label="Prompt Presets catalog"
       >
+        {inChat && chatDraft.trim() && <p className="text-xs">Choosing a preset replaces the current draft.</p>}
         {loading ? (
           <p className={cn('px-2 py-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>Loading prompt presets…</p>
         ) : null}
         {statusMessage ? (
           <p className={cn('rounded border px-2 py-3 text-xs', UI_THEME_TOKENS.status.error)} role="alert" data-kg-prompt-presets-error="true">
             {statusMessage}
+            {catalogError && <button type="button" className="ml-2 underline" onClick={retry}>Retry catalog</button>}
           </p>
         ) : null}
         {!loading && !statusMessage && visiblePresets.length === 0 ? (
           <p className={cn('px-2 py-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>No prompt presets match this search.</p>
         ) : null}
         <section
-          className="agentic-collection" data-layout="list"
+          className={compact ? 'flex flex-wrap gap-1' : 'agentic-collection'} data-layout="list"
           data-kg-floating-panel-catalog-list="prompt-presets"
           data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
         >
@@ -185,7 +195,7 @@ export function FloatingPanelPromptPresetsView({
             <button
               key={preset.id}
               type="button"
-              className="agentic-collection-item" data-layout="list"
+              className={compact ? getUiSectionActionClassName('secondary', 'px-2') : 'agentic-collection-item'} data-layout="list"
               disabled={Boolean(invokingId)}
               aria-label={`Use ${preset.label} in ${preset.executionSurface === 'card-run' ? 'Card' : 'Chat'}`}
               title={`${preset.description} ${preset.executionSurface === 'card-run' ? 'Insert into the active Card without running.' : 'Use in Chat without submitting.'}`}
@@ -196,16 +206,20 @@ export function FloatingPanelPromptPresetsView({
               data-kg-prompt-preset-delivery={preset.executionSurface === 'card-run' ? 'card-insert-no-run' : 'chat-seed-no-submit'}
               onClick={() => { void invokePreset(preset) }}
             >
-              <span className="agentic-collection-leading" aria-hidden="true">
-                <MainPanelTypeIcon iconKey="floatingPanel.promptPresets" className="h-3.5 w-3.5" />
-              </span>
-              <span className="min-w-0">
-                <span className="agentic-collection-title block">{preset.label}</span>
-                <span className="agentic-collection-meta block">
-                  {invokingId === preset.id ? 'Opening in Chat…' : preset.description}
-                </span>
-              </span>
-              {renderPromptPresetTokenChip(preset)}
+              {compact ? preset.label : (
+                <>
+                  <span className="agentic-collection-leading" aria-hidden="true">
+                    <MainPanelTypeIcon iconKey="floatingPanel.promptPresets" className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="agentic-collection-title block">{preset.label}</span>
+                    <span className="agentic-collection-meta block">
+                      {invokingId === preset.id ? 'Opening in Chat…' : preset.description}
+                    </span>
+                  </span>
+                  {renderPromptPresetTokenChip(preset)}
+                </>
+              )}
             </button>
           ))}
         </section>

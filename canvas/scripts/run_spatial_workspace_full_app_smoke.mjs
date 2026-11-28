@@ -6,7 +6,9 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import yaml from 'js-yaml'
 import { chromium } from 'playwright'
+import { supportedResponsiveTargets } from 'agentic-design-system/annotation-targets'
 import { preview } from 'vite'
+import { matchesPagesBuild } from '../../scripts/pages-build-receipt.mjs'
 import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-fixture.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
@@ -14,7 +16,10 @@ const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8'
 const revision = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}')
 const firstValueBudgetMs = 300_000
 assert.equal(git('status', '--porcelain'), '', 'Acceptance requires a clean, committed candidate')
-if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
+if (process.argv.includes('--build')) {
+  if (await matchesPagesBuild(root)) console.log('Verified production output from this integration run')
+  else execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
+}
 const output = resolve(process.env.SPATIAL_FULL_APP_PROOF_DIR || join(tmpdir(), `spatial-full-app-${revision.slice(0, 12)}`))
 const source = `---
 title: Local spatial walkthrough
@@ -76,8 +81,10 @@ try {
   server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port: 4209, strictPort: true } })
   const origin = 'http://127.0.0.1:4209'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  for (const width of [1024, 390]) {
-    const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390 })
+  for (const [device, profile] of Object.entries(supportedResponsiveTargets)) {
+    console.log('Starting spatial review on ' + device)
+    const { width, height } = profile.viewport
+    const context = await browser.newContext(profile)
     // Explicit absent browser capability: every action below uses the product's visible controls.
     await context.addInitScript(() => {
       // Keep both host surfaces unavailable even when the application attempts its fallback.
@@ -121,7 +128,7 @@ try {
     const initialLayout = await visibleReviewWidth(review)
     assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
     assert.equal(initialLayout.overflow, false)
-    if (width === 1024) {
+    if (!profile.hasTouch) {
       await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
       await page.locator('[data-kg-xr-runtime-ready="ready"]').waitFor({ timeout: 60000 })
     }
@@ -187,8 +194,8 @@ try {
     const visibleControl = await quickPreview.boundingBox()
     assert.ok(visibleControl.x >= 0 && visibleControl.x + visibleControl.width <= width)
     await page.screenshot({ path: join(output, `review-${width}.png`), fullPage: true })
-    results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
-      noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
+    results.push({ device, width, height, deviceScaleFactor: profile.deviceScaleFactor, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
+      noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: profile.hasTouch ? 'touch-opt-in-deferred' : 'loaded',
       overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()

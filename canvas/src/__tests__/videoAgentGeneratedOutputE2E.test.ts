@@ -284,8 +284,8 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     if (mediaItems.length !== 2 || mediaItems.map(item => item.kind).sort().join(',') !== 'image,video') {
       throw new Error(`expected generated image and video to register in the shared @ Media inventory, got ${JSON.stringify(mediaItems)}`)
     }
-    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 2) {
-      throw new Error(`expected two durable R2 media objects, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.DB.d1BlobObjects.size !== 2) {
+      throw new Error(`expected two durable D1 media objects, got ${env.DB.d1BlobObjects.size}`)
     }
     const artifacts = Array.from(env.DB.mediaArtifacts.values())
     if (artifacts.length !== 2 || artifacts.some(row => row.workspace_id !== workspaceId)

@@ -109,7 +109,7 @@ export const createLabelsLayer = (args: {
     .attr('stroke-opacity', (d: GraphNode) => getLabelOpacityForNode(d))
     .attr('stroke-linejoin', 'round')
     .style('user-select', 'none')
-    .style('pointer-events', 'all')
+    .style('pointer-events', d => d.properties?.['visual:hideLabel'] === true ? 'none' : 'all')
     .style('cursor', 'pointer');
 
   if (nodeZKeyById) {

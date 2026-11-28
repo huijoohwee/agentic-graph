@@ -29,8 +29,7 @@ import {
 } from '@/features/chat/floatingPanelChat/floatingPanelChatRuntime'
 import { useFloatingPanelChatHistory } from '@/features/chat/floatingPanelChat/useFloatingPanelChatHistory'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
-import { useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
-import { isNativeImportUrlInvocationAttempt } from '@/features/chat/nativeImportUrlInvocation'
+import { canSubmitChatWithoutModel, useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
 import { shouldRenderFloatingChatApiKeyPrompt } from '@/features/chat/floatingPanelChat/floatingPanelChatApiKeyPrompt'
 import { buildStorageChatRelayLogDescriptor } from '@/features/chat/floatingPanelChat/floatingPanelChatRelayDiagnostics'
 import { applyFloatingPanelChatInputAppend, resolveFloatingPanelChatInputAppend } from '@/features/chat/floatingPanelChat/floatingPanelChatInputAppend'
@@ -785,8 +784,6 @@ export default function FloatingPanelChat() {
     requestHistorySubTab,
     setStreamingInsights,
   })
-  const nativeImportUrlInputReady = isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
-
   return (
     <section className="h-full flex flex-col">
       <section
@@ -795,7 +792,7 @@ export default function FloatingPanelChat() {
         className={`${UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME} p-2 space-y-2`}
       >
         <FloatingPanelChatMessagesSection
-          messages={messages}
+          messages={messages} presetDraft={input}
           isLoading={isLoading}
           historyKey={historyKey}
           contextItems={chatContextItems}
@@ -837,7 +834,7 @@ export default function FloatingPanelChat() {
         onModelChanged={handleChatModelChanged}
         uiPanelTextFontClass={uiPanelTextFontClass}
         uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
-        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeImportUrlInputReady)}
+        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !canSubmitChatWithoutModel(input))}
         onSubmit={handleSubmit}
         onStop={stopActiveChatStream}
         showNewChatButton={chatStorageTarget === 'chatAgenticGraph'}

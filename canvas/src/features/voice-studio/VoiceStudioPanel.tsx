@@ -22,6 +22,8 @@ import {
   subscribeVoiceStudioLaunchRequest,
 } from './voiceStudioInvocation'
 
+const GatewayAudio = React.lazy(() => import('./VoiceStudioGatewayAudio'))
+
 const operationLabel: Record<VoiceStudioOperation, string> = {
   clone: 'Clone',
   dictate: 'Dictate',
@@ -395,7 +397,7 @@ export function VoiceStudioPanel() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold">AI Voice Studio</h3>
-            <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>Clean-room · provider-neutral · injected-adapter Dev; provider unconfigured</p>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>Record audio, transcribe a file or generate speech on this device.</p>
           </div>
           <span className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs" data-kg-voice-consent-gate="1">
             <ShieldCheck className="size-3.5" aria-hidden />
@@ -512,6 +514,14 @@ export function VoiceStudioPanel() {
           <p className="inline-flex items-center gap-1 text-xs"><Volume2 className="size-3.5" aria-hidden />Synthetic-voice disclosure is always required.</p>
         </section>
       ) : null}
+
+      {operation !== 'clone' && (
+        <React.Suspense fallback={null}>
+          <GatewayAudio key={operation} mode={operation} text={createText} onTranscript={value =>
+            setTranscript(previous => [previous, value].filter(Boolean).join('\n').slice(0, VOICE_STUDIO_LOCAL_LIMITS.transcriptCharacters))
+          } />
+        </React.Suspense>
+      )}
 
       <p className={cn('rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border)} role="status" aria-live="polite" data-kg-voice-status="1">{status}</p>
     </section>

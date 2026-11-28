@@ -16,6 +16,7 @@ import { hideTempLink, cancelPendingEdge } from '@/features/edge-creation'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { applySelectionHighlight } from '@/components/GraphCanvas/highlight'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
+import { captureSketchPositions, fitSketchAroundPanel } from './layers/nodeSketch'
 import { createDefs, createGroupsLayer, createLinksHitLayer, createLinksLayer, createEdgeLabelsLayer, createNodesLayer, createTempLink, createLabelsLayer, createResizeHandlesLayer } from '@/components/GraphCanvas/sceneLayers'
 import { attachGlobalHandlers, attachSimulationTick } from '@/components/GraphCanvas/sceneHandlers'
 import { applyGraphCanvasZOrder } from '@/components/GraphCanvas/zOrder'
@@ -50,7 +51,7 @@ import { computeOverlayHalfExtentsByNodeId2d } from '@/lib/render/overlayHalfExt
 import { resolveContextualZoomDetail } from '@/lib/zoom/viewport'
 import { readGraphElementCenterPoint } from '@/lib/canvas/graph-elements/centroid'
 import { resolveWorkspaceVisibleViewport } from '@/lib/zoom/workspaceVisibleViewport'
-import { filterGraphCanvasViewportFitNodes } from '@/components/GraphCanvas/viewportFitNodes'
+import { filterGraphCanvasViewportFitNodes, readViewportFitNodesFromLayer } from '@/components/GraphCanvas/viewportFitNodes'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>
 type SetupGraphSceneArgs = {
@@ -228,6 +229,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
   }).forceDocumentStructureGroups
   sceneGraphDataRef.current = graphDataForDisplay
   const displayNodes = Array.isArray(graphDataForDisplay.nodes) ? (graphDataForDisplay.nodes as GraphNode[]) : []
+  const restoreSketchPositions = captureSketchPositions(displayNodes)
   const displayNodesForViewportFit = filterGraphCanvasViewportFitNodes({
     nodes: displayNodes,
     panelOnlyNodeIdSet,
@@ -289,23 +291,16 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
       next,
     )
   }
-  const readViewportFitNodes = (): GraphNode[] => {
-    try {
-      const mountedNodes = nodesSelRef.current?.data()
-      if (Array.isArray(mountedNodes) && mountedNodes.length > 0) return mountedNodes as GraphNode[]
-    } catch {
-      void 0
-    }
-    return displayNodesForViewportFit
-  }
+  const readViewportFitNodes = () => readViewportFitNodesFromLayer(nodesSelRef.current, displayNodesForViewportFit)
   const readVisibleViewportFitFrame = () => {
     const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen(useGraphStore.getState())
-    return resolveWorkspaceVisibleViewport({
+    const frame = resolveWorkspaceVisibleViewport({
       viewportW: Math.max(1, width),
       viewportH: Math.max(1, Math.floor(height)),
       workspaceEditorOverlayOpen,
       surfaceElement: svgEl,
     })
+    return restoreSketchPositions ? fitSketchAroundPanel(svgEl, frame) : frame
   }
   const buildViewportFitNodesPositionSignature = (nodes: GraphNode[]): string => {
     if (!Array.isArray(nodes) || nodes.length === 0) return '0'
@@ -663,6 +658,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     }
   }
 
+  restoreSketchPositions?.()
   if (initialZoomTransform) {
     applyInitialTransform(initialZoomTransform)
   } else {

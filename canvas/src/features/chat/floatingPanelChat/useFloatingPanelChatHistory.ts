@@ -38,10 +38,14 @@ export const parseChatHistory = (raw: unknown): ChatMessage[] | null => {
       : isHeadlessResponseRunReceipt(headlessResponseRun)
         ? headlessResponseRun
         : null
+    const outcome = item.canvasOutcome
+    const entryId = item.canvasHistoryEntryId
     next.push({
       id,
       role,
-      content,
+      content: item.canvasPending === true && role === 'assistant' ? 'Diagram submission interrupted.' : content,
+      ...(role === 'assistant' && (outcome === 'failed' || outcome === 'cancelled') ? { canvasOutcome: outcome } : {}),
+      ...(role === 'assistant' && typeof entryId === 'string' && /^h-[\w-]{1,120}$/.test(entryId) ? { canvasHistoryEntryId: entryId } : {}),
       ...(receipt ? { headlessResponseRun: receipt } : {}),
     })
   })

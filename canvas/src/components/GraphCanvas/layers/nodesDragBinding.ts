@@ -187,6 +187,7 @@ export function bindNodeDraggingWithGroupContainment(args: {
         d.x = x
         d.y = y
       }
+      if (d.properties?.['visual:sketch']) { d.fx = x; d.fy = y }
       try {
         args.onCommitNodePosition?.({ id, x, y })
       } catch {

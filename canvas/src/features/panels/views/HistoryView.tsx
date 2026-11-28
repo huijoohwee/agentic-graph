@@ -149,7 +149,7 @@ function getFileIcon(type: RecentFileEntry['type']) {
   }
 }
 
-export default function HistoryView({ searchQuery }: { searchQuery: string }) {
+export default function HistoryView({ searchQuery, entryId, entryRequest }: { searchQuery: string; entryId?: string; entryRequest?: number }) {
   const {
     history: historyRaw,
     historyIndex,
@@ -182,6 +182,19 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
     })),
   )
   const [tab, setTab] = React.useState<HistorySubTab>('chat')
+  const pendingEntry = React.useRef<string | undefined>(undefined)
+  React.useEffect(() => {
+    pendingEntry.current = entryId
+    if (entryId) setTab('history')
+  }, [entryId, entryRequest])
+  React.useEffect(() => {
+    if (tab !== 'history' || !pendingEntry.current) return
+    const row = document.getElementById('version-' + pendingEntry.current)
+    if (row) {
+      row.focus()
+      pendingEntry.current = undefined
+    }
+  }, [tab, entryId, entryRequest, searchQuery])
   const [logFilter, setLogFilter] = React.useState<LogFilter>('all')
   React.useEffect(() => {
     if (!requestedHistorySubTab) return
@@ -424,6 +437,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                       if (originalIndex < 0) return
                       restoreHistory(originalIndex)
                     }}
+                    id={'version-' + h.id}
                     data-kg-version-history-index={originalIndex >= 0 ? originalIndex : undefined}
                   >
                     <span className={`block ${UI_THEME_TOKENS.text.primary}`}>{h.label}</span>

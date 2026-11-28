@@ -1,7 +1,9 @@
 import {
   buildDocDeepLinkIntentKey,
   resolveCanvasSourceAuthorityIntent,
+  setLocalDocDeepLinkPath,
 } from '@/features/canvas/canvasDocDeepLink'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 
 export function testCanvasSourceAuthorityCanonicalizesLocalIntentKeys(): void {
@@ -10,6 +12,22 @@ export function testCanvasSourceAuthorityCanonicalizesLocalIntentKeys(): void {
   const collapsedKey = buildDocDeepLinkIntentKey('?kgDoc=%2Fdocs%2F.%2Fscene.md&kgPreview=1')
   if (!relativeKey || relativeKey !== absoluteKey || relativeKey !== collapsedKey) {
     throw new Error('local document intent keys must use the canonical workspace path')
+  }
+
+  const { restore } = initJsdomHarness()
+  try {
+    setLocalDocDeepLinkPath('/docs/scene.md')
+    const search = window.location.search
+    if (buildDocDeepLinkIntentKey(search) || resolveCanvasSourceAuthorityIntent({ pathname: '/', search }).key) {
+      throw new Error('Mirroring the active Explorer selection must leave source readiness with the workspace')
+    }
+    if (buildDocDeepLinkIntentKey(search + '&kgPreview=1') !== relativeKey) {
+      throw new Error('An explicit preview must still acquire its own document intent')
+    }
+    window.history.replaceState({ ...window.history.state }, '', search)
+    if (!buildDocDeepLinkIntentKey(search)) throw new Error('A new history entry must resolve the local link')
+  } finally {
+    restore()
   }
 }
 

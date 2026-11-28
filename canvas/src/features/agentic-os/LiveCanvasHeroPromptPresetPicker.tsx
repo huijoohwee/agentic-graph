@@ -8,11 +8,15 @@ import {
 import type { PresetSummary } from '@/features/chat/gatewayPresetCatalog'
 import type { LiveCanvasHeroDemo } from './liveCanvasHeroDemoSource'
 
+import { useGraphStore } from '@/hooks/useGraphStore'
+const CanvasAuthoringStarters = React.lazy(() => import('@/features/graph-editor/CanvasAuthoringStarters'))
+
 export function LiveCanvasHeroPromptPresetPicker(props: {
   activePresetId: string
   onSelect: (selection: { id: string; prompt: string }) => void
   runtime?: PromptPresetSelectionRuntime
 }) {
+  const empty = useGraphStore(state => !state.graphData?.nodes.length)
   const { activePresetId, onSelect } = props
   const runtime = props.runtime || defaultPromptPresetSelectionRuntime
   const { presets, loading, error: catalogError, retry } = usePromptPresetCatalogState(runtime.loadCatalog)
@@ -61,6 +65,7 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
       <legend className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
         Catalog
       </legend>
+      {empty && <React.Suspense fallback={null}><CanvasAuthoringStarters runtime={runtime} /></React.Suspense>}
       {loading ? <p className="mt-1 text-xs text-[var(--kg-text-secondary)]">Loading prompt presets…</p> : null}
       {statusMessage ? <p className="mt-1 text-xs text-red-500" role="alert">{statusMessage}</p> : null}
       {catalogError && !loading && <button type="button" onClick={retry}

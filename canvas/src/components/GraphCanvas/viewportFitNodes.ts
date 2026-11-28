@@ -18,3 +18,14 @@ export function filterGraphCanvasViewportFitNodes(args: {
   })
   return filtered.length > 0 ? filtered : nodes
 }
+
+/** The mounted scene may be unavailable while the Canvas layer is being replaced. */
+export function readViewportFitNodesFromLayer(layer: { data(): GraphNode[] } | null, fallback: GraphNode[]): GraphNode[] {
+  try {
+    const mounted = layer?.data()
+    if (Array.isArray(mounted) && mounted.length) return mounted
+  } catch {
+    return fallback
+  }
+  return fallback
+}

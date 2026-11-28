@@ -39,6 +39,7 @@ export const shouldShowEdgeArrow = (e: GraphEdge, schema: GraphSchema): boolean 
 }
 
 export const getEdgeLabelForDisplay = (e: GraphEdge): string => {
+  if (e.properties?.['visual:hideLabel'] === true) return ''
   const flowLabel = String(readFlowEdgeDisplayLabel(e) || '').trim()
   if (flowLabel) return flowLabel
   const frontmatterDisplayLabel = readStringEdgeProp(e, 'frontmatter:displayLabel')

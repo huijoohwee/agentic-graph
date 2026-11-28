@@ -5,7 +5,7 @@ import type { StoreApi } from 'zustand';
 import { withGraphDataRevision } from './graphDataSliceUtils'
 import { deepClone } from '@/lib/data/deepClone'
 import { boundedJsonEqual } from '@/lib/data/boundedJsonEqual'
-import { createUniqueId } from '@/lib/ids'
+import { createId } from '@/lib/id'
 import { debounce } from '@/lib/async/debounce'
 import { persistGraphDataToLocalStorage } from './graphDataPersistence'
 import { hashArrayOfObjectsSignature, hashRecordSignature, hashSignatureParts } from '@/lib/hash/signature'
@@ -15,7 +15,7 @@ import {
   type VersionHistoryEntry,
 } from '@/features/history/versionHistoryTypes'
 import { writeActiveMarkdownDocumentTextIfPresent } from './graph-data-slice/graphDataFrontmatterFlowSync'
-import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
+import { normalizeComposedSourcePath, readComposedSourceFilePath } from '@/features/source-files/composedSourceSelection'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 
 type SetGraph = StoreApi<GraphState>['setState']
@@ -33,16 +33,13 @@ export const cancelScheduledHistoryCommit = (): void => {
   }
 }
 
-const readActiveSourceFileSnapshot = (
+export const readActiveSourceFileSnapshot = (
   sourceFiles: readonly SourceFile[],
   markdownDocumentName: string | null | undefined,
 ): SourceFile | null => {
   const documentName = normalizeComposedSourcePath(markdownDocumentName)
   if (!documentName) return null
-  const match = sourceFiles.find(file => {
-    const sourcePath = normalizeComposedSourcePath(file.source?.path)
-    return sourcePath === documentName || normalizeComposedSourcePath(file.name) === documentName
-  })
+  const match = sourceFiles.find(file => readComposedSourceFilePath(file) === documentName)
   return match ?? null
 }
 
@@ -90,24 +87,13 @@ const buildHistoryEntry = (args: {
   activeSourceFileSnapshot: SourceFile | null
   parentId: string | null
 }): VersionHistoryEntry => {
-  return {
-    id: args.id,
-    parentId: args.parentId,
-    label: args.label,
-    timestamp: args.timestamp,
-    source: inferVersionHistorySource(args.label),
-    contentSignature: args.contentSignature,
-    graphData: args.graphData,
-    graphFieldSettingsById: args.graphFieldSettingsById,
-    markdownDocumentName: args.markdownDocumentName,
-    markdownDocumentText: args.markdownDocumentText,
-    activeSourceFileSnapshot: args.activeSourceFileSnapshot,
-  }
+  return { ...args, source: inferVersionHistorySource(args.label) }
 }
 
 const restoreHistoryEntry = (set: SetGraph, get: GetGraph, entry: VersionHistoryEntry, historyIndex: number): void => {
   cancelScheduledHistoryCommit()
   const previousState = get()
+  if (previousState.canvasAuthoringTurn) return
   const restoredPath = normalizeComposedSourcePath(entry.markdownDocumentName || entry.activeSourceFileSnapshot?.source?.path || entry.activeSourceFileSnapshot?.name)
   const transportPath = normalizeComposedSourcePath(previousState.timelineTransportDocumentKey)
   const restoreDocumentTransport = !!transportPath && (transportPath === restoredPath || transportPath === normalizeComposedSourcePath(previousState.markdownDocumentName))
@@ -187,25 +173,32 @@ const appendBoundedHistoryEntry = (
   return bounded.map((item, index) => index === 0 ? { ...item, parentId: null } : item)
 }
 
+export function snapshotHistory(state: GraphState, graphData: GraphData, label: string) {
+  const { graphFieldSettingsById, history, historyIndex, markdownDocumentName, markdownDocumentText, sourceFiles } = state
+  const activeSourceFileSnapshot = readActiveSourceFileSnapshot(sourceFiles || [], markdownDocumentName)
+  const snapshot: HistorySnapshot = { graphData, graphFieldSettingsById: graphFieldSettingsById || {}, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot }
+  const contentSignature = getHistorySnapshotSignature(graphData, graphFieldSettingsById, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot)
+  const trimmed = history.slice(0, historyIndex + 1)
+  if (shouldSkipHistoryCommit(trimmed, contentSignature, snapshot)) return trimmed
+  const timestamp = Date.now()
+  const entry = buildHistoryEntry({
+    ...snapshot,
+    graphData: deepClone(graphData),
+    graphFieldSettingsById: deepClone(snapshot.graphFieldSettingsById),
+    activeSourceFileSnapshot: activeSourceFileSnapshot ? deepClone(activeSourceFileSnapshot) : null,
+    id: createId('h'),
+    contentSignature, timestamp, label, parentId: trimmed[trimmed.length - 1]?.id || null,
+  })
+  return appendBoundedHistoryEntry(trimmed, entry)
+}
+
 export const createHistorySlice = (set: SetGraph, get: GetGraph) => {
   const commitHistory = (label: string, persist = false): void => {
-    const { graphData, graphFieldSettingsById, history, historyIndex, markdownDocumentName, markdownDocumentText, sourceFiles } = get()
-    if (!graphData) return
-    const activeSourceFileSnapshot = readActiveSourceFileSnapshot(sourceFiles || [], markdownDocumentName)
-    const snapshot: HistorySnapshot = { graphData, graphFieldSettingsById: graphFieldSettingsById || {}, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot }
-    const contentSignature = getHistorySnapshotSignature(graphData, graphFieldSettingsById, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot)
-    const trimmed = history.slice(0, historyIndex + 1)
-    if (shouldSkipHistoryCommit(trimmed, contentSignature, snapshot)) return
-    const timestamp = Date.now()
-    const entry = buildHistoryEntry({
-      ...snapshot,
-      graphData: deepClone(graphData),
-      graphFieldSettingsById: deepClone(snapshot.graphFieldSettingsById),
-      activeSourceFileSnapshot: activeSourceFileSnapshot ? deepClone(activeSourceFileSnapshot) : null,
-      id: createUniqueId(`h-${timestamp.toString(36)}-`, new Set(trimmed.map(item => item.id))),
-      contentSignature, timestamp, label, parentId: trimmed[trimmed.length - 1]?.id || null,
-    })
-    const nextHistory = appendBoundedHistoryEntry(trimmed, entry)
+    const state = get()
+    const { graphData } = state
+    if (!graphData || state.canvasAuthoringTurn) return
+    const nextHistory = snapshotHistory(state, graphData, label)
+    if (nextHistory.at(-1) === state.history[state.historyIndex]) return
     set({ history: nextHistory, historyIndex: nextHistory.length - 1 })
     if (persist) {
       try { persistGraphDataToLocalStorage(graphData) } catch { void 0 }
@@ -213,6 +206,7 @@ export const createHistorySlice = (set: SetGraph, get: GetGraph) => {
   }
   return ({
   
+  canvasAuthoringTurn: null,
   history: [] as VersionHistoryEntry[],
   historyIndex: -1,
   historyRestoreRevision: 0,

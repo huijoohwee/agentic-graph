@@ -52,6 +52,7 @@ type MainPanelSharedActions = {
 type SharedMainPanelTabKey = 'collaboration' | 'integrations' | 'mcp' | 'maps' | 'commerce' | 'settings'
 
 type SharedMainPanelViewProps = {
+  onOpenWorkspace?: () => void
   searchQuery: string
   requestedAnchorId?: string
   requestedAnchorSeq?: number
@@ -390,6 +391,7 @@ export default function MainPanel({
                   >
                     <React.Suspense fallback={null}>
                       <SharedView
+                        onOpenWorkspace={onClose}
                         searchQuery={search}
                         requestedAnchorId={requestedAnchorId}
                         requestedAnchorSeq={requestedAnchorSeq}
@@ -448,7 +450,7 @@ export default function MainPanel({
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-history-panel" aria-labelledby="main-panel-history-tab" hidden={tab !== 'history'}>
           {tab === 'history' && (
             <React.Suspense fallback={null}>
-              <HistoryViewLazy searchQuery={search} />
+              <HistoryViewLazy searchQuery={search} entryId={requestedTab === 'history' ? requestedAnchorId : undefined} entryRequest={requestedAnchorSeq} />
             </React.Suspense>
           )}
         </section>

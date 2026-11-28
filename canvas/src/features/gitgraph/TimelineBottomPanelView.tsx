@@ -191,7 +191,12 @@ export function TimelineBottomPanelView({ compact = false }: { compact?: boolean
     </CinemaShotTimeline>
   </React.Suspense>
   if (xrTimelineContext && !stageAuthority) return <LiveGeoXrSimulationTimeline compact={compact} />
-  if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
+  if (xrTimelineContext) return (
+    <div className="min-w-0">
+      <XrSubjectTransformEditor />
+      <XrCameraMotionSection />
+    </div>
+  )
   if (sequenceContext) return <React.Suspense fallback={<p>Opening sequence timeline…</p>}><SequenceTimeline /></React.Suspense>
   return <MediaTimelineBottomPanelView compact={compact} />
 }

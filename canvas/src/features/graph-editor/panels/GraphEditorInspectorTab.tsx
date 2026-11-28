@@ -4,12 +4,50 @@ import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
+import { isSketchPath, readNodeSketch, type Sketch, type SketchMark } from '@/lib/graph/canvasSketch'
 import { readSubgraphs, subgraphGroupId, writeSubgraphs } from '@/lib/graph/subgraphs'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGroupBoundsOverrideSource } from '@/lib/canvas/groupBoundsOverrides'
 import { resetGroupBoundsOverrideInStore } from '@/lib/canvas/groupBoundsOverridesStore'
 import { TwoColumnEditorGrid } from '@/features/panels/ui/TwoColumnEditorGrid'
 import { PanelField, PanelReadOnlyField, PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
+
+function SketchPartInspector({ node, sketch }: { node: GraphNode; sketch: Sketch }) {
+  const [part, setPart] = React.useState(0)
+  const index = Math.min(part, sketch.marks.length - 1)
+  const mark = sketch.marks[index]
+  const update = (change: Partial<SketchMark>) => {
+    const store = useGraphStore.getState()
+    const current = store.graphData?.nodes.find(n => n.id === node.id)
+    const latest = current && readNodeSketch(current)
+    if (!current || !latest || !latest.marks[index] || store.canvasAuthoringTurn) return
+    const marks = latest.marks.map((m, i) => i === index ? { ...m, ...change } : m)
+    store.updateNode(node.id, { properties: { ...current.properties, 'visual:sketch': { ...latest, marks } } })
+  }
+  return <fieldset className="space-y-2">
+    <legend>Drawing</legend>
+    <PanelField label="Part"><PanelSelect aria-label="Drawing part" value={String(index)} onValueChange={v => setPart(Number(v))}>
+      {sketch.marks.map((_, i) => <option value={i} key={i}>Stroke {i + 1}</option>)}
+    </PanelSelect></PanelField>
+    <TwoColumnEditorGrid>
+      <PanelField label="Ink"><input type="color" aria-label="Stroke color" value={mark.stroke === 'none' ? '#243548' : mark.stroke}
+        onChange={event => update({ stroke: event.target.value })} /></PanelField>
+      <PanelField label="Width"><input type="number" aria-label="Stroke width" min={0} max={16} step={0.5} value={mark.width}
+        onChange={event => { const width = event.target.valueAsNumber; if (Number.isFinite(width) && width >= 0 && width <= 16) update({ width }) }} /></PanelField>
+    </TwoColumnEditorGrid>
+    <PanelField label="Path"><PanelTextInput key={index + mark.d} aria-label="Stroke path" defaultValue={mark.d} maxLength={2048}
+      onInput={event => event.currentTarget.setCustomValidity('')}
+      onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }}
+      onBlur={event => {
+        const field = event.currentTarget
+        const d = field.value.trim()
+        if (!isSketchPath(d)) {
+          field.setCustomValidity('Enter a complete vector path starting with M.')
+          field.reportValidity()
+        } else if (d !== mark.d) update({ d })
+      }} /></PanelField>
+  </fieldset>
+}
 
 export function GraphEditorInspectorTab() {
   const {
@@ -91,6 +129,7 @@ export function GraphEditorInspectorTab() {
   }
 
   if (selectedNode) {
+    const sketch = readNodeSketch(selectedNode)
     return (
       <section className="space-y-3" aria-label="Inspector node">
         <section className={`text-xs font-medium ${UI_THEME_TOKENS.text.secondary}`}>Node</section>
@@ -111,6 +150,7 @@ export function GraphEditorInspectorTab() {
             aria-label="Node type"
           />
         </PanelField>
+        {sketch && <SketchPartInspector key={selectedNode.id} node={selectedNode} sketch={sketch} />}
         <PanelField label="Subgraph">
           <PanelSelect
             className="mt-1 text-sm"

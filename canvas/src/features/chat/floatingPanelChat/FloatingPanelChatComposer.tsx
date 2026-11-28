@@ -1,5 +1,7 @@
 import { buildAgenticOsInvocationSourceTitle } from '@/features/agentic-os/agenticOsDocInvocations'
 import React from 'react'
+import type { PresetSummary } from '../gatewayPresetCatalog'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { collectMarkdownVariableBrowseRows, buildMarkdownVariableToken } from '@/features/markdown/ui/markdownVariableReferences'
 import {
   buildPromptPresetChatInvocationCatalogEntries,
@@ -51,6 +53,12 @@ const REMOTE_GRAMMAR_GROUP_BY_KIND = {
   semantic: 'Agentic OS semantic dictionary',
 } as const
 
+const drawingTokens = {
+  slash: ['/canvas.project', 'Project a diagram or sketch onto Canvas'],
+  at: ['@canvas', 'Use the active Canvas'],
+  hash: ['#canvas', 'Author editable Canvas content'],
+} as const
+
 const FLOATING_PANEL_CHAT_GRAMMAR_QUICK_BAR_TOKENS = [
   { id: 'slash', label: '/', name: 'Commands', description: 'Open slash commands' },
   { id: 'binding', label: '@', name: 'Context', description: 'Open bindings and variables' },
@@ -91,9 +99,29 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
   const editorRef = React.useRef<HTMLElement | null>(null)
   const pendingSelectionRef = React.useRef<{ start: number; end: number } | null>(null)
   const [trigger, setTrigger] = React.useState<ChatComposerTrigger | null>(null)
+  const quickMenuOpen = React.useRef(false)
   const [query, setQuery] = React.useState('')
   const [remoteGrammarEntries, setRemoteGrammarEntries] = React.useState<AgenticOsRemoteGrammarCatalogEntry[]>([])
   const promptPresets = usePromptPresetCatalog()
+  const [canvasPresets, setCanvasPresets] = React.useState<PresetSummary[] | null>(null)
+  const [presetError, setPresetError] = React.useState('')
+  const isSlashOpen = trigger?.kind === 'slash'
+  React.useEffect(() => {
+    if (!isSlashOpen || canvasPresets) return
+    let current = true
+    void import('../gatewayPresetCatalog').then(m => m.listGatewayPresets()).then(result => {
+      if (!current) return
+      if (result.ok === false) { setPresetError(result.error); return }
+      setPresetError('')
+      setCanvasPresets(result.presets.filter(p => p.runtimeCommand === '/canvas.project'))
+    }).catch(error => { if (current) setPresetError(String(error)) })
+    return () => { current = false }
+  }, [isSlashOpen, canvasPresets])
+  const draftRef = React.useRef({ input: props.input, trigger })
+  React.useLayoutEffect(() => {
+    draftRef.current = { input: props.input, trigger }
+    return () => { draftRef.current = { input: '', trigger: null } }
+  }, [props.input, trigger])
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({
     sigils: trigger ? [REMOTE_GRAMMAR_SIGIL_BY_TRIGGER_KIND[trigger.kind]] : [],
   })
@@ -109,6 +137,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
   }, [])
 
   const closeMenu = React.useCallback(() => {
+    quickMenuOpen.current = false
     setTrigger(null)
     setQuery('')
   }, [])
@@ -122,7 +151,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
     })
   }, [closeMenu, focusComposerSelection, props, trigger])
   const buildInvocationCatalogItems = React.useCallback((prefixFilter: ChatInvocationCatalogPrefixFilter): MarkdownInlineCommandMenuItem[] => (
-    resolveChatInvocationCatalogEntries(prefixFilter, '').map(entry => buildInlineCommandMenuItem({
+    mergeMenuItems(resolveChatInvocationCatalogEntries(prefixFilter, '').map(entry => buildInlineCommandMenuItem({
       id: `chat-invocation-catalog-${prefixFilter}-${entry.id}`,
       label: entry.token,
       group: entry.group,
@@ -130,7 +159,12 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
       title: buildAgenticOsInvocationSourceTitle(entry),
       keywords: [entry.label, entry.sourcePath || '', ...entry.keywords].filter(Boolean),
       onSelect: () => applyReplacement(`${entry.token} `),
-    }))
+    })), Object.entries(drawingTokens)
+      .filter(([kind]) => prefixFilter === 'all' || kind === prefixFilter)
+      .map(([kind, [token, description]]) => buildInlineCommandMenuItem({
+        id: 'canvas-drawing-' + kind, label: token, description, group: 'Canvas',
+        keywords: ['diagram', 'sketch', 'freeform'], onSelect: () => applyReplacement(token + ' '),
+      })))
   ), [applyReplacement, grammarCatalog.version])
   React.useEffect(() => {
     if (!trigger) {
@@ -142,10 +176,11 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
     setRemoteGrammarEntries([])
     fetchAgenticOsRemoteGrammarCatalog({ query: token, signal: abortController.signal })
       .then(entries => {
+        if (abortController.signal.aborted) return
         setRemoteGrammarEntries(entries.filter(entry => matchesRemoteGrammarTriggerKind(entry, trigger.kind)))
       })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (abortController.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return
         setRemoteGrammarEntries([])
       })
     return () => abortController.abort()
@@ -156,13 +191,13 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
     let cancelled = false
     requestAnimationFrame(() => {
       if (cancelled) return
-      focusComposerSelection(props.input.length)
+      focusComposerSelection(draftRef.current.input.length)
       closeMenu()
     })
     return () => {
       cancelled = true
     }
-  }, [closeMenu, focusComposerSelection, props.appendFocusRequestKey, props.input])
+  }, [closeMenu, focusComposerSelection, props.appendFocusRequestKey])
 
   const remoteGrammarItems = React.useMemo<MarkdownInlineCommandMenuItem[]>(() => {
     if (!trigger) return []
@@ -193,12 +228,28 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
       onSelect: () => applyReplacement(resolveChatInvocationCatalogEntryInsertionText(entry)),
     }))
   ), [applyReplacement, promptPresets])
+  const canvasPresetItems = React.useMemo(() => (canvasPresets || []).map(preset => buildInlineCommandMenuItem({
+    id: 'gateway-' + preset.id, label: preset.slashCommand, group: 'Prompt preset',
+    description: preset.description, keywords: [preset.label, preset.runtimeCommand, 'sketch diagram freeform'],
+    onSelect: async () => {
+      const draft = draftRef.current
+      const documentName = useGraphStore.getState().markdownDocumentName
+      try {
+        const { selectGatewayPreset } = await import('../gatewayPresetCatalog')
+        const result = await selectGatewayPreset(preset.id)
+        if (draftRef.current !== draft || useGraphStore.getState().markdownDocumentName !== documentName) return
+        if (result.ok === false) { setPresetError(result.error); return }
+        setPresetError('')
+        applyReplacement(result.prompt)
+      } catch (error) { if (draftRef.current === draft) setPresetError(String(error)) }
+    },
+  })), [applyReplacement, canvasPresets])
   const slashItems = React.useMemo(
     () => mergeMenuItems(
-      promptPresetItems,
+      mergeMenuItems(canvasPresetItems, promptPresetItems),
       mergeMenuItems(remoteGrammarItems.filter(item => item.label.startsWith('/')), slashFallbackItems),
     ),
-    [promptPresetItems, remoteGrammarItems, slashFallbackItems],
+    [canvasPresetItems, promptPresetItems, remoteGrammarItems, slashFallbackItems],
   )
   const variableFallbackItems = React.useMemo<MarkdownInlineCommandMenuItem[]>(() => {
     const sourceLines = String(props.markdownText || '').split(/\r?\n/)
@@ -254,18 +305,15 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
     const input = inputRef.current
     const rawSelectionStart = input?.selectionStart ?? props.input.length
     const rawSelectionEnd = input?.selectionEnd ?? props.input.length
-    const needsLeadingSpace = rawSelectionStart > 0 && /\S/.test(props.input.charAt(rawSelectionStart - 1) || '')
-    const insertion = `${needsLeadingSpace ? ' ' : ''}${token}`
-    const nextText = `${props.input.slice(0, rawSelectionStart)}${insertion}${props.input.slice(rawSelectionEnd)}`
-    const nextCursorRaw = rawSelectionStart + insertion.length
-    props.setInput(nextText)
-    requestAnimationFrame(() => {
-      focusComposerSelection(nextCursorRaw)
-      const nextTrigger = resolveChatComposerTrigger(nextText, nextCursorRaw)
-      setTrigger(nextTrigger)
-      setQuery(nextTrigger?.query || '')
-    })
-  }, [focusComposerSelection, props.input, props.setInput])
+    const needsSpace = rawSelectionStart > 0 && /\S/.test(props.input.charAt(rawSelectionStart - 1))
+    const prefix = (needsSpace ? ' ' : '') + token
+    const text = props.input.slice(0, rawSelectionStart) + prefix + props.input.slice(rawSelectionEnd)
+    const cursor = rawSelectionStart + prefix.length
+    quickMenuOpen.current = true
+    props.setInput(text)
+    setTrigger(resolveChatComposerTrigger(text, cursor))
+    setQuery('')
+  }, [props.input, props.setInput])
 
   return (
     <section ref={anchorRef} className={`relative flex flex-col border rounded overflow-hidden ${props.responsiveEditorClassName || UI_RESPONSIVE_MULTILINE_TEXT_INPUT_EDITOR_CLASSNAME} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg}`}>
@@ -290,6 +338,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
           </button>
         ))}
       </section>
+      {presetError && <p role="alert">{presetError}</p>}
       <FloatingPanelChatContentEditableSurface
         value={props.input}
         onChange={props.setInput}
@@ -301,7 +350,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
         className={`min-h-0 flex-1 overflow-auto bg-transparent px-2 py-1 ${props.uiPanelTextFontClass}`}
         commandMode={trigger}
         onSelectionChange={(selection, value) => {
-          if (pendingSelectionRef.current) return
+          if (pendingSelectionRef.current || quickMenuOpen.current) return
           const next = resolveChatComposerTrigger(value, selection.end)
           setTrigger(next)
           setQuery(next?.query || '')

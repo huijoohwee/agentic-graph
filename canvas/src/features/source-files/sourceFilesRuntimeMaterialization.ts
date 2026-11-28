@@ -325,11 +325,21 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
   const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
     && (current.markdownDocumentApplyViewPreset !== false || isWorkspaceDocumentCanvasGraphApplyDisabled(current.markdownDocumentText || ''))
     && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
+  // A passive open can settle alongside discovery of a distinct file when the active bytes and existing records match.
+  if (args.applyToGraph === false && documentRemainsCurrent && args.expectedSourceText !== undefined
+    && !hasMaterializedActivePathDrifted(activePath, explorerAtStart) && current.sourceFiles.length > before.sourceFiles.length
+    && before.sourceFiles.some(file => file.source?.path === resolveWorkspaceSourcePathKey(activePath) && file.text === args.expectedSourceText)
+    && hasOnlySafeSourceFileAdditions({ before: before.sourceFiles, current: current.sourceFiles, allowUnrelatedAdditions: true })) {
+    return captureMaterializedWorkspaceSourceProof(activePath)
+  }
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
     || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])
       && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) {
-    throw staleMaterialization(retryableLifecyclePublication && documentRemainsCurrent, 'active source lifecycle')
+    const loading = current.sourceFiles.find(file => file.source?.path === resolveWorkspaceSourcePathKey(activePath) && file.status === 'loading')
+    const activeParseStarted = !!loading && args.applyToGraph === true && sameMaterializationSourceIdentities(before.sourceFiles, current.sourceFiles)
+      && retainEquivalentMaterializationPeers(before.sourceFiles, current.sourceFiles, loading.id)
+    throw staleMaterialization((retryableLifecyclePublication || activeParseStarted) && documentRemainsCurrent, 'active source lifecycle')
   }
   if (!documentRemainsCurrent) throw staleMaterialization()
   return captureMaterializedWorkspaceSourceProof(activePath)

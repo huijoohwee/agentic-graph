@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readWebglSupport } from '../lib/three/webglSupport'
+import { readWebglSupport, resolveWebglCanvasDpr } from '../lib/three/webglSupport'
 import {
   armFlightSimReadyFrame,
   beginFlightSimHudUpdate,
@@ -147,6 +147,27 @@ test('actual WebGL probe is synchronous and a probe over 100 ms fails closed', (
   assert.equal(late.observation.available, true)
   assert.equal(late.observation.withinLimit, false)
   assert.equal(late.available, false, 'an available but late probe must fail admission closed')
+})
+
+test('the fallback framebuffer fits its pixel budget while accelerated contexts retain their requested DPR', () => {
+  let caveat = true, released = 0
+  const view = { innerWidth: 1728, innerHeight: 1117, devicePixelRatio: 2 }
+  const context = { getExtension: () => ({ loseContext: () => { released++ } }) }
+  const documentValue = { defaultView: view, createElement: () => ({
+    getContext: (name: string, options?: WebGLContextAttributes) =>
+      name === 'webgl2' && !(caveat && options?.failIfMajorPerformanceCaveat) ? context : null,
+  }) } as unknown as Document
+  assert.equal(readWebglSupport(documentValue), true)
+  const ratio = Math.sqrt((1024 * 768) / (1728 * 1117))
+  assert.equal(resolveWebglCanvasDpr(undefined, documentValue), ratio)
+  assert.equal(resolveWebglCanvasDpr(0.5, documentValue), 0.5)
+  view.innerWidth = 390; view.innerHeight = 664; view.devicePixelRatio = 1
+  assert.equal(resolveWebglCanvasDpr(undefined, documentValue), 1)
+  caveat = false
+  assert.equal(readWebglSupport(documentValue), true)
+  assert.deepEqual(resolveWebglCanvasDpr(undefined, documentValue), [1, 2])
+  assert.equal(resolveWebglCanvasDpr(1.5, documentValue), 1.5)
+  assert.equal(released, 2, 'each probe relinquished its one live context')
 })
 
 test('ready-frame and HUD deadlines record asynchronous presentation semantics', () => {

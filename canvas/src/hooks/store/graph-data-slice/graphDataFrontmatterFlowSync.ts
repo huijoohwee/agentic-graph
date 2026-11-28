@@ -432,7 +432,13 @@ export function syncActiveMarkdownDocumentTextFromParsedGraph(args: {
 } {
   const activeName = String(args.state.markdownDocumentName || '').trim()
   const activeText = String(args.state.markdownDocumentText || '')
-  if (!activeName) return { sourceFiles: args.sourceFiles, accepted: false }
+  if (!activeName) {
+    if (!isFrontmatterFlowGraphData(args.parsedGraphData) || !frontmatterTextHasFlowTopology(activeText)) {
+      return { sourceFiles: args.sourceFiles, accepted: false }
+    }
+    return { sourceFiles: args.sourceFiles, accepted: true,
+      markdownDocumentText: upsertFrontmatterFlowMarkdownText(activeText, args.parsedGraphData) }
+  }
   if (!isMarkdownLikeFileName(activeName)) return { sourceFiles: args.sourceFiles, accepted: false }
   if (isStrybldrStoryboardMarkdown(activeText)) {
     const strybldrText = syncStrybldrStoryboardMarkdownFromParsedGraph({

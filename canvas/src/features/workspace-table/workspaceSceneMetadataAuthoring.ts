@@ -17,8 +17,14 @@ export function canAuthorWorkspaceSceneMetadata(
   if (state.workspaceViewMode !== 'editor' || isWorkspaceCameraInitializationBlocked(state)) return false
   const keys = Object.keys(updates)
   if (!keys.length || keys.some(key => key !== 'kgXrMotionReference' && key !== 'kgXrPhysicsWorld' && key !== 'kgSpatialWorkspaceReview')) return false
+  return !state.canvasAuthoringTurn && isWorkspaceAuthoringSourceSettled(state)
+}
+
+export function isWorkspaceAuthoringSourceSettled(
+  state: { markdownDocumentName: string | null; markdownDocumentText: string | null },
+): boolean {
   const source = readEditorSource?.()
-  return Boolean(source?.settled && state.markdownDocumentName && state.markdownDocumentText
+  return Boolean(source?.settled && state.markdownDocumentName
     && normalizeWorkspacePath(source.path) === normalizeWorkspacePath(state.markdownDocumentName)
-    && source.text === state.markdownDocumentText)
+    && source.text === (state.markdownDocumentText ?? ''))
 }

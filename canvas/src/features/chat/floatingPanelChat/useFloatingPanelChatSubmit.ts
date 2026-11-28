@@ -1,4 +1,6 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { isCanvasDrawingRequest, isCanvasSourceProjection } from '../promptPresetInvocation'
 import {
   initializeChatSubmitOptimisticState,
   resolveChatSubmitRequestUrlOrSetError,
@@ -8,9 +10,13 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { tryActivateVideoAgentDemoPreset } from './videoAgentDemoPresetSubmit'
 import { tryActivateNativeCrawlerInvocation } from '../nativeCrawlerInvocation'
-import { tryActivateNativeImportUrlInvocation } from '../nativeImportUrlInvocation'
+import { isNativeImportUrlInvocationAttempt, tryActivateNativeImportUrlInvocation } from '../nativeImportUrlInvocation'
 import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceStudioInvocation'
 import { tryActivateGeospatialInvocation } from './geospatialInvocationSubmit'
+
+export function canSubmitChatWithoutModel(input: string) {
+  return isCanvasSourceProjection(input) || isCanvasDrawingRequest(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
+}
 
 export type FloatingPanelChatSubmitHookDeps = {
   resolveRequestUrlOrSetError?: typeof resolveChatSubmitRequestUrlOrSetError
@@ -34,6 +40,26 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (isCanvasSourceProjection(args.input) || isCanvasDrawingRequest(args.input)) {
+      if (args.abortRef.current) return
+      const initial = useGraphStore.getState()
+      const controller = new AbortController()
+      args.abortRef.current = controller
+      args.setIsLoading(true)
+      args.setErrorText(null)
+      try {
+        const { submitCanvasProjection } = await import('./canvasProjectionSubmit')
+        await submitCanvasProjection(args, initial, controller)
+      } catch (error) {
+        if (args.abortRef.current === controller) args.setErrorText(error instanceof Error ? error.message : 'Unable to apply diagram.')
+      } finally {
+        if (args.abortRef.current === controller) {
+          args.abortRef.current = null
+          args.setIsLoading(false)
+        }
+      }
+      return
+    }
     if (/^\/canvas\.widget(?:\s|$)/.test(trimmed)) {
       try {
         await (await import('@/components/DashboardCanvas/dashboardWidgetTools')).controlDashboardWidget({ invocation: trimmed })

@@ -4,6 +4,7 @@ import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
+import { sketchPresentationKey } from '@/lib/graph/canvasSketch'
 import { hashSignatureParts } from '@/lib/hash/signature'
 
 export type D3SceneSetupContext = {
@@ -91,6 +92,7 @@ export function buildD3SceneSetupContext(args: {
   // Keep scene rebuilds semantic-only so pane/viewport changes do not drift layout.
   const buildKey = [
     String(args.graphContentRevision || 0),
+    sketchPresentationKey(args.sceneGraphData.nodes),
     args.schemaLayoutEngineJson,
     String(args.effectiveFrontmatterModeEnabled ? 1 : 0),
     String(args.documentSemanticMode),

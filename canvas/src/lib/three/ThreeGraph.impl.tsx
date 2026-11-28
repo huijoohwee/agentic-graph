@@ -39,7 +39,7 @@ import { GAME_FPS_SHARED_XR_PROFILE_ID } from '@/features/game-fps/gameFpsModel'
 import { resolveFlightSimGameplayCoordinateScale } from '@/features/game-flight-sim/flightSimSpatialScale'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { ThreeGameplayMissionStage, ThreeGameplayWebglUnsupportedState } from '@/lib/three/ThreeGameplayOverlay'
-import { readWebglSupport } from '@/lib/three/webglSupport'
+import { readWebglSupport, resolveWebglCanvasDpr } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
 import { boundedInverseFitScale, fitFloorOffset, readXrStageMetersPerUnit, resolveSceneBackgroundColor } from '@/lib/three/threeGraphSceneLayout'
@@ -261,7 +261,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const geospatialDpr = geospatialComposite
     ? Math.min(2, Math.max(1, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1))
     : null
-  const canvasDpr = geospatialDpr ?? (resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number])
+  const adaptiveDpr = resolution?.key === rendererLifecycleKey ? resolution.dpr : undefined
   const setCanvasDpr = useCallback((dpr: number) => {
     if (geospatialComposite) return
     setResolution({ key: rendererLifecycleKey, dpr })
@@ -469,7 +469,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={rendererBackend.gl}
-        dpr={canvasDpr}
+        dpr={geospatialDpr ?? resolveWebglCanvasDpr(adaptiveDpr, rendererBackend.gpu ? null : undefined)}
         style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={state => configureThreeGraphRenderer(state, {
           mode, glCanvasRef, threeGlRef, threeCameraRef, threeSceneRef, applySemanticCanvasOwner,

@@ -10,7 +10,7 @@ import { RendererPaletteSettings } from '@/features/toolbar/ui/RendererPaletteSe
 import { RendererHoverSettings } from '@/features/toolbar/ui/RendererHoverSettings'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { GraphEditorToolRail, type GraphEditorToolId } from '@/features/graph-editor/GraphEditorToolRail'
+import { GraphEditorToolRail } from '@/features/graph-editor/GraphEditorToolRail'
 import { GraphEditorRightPanel } from '@/features/graph-editor/GraphEditorRightPanel'
 import { DesignWireframeSettings } from '@/features/toolbar/ui/DesignWireframeSettings'
 import { FlowchartRendererSettings } from '@/features/toolbar/ui/FlowchartRendererSettings'
@@ -45,20 +45,18 @@ export function ToolbarToolMenuRendererView(props: {
   const onRegisterActions = props.onRegisterActions
   const inspectionGraph = useRendererInspectionGraph()
   const {
-    workspaceViewMode,
     canvasRenderMode,
     canvas2dRenderer,
     graphData,
-    setCanvasPointerMode2d,
+    toolId, setToolId,
     schema,
     setSchema,
   } = useGraphStore(
     useShallow(s => ({
-      workspaceViewMode: s.workspaceViewMode,
       canvasRenderMode: s.canvasRenderMode,
       canvas2dRenderer: s.canvas2dRenderer,
       graphData: s.graphData,
-      setCanvasPointerMode2d: s.setCanvasPointerMode2d,
+      toolId: s.graphEditorToolId, setToolId: s.setGraphEditorToolId,
       schema: s.schema,
       setSchema: s.setSchema,
     })),
@@ -71,16 +69,10 @@ export function ToolbarToolMenuRendererView(props: {
     })),
   )
 
-  const [toolId, setToolId] = React.useState<GraphEditorToolId>('select')
   const appliedEdgeType = readGlobalEdgeType(schema)
   const appliedLayoutMode = readLayoutMode2d(schema)
   const [edgeTypeDraft, setEdgeTypeDraft] = React.useState<GlobalEdgeType>(appliedEdgeType)
   const [layoutModeDraft, setLayoutModeDraft] = React.useState<LayoutMode2d>(appliedLayoutMode)
-
-  React.useEffect(() => {
-    const next = toolId === 'pan' ? 'pan' : 'select'
-    setCanvasPointerMode2d(next)
-  }, [toolId, setCanvasPointerMode2d])
 
   React.useEffect(() => {
     setEdgeTypeDraft(appliedEdgeType)
@@ -123,7 +115,7 @@ export function ToolbarToolMenuRendererView(props: {
   }, [applyRendererDraft, onRegisterActions, rendererDraftUnchanged, resetRendererDraft])
 
   const showGraphEditorUi =
-    workspaceViewMode === 'editor' && canvasRenderMode === '2d' && canvas2dRenderer === 'd3'
+    !inspectionGraph && canvasRenderMode === '2d' && canvas2dRenderer === 'd3'
   const showDesignWireframeUi = canvasRenderMode === '2d' && canvas2dRenderer === 'design'
   const showFlowchartUi = canvasRenderMode === '2d' && isFlowchartCanvas2dRenderer(canvas2dRenderer)
   const showRadarGalaxyUi = !inspectionGraph && canvasRenderMode === '2d' && isD3Like2dRenderer(canvas2dRenderer)
@@ -213,7 +205,6 @@ export function ToolbarToolMenuRendererView(props: {
             <GraphEditorToolRail
               activeToolId={toolId}
               onSelectTool={setToolId}
-              disabled={!graphData}
             />
             <section className="flex-1 basis-64 min-w-0 max-w-full">
               <GraphEditorRightPanel />

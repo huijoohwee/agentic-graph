@@ -293,6 +293,8 @@ function extractWidgetFieldSpecsFromFlowNode(args: {
   return out
 }
 
+const structuralNodeFields = new Set(['id', 'type', 'label', 'pos', 'position', 'handles', 'properties', 'data', 'compute'])
+
 function collectDeclaredFlowNodePropertyValues(args: {
   rawNode: Record<string, unknown>
   normalizedRawNode: Record<string, unknown>
@@ -304,19 +306,7 @@ function collectDeclaredFlowNodePropertyValues(args: {
   const out: Record<string, unknown> = {}
   for (const k of Object.keys(args.rawNode)) {
     const fieldName = asString(k)
-    if (!fieldName) continue
-    if (
-      fieldName === 'id' ||
-      fieldName === 'type' ||
-      fieldName === 'label' ||
-      fieldName === 'pos' ||
-      fieldName === 'position' ||
-      fieldName === 'handles' ||
-      fieldName === 'data' ||
-      fieldName === 'compute'
-    ) {
-      continue
-    }
+    if (!fieldName || structuralNodeFields.has(fieldName)) continue
     const rawValue = args.normalizedRawNode[fieldName]
     const resolved = resolveTemplateValue(rawValue, args.vars, args.pathCache, args.declarationCache, args.resolvedStringCache)
     if (typeof resolved === 'undefined') continue
