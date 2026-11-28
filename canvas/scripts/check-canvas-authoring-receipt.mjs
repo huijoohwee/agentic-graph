@@ -87,14 +87,19 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
       await page.getByRole('button', { name: 'Open slash commands' }).click();
       await page.getByPlaceholder('Find command').fill('canvas-sketch');
       await page.getByRole('listbox').getByText('/canvas-sketch-prompt-preset', { exact: true }).click();
-      await page.waitForFunction(() => Array.from(document.querySelectorAll('[data-kg-chat-contenteditable-surface] [contenteditable=true]'))
-        .some(el => el.textContent.includes('Sketch a robot pair-programming with a human')));
-      assert.match(await composer(page).innerText(), /\/canvas\.project\s+@canvas\s+#canvas/);
+      await page.waitForFunction(expected => {
+        const editor = document.activeElement;
+        const surface = editor?.closest('[data-kg-chat-contenteditable-surface]');
+        const draft = surface?.querySelector('textarea')?.value ?? '';
+        return editor?.matches('[contenteditable=true]') && draft.trim() === expected;
+      }, '/canvas.project @canvas #canvas\n\n' + scene);
       assert.equal(await savedSource(), before);
     } else {
       await composer(page).fill(scene);
     }
-    await send.and(page.locator(':enabled')).press('Enter');
+    const readySend = send.and(page.locator(':enabled'));
+    if (viaPreset) await readySend.click();
+    else await readySend.press('Enter');
     try {
       await added.waitFor();
       await added.locator('..').getByRole('button', { name: 'Undo', exact: true }).waitFor();
