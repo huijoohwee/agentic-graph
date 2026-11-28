@@ -201,10 +201,11 @@ async function handleLocalDeepLink(
     }
 
     const graphStore = useGraphStore.getState()
-    graphStore.setWorkspaceViewState({ mode: 'editor', paneOpen: true })
-    graphStore.setSelectionSource('editor')
-    graphStore.selectNode(null)
-    graphStore.selectEdge(null)
+    if (graphStore.workspaceViewMode === 'editor') {
+      graphStore.setSelectionSource('editor')
+      graphStore.selectNode(null)
+      graphStore.selectEdge(null)
+    }
     useMarkdownExplorerStore.getState().setActivePath(targetPath)
 
     const entryText = await fs.readFileText(targetPath)

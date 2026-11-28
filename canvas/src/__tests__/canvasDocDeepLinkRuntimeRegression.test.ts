@@ -102,6 +102,9 @@ export const testCanvasDocDeepLinkSelectsDocumentBeforePassiveGraphApply = async
     text.indexOf('async function handleLocalDeepLink('),
     text.indexOf('type PreparedRemoteDeepLink'),
   )
+  if (localHandlerText.includes('setWorkspaceViewState(')) {
+    throw new Error('A local source load must preserve a user closing the editor while restoration is pending')
+  }
   const localMaterializationIndex = localHandlerText.indexOf('const sourceFilesProof = await materializeActiveWorkspaceEntryIntoSourceFiles({')
   const localProofIndex = localHandlerText.indexOf('isMaterializedWorkspaceSourceProofCurrent(sourceFilesProof)')
   const localSourceIndex = localHandlerText.indexOf('findComposedSourceFileByPath({')

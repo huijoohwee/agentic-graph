@@ -92,11 +92,15 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
   const supplyChainOverviewRequested = queryParams.get('kgSupplyChain') === '1' || queryParams.get('kgSupplyChain') === 'overview'
   const queryRequestsEditorWorkspace = shouldOpenEditorWorkspaceFromSearch(location.search) || supplyChainOverviewRequested
   const launchSpotlightShortcutEnabled = !previewOnly && workspaceViewMode !== 'editor'
-  const consumedEditorWorkspaceQueryRef = React.useRef(false)
+  const localEditorIntent = bootstrapRuntimesEnabled && queryParams.has('kgDoc') ? documentIntentKey : ''
+  const editorRequest = localEditorIntent || (queryRequestsEditorWorkspace ? 'workspace' : '')
+  const handledEditorRequest = React.useRef('')
 
-  React.useEffect(() => {
-    if (!queryRequestsEditorWorkspace || consumedEditorWorkspaceQueryRef.current) return
-    consumedEditorWorkspaceQueryRef.current = true
+  // Open once on navigation so a later Close survives asynchronous source restoration.
+  React.useLayoutEffect(() => {
+    if (handledEditorRequest.current === editorRequest) return
+    handledEditorRequest.current = editorRequest
+    if (!editorRequest) return
     try {
       setWorkspaceViewState({ mode: 'editor', paneOpen: true })
     } catch {
@@ -112,7 +116,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     } catch {
       void 0
     }
-  }, [location.search, queryRequestsEditorWorkspace, setWorkspaceViewState])
+  }, [editorRequest, location.search, setWorkspaceViewState])
 
   const [editorShellWarmed, setEditorShellWarmed] = React.useState(workspaceViewMode === 'editor')
   React.useEffect(() => {
