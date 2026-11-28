@@ -1,3 +1,4 @@
+import type { CanvasToolId } from 'agentic-design-system/react/panels'
 import type { GraphData, GraphNode, GraphEdge, JSONValue } from '@/lib/graph/types'
 import type { GraphSchema, GraphBehavior, PropertySpec } from '@/lib/graph/schema'
 import type { ThemeMode, ResolvedThemeMode } from '@/lib/ui/theme'
@@ -71,6 +72,8 @@ export interface GraphStateCanvasRuntime {
   requestZoomBounds: (payload: { bounds: { x: number; y: number; w: number; h: number }; insetPx?: number; origin?: { x: number; y: number } }) => void;
   clearZoomRequest: () => void;
 
+  graphEditorToolId: CanvasToolId;
+  setGraphEditorToolId: (tool: CanvasToolId) => void;
   canvasPointerMode2d: 'select' | 'pan';
   canvasPointerMode2dByRenderer: Partial<Record<Canvas2dRendererId, 'select' | 'pan'>>;
   setCanvasPointerMode2d: (mode: 'select' | 'pan') => void;

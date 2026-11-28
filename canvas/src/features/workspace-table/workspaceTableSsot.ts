@@ -18,6 +18,7 @@ export type WorkspaceGraphMutationState = {
   markdownWorkspaceIndexingInFlight?: boolean
   workspaceGraphMutationBlockUntilMs?: number
   workspaceGraphMutationBlockKey?: string
+  canvasAuthoringTurn?: object | null
   workspaceGraphMutationLayoutLockActive?: boolean
 }
 
@@ -33,7 +34,7 @@ export function isWorkspaceEditorOverlayOpen(args: {
 }
 
 export function isWorkspaceGraphMutationBlocked(args: WorkspaceGraphMutationState): boolean {
-  return isWorkspaceCameraInitializationBlocked(args) || isWorkspaceEditorOverlayOpen(args)
+  return !!args.canvasAuthoringTurn || isWorkspaceCameraInitializationBlocked(args) || isWorkspaceEditorOverlayOpen(args)
 }
 
 /** Reading an initial camera does not take ownership of the editor's graph mutations. */

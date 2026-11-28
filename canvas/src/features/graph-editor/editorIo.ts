@@ -11,6 +11,7 @@ export async function importGraphEditorJsonLocal() {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return
     const graphData = raw as GraphData
     const store = useGraphStore.getState()
+    if (store.canvasAuthoringTurn) return
     store.setGraphData(graphData)
     store.setWorkspaceViewMode('editor')
   } catch {

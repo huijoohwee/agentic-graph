@@ -42,7 +42,9 @@ const MarkdownWorkspacePresentationSurfaceLazy = React.lazy(
     import('./presentation/MarkdownWorkspacePresentationSurface').then(mod => ({ default: mod.MarkdownWorkspacePresentationSurface })),
 )
 
-export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(props: MarkdownWorkspaceMainProps) {
+export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(input: MarkdownWorkspaceMainProps) {
+  const authoring = useGraphStore(state => !!state.canvasAuthoringTurn)
+  const props = authoring ? { ...input, disableEditorMutations: true, disableViewerMutations: true, setActiveText: () => {} } : input
   const panelTypography = usePanelTypography()
   const [splitPaneVisibility, setSplitPaneVisibility] = React.useState(DEFAULT_MARKDOWN_WORKSPACE_PANE_VISIBILITY)
   const [viewerEl, setViewerEl] = React.useState<HTMLElement | null>(null)

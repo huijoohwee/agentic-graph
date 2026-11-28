@@ -62,6 +62,7 @@ import type {
 import { resolveSharedChatModelSelect } from '@/features/chat/chatModelCredentialResolver'
 import { useFloatingPanelChatSurfaceModel } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSurfaceModel'
 import { flushFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
+import { isCanvasSourceProjection } from './promptPresetInvocation'
 import { stopFloatingPanelChatStream } from '@/features/chat/floatingPanelChat/floatingPanelChatStop'
 import { useFloatingPanelChatThreadFollow } from '@/features/chat/floatingPanelChat/useFloatingPanelChatThreadFollow'
 import { openMarkdownWorkspacePathInExplorer } from '@/features/markdown-workspace/openMarkdownWorkspacePathInExplorer'
@@ -785,7 +786,7 @@ export default function FloatingPanelChat() {
     requestHistorySubTab,
     setStreamingInsights,
   })
-  const nativeImportUrlInputReady = isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
+  const nativeInputReady = isCanvasSourceProjection(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
 
   return (
     <section className="h-full flex flex-col">
@@ -837,7 +838,7 @@ export default function FloatingPanelChat() {
         onModelChanged={handleChatModelChanged}
         uiPanelTextFontClass={uiPanelTextFontClass}
         uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
-        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeImportUrlInputReady)}
+        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeInputReady)}
         onSubmit={handleSubmit}
         onStop={stopActiveChatStream}
         showNewChatButton={chatStorageTarget === 'chatAgenticGraph'}

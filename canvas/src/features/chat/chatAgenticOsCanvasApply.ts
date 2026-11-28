@@ -1,3 +1,4 @@
+import { runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
 import { shouldApplyImportedCanvasDocumentToGraph } from '@/features/markdown-workspace/workspaceImport'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
@@ -111,4 +112,13 @@ export async function applyChatAgenticOsWorkspaceDocumentToCanvas(path: string):
   if (!await activateChatAgenticOsWorkspacePath(workspacePath)) return false
   const name = workspaceDocumentKey(workspacePath) || workspaceBasename(workspacePath) || workspacePath
   return await applyChatAgenticOsDocumentTextToCanvas({ name, text })
+}
+
+export async function applyCanvasAuthoringReply(
+  initial: ReturnType<typeof useGraphStore.getState>, controller: AbortController, reply: string,
+) {
+  return runCanvasAuthoringTurn(initial, controller, 'Apply canvas diagram', async state => {
+    const { stageCanvasReply } = await import('@/features/graph-editor/canvasAuthoringFlow')
+    return stageCanvasReply(state, reply)
+  })
 }

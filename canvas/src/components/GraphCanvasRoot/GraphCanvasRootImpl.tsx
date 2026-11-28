@@ -44,7 +44,6 @@ import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { PendingLink, TempLinkSelection } from '@/features/edge-creation'
 import type { PortHandleDatum } from '@/components/GraphCanvas/portHandles'
-
 import { useEnsureSpacePanListener, useCanvasWheelAndGestureGuards } from '@/components/GraphCanvasRoot/hooks/useCanvasNativeGuards'
 import { useCanvasContextMenu } from '@/components/GraphCanvasRoot/hooks/useCanvasContextMenu'
 import { useCanvasLayoutSync } from '@/components/GraphCanvasRoot/hooks/useCanvasLayoutSync'
@@ -67,6 +66,7 @@ import { pipelinePerfMeasureSync } from '@/lib/pipelinePerf'
 import { readOverlaySizingInputFromStoreState } from '@/lib/render/overlaySizing2d'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import { isStoryboardWidgetSurfaceRenderer } from '@/lib/storyboardWidget/screenAuthorityCollectivePan'
+const GraphEditorOverlay = React.lazy(() => import('@/features/graph-editor/GraphEditorOverlay').then(m => ({ default: m.GraphEditorOverlay })))
 const EMPTY_STRING_ARRAY: string[] = []
 export default function GraphCanvas({ active = true }: { active?: boolean }) {
   const containerRef = useRef<HTMLElement>(null)
@@ -1030,11 +1030,11 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
     simulationRef,
     activeLayoutCacheKeyRef,
   })
-
   const marquee = useMarqueeSelection2d({ active, schema: schema as GraphSchema | null, svgRef, sceneGraphDataRef })
 
   return (
     <main ref={containerRef} className={CANVAS_SURFACE_CLASS} role="main" aria-label="Graph Canvas">
+      {active && <React.Suspense fallback={null}><GraphEditorOverlay active={active} svgRef={svgRef} /></React.Suspense>}
       <ArrangeToolbar2d active={active} selectedCount={arrange.selectedIds.length} onArrange={arrange.applyArrange} />
       <CanvasGridOverlaySurface
         canvasGrid={canvasGrid}
@@ -1048,7 +1048,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
       />
       <svg
         ref={svgRef}
-        role="group" aria-label="Interactive graph"
+        role="group" tabIndex={0} aria-label="Interactive graph"
         className={`${CANVAS_INTERACTIVE_CLASS} z-10`}
         data-kg-canvas-interactive="1" data-kg-canvas-svg-viewport="interactive" style={{ pointerEvents: 'visiblePainted' }}
         viewBox={`0 0 ${Math.max(1, width)} ${Math.max(1, height)}`} preserveAspectRatio="xMidYMid meet"

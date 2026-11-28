@@ -13,6 +13,7 @@ export type PresetSummary = {
   chatRoute: string
   mcpTool: string
   mcpToken: string
+  authoringStarter?: boolean
   executionSurface?: string
   bodyDigest?: string
 }
@@ -38,6 +39,7 @@ export async function listGatewayPresets(): Promise<PresetListResult> {
       slashCommand: item.slash_command, runtimeCommand: item.runtime_command,
       invocationModes: item.invocation_modes, chatRoute: item.chat_route,
       mcpTool: item.mcp_tool, mcpToken: item.mcp_token, bodyDigest: item.bodyDigest,
+      authoringStarter: 'authoring_starter' in item && item.authoring_starter === true,
       ...('execution_surface' in item ? { executionSurface: item.execution_surface } : {}),
     }))
     return { ok: true, presets, sourcePath: index.source.path }

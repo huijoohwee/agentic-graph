@@ -1,4 +1,7 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { submitCanvasProjection } from './canvasProjectionSubmit'
+import { isCanvasSourceProjection } from '../promptPresetInvocation'
 import {
   initializeChatSubmitOptimisticState,
   resolveChatSubmitRequestUrlOrSetError,
@@ -34,6 +37,25 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (isCanvasSourceProjection(args.input)) {
+      if (args.abortRef.current) return
+      const initial = useGraphStore.getState()
+      const controller = new AbortController()
+      args.abortRef.current = controller
+      args.setIsLoading(true)
+      args.setErrorText(null)
+      try {
+        await submitCanvasProjection(args, initial, controller)
+      } catch (error) {
+        if (args.abortRef.current === controller) args.setErrorText(error instanceof Error ? error.message : 'Unable to apply diagram.')
+      } finally {
+        if (args.abortRef.current === controller) {
+          args.abortRef.current = null
+          args.setIsLoading(false)
+        }
+      }
+      return
+    }
     if (/^\/canvas\.widget(?:\s|$)/.test(trimmed)) {
       try {
         await (await import('@/components/DashboardCanvas/dashboardWidgetTools')).controlDashboardWidget({ invocation: trimmed })

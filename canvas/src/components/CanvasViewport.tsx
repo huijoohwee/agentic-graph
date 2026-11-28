@@ -58,6 +58,7 @@ const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-le
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
 const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))
+const CanvasAuthoringStarters = React.lazy(() => import('@/features/graph-editor/CanvasAuthoringStarters'))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas/Surface'), { retries: 2, retryDelayMs: 50 }))
 const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/GalleryCanvas'), { retries: 2, retryDelayMs: 50 }))
@@ -156,9 +157,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
   const supplyChainOverviewActive = variant === 'workspace'
     && explorerActivePath === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH
-  // This authored source owns a Geo+XR presentation. Keep its map on the
-  // shared geospatial host even when the user has not enabled the global map
-  // preference; leaving this source restores the user's normal canvas mode.
+  // The source owns this Geo+XR presentation until the active document changes.
   const geospatialCompositionEnabled = geospatialModeEnabled || supplyChainOverviewActive
   useFlightSimSurfacePreload({
     activePath: explorerActivePath,
@@ -526,6 +525,8 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
       <React.Suspense fallback={null}>
         {variant === 'workspace' ? (
           <>
+            {!homePreviewVisible && sourceFilesBootstrapReady && !documentSwitchOwnsViewport && !gameplayOverlayActive && !safeGraphData.nodes.length &&
+              <section className="absolute bottom-3 left-3 z-[260] max-w-full pointer-events-auto"><CanvasAuthoringStarters /></section>}
             {layout === 'full' && !documentSwitchOwnsViewport && !homePreviewVisible ? (
               <React.Suspense fallback={null}>
                 <LaunchSpotlightLazy />

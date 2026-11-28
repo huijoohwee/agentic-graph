@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["canvas.graphAuthoring.mvp", "@/__tests__/graphAuthoringMvp.test.tsx", "testGraphAuthoringMvp"],
   ["richMedia.panel.surfaceMode.3dFarVisibility","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaRemainsVisibleAcrossCameraDistance"],
   ["richMedia.panel.surfaceMode.missingImportedImage","@/__tests__/richMediaSurfaceCoverage.test","testMissingImportedImageUsesSharedMediaSurface"],
   ["richMedia.panel.surfaceMode.3dCanvasMotion","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaFollowsCanvasWithoutViewportSnap"],

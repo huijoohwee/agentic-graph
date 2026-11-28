@@ -2,6 +2,7 @@ import type React from 'react'
 
 export type GraphEditorToolContribution = {
   id: string
+  activate?: () => void
   label: string
   hotkey?: string
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
