@@ -176,10 +176,11 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
     setRemoteGrammarEntries([])
     fetchAgenticOsRemoteGrammarCatalog({ query: token, signal: abortController.signal })
       .then(entries => {
+        if (abortController.signal.aborted) return
         setRemoteGrammarEntries(entries.filter(entry => matchesRemoteGrammarTriggerKind(entry, trigger.kind)))
       })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (abortController.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return
         setRemoteGrammarEntries([])
       })
     return () => abortController.abort()

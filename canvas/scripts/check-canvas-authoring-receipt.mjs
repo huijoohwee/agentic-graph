@@ -77,13 +77,14 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
         ['Open runtime invocations', 'Find runtime or keyword', '#canvas'],
         ['Open slash commands', 'Find command', '/canvas.project'],
       ]) {
-        await page.getByRole('button', { name: menu, exact: true }).press('Enter');
+        await page.getByRole('button', { name: menu, exact: true }).click();
         await page.getByPlaceholder(placeholder).fill(token);
         await page.getByRole('listbox').getByText(token, { exact: true }).first().click();
         assert.ok((await composer(page).innerText()).includes(token));
+        await page.waitForFunction(() => document.activeElement?.matches('[data-kg-chat-input]'));
         await composer(page).fill('');
       }
-      await page.getByRole('button', { name: 'Open slash commands' }).press('Enter');
+      await page.getByRole('button', { name: 'Open slash commands' }).click();
       await page.getByPlaceholder('Find command').fill('canvas-sketch');
       await page.getByRole('listbox').getByText('/canvas-sketch-prompt-preset', { exact: true }).click();
       await page.waitForFunction(() => Array.from(document.querySelectorAll('[data-kg-chat-contenteditable-surface] [contenteditable=true]'))
