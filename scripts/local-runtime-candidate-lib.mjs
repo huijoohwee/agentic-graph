@@ -1,7 +1,7 @@
 // Responsibility: canonical runtime candidate evidence, consumer-pin binding, protected-check verification, and residue classification.
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { parseRegisteredWorktrees as parseWorktreeRecords } from "./worktree-policy.mjs";
@@ -123,7 +123,7 @@ function isAncestorCommit(root, ancestorSha, descendantSha, deps) {
   }
 }
 
-export function resolvePinnedDocsDependency(agenticGraphRoot) {
+export function resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot) {
   const contractPath = path.join(agenticGraphRoot, "docs", "runtime-readiness-contract.md");
   const packagePath = path.join(agenticGraphRoot, "package.json");
   const lockPath = path.join(agenticGraphRoot, "package-lock.json");
@@ -140,9 +140,51 @@ export function resolvePinnedDocsDependency(agenticGraphRoot) {
   if (lock.packages?.["node_modules/agentic-os"]?.resolved !== expected) {
     throw new Error("local runtime docs package lock does not match the exact runtime docs dependency");
   }
-  const docsRoot = path.join(agenticGraphRoot, "node_modules", "agentic-os", "catalog", "dictionaries");
-  if (!existsSync(docsRoot)) throw new Error("the exact pinned Agentic OS docs package is not installed locally");
-  return { dependency, docsRoot };
+  const archive = execFileSync("git", ["archive", "--format=tar", dependency.ref, "catalog/dictionaries"], {
+    cwd: agenticCanvasOsRoot,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const archiveEntries = execFileSync("tar", ["-tf", "-"], { input: archive, encoding: "utf8" })
+    .split("\n").filter(Boolean);
+  if (archiveEntries.length === 0 || archiveEntries.some(entry =>
+    (!entry.startsWith("catalog/dictionaries/") && entry !== "catalog/dictionaries" && entry !== "catalog/")
+    || entry.split("/").includes("..") || entry.startsWith("/"))) {
+    throw new Error("the exact pinned Agentic OS docs archive has an invalid path inventory");
+  }
+  const archiveDigest = createHash("sha256").update(archive).digest("hex");
+  const cacheRoot = path.join(workspaceRoot, ".runtime-state", "agentic-canvas-os", "agentic-graph-local-runtime", "pinned-docs");
+  mkdirSync(cacheRoot, { recursive: true, mode: 0o700 });
+  chmodSync(cacheRoot, 0o700);
+  const marker = JSON.stringify({ schema: "agentic-graph/pinned-agentic-os-docs-cache/v1", ref: dependency.ref, archiveDigest });
+  let target = path.join(cacheRoot, `${dependency.ref}-${archiveDigest}`);
+  const validCache = directory => {
+    try {
+      return readFileSync(path.join(directory, ".agentic-os-docs-cache.json"), "utf8") === `${marker}\n`
+        && existsSync(path.join(directory, "catalog", "dictionaries"));
+    } catch {
+      return false;
+    }
+  };
+  if (existsSync(target) && !validCache(target)) target = `${target}-${process.pid}-${randomUUID()}`;
+  if (!validCache(target)) {
+    const staging = mkdtempSync(path.join(cacheRoot, `.extract-${dependency.ref}-`));
+    try {
+      execFileSync("tar", ["-xf", "-", "-C", staging], { input: archive, stdio: ["pipe", "ignore", "pipe"] });
+      const extractedDocsRoot = path.join(staging, "catalog", "dictionaries");
+      if (!existsSync(extractedDocsRoot)) throw new Error("pinned Agentic OS archive is missing catalog/dictionaries");
+      writeFileSync(path.join(staging, ".agentic-os-docs-cache.json"), `${marker}\n`, { flag: "wx", mode: 0o600 });
+      try {
+        renameSync(staging, target);
+      } catch (error) {
+        if (!validCache(target)) throw error;
+        rmSync(staging, { recursive: true, force: true });
+      }
+    } catch (error) {
+      rmSync(staging, { recursive: true, force: true });
+      throw error;
+    }
+  }
+  return { dependency, docsRoot: path.join(target, "catalog", "dictionaries"), archiveDigest };
 }
 
 function withConsumerPinEvidence(repository, deps, docs) {
@@ -160,7 +202,7 @@ function withConsumerPinEvidence(repository, deps, docs) {
 
 function inspectCanonicalCandidate(options, deps, { verifyProtected }) {
   const { workspaceRoot, agenticCanvasOsRoot, agenticGraphRoot } = resolveCanonicalRuntimeRoots(options, deps);
-  const docs = resolvePinnedDocsDependency(agenticGraphRoot);
+  const docs = resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot);
   const repositories = [
     inspectRepository("agentic-os", agenticCanvasOsRoot, deps, verifyProtected),
     inspectRepository("agentic-graph", agenticGraphRoot, deps, verifyProtected),
@@ -207,7 +249,7 @@ export function resolveOwnershipCandidate(options, deps) {
 
 export function inspectOwnershipCandidate(options, deps) {
   const { workspaceRoot, agenticCanvasOsRoot, agenticGraphRoot } = resolveCanonicalRuntimeRoots(options, deps);
-  const docs = resolvePinnedDocsDependency(agenticGraphRoot);
+  const docs = resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot);
   const docsTreeSha = deps.gitText(agenticCanvasOsRoot, ["rev-parse", `${docs.dependency.ref}^{tree}`]).trim();
   return {
     workspaceRoot,
