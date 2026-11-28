@@ -8,6 +8,7 @@ import yaml from 'js-yaml'
 import { chromium } from 'playwright'
 import { supportedResponsiveTargets } from 'agentic-design-system/annotation-targets'
 import { preview } from 'vite'
+import { matchesPagesBuild } from '../../scripts/pages-build-receipt.mjs'
 import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-fixture.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
@@ -15,7 +16,10 @@ const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8'
 const revision = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}')
 const firstValueBudgetMs = 300_000
 assert.equal(git('status', '--porcelain'), '', 'Acceptance requires a clean, committed candidate')
-if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
+if (process.argv.includes('--build')) {
+  if (await matchesPagesBuild(root)) console.log('Verified production output from this integration run')
+  else execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
+}
 const output = resolve(process.env.SPATIAL_FULL_APP_PROOF_DIR || join(tmpdir(), `spatial-full-app-${revision.slice(0, 12)}`))
 const source = `---
 title: Local spatial walkthrough
@@ -78,6 +82,7 @@ try {
   const origin = 'http://127.0.0.1:4209'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   for (const [device, profile] of Object.entries(supportedResponsiveTargets)) {
+    console.log('Starting spatial review on ' + device)
     const { width, height } = profile.viewport
     const context = await browser.newContext(profile)
     // Explicit absent browser capability: every action below uses the product's visible controls.
