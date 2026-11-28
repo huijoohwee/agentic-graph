@@ -34,7 +34,7 @@ import { useSourceFilesPocketBaseYjsCollaborationRuntime } from '@/features/sour
 import { useMarkdownWorkspaceCollaborationRuntimeBridge } from './useMarkdownWorkspaceCollaborationRuntimeBridge'
 import { useMarkdownWorkspaceStreamingSelectionLock } from './useMarkdownWorkspaceStreamingSelectionLock'; import { useMarkdownWorkspaceOpenSourceFilesEvent } from './useMarkdownWorkspaceOpenSourceFilesEvent'
 const EMPTY_STRING_ARRAY: string[] = []
-export function MarkdownWorkspace(props: { active?: boolean } = {}) {
+export function MarkdownWorkspace(props: { active?: boolean; deferExplorerWrites?: boolean } = {}) {
   const missionDocument = useAgentRunWorkspaceDocument()
   const active = props.active !== false && !missionDocument.sourcePath
   const activeRef = React.useRef(active)
@@ -203,7 +203,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   })
   const commitActiveTextBeforeSelectionRef = React.useRef<(() => Promise<boolean>) | null>(null)
   const explorerState = useMarkdownWorkspaceExplorerState({
-    active, readOnly: Boolean(missionDocument.sourcePath),
+    active, readOnly: Boolean(missionDocument.sourcePath || props.deferExplorerWrites),
     activePathRef,
     activeTextRef,
     viewerInlineEditActiveRef,

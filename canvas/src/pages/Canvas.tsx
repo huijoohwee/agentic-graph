@@ -362,7 +362,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       >
                         {editorShellWarmed ? (
                           <React.Suspense fallback={null}>
-                            <EmbeddedEditorShellLazy active={workspaceEditorOverlayOpen} />
+                            <EmbeddedEditorShellLazy active={workspaceEditorOverlayOpen} bootstrapRuntimesEnabled={bootstrapRuntimesEnabled} />
                           </React.Suspense>
                         ) : null}
                       </section>
