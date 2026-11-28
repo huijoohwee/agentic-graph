@@ -26,7 +26,7 @@ export default function CanvasAuthoringStarters({ runtime = defaultPromptPresetS
   }
   return <section aria-label="Start a diagram" className="flex max-w-full flex-wrap justify-center gap-1 pointer-events-auto">
     {presets.filter(preset => preset.authoringStarter).slice(0, 4).map(preset => <button key={preset.id} type="button"
-      className="App-toolbar__btn" disabled={loading} onClick={() => void choose(preset.id)}>{preset.label}</button>)}
+      className="agentic-toolbar-item" disabled={loading} onClick={() => void choose(preset.id)}>{preset.label}</button>)}
     {(failure || error) && <p role="alert">{failure || error}</p>}
   </section>
 }

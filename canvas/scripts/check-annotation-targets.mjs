@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
-import { assertAnnotationTargets } from 'agentic-design-system/annotation-targets';
+import { assertAnnotationTargets, supportedResponsiveTargets } from 'agentic-design-system/annotation-targets';
 
 const probe = createServer();
 await new Promise((resolveListen, reject) => probe.once('error', reject).listen(0, '127.0.0.1', resolveListen));
@@ -31,18 +31,72 @@ await new Promise((resolveStart, reject) => {
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
-  const page = await context.newPage();
-  const pageErrors = [];
-  page.on('pageerror', error => pageErrors.push(error.message));
-  await page.goto(origin, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'History', exact: true }).click();
-  const target = page.locator('[data-selection-target="graph-main-panel"]');
-  await target.waitFor({ state: 'visible', timeout: 45_000 });
-  const report = await page.evaluate(assertAnnotationTargets, { minTargets: 1, scrollIntoView: true });
-  assert.equal(report.targets.some(row => row.name === 'graph-main-panel' && row.ok), true);
-  assert.deepEqual(pageErrors, []);
-  process.stdout.write(`Rendered annotation targets passed: ${report.targetCount}\n`);
+  for (const [device, profile] of Object.entries(supportedResponsiveTargets)) {
+    const context = await browser.newContext({ ...profile, serviceWorkers: 'block' });
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+    const activate = control => profile.hasTouch ? control.tap() : control.press('Enter');
+    await page.goto(new URL('agentic-graph/', origin).href, { waitUntil: 'domcontentloaded' });
+    const historyButton = page.getByRole('button', { name: 'History', exact: true });
+    await activate(historyButton);
+    const target = page.locator('[data-selection-target="graph-main-panel"]');
+    await target.waitFor({ state: 'visible', timeout: 45_000 });
+    const report = await page.evaluate(assertAnnotationTargets, { minTargets: 1, scrollIntoView: true });
+    assert.equal(report.targets.some(row => row.name === 'graph-main-panel' && row.ok), true);
+    await activate(target.getByRole('button', { name: 'Close', exact: true }));
+    await target.waitFor({ state: 'hidden' });
+    await page.locator('[data-kg-canvas-viewport-root][data-kg-source-authority-phase="ready"]').waitFor();
+
+    // Start the authoring flow with an empty in-memory document in this fresh context.
+    await page.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts');
+      const state = useGraphStore.getState();
+      state.setWorkspaceViewMode('canvas');
+      state.setBottomSurfaceCollapsed(true);
+      state.setFloatingPanelOpen(false);
+      useGraphStore.setState({
+        sourceFiles: [], markdownDocumentName: null, markdownDocumentText: '',
+        graphData: { type: 'Graph', nodes: [], edges: [] }, graphDataRevision: state.graphDataRevision + 1,
+        documentStructureBaselineLock: false, geospatialModeEnabled: false,
+      });
+    });
+    const starters = page.getByRole('region', { name: 'Start a diagram' }).filter({ visible: true }).first();
+    const starter = starters.getByRole('button', { name: 'Process map', exact: true });
+    await starter.waitFor();
+    assert.equal(await starters.getByRole('button').count(), 4);
+    await page.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts');
+      const state = useGraphStore.getState();
+      state.setCanvasRenderMode('2d');
+      state.setCanvas2dRenderer('d3');
+    });
+    const toolMenu = page.locator('summary').filter({ hasText: 'Graph tools' }).filter({ visible: true }).first();
+    await activate(toolMenu);
+    const rail = page.getByRole('navigation', { name: 'Graph editor tools' });
+    const nodeTool = rail.getByRole('button', { name: 'Tool: Node (N)', exact: true });
+    await activate(nodeTool);
+    assert.equal(await nodeTool.getAttribute('aria-pressed'), 'true');
+    for (const control of [toolMenu, nodeTool, ...await starters.getByRole('button').all()]) {
+      const box = await control.boundingBox();
+      assert.ok(box && box.x >= -1 && box.x + box.width <= profile.viewport.width + 1, device + ' authoring control outside viewport');
+      if (profile.hasTouch) assert.ok(box.width >= 44 && box.height >= 44, device + ' undersized authoring control ' + await control.innerText());
+    }
+    await activate(toolMenu);
+    await activate(starter);
+    const send = page.getByRole('button', { name: 'Send', exact: true }).filter({ visible: true }).last();
+    await send.waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, device + ' horizontal overflow');
+    await activate(send);
+    await page.waitForFunction(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts');
+      const { graphData } = useGraphStore.getState();
+      return graphData?.nodes.length === 3 && graphData.edges.length === 2;
+    });
+    assert.deepEqual(pageErrors, []);
+    process.stdout.write(`${device} rendered annotation targets and diagram authoring passed\n`);
+    await context.close();
+  }
 } finally {
   await browser?.close();
   if (server.exitCode === null) {

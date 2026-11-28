@@ -71,9 +71,9 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
     <section className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} aria-label="Graph editor overlay">
       <section className="absolute left-3 top-3 z-[260] max-w-full pointer-events-auto">
         <details>
-          <summary className="App-toolbar__btn cursor-pointer">Graph tools · {canvasTools[toolId]?.label}</summary>
+          <summary className="agentic-toolbar-item">Graph tools · {canvasTools[toolId]?.label}</summary>
           <GraphEditorToolRail activeToolId={toolId} onSelectTool={setToolId} />
-          <button type="button" className="App-toolbar__btn" aria-expanded={inspecting} onClick={() => setInspecting(!inspecting)}>Inspector</button>
+          <button type="button" className="agentic-toolbar-item" aria-expanded={inspecting} onClick={() => setInspecting(!inspecting)}>Inspector</button>
         </details>
         {status && <p role="status">{status}</p>}
       </section>
