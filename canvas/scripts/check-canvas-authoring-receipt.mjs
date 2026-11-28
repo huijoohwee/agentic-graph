@@ -104,6 +104,7 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
     const drawings = page.locator('[data-kg-layer="nodes"] svg[data-kg-node-shape="sketch"]');
     await drawings.first().waitFor();
     assert.equal(await drawings.filter({ visible: true }).count(), 3);
+    assert.equal(await page.locator('[data-kg-edge-label][data-edge-id^="sketch-link-"]').count(), 0);
     for (const drawing of await drawings.filter({ visible: true }).all()) assert.ok(await drawing.locator('path').count() >= 6);
     await savedSource();
   };

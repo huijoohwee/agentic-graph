@@ -23,7 +23,7 @@ export function stageSketchPrompt(state: GraphState, request: string) {
   const used = new Set([...(data?.nodes ?? []), ...(data?.edges ?? [])].map(item => item.id))
   const id = (kind: string) => { const value = createUniqueId('sketch-' + kind + '-', used); used.add(value); return value }
   const nodes: { id: string; label: string; type: string; position: { x: number; y: number }; properties?: Record<string, unknown> }[] = []
-  const edges: { id: string; source: string; target: string; label: string; relation?: string; 'visual:opacity'?: number }[] = []
+  const edges: { id: string; source: string; target: string; label: string; relation?: string; 'visual:opacity'?: number; 'visual:hideLabel'?: boolean }[] = []
   const y0 = data?.nodes.length ? data.nodes.reduce((max, n) => Math.max(max, Number.isFinite(n.y) ? n.y! : 0), 0) + 180 : 0
   let title = 'Sketch'
   const customPath = /^path(?:\s+"([^"\n]{1,64})")?\s*:\s*(.+)$/i.exec(body)
@@ -97,7 +97,7 @@ export function stageSketchPrompt(state: GraphState, request: string) {
     if (title === 'Pair programming') {
       const screen = nodes[props.findIndex(p => p.kind === 'workstation')].id
       for (const [i, item] of props.entries()) if (item.kind === 'human' || item.kind === 'robot')
-        edges.push({ id: id('link'), source: nodes[i].id, target: screen, label: '', relation: 'codes at', 'visual:opacity': 0 })
+        edges.push({ id: id('link'), source: nodes[i].id, target: screen, label: '', relation: 'codes at', 'visual:opacity': 0, 'visual:hideLabel': true })
     }
   }
   const groupId = createUniqueId('sketch-group-', new Set(data ? readSubgraphs(data).map(group => group.id) : []))
