@@ -185,8 +185,7 @@ test("consumer pinned docs ref parsing is conservative", () => {
 test("local runtime resolves docs from the same exact pinned package as release CI", async t => {
   const root = await mkdtemp(path.join(tmpdir(), "graph-pinned-docs-runtime-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const graphRoot = path.join(root, "agentic-graph");
-  const docsRepo = path.join(root, "agentic-os");
+  const graphRoot = path.join(root, "agentic-graph"), docsRepo = path.join(root, "agentic-os");
   const workspaceRoot = path.join(root, "workspace");
   await mkdir(path.join(graphRoot, "docs"), { recursive: true });
   await mkdir(workspaceRoot, { recursive: true });
@@ -199,21 +198,9 @@ test("local runtime resolves docs from the same exact pinned package as release 
   git(docsRepo, ["commit", "-m", "pinned docs"]);
   const ref = git(docsRepo, ["rev-parse", "HEAD"]);
   const expected = `https://codeload.github.com/huijoohwee/agentic-os/tar.gz/${ref}`;
-  await writeFile(path.join(graphRoot, "docs", "runtime-readiness-contract.md"), [
-    "---",
-    "status: active",
-    "contract_version: 1",
-    "docs_dependency:",
-    '  repository: "https://github.com/huijoohwee/agentic-os.git"',
-    `  ref: "${ref}"`,
-    "---",
-  ].join("\n"));
-  await writeFile(path.join(graphRoot, "package.json"), JSON.stringify({
-    devDependencies: { "agentic-os": expected },
-  }));
-  await writeFile(path.join(graphRoot, "package-lock.json"), JSON.stringify({
-    packages: { "node_modules/agentic-os": { resolved: expected } },
-  }));
+  await writeFile(path.join(graphRoot, "docs", "runtime-readiness-contract.md"), ["---", "status: active", "contract_version: 1", "docs_dependency:", '  repository: "https://github.com/huijoohwee/agentic-os.git"', `  ref: "${ref}"`, "---"].join("\n"));
+  await writeFile(path.join(graphRoot, "package.json"), JSON.stringify({ devDependencies: { "agentic-os": expected } }));
+  await writeFile(path.join(graphRoot, "package-lock.json"), JSON.stringify({ packages: { "node_modules/agentic-os": { resolved: expected } } }));
 
   const result = resolvePinnedDocsDependency(graphRoot, docsRepo, workspaceRoot);
   assert.deepEqual(result.dependency, { repository: "huijoohwee/agentic-os", ref });
