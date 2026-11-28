@@ -13,6 +13,7 @@ import {
   createXrV2SpatialAssetMetadata,
 } from '../xrV2SpatialAssetMetadata'
 import { XR_V2_POST_PROCESS_LEASE_MS } from '../xrV2PostProcessStoreContract'
+import { claimXrV2PostProcessJobInIndexedDb } from '../xrV2IndexedDbPostProcessClaim'
 
 function uniqueDatabaseName(label: string): string {
   return `agentic-graph-xr-v2-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -26,6 +27,31 @@ function deleteDatabase(databaseName: string): Promise<void> {
     request.onblocked = () => reject(new Error('test database deletion was blocked'))
   })
 }
+
+test('cancelling before the job cursor opens rolls back once and reports cancellation', async () => {
+  const name = uniqueDatabaseName('pending-cursor')
+  const opening = indexedDB.open(name)
+  opening.onupgradeneeded = () => {
+    opening.result.createObjectStore('jobs')
+    opening.result.createObjectStore('blobs')
+  }
+  const database = await new Promise<IDBDatabase>((resolve, reject) => {
+    opening.onsuccess = () => resolve(opening.result)
+    opening.onerror = () => reject(opening.error)
+  })
+  try {
+    const controller = new AbortController()
+    const claim = claimXrV2PostProcessJobInIndexedDb({
+      database, nowMs: 1, leaseId: 'cancelled', timeoutMs: 1000, signal: controller.signal,
+      stereoContainerRef: id => id, releaseLateClaim: async () => assert.fail('no job was claimed'),
+    })
+    controller.abort()
+    await assert.rejects(claim, { name: 'AbortError' })
+  } finally {
+    database.close()
+    await deleteDatabase(name)
+  }
+})
 
 test('real IndexedDB preflight and reload preserve the exact live asset metadata contract', async () => {
   const databaseName = uniqueDatabaseName('live')

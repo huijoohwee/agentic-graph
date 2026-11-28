@@ -39,7 +39,7 @@ export function claimXrV2PostProcessJobInIndexedDb(
       try { transaction.abort() } catch { /* already settled */ }
     }, input.timeoutMs)
     const request = transaction.objectStore('jobs').openCursor()
-    request.onerror = () => transaction.abort()
+    // A cursor error already aborts this transaction. Cancellation can deliver it after rollback.
     request.onsuccess = () => {
       const cursor = request.result
       if (!cursor) return
@@ -65,7 +65,9 @@ export function claimXrV2PostProcessJobInIndexedDb(
       if (!claimed) { reject(failure()); return }
       void input.releaseLateClaim(claimed).then(() => reject(failure()), reject)
     }
-    transaction.onerror = () => { cleanup(); reject(transaction.error || new Error('XR job claim failed')) }
-    transaction.onabort = () => { cleanup(); reject(transaction.error || failure()) }
+    transaction.onabort = () => {
+      cleanup()
+      reject(abortRequested ? failure() : transaction.error || new Error('XR job claim failed'))
+    }
   })
 }
