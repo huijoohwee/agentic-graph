@@ -239,7 +239,11 @@ export const createHistorySlice = (set: SetGraph, get: GetGraph) => {
     cancelScheduledHistoryCommit()
     set({ ...change, canvasAuthoringTurn: null, history: after, historyIndex: after.length - 1 })
     persistGraphDataToLocalStorage(graphData)
-    if (turn.documentKey) void writeActiveMarkdownDocumentTextIfPresent({ state: { ...state, ...change }, sourceFiles, text, label })
+    if (turn.documentKey) void writeActiveMarkdownDocumentTextIfPresent({ state: { ...state, ...change }, sourceFiles, text, label }).then(saved => {
+      if (!saved && get().markdownDocumentText === text && get().markdownDocumentName === turn.documentKey) {
+        get().pushUiToast({ id: 'canvas-authoring-save', kind: 'warning', message: 'Diagram is editable in this session. Save a local copy to keep the changes.' })
+      }
+    })
     return true
   },
   history: [] as VersionHistoryEntry[],

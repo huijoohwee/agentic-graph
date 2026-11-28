@@ -390,7 +390,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
               <>
                 <section
                   className={`absolute inset-0 ${sharedGraphCanvasSurfaceActive ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
-                  aria-hidden={!sharedGraphCanvasSurfaceActive}
+                  aria-hidden={!sharedGraphCanvasSurfaceActive} data-kg-graph-authoring-surface={variant}
                   data-kg-shared-graph-canvas-surface={sharedGraphCanvasSurfaceActive ? active2dSurface || undefined : undefined}
                 >
                   {sharedGraphCanvasSurfaceActive ? <SharedGraphCanvasLazy active /> : null}

@@ -11,9 +11,13 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { tryActivateVideoAgentDemoPreset } from './videoAgentDemoPresetSubmit'
 import { tryActivateNativeCrawlerInvocation } from '../nativeCrawlerInvocation'
-import { tryActivateNativeImportUrlInvocation } from '../nativeImportUrlInvocation'
+import { isNativeImportUrlInvocationAttempt, tryActivateNativeImportUrlInvocation } from '../nativeImportUrlInvocation'
 import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceStudioInvocation'
 import { tryActivateGeospatialInvocation } from './geospatialInvocationSubmit'
+
+export function canSubmitChatWithoutModel(input: string) {
+  return isCanvasSourceProjection(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
+}
 
 export type FloatingPanelChatSubmitHookDeps = {
   resolveRequestUrlOrSetError?: typeof resolveChatSubmitRequestUrlOrSetError

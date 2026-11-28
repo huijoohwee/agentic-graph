@@ -29,8 +29,7 @@ import {
 } from '@/features/chat/floatingPanelChat/floatingPanelChatRuntime'
 import { useFloatingPanelChatHistory } from '@/features/chat/floatingPanelChat/useFloatingPanelChatHistory'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
-import { useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
-import { isNativeImportUrlInvocationAttempt } from '@/features/chat/nativeImportUrlInvocation'
+import { canSubmitChatWithoutModel, useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
 import { shouldRenderFloatingChatApiKeyPrompt } from '@/features/chat/floatingPanelChat/floatingPanelChatApiKeyPrompt'
 import { buildStorageChatRelayLogDescriptor } from '@/features/chat/floatingPanelChat/floatingPanelChatRelayDiagnostics'
 import { applyFloatingPanelChatInputAppend, resolveFloatingPanelChatInputAppend } from '@/features/chat/floatingPanelChat/floatingPanelChatInputAppend'
@@ -62,7 +61,6 @@ import type {
 import { resolveSharedChatModelSelect } from '@/features/chat/chatModelCredentialResolver'
 import { useFloatingPanelChatSurfaceModel } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSurfaceModel'
 import { flushFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
-import { isCanvasSourceProjection } from './promptPresetInvocation'
 import { stopFloatingPanelChatStream } from '@/features/chat/floatingPanelChat/floatingPanelChatStop'
 import { useFloatingPanelChatThreadFollow } from '@/features/chat/floatingPanelChat/useFloatingPanelChatThreadFollow'
 import { openMarkdownWorkspacePathInExplorer } from '@/features/markdown-workspace/openMarkdownWorkspacePathInExplorer'
@@ -786,8 +784,6 @@ export default function FloatingPanelChat() {
     requestHistorySubTab,
     setStreamingInsights,
   })
-  const nativeInputReady = isCanvasSourceProjection(input) || isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
-
   return (
     <section className="h-full flex flex-col">
       <section
@@ -838,7 +834,7 @@ export default function FloatingPanelChat() {
         onModelChanged={handleChatModelChanged}
         uiPanelTextFontClass={uiPanelTextFontClass}
         uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
-        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeInputReady)}
+        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !canSubmitChatWithoutModel(input))}
         onSubmit={handleSubmit}
         onStop={stopActiveChatStream}
         showNewChatButton={chatStorageTarget === 'chatAgenticGraph'}

@@ -12,6 +12,10 @@ const authorTools = new Set<CanvasToolId>(['node', 'edge', 'subgraph'])
 export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef: React.RefObject<SVGSVGElement | null> }) {
   const toolId = useGraphStore(state => state.graphEditorToolId)
   const setToolId = useGraphStore(state => state.setGraphEditorToolId)
+  const [workspace, setWorkspace] = React.useState(false)
+  React.useLayoutEffect(() => {
+    setWorkspace(active && !!svgRef.current?.closest('[data-kg-graph-authoring-surface="workspace"]'))
+  }, [active, svgRef])
   const [inspecting, setInspecting] = React.useState(false)
   const documentKey = useGraphStore(state => state.markdownDocumentName)
   const [status, setStatus] = React.useState('')
@@ -19,7 +23,7 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
     setStatus('')
     const svg = svgRef.current
     const surface = svg?.parentElement
-    if (!active || !surface || !svg) return
+    if (!active || !workspace || !surface || !svg) return
     let first: string | null = null
     const keydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey ||
@@ -61,8 +65,8 @@ export function GraphEditorOverlay({ active, svgRef }: { active: boolean; svgRef
       svg.removeEventListener('click', onClick, true)
       svg.style.pointerEvents = previous
     }
-  }, [active, documentKey, setToolId, svgRef, toolId])
-  if (!active) return null
+  }, [active, documentKey, setToolId, svgRef, toolId, workspace])
+  if (!active || !workspace) return null
   return (
     <section className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} aria-label="Graph editor overlay">
       <section className="absolute left-3 top-3 z-[260] max-w-full pointer-events-auto">
