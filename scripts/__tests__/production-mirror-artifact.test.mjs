@@ -58,6 +58,7 @@ const createBaseMirror = async root => {
     writeFile(root, 'README.md', 'unrelated mirror content\n'),
     writeFile(root, '404.html', '<h1>old not found</h1>\n'),
     writeFile(root, 'index.html', '<h1>legacy root fallback</h1>\n'),
+    writeFile(root, '.agentic-os/owner-projections.json', '{}\n'),
     writeFile(root, '.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/agentic-graph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/gamexr/index.html', 'old gamexr\n'),
