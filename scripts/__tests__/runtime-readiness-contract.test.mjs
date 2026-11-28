@@ -6,6 +6,7 @@ import {
   formatGitHubOutput,
   readRuntimeReadinessContract,
   resolveRuntimeDocsDependency,
+  resolveRuntimeDocsDependencyFromSource,
 } from '../runtime-readiness-contract.mjs'
 import {
   checkRuntimeDocsWorkflowPolicy,
@@ -82,6 +83,23 @@ test('runtime docs dependency rejects mutable or non-GitHub sources', () => {
       ref: 'a'.repeat(40),
     },
   }), /HTTPS GitHub repository URL/)
+})
+
+test('local candidate and release CI share one docs resolver and exact package pin check', async () => {
+  const contract = await readRuntimeReadinessContract()
+  const packageJson = JSON.parse(await (await import('node:fs/promises')).readFile(
+    new URL('../../package.json', import.meta.url), 'utf8',
+  ))
+  const source = await (await import('node:fs/promises')).readFile(
+    new URL('../../docs/runtime-readiness-contract.md', import.meta.url), 'utf8',
+  )
+  const resolved = resolveRuntimeDocsDependencyFromSource(source, packageJson)
+  assert.deepEqual(resolved.contract, contract)
+  assert.deepEqual(resolved.dependency, resolveRuntimeDocsDependency(contract))
+  assert.throws(() => resolveRuntimeDocsDependencyFromSource(source, {
+    ...packageJson,
+    devDependencies: { ...packageJson.devDependencies, 'agentic-os': 'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/' + 'a'.repeat(40) },
+  }), /package pins must identify the same OS source revision/)
 })
 
 test('all auto-discovered workflow checkouts satisfy the shared runtime docs policy', async () => {

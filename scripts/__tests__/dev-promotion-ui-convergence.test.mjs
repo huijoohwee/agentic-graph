@@ -18,13 +18,13 @@ test('Dev renderer selection waits for the bounded semantic toolbar convergence'
       return {
         getAttribute: async name => name === 'aria-label' ? labels.shift() || label : null,
         waitFor: async options => waits.push(options),
-        click: async () => { menuClicks += 1 },
+        press: async key => { assert.equal(key, 'Enter'); menuClicks += 1 },
       }
     },
     getByRole(role, options) {
       assert.equal(role, 'button')
       assert.deepEqual(options, { name: '2D Renderer: ' + target, exact: true })
-      return { click: async () => { label = expectedLabel } }
+      return { press: async key => { assert.equal(key, 'Enter'); label = expectedLabel } }
     },
     waitForTimeout: async milliseconds => delays.push(milliseconds),
   }
@@ -47,7 +47,7 @@ test('Dev surface selection retries once when initial hydration restores XR mode
   const mode = {
     waitFor: async options => waits.push(options),
     getAttribute: async name => name === 'aria-label' ? label : null,
-    click: async () => {},
+    press: async key => assert.equal(key, 'Enter'),
   }
   const page = {
     locator(selector) {
@@ -57,9 +57,10 @@ test('Dev surface selection retries once when initial hydration restores XR mode
     },
     getByRole(role, options) {
       assert.equal(role, 'button')
-      if (options.name === 'Surface Mode') return { click: async () => {} }
+      if (options.name === 'Surface Mode') return { press: async key => assert.equal(key, 'Enter') }
       assert.deepEqual(options, { name: '2D Mode', exact: true })
-      return { click: async () => {
+      return { press: async key => {
+        assert.equal(key, 'Enter')
         twoDimensionalClicks += 1
         if (twoDimensionalClicks === 2) label = 'Canvas View Mode: 2D Renderer: Storyboard'
       } }
@@ -79,12 +80,14 @@ test('Dev table verification selects the imported Markdown body semantically', a
   const body = {
     waitFor: async options => waits.push(options),
     getAttribute: async name => name === 'aria-selected' ? String(selected) : null,
-    click: async () => { selected = true },
+    focus: async () => {},
+    press: async key => { assert.equal(key, 'Enter'); selected = true },
   }
   const workspace = {
     locator(selector) {
       assert.equal(selector, 'section[aria-label="Table selector"]')
       return {
+        count: async () => 1,
         getByRole(role, options) {
           assert.equal(role, 'tab')
           assert.deepEqual(options, { name: 'Markdown Body', exact: true })

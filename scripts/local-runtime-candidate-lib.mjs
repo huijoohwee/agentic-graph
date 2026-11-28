@@ -1,10 +1,11 @@
 // Responsibility: canonical runtime candidate evidence, consumer-pin binding, protected-check verification, and residue classification.
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { readFileSync, realpathSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { parseRegisteredWorktrees as parseWorktreeRecords } from "./worktree-policy.mjs";
+import { resolveRuntimeDocsDependencyFromSource } from "./runtime-readiness-contract.mjs";
 
 export const SHA_PATTERN = /^[0-9a-f]{40}$/;
 export const CANONICAL_RUNTIME_STATUS_ARGS = Object.freeze(["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
@@ -79,13 +80,13 @@ export function validateCanonicalRuntimeCandidate(evidence) {
 }
 
 function resolveAgenticCanvasOsRevisionBinding(repository) {
-  if (repository.headSha === repository.remoteSha) return "fetched-tip";
   const pin = String(repository.consumerPinnedRef || "");
   if (SHA_PATTERN.test(pin) &&
-      repository.headSha === pin &&
+      (repository.headSha === pin || repository.headSha === repository.remoteSha) &&
       repository.consumerPinnedRefIsAncestorOfRemote === true) {
     return "consumer-pin";
   }
+  if (repository.headSha === repository.remoteSha) return "fetched-tip";
   throw new Error(
     `${repository.id} canonical HEAD must equal fetched origin/main or the consumer-pinned docs_dependency ref that is an ancestor of origin/main.`,
   );
@@ -113,16 +114,6 @@ export function parseConsumerPinnedDocsRef(markdown) {
   return null;
 }
 
-function readConsumerPinnedDocsRef(agenticGraphRoot) {
-  try {
-    return parseConsumerPinnedDocsRef(
-      readFileSync(path.join(agenticGraphRoot, "docs", "runtime-readiness-contract.md"), "utf8"),
-    );
-  } catch {
-    return null;
-  }
-}
-
 function isAncestorCommit(root, ancestorSha, descendantSha, deps) {
   try {
     deps.gitText(root, ["merge-base", "--is-ancestor", ancestorSha, descendantSha]);
@@ -132,19 +123,86 @@ function isAncestorCommit(root, ancestorSha, descendantSha, deps) {
   }
 }
 
-function withConsumerPinEvidence(repository, agenticGraphRoot, deps) {
-  const consumerPinnedRef = readConsumerPinnedDocsRef(agenticGraphRoot);
+export function resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot) {
+  const contractPath = path.join(agenticGraphRoot, "docs", "runtime-readiness-contract.md");
+  const packagePath = path.join(agenticGraphRoot, "package.json");
+  const lockPath = path.join(agenticGraphRoot, "package-lock.json");
+  const { dependency } = resolveRuntimeDocsDependencyFromSource(
+    readFileSync(contractPath, "utf8"),
+    JSON.parse(readFileSync(packagePath, "utf8")),
+    "docs/runtime-readiness-contract.md",
+  );
+  if (dependency.repository !== "huijoohwee/agentic-os") {
+    throw new Error("local runtime docs dependency must resolve to huijoohwee/agentic-os");
+  }
+  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  const expected = `https://codeload.github.com/${dependency.repository}/tar.gz/${dependency.ref}`;
+  if (lock.packages?.["node_modules/agentic-os"]?.resolved !== expected) {
+    throw new Error("local runtime docs package lock does not match the exact runtime docs dependency");
+  }
+  const archive = execFileSync("git", ["archive", "--format=tar", dependency.ref, "catalog/dictionaries"], {
+    cwd: agenticCanvasOsRoot,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const archiveEntries = execFileSync("tar", ["-tf", "-"], { input: archive, encoding: "utf8" })
+    .split("\n").filter(Boolean);
+  if (archiveEntries.length === 0 || archiveEntries.some(entry =>
+    (!entry.startsWith("catalog/dictionaries/") && entry !== "catalog/dictionaries" && entry !== "catalog/")
+    || entry.split("/").includes("..") || entry.startsWith("/"))) {
+    throw new Error("the exact pinned Agentic OS docs archive has an invalid path inventory");
+  }
+  const archiveDigest = createHash("sha256").update(archive).digest("hex");
+  const cacheRoot = path.join(workspaceRoot, ".runtime-state", "agentic-canvas-os", "agentic-graph-local-runtime", "pinned-docs");
+  mkdirSync(cacheRoot, { recursive: true, mode: 0o700 });
+  chmodSync(cacheRoot, 0o700);
+  const marker = JSON.stringify({ schema: "agentic-graph/pinned-agentic-os-docs-cache/v1", ref: dependency.ref, archiveDigest });
+  let target = path.join(cacheRoot, `${dependency.ref}-${archiveDigest}`);
+  const validCache = directory => {
+    try {
+      return readFileSync(path.join(directory, ".agentic-os-docs-cache.json"), "utf8") === `${marker}\n`
+        && existsSync(path.join(directory, "catalog", "dictionaries"));
+    } catch {
+      return false;
+    }
+  };
+  if (existsSync(target) && !validCache(target)) target = `${target}-${process.pid}-${randomUUID()}`;
+  if (!validCache(target)) {
+    const staging = mkdtempSync(path.join(cacheRoot, `.extract-${dependency.ref}-`));
+    try {
+      execFileSync("tar", ["-xf", "-", "-C", staging], { input: archive, stdio: ["pipe", "ignore", "pipe"] });
+      const extractedDocsRoot = path.join(staging, "catalog", "dictionaries");
+      if (!existsSync(extractedDocsRoot)) throw new Error("pinned Agentic OS archive is missing catalog/dictionaries");
+      writeFileSync(path.join(staging, ".agentic-os-docs-cache.json"), `${marker}\n`, { flag: "wx", mode: 0o600 });
+      try {
+        renameSync(staging, target);
+      } catch (error) {
+        if (!validCache(target)) throw error;
+        rmSync(staging, { recursive: true, force: true });
+      }
+    } catch (error) {
+      rmSync(staging, { recursive: true, force: true });
+      throw error;
+    }
+  }
+  return { dependency, docsRoot: path.join(target, "catalog", "dictionaries"), archiveDigest };
+}
+
+function withConsumerPinEvidence(repository, deps, docs) {
+  const consumerPinnedRef = docs.dependency.ref;
   return {
     ...repository,
     consumerPinnedRef,
+    docsRoot: docs.docsRoot,
     consumerPinnedRefIsAncestorOfRemote: consumerPinnedRef !== null &&
       isAncestorCommit(repository.root, consumerPinnedRef, repository.remoteSha, deps),
+    pinnedDocsTreeSha: deps.gitText(repository.root, ["rev-parse", `${consumerPinnedRef}^{tree}`]).trim(),
   };
 }
 
 
 function inspectCanonicalCandidate(options, deps, { verifyProtected }) {
   const { workspaceRoot, agenticCanvasOsRoot, agenticGraphRoot } = resolveCanonicalRuntimeRoots(options, deps);
+  const docs = resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot);
   const repositories = [
     inspectRepository("agentic-os", agenticCanvasOsRoot, deps, verifyProtected),
     inspectRepository("agentic-graph", agenticGraphRoot, deps, verifyProtected),
@@ -152,14 +210,29 @@ function inspectCanonicalCandidate(options, deps, { verifyProtected }) {
   const packageJson = JSON.parse(readFileSync(path.join(agenticGraphRoot, "package.json"), "utf8"));
   const protectedChecks = Object.fromEntries(repositories.map(repository => [repository.id, repository.checks]));
   const evidence = validateCanonicalRuntimeCandidate({
-    agenticCanvasOs: withConsumerPinEvidence(repositories[0], agenticGraphRoot, deps),
+    agenticCanvasOs: withConsumerPinEvidence(repositories[0], deps, docs),
     agenticGraph: {
       ...repositories[1],
       hasDevApexScript: typeof packageJson.scripts?.["dev:apex"] === "string",
       hasStorageWorkerScript: typeof packageJson.scripts?.["storage:worker:dev"] === "string",
     },
   });
-  return { workspaceRoot, agenticCanvasOsRoot, agenticGraph: { ...evidence.agenticGraph, root: agenticGraphRoot }, agenticCanvasOs: evidence.agenticCanvasOs, protectedChecks };
+  const { headSha: checkoutHeadSha, treeSha: checkoutTreeSha, pinnedDocsTreeSha, docsRoot,
+    consumerPinnedRef, ...agenticCanvasOs } = evidence.agenticCanvasOs;
+  return {
+    workspaceRoot,
+    agenticCanvasOsRoot,
+    agenticGraph: { ...evidence.agenticGraph, root: agenticGraphRoot },
+    agenticCanvasOs: {
+      ...agenticCanvasOs,
+      checkoutHeadSha,
+      checkoutTreeSha,
+      headSha: consumerPinnedRef,
+      treeSha: pinnedDocsTreeSha,
+      docsRoot,
+    },
+    protectedChecks,
+  };
 }
 
 export function resolveCanonicalCandidate(options, deps, settings) {
@@ -176,10 +249,12 @@ export function resolveOwnershipCandidate(options, deps) {
 
 export function inspectOwnershipCandidate(options, deps) {
   const { workspaceRoot, agenticCanvasOsRoot, agenticGraphRoot } = resolveCanonicalRuntimeRoots(options, deps);
+  const docs = resolvePinnedDocsDependency(agenticGraphRoot, agenticCanvasOsRoot, workspaceRoot);
+  const docsTreeSha = deps.gitText(agenticCanvasOsRoot, ["rev-parse", `${docs.dependency.ref}^{tree}`]).trim();
   return {
     workspaceRoot,
     agenticCanvasOsRoot,
-    agenticCanvasOs: { headSha: deps.gitText(agenticCanvasOsRoot, ["rev-parse", "HEAD"]).trim() },
+    agenticCanvasOs: { headSha: docs.dependency.ref, treeSha: docsTreeSha, docsRoot: docs.docsRoot },
     agenticGraph: {
       root: agenticGraphRoot,
       headSha: deps.gitText(agenticGraphRoot, ["rev-parse", "HEAD"]).trim(),

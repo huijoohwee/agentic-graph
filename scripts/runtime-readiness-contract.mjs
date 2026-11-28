@@ -51,15 +51,21 @@ export const validateRuntimeReadinessContract = contract => {
   return contract
 }
 
-export const readRuntimeReadinessContract = async () => {
-  const source = await fs.readFile(runtimeReadinessContractPath, 'utf8')
-  const label = path.relative(repoRoot, runtimeReadinessContractPath)
+export const resolveRuntimeDocsDependencyFromSource = (source, pkg, label = 'docs/runtime-readiness-contract.md') => {
   const contract = validateRuntimeReadinessContract(parseFrontmatter(source, label))
-  const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'))
-  const expected = `https://codeload.github.com/${resolveRuntimeDocsDependency(contract).repository}/tar.gz/${contract.docs_dependency.ref}`
+  const dependency = resolveRuntimeDocsDependency(contract)
+  const expected = `https://codeload.github.com/${dependency.repository}/tar.gz/${dependency.ref}`
   if (readAgenticOsSourcePin(pkg).value !== expected) {
     throw new Error('docs and runtime package pins must identify the same OS source revision')
   }
+  return { contract, dependency }
+}
+
+export const readRuntimeReadinessContract = async () => {
+  const source = await fs.readFile(runtimeReadinessContractPath, 'utf8')
+  const label = path.relative(repoRoot, runtimeReadinessContractPath)
+  const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'))
+  const { contract } = resolveRuntimeDocsDependencyFromSource(source, pkg, label)
   return contract
 }
 
