@@ -11,6 +11,7 @@ import {
   classifyCanonicalRuntimeResidue,
   parseConsumerPinnedDocsRef,
   refreshProtectedMain,
+  resolvePinnedDocsDependency,
   resolveCanonicalMainWorktree,
   resolveWorkspaceRootFromGitCommonDir,
   validateCanonicalRuntimeCandidate,
@@ -113,6 +114,20 @@ test("canonical runtime binds agentic-os to the consumer pin when it is an ances
   assert.equal(validated.agenticCanvasOs.revisionBinding, "consumer-pin");
 });
 
+test("canonical runtime prefers the graph docs pin even when Agentic OS checkout is at origin/main", () => {
+  const pinSha = "e".repeat(40);
+  const tipSha = "f".repeat(40);
+  const candidate = validCandidate({
+    agenticCanvasOs: repository("agentic-os", tipSha, {
+      remoteSha: tipSha,
+      consumerPinnedRef: pinSha,
+      consumerPinnedRefIsAncestorOfRemote: true,
+    }),
+  });
+  const validated = validateCanonicalRuntimeCandidate(candidate);
+  assert.equal(validated.agenticCanvasOs.revisionBinding, "consumer-pin");
+});
+
 test("canonical runtime rejects a consumer pin that is not an ancestor of fetched origin/main", () => {
   const pinSha = "e".repeat(40);
   const candidate = validCandidate({
@@ -165,6 +180,37 @@ test("consumer pinned docs ref parsing is conservative", () => {
   assert.equal(parseConsumerPinnedDocsRef(`ref: "${pin}"`), null);
   assert.equal(parseConsumerPinnedDocsRef(["---", "docs_dependency:", "---", `  ref: "${pin}"`].join("\n")), null);
   assert.equal(parseConsumerPinnedDocsRef(null), null);
+});
+
+test("local runtime resolves docs from the same exact pinned package as release CI", async t => {
+  const root = await mkdtemp(path.join(tmpdir(), "graph-pinned-docs-runtime-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const graphRoot = path.join(root, "agentic-graph"), docsRepo = path.join(root, "agentic-os");
+  const workspaceRoot = path.join(root, "workspace");
+  await mkdir(path.join(graphRoot, "docs"), { recursive: true });
+  await mkdir(workspaceRoot, { recursive: true });
+  git(root, ["init", "--initial-branch=main", docsRepo]);
+  git(docsRepo, ["config", "user.name", "Pinned docs test"]);
+  git(docsRepo, ["config", "user.email", "pinned-docs@example.invalid"]);
+  await mkdir(path.join(docsRepo, "catalog", "dictionaries"), { recursive: true });
+  await writeFile(path.join(docsRepo, "catalog", "dictionaries", "AGENTS.md"), "pinned docs bytes\n");
+  git(docsRepo, ["add", "catalog/dictionaries/AGENTS.md"]);
+  git(docsRepo, ["commit", "-m", "pinned docs"]);
+  const ref = git(docsRepo, ["rev-parse", "HEAD"]);
+  const expected = `https://codeload.github.com/huijoohwee/agentic-os/tar.gz/${ref}`;
+  await writeFile(path.join(graphRoot, "docs", "runtime-readiness-contract.md"), ["---", "status: active", "contract_version: 1", "docs_dependency:", '  repository: "https://github.com/huijoohwee/agentic-os.git"', `  ref: "${ref}"`, "---"].join("\n"));
+  await writeFile(path.join(graphRoot, "package.json"), JSON.stringify({ devDependencies: { "agentic-os": expected } }));
+  await writeFile(path.join(graphRoot, "package-lock.json"), JSON.stringify({ packages: { "node_modules/agentic-os": { resolved: expected } } }));
+
+  const result = resolvePinnedDocsDependency(graphRoot, docsRepo, workspaceRoot);
+  assert.deepEqual(result.dependency, { repository: "huijoohwee/agentic-os", ref });
+  assert.equal(await readFile(path.join(result.docsRoot, "AGENTS.md"), "utf8"), "pinned docs bytes\n");
+  assert.ok(result.archiveDigest);
+  assert.deepEqual(resolvePinnedDocsDependency(graphRoot, docsRepo, workspaceRoot), {
+    dependency: { repository: "huijoohwee/agentic-os", ref },
+    docsRoot: result.docsRoot,
+    archiveDigest: result.archiveDigest,
+  });
 });
 
 test("Git status keeps draft paths, nested configuration and rename destinations distinct", async t => {

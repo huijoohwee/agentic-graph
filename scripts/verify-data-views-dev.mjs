@@ -178,9 +178,9 @@ export async function ensureTwoDimensionalSurface(page) {
   for (let attempt = 0; attempt < RENDERER_SELECTION_ATTEMPTS; attempt += 1) {
     await mode.waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
     if ((await settledCanvasModeLabel(page, mode)).includes('2D Renderer:')) return
-    await mode.click()
-    await page.getByRole('button', { name: 'Surface Mode', exact: true }).click()
-    await page.getByRole('button', { name: '2D Mode', exact: true }).click()
+    await mode.press('Enter')
+    await page.getByRole('button', { name: 'Surface Mode', exact: true }).press('Enter')
+    await page.getByRole('button', { name: '2D Mode', exact: true }).press('Enter')
     await page.locator('button[aria-label^="Canvas View Mode: 2D Renderer:"]').waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
     if ((await settledCanvasModeLabel(page, mode)).includes('2D Renderer:')) return
   }
@@ -215,8 +215,8 @@ export async function selectRenderer(page, view) {
   for (let attempt = 0; attempt < RENDERER_SELECTION_ATTEMPTS; attempt += 1) {
     await mode.waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
     if (await settledCanvasModeLabel(page, mode) === expectedLabel) return
-    await mode.click()
-    await page.getByRole('button', { name: '2D Renderer: ' + view, exact: true }).click()
+    await mode.press('Enter')
+    await page.getByRole('button', { name: '2D Renderer: ' + view, exact: true }).press('Enter')
     await page.locator('button[aria-label="' + expectedLabel + '"]').waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
     if (await settledCanvasModeLabel(page, mode) === expectedLabel) return
   }
