@@ -3,13 +3,14 @@ import type { GraphState } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
 import { normalizeComposedSourcePath, readComposedSourceFilePath } from '@/features/source-files/composedSourceSelection'
 import { commitCanvasAuthoring } from '@/hooks/store/commitCanvasAuthoring'
+import { boundedJsonEqual } from '@/lib/data/boundedJsonEqual'
 import { hashText } from '@/features/parsers/hash'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { readLocalEditorWorkspaceSurfaceSnapshot } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import { isWorkspaceCameraInitializationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { isWorkspaceAuthoringSourceSettled } from '@/features/workspace-table/workspaceSceneMetadataAuthoring'
 
-export type StagedCanvasEdit = { text: string; graph: GraphData }
+export type StagedCanvasEdit = { text: string; graph: GraphData; historyLabel?: string }
 const conflict = 'The document or editor draft changed. Review the source and try again.'
 
 function assertWritable(state: GraphState) {
@@ -20,6 +21,16 @@ function assertWritable(state: GraphState) {
   if (files.length > 1 || (files[0] && files[0].text !== state.markdownDocumentText)) throw new Error(conflict)
   if (readLocalEditorWorkspaceSurfaceSnapshot()?.hasUncommittedDraft ||
       (state.workspaceViewMode === 'editor' && !!state.markdownDocumentName && !isWorkspaceAuthoringSourceSettled(state))) throw new Error(conflict)
+}
+
+export function canUndoCanvasTurn(state: GraphState, entryId: string): boolean {
+  const entry = state.history[state.historyIndex]
+  if (state.historyIndex < 1 || entry?.id !== entryId || state.canvasAuthoringTurn ||
+      entry.parentId !== state.history[state.historyIndex - 1]?.id ||
+      state.markdownDocumentName !== entry.markdownDocumentName || state.markdownDocumentText !== entry.markdownDocumentText ||
+      state.graphDataRevision !== entry.graphData.metadata?.graphDataRevision ||
+      !boundedJsonEqual(state.graphFieldSettingsById, entry.graphFieldSettingsById)) return false
+  try { assertWritable(state); return true } catch { return false }
 }
 
 export async function runCanvasAuthoringTurn(
@@ -57,8 +68,9 @@ export async function runCanvasAuthoringTurn(
     const staged = await Promise.race([stage(initial, controller.signal), aborted])
     if (!current() || controller.signal.aborted) throw new Error(conflict)
     assertWritable(useGraphStore.getState())
-    if (!commitCanvasAuthoring(turn, staged.text, staged.graph, label)) throw new Error(conflict)
-    return staged
+    const entry = commitCanvasAuthoring(turn, staged.text, staged.graph, staged.historyLabel ?? label)
+    if (!entry) throw new Error(conflict)
+    return { ...staged, historyEntryId: entry.id, historyLabel: entry.label }
   } finally {
     clearTimeout(timeout)
     controller.signal.removeEventListener('abort', rejectAbort)

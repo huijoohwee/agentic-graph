@@ -1,6 +1,5 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { submitCanvasProjection } from './canvasProjectionSubmit'
 import { isCanvasSourceProjection } from '../promptPresetInvocation'
 import {
   initializeChatSubmitOptimisticState,
@@ -49,6 +48,7 @@ export const useFloatingPanelChatSubmit = (
       args.setIsLoading(true)
       args.setErrorText(null)
       try {
+        const { submitCanvasProjection } = await import('./canvasProjectionSubmit')
         await submitCanvasProjection(args, initial, controller)
       } catch (error) {
         if (args.abortRef.current === controller) args.setErrorText(error instanceof Error ? error.message : 'Unable to apply diagram.')

@@ -13,7 +13,7 @@ export function commitCanvasAuthoring(
   text: string,
   graph: GraphData,
   label: string,
-): boolean {
+) {
   const { getState, setState } = useGraphStore
   const state = getState()
   if (
@@ -66,5 +66,5 @@ export function commitCanvasAuthoring(
       }
     })
   }
-  return true
+  return history[history.length - 1]!
 }

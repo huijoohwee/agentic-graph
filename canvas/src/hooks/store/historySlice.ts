@@ -5,7 +5,7 @@ import type { StoreApi } from 'zustand';
 import { withGraphDataRevision } from './graphDataSliceUtils'
 import { deepClone } from '@/lib/data/deepClone'
 import { boundedJsonEqual } from '@/lib/data/boundedJsonEqual'
-import { createUniqueId } from '@/lib/ids'
+import { createId } from '@/lib/id'
 import { debounce } from '@/lib/async/debounce'
 import { persistGraphDataToLocalStorage } from './graphDataPersistence'
 import { hashArrayOfObjectsSignature, hashRecordSignature, hashSignatureParts } from '@/lib/hash/signature'
@@ -186,7 +186,7 @@ export function snapshotHistory(state: GraphState, graphData: GraphData, label: 
     graphData: deepClone(graphData),
     graphFieldSettingsById: deepClone(snapshot.graphFieldSettingsById),
     activeSourceFileSnapshot: activeSourceFileSnapshot ? deepClone(activeSourceFileSnapshot) : null,
-    id: createUniqueId(`h-${timestamp.toString(36)}-`, new Set(trimmed.map(item => item.id))),
+    id: createId('h'),
     contentSignature, timestamp, label, parentId: trimmed[trimmed.length - 1]?.id || null,
   })
   return appendBoundedHistoryEntry(trimmed, entry)

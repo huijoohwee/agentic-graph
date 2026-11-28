@@ -1,4 +1,5 @@
 import yaml from 'js-yaml'
+import { readSubgraphs } from '@/lib/graph/subgraphs'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
@@ -71,8 +72,21 @@ export function writeFlow(state: GraphState, flow: AuthoringFlow) {
 
 export function stageCanvasReply(state: GraphState, reply: string) {
   const existing = editableFlow(state)
-  if (!state.markdownDocumentText?.trim()) return stageFlow(state.markdownDocumentName, reply)
-  const addition = readAuthoringFlow(reply, true)
-  return writeFlow(state, { ...existing, nodes: [...existing.nodes, ...addition.nodes], edges: [...existing.edges, ...addition.edges],
-    ...(addition.subgraphs?.length ? { subgraphs: [...existing.subgraphs ?? [], ...addition.subgraphs] } : {}) })
+  let staged
+  if (state.markdownDocumentText?.trim()) {
+    const addition = readAuthoringFlow(reply, true)
+    if (!addition.nodes.length && !addition.edges.length && !addition.subgraphs?.length) throw new Error('The diagram contains no changes.')
+    staged = writeFlow(state, { ...existing, nodes: [...existing.nodes, ...addition.nodes], edges: [...existing.edges, ...addition.edges],
+      ...(addition.subgraphs?.length ? { subgraphs: [...existing.subgraphs ?? [], ...addition.subgraphs] } : {}) })
+  } else {
+    staged = stageFlow(state.markdownDocumentName, reply)
+  }
+  const previousGroups = ids(existing.subgraphs ?? [], 'subgraph')
+  const groups = readSubgraphs(staged.graph).filter(group => !previousGroups.has(group.id))
+  const count = (n: number, kind: string) => n + ' ' + kind + (n === 1 ? '' : 's')
+  const counts = [count(staged.graph.nodes.length - existing.nodes.length, 'node'), count(staged.graph.edges.length - existing.edges.length, 'edge')]
+  if (groups.length) counts.push(count(groups.length, 'group'))
+  const names = groups.slice(0, 3).map(group => group.label.slice(0, 80))
+  const historyLabel = 'Added ' + counts.join(', ') + (names.length ? ' · ' + names.join(', ') + (groups.length > 3 ? '…' : '') : '')
+  return { ...staged, historyLabel }
 }

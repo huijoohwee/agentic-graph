@@ -448,7 +448,7 @@ export default function MainPanel({
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-history-panel" aria-labelledby="main-panel-history-tab" hidden={tab !== 'history'}>
           {tab === 'history' && (
             <React.Suspense fallback={null}>
-              <HistoryViewLazy searchQuery={search} />
+              <HistoryViewLazy searchQuery={search} entryId={requestedTab === 'history' ? requestedAnchorId : undefined} entryRequest={requestedAnchorSeq} />
             </React.Suspense>
           )}
         </section>

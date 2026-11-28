@@ -15,7 +15,11 @@ import { renderFloatingPanelChatMessageContent } from '@/features/chat/floatingP
 import { FloatingPanelChatQuickActionGrid } from '@/features/chat/floatingPanelChat/FloatingPanelChatQuickActionGrid'
 import type { HeadlessResponseRunReceipt } from '@/features/chat/headlessResponseCoordinator'
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; headlessResponseRun?: HeadlessResponseRunReceipt }
+import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
+import { isCanvasSourceProjection } from './promptPresetInvocation'
+const CanvasTurnReceiptActions = React.lazy(() => import('./floatingPanelChat/CanvasTurnReceiptActions'))
+
+export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; canvasPending?: boolean; canvasHistoryEntryId?: string; headlessResponseRun?: HeadlessResponseRunReceipt }
 export type StreamingAssistantState = {
   id: string
   text: string
@@ -118,6 +122,13 @@ const FloatingPanelChatStreamingStatus = React.memo(function FloatingPanelChatSt
   )
 })
 
+function diagramRequestCaption(content: string): string {
+  const source = content.slice(content.indexOf('\n') + 1).trimStart()
+  const header = extractYamlFrontmatterHeaderBlock(source)
+  const caption = header && source.slice(header.rawBlock.length).trimStart().split('\n', 1)[0]
+  return caption ? caption.slice(0, 160) : 'Submitted diagram source'
+}
+
 const ChatMessageRow = React.memo(function ChatMessageRow({
   message,
   uiPanelTextFontClass,
@@ -143,7 +154,7 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
       className="flex"
       data-kg-chat-streaming-tail={isStreaming ? 'true' : undefined}
       data-kg-chat-streaming-state={streamingState || undefined}
-      aria-live={isStreaming ? 'polite' : undefined}
+      aria-live={isStreaming || message.canvasPending || message.canvasHistoryEntryId ? 'polite' : undefined}
       aria-busy={streamingState === 'pending' ? 'true' : undefined}
     >
       <section
@@ -156,9 +167,15 @@ const ChatMessageRow = React.memo(function ChatMessageRow({
             : `mr-auto ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.panel.border}`,
         ].join(' ')}
       >
-        {renderFloatingPanelChatMessageContent(
-          streamingState === 'pending' ? UI_COPY.chatAssistantPendingStatus : content,
-          onOpenWorkspacePath,
+        {isUser && isCanvasSourceProjection(content) ? (
+          <details><summary className="cursor-pointer">{diagramRequestCaption(content)}</summary>
+            <pre className="whitespace-pre-wrap break-words">{content}</pre>
+          </details>
+        ) : message.canvasHistoryEntryId ? <p>{content}</p> : renderFloatingPanelChatMessageContent(
+          streamingState === 'pending' ? UI_COPY.chatAssistantPendingStatus : content, onOpenWorkspacePath,
+        )}
+        {message.canvasHistoryEntryId && (
+          <React.Suspense fallback={null}><CanvasTurnReceiptActions entryId={message.canvasHistoryEntryId} /></React.Suspense>
         )}
       </section>
     </section>

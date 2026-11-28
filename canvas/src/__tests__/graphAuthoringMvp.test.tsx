@@ -5,8 +5,11 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { commitCanvasAuthoring } from '@/hooks/store/commitCanvasAuthoring'
-import { runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
+import { canUndoCanvasTurn, runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
 import { stageCanvasReply, stageFlow } from '@/features/graph-editor/canvasAuthoringFlow'
+import { submitCanvasProjection } from '@/features/chat/floatingPanelChat/canvasProjectionSubmit'
+import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
+import { parseChatHistory } from '@/features/chat/floatingPanelChat/useFloatingPanelChatHistory'
 import { authorCanvasTool } from '@/features/graph-editor/authorCanvasTool'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { registerWorkspaceSceneMetadataEditor } from '@/features/workspace-table/workspaceSceneMetadataAuthoring'
@@ -42,6 +45,28 @@ export async function testGraphAuthoringMvp() {
     assert.equal((await selectGatewayPreset(starters[0].id, async () => 'stale')).ok, false)
     assert.equal(store.getState().markdownDocumentText, '')
     assert.equal(store.getState().historyIndex, -1)
+    const request = '/canvas.project @source.frontmatter @source.body @canvas\n' + reply
+    const controller = new AbortController()
+    let input = request
+    let messages: ChatMessage[] = []
+    let busyToasts = 0
+    const args = {
+      input, historyKey: 'authoring-test', abortRef: { current: controller },
+      setMessages: (next: React.SetStateAction<ChatMessage[]>) => { messages = typeof next === 'function' ? next(messages) : next },
+      setInput: (next: React.SetStateAction<string>) => { input = typeof next === 'function' ? next(input) : next },
+    }
+    const initial = store.getState()
+    const sending = submitCanvasProjection(args, { ...initial, upsertUiToast: () => { busyToasts++ } }, controller)
+    assert.deepEqual(messages.map(message => message.role), ['user', 'assistant'])
+    assert.equal(messages[0].content, request)
+    const pendingId = messages[1].id
+    await sending
+    assert.equal(messages.length, 2)
+    assert.equal(messages[1].id, pendingId)
+    assert.equal(messages[1].canvasHistoryEntryId, store.getState().history.at(-1)?.id)
+    assert.equal(busyToasts, 0)
+    assert.equal(input, '')
+    reset()
     const origin = store.getState()
     const before = sourceHash(origin.markdownDocumentText)
     const result = await runCanvasAuthoringTurn(origin, new AbortController(), 'Apply diagram', async state => {
@@ -49,6 +74,17 @@ export async function testGraphAuthoringMvp() {
       return stageCanvasReply(state, reply)
     })
     assert.equal(store.getState().historyIndex, 1)
+    const committed = store.getState()
+    assert.equal(result.historyEntryId, committed.history[committed.historyIndex].id)
+    assert.equal(result.historyLabel, committed.history[committed.historyIndex].label)
+    assert.ok(canUndoCanvasTurn(committed, result.historyEntryId))
+    assert.ok(!canUndoCanvasTurn({ ...committed, markdownDocumentText: 'Uncommitted edit' }, result.historyEntryId))
+    assert.ok(!canUndoCanvasTurn({ ...committed, markdownDocumentName: 'another.md' }, result.historyEntryId))
+    assert.ok(!canUndoCanvasTurn({ ...committed, graphDataRevision: committed.graphDataRevision + 1 }, result.historyEntryId))
+    const receipt = { id: 'receipt', role: 'assistant', content: result.historyLabel, canvasHistoryEntryId: result.historyEntryId }
+    assert.deepEqual(parseChatHistory([receipt]), [receipt])
+    assert.equal(parseChatHistory([{ ...receipt, canvasHistoryEntryId: {} }])?.[0].canvasHistoryEntryId, undefined)
+    assert.equal(parseChatHistory([{ id: 'pending', role: 'assistant', content: 'Applying diagram…', canvasPending: true }])?.[0].content, 'Diagram submission interrupted.')
     store.getState().undoHistory()
     assert.equal(sourceHash(store.getState().markdownDocumentText), before)
     store.getState().redoHistory()
@@ -68,6 +104,9 @@ export async function testGraphAuthoringMvp() {
     const reloaded = stageFlow(null, store.getState().markdownDocumentText!).graph
     assert.ok(reloaded.edges.some(edge => edge.source === first && edge.target === newNode.id))
     assert.ok(readSubgraphs(reloaded).some(group => group.memberNodeIds.includes(newNode.id)))
+    assert.ok(!canUndoCanvasTurn(store.getState(), result.historyEntryId))
+    store.getState().updateNode(first, { label: 'Edited in an untitled diagram' })
+    assert.equal(stageFlow(null, store.getState().markdownDocumentText!).graph.nodes.find(node => node.id === first)?.label, 'Edited in an untitled diagram')
     const historyIndex = store.getState().historyIndex
     await assert.rejects(runCanvasAuthoringTurn(store.getState(), new AbortController(), 'Invalid', async state => stageCanvasReply(state, 'broken')), /flow/)
     assert.equal(store.getState().historyIndex, historyIndex)
