@@ -269,9 +269,8 @@ ci_scopes:
     commands:
       - ["node", "--test", "mcp/__tests__/agentic-os-doc-sources.test.mjs", "scripts/__tests__/production-runtime-readiness.test.mjs", "scripts/__tests__/production-release-contract.test.mjs", "scripts/__tests__/workspace-seed-authority.test.mjs", "scripts/__tests__/promote-agentic-canvas-os-revision.test.mjs"]
   protected_ci_evidence:
-    roots: [".agentic-os-ci-evidence.json", ".github/actions/protected-ci-evidence/", "scripts/ci-evidence-inputs.mjs", "scripts/__tests__/ci-evidence-inputs.test.mjs"]
-    commands:
-      - ["node", "--test", "scripts/__tests__/ci-evidence-inputs.test.mjs"]
+    roots: [".agentic-os-ci-evidence.json", ".agentic-os-delivery-dispositions.json", ".github/actions/protected-ci-evidence/", "scripts/ci-evidence-inputs.mjs", "scripts/__tests__/ci-evidence-inputs.test.mjs", "scripts/check-delivery-disposition-evidence.mjs", "scripts/__tests__/delivery-disposition-evidence.test.mjs", "docs/reports/production-delivery-evidence-", "docs/reports/agentic-graph-delivery-evidence-", "docs/reports/miaoxyz-production-delivery-evidence-"]
+    commands: [["node", "--test", "scripts/__tests__/ci-evidence-inputs.test.mjs", "scripts/__tests__/delivery-disposition-evidence.test.mjs"]]
   production_scope_transition:
     roots: ["scripts/verify-production-service-worker-upgrade.mjs", "scripts/production-service-worker-profile.mjs", "scripts/production-pages-routing.mjs", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
     commands:

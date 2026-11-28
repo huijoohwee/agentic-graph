@@ -428,7 +428,7 @@ test("turn end migrates local storage before handoff and proves canonical runtim
   const candidate = {
     workspaceRoot,
     agenticCanvasOsRoot: "/workspace/agentic-os",
-    agenticCanvasOs: { headSha: docsSha, treeSha: "c".repeat(40) },
+    agenticCanvasOs: { headSha: docsSha, treeSha: "c".repeat(40), docsRoot: "/workspace/pinned-agentic-os/catalog/dictionaries" },
     agenticGraph: {
       root: "/workspace/agentic-graph",
       gitCommonDir: "/workspace/agentic-graph/.git",
@@ -457,7 +457,7 @@ test("turn end migrates local storage before handoff and proves canonical runtim
       assert.equal(invocation.command, "npm");
       assert.deepEqual(invocation.args, ["run", "storage:d1:migrate:local"]);
       assert.equal(invocation.env.AGENTIC_OS_SOURCE_REVISION, applicationSha);
-      assert.equal(invocation.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT, "/workspace/agentic-os/catalog/dictionaries");
+      assert.equal(invocation.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT, "/workspace/pinned-agentic-os/catalog/dictionaries");
       assert.equal(invocation.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION, docsSha);
       assert.equal(invocation.env.AGENTIC_OS_STORAGE_DEV_PROXY_TARGET, "http://127.0.0.1:8787");
       assert.equal(invocation.env.AGENTIC_LOCAL_RUNTIME_TOKEN, undefined);
