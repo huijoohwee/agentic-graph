@@ -1,3 +1,4 @@
+import { resolveEditedCanvasPresetBody } from './promptPresetInvocation'
 import { runCanvasAuthoringTurn } from '@/features/graph-editor/canvasAuthoringTurn'
 import { shouldApplyImportedCanvasDocumentToGraph } from '@/features/markdown-workspace/workspaceImport'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
@@ -116,11 +117,21 @@ export async function applyChatAgenticOsWorkspaceDocumentToCanvas(path: string):
 
 export async function applyCanvasAuthoringReply(
   initial: ReturnType<typeof useGraphStore.getState>, controller: AbortController, reply: string, drawing = false,
+  generatePaths?: (prompt: string) => Promise<string[][]>,
 ) {
   return runCanvasAuthoringTurn(initial, controller, 'Apply canvas diagram', async state => {
     if (drawing) {
-      const { stageSketchPrompt } = await import('@/features/graph-editor/canvasSketchPrompt')
-      return stageSketchPrompt(state, reply)
+      const { stageSketchPrompt, CanvasDescriptionNeedsModel } = await import('@/features/graph-editor/canvasSketchPrompt')
+      const prompt = generatePaths ? await resolveEditedCanvasPresetBody(reply) : reply
+      controller.signal.throwIfAborted()
+      try {
+        return stageSketchPrompt(state, prompt, undefined, !!generatePaths)
+      } catch (error) {
+        if (!(error instanceof CanvasDescriptionNeedsModel) || !generatePaths) throw error
+        const paths = await generatePaths(prompt)
+        controller.signal.throwIfAborted()
+        return stageSketchPrompt(state, prompt, paths)
+      }
     }
     const { stageCanvasReply } = await import('@/features/graph-editor/canvasAuthoringFlow')
     return stageCanvasReply(state, reply)

@@ -28,6 +28,8 @@ import {
   CHAT_PROVIDER_SEALION,
   CHAT_PROVIDER_QWEN,
   buildChatProxyHeaders,
+  getChatProviderLabel,
+  chatProviderRequiresApiKey,
   getChatDefaultEndpointUrlForProvider,
   normalizeChatProviderId,
   resolveChatEndpointForHealth,
@@ -696,9 +698,6 @@ export function useSettingsView({
   const [chatHealthDetails, setChatHealthDetails] = React.useState<string | null>(null)
   const [isCheckingHealth, setIsCheckingHealth] = React.useState(false)
 
-  const [bytePlusHealthOk, setBytePlusHealthOk] = React.useState<boolean | null>(null)
-  const [bytePlusHealthDetails, setBytePlusHealthDetails] = React.useState<string | null>(null)
-  const [isCheckingBytePlusHealth, setIsCheckingBytePlusHealth] = React.useState(false)
   const [grabMapsHealthOk, setGrabMapsHealthOk] = React.useState<boolean | null>(null)
   const [grabMapsHealthDetails, setGrabMapsHealthDetails] = React.useState<string | null>(null)
   const [isCheckingGrabMapsHealth, setIsCheckingGrabMapsHealth] = React.useState(false)
@@ -706,83 +705,48 @@ export function useSettingsView({
   const [isCheckingBytePlusVideoModelPreview, setIsCheckingBytePlusVideoModelPreview] = React.useState(false)
   const bytePlusVideoPreviewRequestRef = React.useRef(0)
 
-  const checkChatHealth = React.useCallback(async () => {
-    const url = values.chatEndpointUrl
-    const healthUrl = resolveChatEndpointForHealth(url)
-    if (!healthUrl) {
-      setChatHealthOk(false)
-      setChatHealthDetails('Endpoint URL is not configured.')
-      return
-    }
-    setIsCheckingHealth(true)
+  const healthRequest = React.useRef<AbortController | null>(null)
+  React.useEffect(() => {
     setChatHealthOk(null)
     setChatHealthDetails(null)
+    setIsCheckingHealth(false)
+    return () => healthRequest.current?.abort()
+  }, [values.chatAuthMode, values.chatApiKey, values.chatEndpointUrl, values.chatProvider])
+
+  const checkChatHealth = React.useCallback(async () => {
+    healthRequest.current?.abort()
+    const controller = new AbortController()
+    healthRequest.current = controller
+    const healthUrl = resolveChatEndpointForHealth(values.chatEndpointUrl)
+    const byok = values.chatAuthMode === 'byok'
+    const provider = getChatProviderLabel(values.chatProvider)
+    setChatHealthOk(null)
+    setChatHealthDetails(null)
+    setIsCheckingHealth(true)
     try {
-      const authMode = String(values.chatAuthMode || '').trim() === 'byok' ? 'byok' : 'serverManaged'
+      if (!healthUrl) throw new Error('Configure the Chat endpoint.')
+      if (byok && chatProviderRequiresApiKey(values.chatProvider) && !String(values.chatApiKey || '').trim())
+        throw new Error(`Enter the ${provider} BYOK key to check this endpoint.`)
       const res = await fetch(healthUrl, {
         method: 'GET',
+        signal: controller.signal,
         headers: buildChatProxyHeaders({
-          provider: values.chatProvider,
-          apiKey: authMode === 'byok' ? values.chatApiKey : null,
-          endpointUrl: values.chatEndpointUrl,
+          provider: values.chatProvider, apiKey: byok ? values.chatApiKey : null, endpointUrl: values.chatEndpointUrl,
           clientRequestId: `kg-chat-health-${Date.now().toString(36)}`,
         }),
       })
-      if (res.ok) {
-        const data = await res.json().catch(() => null)
-        setChatHealthOk(true)
-        const detail = data ? `OK: ${JSON.stringify(data)}` : 'OK'
-        setChatHealthDetails(detail)
-      } else {
-        setChatHealthOk(false)
-        setChatHealthDetails(`Error: ${res.status} ${res.statusText}`)
-      }
-    } catch (err: unknown) {
+      if (controller.signal.aborted) return
+      if (!res.ok) throw new Error(`${provider} · HTTP ${res.status} · ${byok ? 'BYOK' : 'server-managed'}`)
+      setChatHealthOk(true)
+      setChatHealthDetails(`${provider} endpoint reachable`)
+    } catch (error) {
+      if (controller.signal.aborted) return
       setChatHealthOk(false)
-      setChatHealthDetails(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      setChatHealthDetails(error instanceof Error ? error.message : 'Endpoint unavailable.')
     } finally {
-      setIsCheckingHealth(false)
+      if (!controller.signal.aborted) setIsCheckingHealth(false)
     }
   }, [values.chatAuthMode, values.chatApiKey, values.chatEndpointUrl, values.chatProvider])
-
-  const checkBytePlusHealth = React.useCallback(async () => {
-    const baseUrl = getChatDefaultEndpointUrlForProvider(CHAT_PROVIDER_BYTEPLUS)
-    const healthUrl = resolveChatEndpointForHealth(baseUrl)
-    if (!healthUrl) {
-      setBytePlusHealthOk(false)
-      setBytePlusHealthDetails('BytePlus endpoint is not configured.')
-      return
-    }
-    setIsCheckingBytePlusHealth(true)
-    setBytePlusHealthOk(null)
-    setBytePlusHealthDetails(null)
-    try {
-      const authMode = String(values.chatAuthMode || '').trim() === 'byok' ? 'byok' : 'serverManaged'
-      const res = await fetch(healthUrl, {
-        method: 'GET',
-        headers: buildChatProxyHeaders({
-          provider: CHAT_PROVIDER_BYTEPLUS,
-          apiKey: authMode === 'byok' ? values.chatApiKey : null,
-          endpointUrl: baseUrl,
-          clientRequestId: `kg-byteplus-health-${Date.now().toString(36)}`,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json().catch(() => null)
-        setBytePlusHealthOk(true)
-        const detail = data ? `OK: ${JSON.stringify(data)}` : 'OK'
-        setBytePlusHealthDetails(detail)
-      } else {
-        setBytePlusHealthOk(false)
-        setBytePlusHealthDetails(`Error: ${res.status} ${res.statusText}`)
-      }
-    } catch (err: unknown) {
-      setBytePlusHealthOk(false)
-      setBytePlusHealthDetails(`Error: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setIsCheckingBytePlusHealth(false)
-    }
-  }, [values.chatAuthMode, values.chatApiKey])
 
   const checkGrabMapsHealth = React.useCallback(async () => {
     const styleUrlRaw = String(values['maps.grabmaps.basemap.styleUrl'] || '').trim()
@@ -887,28 +851,6 @@ export function useSettingsView({
     }
   }, [values.byteplusVideoModel, values.chatApiKey, values.chatAuthMode])
 
-  const didAutoCheckHealthRef = React.useRef(false)
-  React.useEffect(() => {
-    if (mode !== 'integrations') return
-    if (didAutoCheckHealthRef.current) return
-    const isTestRun = (() => {
-      try {
-        const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-        return env?.AG_TEST_QUIET === '1'
-      } catch {
-        return false
-      }
-    })()
-    if (isTestRun) return
-    didAutoCheckHealthRef.current = true
-    void checkChatHealth()
-    const normalizedProvider = normalizeChatProviderId(values.chatProvider)
-    if (normalizedProvider !== CHAT_PROVIDER_BYTEPLUS) {
-      void checkBytePlusHealth()
-    }
-    void checkBytePlusVideoModelPreview()
-  }, [checkBytePlusVideoModelPreview, checkChatHealth, checkBytePlusHealth, mode, values.chatProvider])
-
   const didAutoCheckGrabMapsHealthRef = React.useRef(false)
   React.useEffect(() => {
     if (mode !== 'maps') return
@@ -927,14 +869,14 @@ export function useSettingsView({
   }, [checkGrabMapsHealth, mode])
 
   React.useEffect(() => {
-    if (mode !== 'integrations') return
+    if (mode !== 'integrations' || normalizeChatProviderId(values.chatProvider) !== CHAT_PROVIDER_BYTEPLUS) return
     const timer = globalThis.setTimeout(() => {
       void checkBytePlusVideoModelPreview()
     }, 300)
     return () => {
       globalThis.clearTimeout(timer)
     }
-  }, [checkBytePlusVideoModelPreview, mode])
+  }, [checkBytePlusVideoModelPreview, mode, values.chatProvider])
 
   const onGlobalReset = React.useCallback(() => {
     try {
@@ -1357,10 +1299,6 @@ export function useSettingsView({
     chatHealthDetails,
     isCheckingHealth,
     checkChatHealth,
-    bytePlusHealthOk,
-    bytePlusHealthDetails,
-    isCheckingBytePlusHealth,
-    checkBytePlusHealth,
     grabMapsHealthOk,
     grabMapsHealthDetails,
     isCheckingGrabMapsHealth,

@@ -49,7 +49,10 @@ export const useFloatingPanelChatSubmit = (
       args.setErrorText(null)
       try {
         const { submitCanvasProjection } = await import('./canvasProjectionSubmit')
-        await submitCanvasProjection(args, initial, controller)
+        await submitCanvasProjection(args, initial, controller, async prompt => {
+          const { generateCanvasDiagramPaths } = await import('./canvasDiagramGeneration')
+          return generateCanvasDiagramPaths(args, controller, prompt)
+        })
       } catch (error) {
         if (args.abortRef.current === controller) args.setErrorText(error instanceof Error ? error.message : 'Unable to apply diagram.')
       } finally {

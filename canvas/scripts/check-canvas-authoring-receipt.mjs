@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
+import { checkChatCanvasProjection } from './check-chat-canvas-projection.mjs';
 import { createServer } from 'node:http';
 import { setTimeout as wait } from 'node:timers/promises';
 
 export async function waitForWorkspace(page, predicate, argument) {
   const deadline = Date.now() + 30000;
   while (Date.now() < deadline) {
-    if (await page.evaluate(predicate, argument)) return;
+    try {
+      if (await page.evaluate(predicate, argument)) return;
+    } catch (error) {
+      if (!error.message.includes('Execution context was destroyed')) throw error;
+    }
     await wait(100);
   }
   throw new Error('Workspace did not settle: ' + predicate.toString());
@@ -81,6 +86,7 @@ export async function checkEditableReceipt(page, send, toolMenu, mainPanel) {
     if (saved !== state.markdownDocumentText) throw new Error('The active document differs from the saved source');
     return saved;
   });
+  await checkChatCanvasProjection(page.context().browser(), page.url().split('?')[0], waitForWorkspace);
   const before = await savedSource();
   const thread = page.locator('[data-kg-chat-thread-viewport]').filter({ visible: true }).last();
   await thread.getByRole('button', { name: 'Prompt presets', exact: true }).click();

@@ -1,7 +1,7 @@
 import React from 'react'
 import StatusBadge from '@/features/panels/ui/StatusBadge'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { CHAT_PROVIDER_BYTEPLUS } from '@/lib/chatEndpoint'
+import { getChatProviderLabel } from '@/lib/chatEndpoint'
 import type { SettingsRowActions, SettingsRowRefs, SettingsRowStatusState, SettingsRowUi } from './settingsRowTypes'
 import { STRIPE_PAYMENT_SERVER_SECRET_ENV_SUMMARY } from 'grph-shared/payments/stripePaymentSsot'
 import {
@@ -21,8 +21,6 @@ type SettingsSpecialValueNodeProps = {
     SettingsRowActions,
     | 'applyActiveWorkspaceFileAsChatHistory'
     | 'applyActiveWorkspaceFileAsAgenticGraph'
-    | 'checkBytePlusHealth'
-    | 'checkBytePlusVideoModelPreview'
     | 'checkChatHealth'
     | 'checkGrabMapsHealth'
     | 'createAndSelectChatHistoryFile'
@@ -56,7 +54,7 @@ export function shouldRenderSettingsSpecialValueNode({
   sKey: string
 }): boolean {
   return (
-    sKey === 'chatSystemPrompt'
+    resolvedValueKey === 'chatEndpointUrl'
     || resolvedValueKey === 'maps.grabmaps.apiKey'
     || sKey === 'stripeApi.auth.secret_key'
     || sKey === 'stripeApi.webhooks.signing_secret'
@@ -85,42 +83,30 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
 
   if (!shouldRenderSettingsSpecialValueNode({ area, resolvedValueKey, sKey })) return null
 
-  if (sKey === 'chatSystemPrompt') {
+  if (resolvedValueKey === 'chatEndpointUrl') {
+    const providerKey = sKey.replace(/\.endpoint_url$/, '.provider')
+    if (sKey !== resolvedValueKey && values[providerKey] !== status.normalizedChatProvider) return inputNode
     return (
       <section className={specialValueRowClassName}>
         <section className={specialValueInputShellClassName}>{inputNode}</section>
         <section className={specialValueStatusShellClassName} title={status.chatHealthDetails || undefined}>
           <StatusBadge
-            label="Chat API"
+            label={getChatProviderLabel(status.normalizedChatProvider)}
             ok={status.isCheckingHealth ? null : (status.chatHealthOk ?? null)}
             msg={status.isCheckingHealth ? 'Checking...' : status.chatHealthOk === true ? 'Success' : status.chatHealthOk === false ? 'Failed' : 'Idle'}
             details={status.chatHealthDetails || undefined}
           />
         </section>
-        {status.normalizedChatProvider !== CHAT_PROVIDER_BYTEPLUS ? (
-          <section className={specialValueStatusShellClassName} title={status.bytePlusHealthDetails || undefined}>
-            <StatusBadge
-              label="BytePlus API"
-              ok={status.isCheckingBytePlusHealth ? null : (status.bytePlusHealthOk ?? null)}
-              msg={status.isCheckingBytePlusHealth ? 'Checking...' : status.bytePlusHealthOk === true ? 'Success' : status.bytePlusHealthOk === false ? 'Failed' : 'Idle'}
-              details={status.bytePlusHealthDetails || undefined}
-            />
-          </section>
-        ) : null}
         <button
           type="button"
           onClick={e => {
             e.stopPropagation()
-            actions.checkChatHealth()
-            if (status.normalizedChatProvider !== CHAT_PROVIDER_BYTEPLUS) {
-              actions.checkBytePlusHealth()
-            }
-            actions.checkBytePlusVideoModelPreview()
+            void actions.checkChatHealth()
           }}
-          disabled={status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingBytePlusVideoModelPreview}
+          disabled={status.isCheckingHealth}
           className={sectionActionClassName}
         >
-          {status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingBytePlusVideoModelPreview ? 'Checking...' : 'Check Health'}
+          {status.isCheckingHealth ? 'Checking...' : 'Check Health'}
         </button>
       </section>
     )
